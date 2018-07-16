@@ -1,6 +1,6 @@
 This is an issues-only repository for beestat.io.
 
-#Patch Notes:
+# Patch Notes:
 
 ## Beestat 1.1 (TBD)
 ### Bug Fixes:
