@@ -1,9 +1,9 @@
 This is an issues-only repository for beestat.io.
 
-# Patch Notes:
+# Patch Notes
 
-## Beestat 1.1 (TBD)
-### Bug Fixes:
+### Beestat 1.1 (TBD)
+#### Bug Fixes:
 - Fixed runtime over-reporting for multi-stage systems
 - Fixed multiple stages not showing up for non-heat pump systems
 - Fixed non-heat pump systems showing heat as aux
@@ -14,7 +14,7 @@ This is an issues-only repository for beestat.io.
 - Fixed database query failing when time zone was positive UTC (hotfixed)
 - Fixed invalid date on aggregate runtime graph (hotfixed)
 
-### Enhancements:
+#### Enhancements:
 - Added smoothing to inside and outside temperature series on Recent Activity graph
 - Added 1d, 3d, 7d options to Recent Activity graph
 - Added basic help descriptions to all graphs
@@ -26,11 +26,11 @@ This is an issues-only repository for beestat.io.
 - Updated chart axis to not change when toggling series
 - Rewrote entire frontend to not be a heap of garbage
 
-## Beestat 1.0 (5/8/2018)
-### Bug Fixes:
+### Beestat 1.0 (5/8/2018)
+#### Bug Fixes:
 - N/A
 
-### Enhancements:
+#### Enhancements:
 - Basic system view
 - Recent activity graph
 - Aggregate runtime graph
