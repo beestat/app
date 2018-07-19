@@ -22,7 +22,7 @@ This is an issues-only repository for beestat.io.
 - Added privacy page
 - Improved overall look & feel of graphs slightly (size, colors, fonts, icons, etc)
 - Improved performance of Recent Activity graph, especially when resizing or toggling series
-- Improved chart export sizes/filenames (hotfixed)
+- Improved chart export sizes/filenames
 - Updated chart axis to not change when toggling series
 - Rewrote entire frontend to not be a heap of garbage
 
