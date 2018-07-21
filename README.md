@@ -2,7 +2,7 @@ This is an issues-only repository for beestat.io.
 
 # Patch Notes
 
-### Beestat 1.1 (TBD)
+### Beestat 1.1 (7/20/2018)
 #### Bug Fixes:
 - Fixed runtime over-reporting for multi-stage systems
 - Fixed multiple stages not showing up for non-heat pump systems
@@ -25,6 +25,9 @@ This is an issues-only repository for beestat.io.
 - Improved chart export sizes/filenames
 - Updated chart axis to not change when toggling series
 - Rewrote entire frontend to not be a heap of garbage
+
+### Other Notes:
+Upon logging in all thermostat data will re-sync as there is new data added that was not synced previously. Because of this, historical oudoor weather data (Prior to April 2018) is lost due to ecobee's switching of weather providers. This data may be restored at a later date as the original copy of that data was retained in beestat.
 
 ### Beestat 1.0 (5/8/2018)
 #### Bug Fixes:
