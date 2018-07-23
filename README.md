@@ -27,7 +27,11 @@ This is an issues-only repository for beestat.io.
 - Rewrote entire frontend to not be a heap of garbage
 
 ### Other Notes:
-Upon logging in all thermostat data will re-sync as there is new data added that was not synced previously. Because of this, historical oudoor weather data (Prior to April 2018) is lost due to ecobee's switching of weather providers. This data may be restored at a later date as the original copy of that data was retained in beestat.
+- Upon logging in all thermostat data will fully re-sync as there is new data added that was not synced previously.
+
+### Known Issues:
+- Re-sync is causing historical weather data (before April 2018) to be missing as ecobee no longer has this data
+- Re-sync is causing historical thermostat data (before May 2017) to sometimes be missing as ecobee is no longer reporting this data
 
 ### Beestat 1.0 (5/8/2018)
 #### Bug Fixes:
