@@ -1,6 +1,75 @@
 This is an issues-only repository for beestat.io.
 
 # Patch Notes
+### Beestat 1.2 (11/4/2018)
+### Bug Fixes:
+- Fixed dry contact sensors on EMS Si showing up as "undefined"
+- Fixed fractional degrees incorrectly showing up on aggregate runtime y-axis
+- Restored historical data lost during 1.1 conversion that ecobee no longer has (hotfixed)
+- Slightly tweaked aggregate runtime adjustments for missing data to be more accurate
+
+### Enhancements
+- Design
+  - Significantly improved look & feel
+  - Added popup menus to group less common functionality
+  - Added modal windows as necessary/useful
+  - Changed color palette slightly
+- System
+  - Added humidity
+  - Added mode (cool/heat/auto)
+  - Added setpoint
+  - Added running equipment (cool, heat, aux, fan, ventilator, humidifier, dehumidifier, economizer)
+  - Added status (schedule/override)
+  - Added currently active comfort profile
+  - Added model number
+  - Added serial number
+  - Added firmware revision
+  - Added weather station
+  - Added first connected date
+  - Added live updating (every 5 minutes; will be enabled within a week post-update)
+  - Updated thermostat switcher to include system mode (cool/heat)
+  - Updated thermostat switcher to include thermostat temperature
+- Sensors
+  - Added occupancy indicator
+  - Added in-use indicator
+  - Added temperature above/below average temperature indicator
+  - Added live updating (every 5 minutes)
+- Alerts (new card)
+  - Added custom beestat alerts for heat/cool differential temp
+  - Alerts can be dismissed from beestat (does not affect alerts on your thermostat)
+- Patreon (new card)
+  - You can now support beestat on Patreon: https://www.patreon.com/beestat
+  - Patreon banner can be hidden if you link your Patreon account and you are a supporter
+  - Patreon banner can be hidden for one month at a time if you are not a supporter
+  - There are no software limitations if you are not a supporter
+- Other
+  - Added fractional degrees to mostly everything
+  - Updated settings to store on server instead of client (which thermostat you have open, chart settings, alert settings, etc)
+  - Updated storage schema to more genericly support different thermostat types (working towards Nest support)
+  - Added "beestat.io" watermark to chart exports
+  - Improved API call caching
+  - Improved help screens a bit
+  - Fixed tooltip positioning going off the edge on mobile
+- Recent Activity
+  - Added indoor humidity
+  - Added follow me (Home, Away, Sleep, etc)
+    - Note: Uses your current schedule so it can be wrong if you changed your schedule recently; fix is pending
+  - Added system mode (tooltip only)
+  - Added duration for all equipment runs (ex: see that your heat ran for 2h 32m)
+  - Added accessory
+  - Added colors to tooltip
+  - Combined Heat1/2 & Cool1/2 into a single entry on the legend
+  - Added deferred loading; loading of application is not blocked by this chart
+- Aggregate Runtime
+  - Updated tooltip to show time more granularly (ex: 2h 10m instead of rounding to 2h)
+  - Added colors to tooltip
+  - Added deferred loading; loading of application is not blocked by this chart
+- Home Efficiency
+  - Restyled graph to be nicer and more intuitive
+  - Removed home & location info
+  - Added arbitrary "efficiency score" and ranking. Higher score is better. Lower percentile is better.
+  - More changes to this coming in the next version of beestat
+  - Added deferred loading; loading of application is not blocked by this chart
 
 ### Beestat 1.1 (7/20/2018)
 #### Bug Fixes:
