@@ -71,6 +71,8 @@ This is an issues-only repository for beestat.io.
   - More changes to this coming in the next version of beestat
   - Added deferred loading; loading of application is not blocked by this chart
 
+---
+
 ### Beestat 1.1 (7/20/2018)
 #### Bug Fixes:
 - Fixed runtime over-reporting for multi-stage systems
@@ -101,6 +103,8 @@ This is an issues-only repository for beestat.io.
 ### Known Issues:
 - Re-sync is causing historical weather data (before April 2018) to be missing as ecobee no longer has this data
 - Re-sync is causing historical thermostat data (before May 2017) to sometimes be missing as ecobee is no longer reporting this data
+
+---
 
 ### Beestat 1.0 (5/8/2018)
 #### Bug Fixes:
