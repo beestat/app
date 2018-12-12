@@ -1,6 +1,26 @@
 This is an issues-only repository for beestat.io.
 
 # Patch Notes
+### Beestat 1.21 (11/4/2018 - 12/12/2018)
+### Bug Fixes:
+- Fixed comfort profiles not displaying correctly historically
+- Fixed Heat/Cool differential temperature beestat alert not respecting temperature units
+- Fixed loading percentages showing as negative on graphs
+- Fixed some graphs never loading
+- Fixed some alert icons not displaying correctly
+- Fixed API call looping
+- Fixed switching thermostats failing due to race condition
+- Fixed temperature rounding sometimes being too precise
+- Fixed error when setting a graph date range to the current date range
+
+### Enhancements
+- Added log out button
+- Added outdoor humidity (tooltip only)
+- Added automatic syncing of data behind the scenes (https://www.patreon.com/posts/new-patron-perk-23002191)
+- Tweaked accessory series to separate it a bit from the fan series
+- Improved performance of graph rendering when resizing browser
+- Decreased smoothing on recent activity graph
+
 ### Beestat 1.2 (11/4/2018)
 ### Bug Fixes:
 - Fixed dry contact sensors on EMS Si showing up as "undefined"
