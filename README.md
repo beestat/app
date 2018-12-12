@@ -4,7 +4,7 @@ This is an issues-only repository for beestat.io.
 ### Beestat 1.21 (11/4/2018 - 12/12/2018)
 ### Bug Fixes:
 - Fixed comfort profiles not displaying correctly historically
-- Fixed Heat/Cool differential temperature beestat alert not respecting temperature units
+- Fixed heat/cool differential temperature beestat alert not respecting temperature units
 - Fixed loading percentages showing as negative on graphs
 - Fixed some graphs never loading
 - Fixed some alert icons not displaying correctly
