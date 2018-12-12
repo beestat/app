@@ -15,6 +15,7 @@ This is an issues-only repository for beestat.io.
 - Fixed error reporting not working
 
 ### Enhancements
+- Moved beestat to host with Digital Ocean
 - Added log out button
 - Added outdoor humidity (tooltip only)
 - Added automatic syncing of data behind the scenes (https://www.patreon.com/posts/new-patron-perk-23002191)
