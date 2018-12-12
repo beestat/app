@@ -12,6 +12,7 @@ This is an issues-only repository for beestat.io.
 - Fixed switching thermostats failing due to race condition
 - Fixed temperature rounding sometimes being too precise
 - Fixed error when setting a graph date range to the current date range
+- Fixed error reporting not working
 
 ### Enhancements
 - Added log out button
@@ -20,6 +21,7 @@ This is an issues-only repository for beestat.io.
 - Tweaked accessory series to separate it a bit from the fan series
 - Improved performance of graph rendering when resizing browser
 - Decreased smoothing on recent activity graph
+- Added framework for adding new dashboards (will use for beestat 1.3)
 
 ### Beestat 1.2 (11/4/2018)
 ### Bug Fixes:
