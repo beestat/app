@@ -3,14 +3,14 @@ This is an issues-only repository for beestat.io.
 # Patch Notes
 ### Beestat 1.22 (12/13/2018 - 1/23/2019)
 ### Bug Fixes:
-- Fixed temperature incorrectly rounding on System and Recent Activity [#84]
-- Ecobee fixed authorization screen showing that beestat gets write permissions instead of just read [#33]
+- Fixed temperature incorrectly rounding on System and Recent Activity [[#84]](https://github.com/ziebelje/beestat-issues/issues/84)
+- Ecobee fixed authorization screen showing that beestat gets write permissions instead of just read [[#33]](https://github.com/ziebelje/beestat-issues/issues/33)
 - Fixed thermostats with no internal sensors breaking application
-- Fixed Aggregate Runtime double counting heat stage 1 for gas furnaces [#89]
+- Fixed Aggregate Runtime double counting heat stage 1 for gas furnaces [[#89]](https://github.com/ziebelje/beestat-issues/issues/89)
 - Fixed Aggregate Runtime aux getting cut off in certain circumstances
 
 ### Enhancements:
-- Added ability to issue API keys for programmatic access to beestat [#12] [[Link]](https://documenter.getpostman.com/view/6332024/RznFnd99)
+- Added ability to issue API keys for programmatic access to beestat [[#12]](https://github.com/ziebelje/beestat-issues/issues/) [[Link]](https://documenter.getpostman.com/view/6332024/RznFnd9912)
 - Mobile app pinning uses "standalone" instead of "fullscreen" to mimic most other apps
 - Added "Add to Home Screen" dialog on Android [[Link]](https://developers.google.com/web/fundamentals/app-install-banners/#the_mini-info_bar)
 - Added friendly names for a number of recently added thermostat model numbers [[Link]](https://www.ecobee.com/home/developer/api/documentation/v1/objects/Thermostat.shtml#modelNumber)
