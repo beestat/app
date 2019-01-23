@@ -10,10 +10,10 @@ This is an issues-only repository for beestat.io.
 - Fixed Aggregate Runtime aux getting cut off in certain circumstances
 
 ### Enhancements:
-- Added ability to issue API keys for programmatic access to beestat [#12] [Link][(https://documenter.getpostman.com/view/6332024/RznFnd99)]
+- Added ability to issue API keys for programmatic access to beestat [#12] [[Link]](https://documenter.getpostman.com/view/6332024/RznFnd99)
 - Mobile app pinning uses "standalone" instead of "fullscreen" to mimic most other apps
-- Added "Add to Home Screen" dialog on Android [[Link](https://developers.google.com/web/fundamentals/app-install-banners/#the_mini-info_bar)]
-- Added friendly names for a number of recently added thermostat model numbers [Link][(https://www.ecobee.com/home/developer/api/documentation/v1/objects/Thermostat.shtml#modelNumber)]
+- Added "Add to Home Screen" dialog on Android [[Link]](https://developers.google.com/web/fundamentals/app-install-banners/#the_mini-info_bar)
+- Added friendly names for a number of recently added thermostat model numbers [[Link]](https://www.ecobee.com/home/developer/api/documentation/v1/objects/Thermostat.shtml#modelNumber)
 - Updated setpoint to be one (heat/cool) or two (auto) lines instead of shaded range
 - Updated API to return proper data types on int, boolean, and float values
 - Decreased timeout when connecting to ecobee to 5 seconds
