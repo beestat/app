@@ -1,6 +1,28 @@
 This is an issues-only repository for beestat.io.
 
 # Patch Notes
+### Beestat 1.22 (12/13/2018 - 1/23/2019)
+### Bug Fixes:
+- Fixed temperature incorrectly rounding on System and Recent Activity [#84]
+- Ecobee fixed authorization screen showing that beestat gets write permissions instead of just read [#33]
+- Fixed thermostats with no internal sensors breaking application
+- Fixed Aggregate Runtime double counting heat stage 1 for gas furnaces [#89]
+- Fixed Aggregate Runtime aux getting cut off in certain circumstances
+
+### Enhancements:
+- Added ability to issue API keys for programmatic access to beestat [#12] [Link][(https://documenter.getpostman.com/view/6332024/RznFnd99)]
+- Mobile app pinning uses "standalone" instead of "fullscreen" to mimic most other apps
+- Added "Add to Home Screen" dialog on Android [[Link](https://developers.google.com/web/fundamentals/app-install-banners/#the_mini-info_bar)]
+- Added friendly names for a number of recently added thermostat model numbers [Link][(https://www.ecobee.com/home/developer/api/documentation/v1/objects/Thermostat.shtml#modelNumber)]
+- Updated setpoint to be one (heat/cool) or two (auto) lines instead of shaded range
+- Updated API to return proper data types on int, boolean, and float values
+- Decreased timeout when connecting to ecobee to 5 seconds
+- Added error messages alerts to the GUI
+- Slightly improved performance of API caching
+- Improved readibility of outdoor temperature line on Aggregate Runtime
+
+---
+
 ### Beestat 1.21 (11/4/2018 - 12/12/2018)
 ### Bug Fixes:
 - Fixed comfort profiles not displaying correctly historically
