@@ -1,6 +1,54 @@
 This is an issues-only repository for beestat.io.
 
 # Patch Notes
+### Beestat 1.3 (1/24/2019 - 4/4/2019)
+### Bug Fixes:
+- Fixed sensors not sorting alphabetically [[#92]](https://github.com/ziebelje/beestat-issues/issues/92)
+- Fixed beestat not logging you out if ecobee access is revoked/fails [[#95]](https://github.com/ziebelje/beestat-issues/issues/95)
+- Fixed graph exports not using correct font [[#50]](https://github.com/ziebelje/beestat-issues/issues/50)
+- Fixed broken API cache; should improve performance [[#97]](https://github.com/ziebelje/beestat-issues/issues/97)
+- Fixed system card not turning circle orange when heat is running (heat pumps only)
+- Fixed some longstanding bugs where bad data from ecobee (temperature values out of range, etc) could throw exceptions
+- Added toggle for gap fill on Aggregate Runtime
+- Fixed gap fill not working if data was present but wrong
+
+### Enhancements:
+- General
+  - Enabled orientation choice when pinning app on mobile devices [[#93]](https://github.com/ziebelje/beestat-issues/issues/93)
+  - Added Air Filter info popup [[#96]](https://github.com/ziebelje/beestat-issues/issues/96)
+  - Added localized caching to prevent sending unnecessary API calls (improves performance)
+- UI
+  - Made loading animation a little bit cooler
+  - Switched to icon set with larger selection
+  - Updated styling to be less "gray all the time"
+- API
+  - Added beestat-cached-until header to indicate when the API call will stop returning a cached response
+- Home Comparisons
+  - Added Home Comparisons page
+  - Added "My Home" card
+  - Shows the detected system types for heat, aux heat, and cool (95% accurate)
+  - Allows changing the detected system types for heat, aux heat, and cool
+  - Shows geographical region (usually State/Provice, Country)
+  - Geographical region is determined based on address stored with ecobee
+  - Shows property characteristics (structure type, stories, square feet, age)
+  - Added "Comparison Settings" card
+  - Allows you to choose the date your temperature profile is calculated from
+  - Allows you to choose the region you compare your home to
+  - Allows you to choose the type of home you compare your home to
+  - Added "Heat Score" card
+  - Heat Score is a measure of how quickly your home heats using your base heat system (not aux) compared to other homes. Cycles per hour and balance point are also factored in
+  - Added "Cool Score" card
+  - Cool Score is a measure of how quickly your home cools compared to other homes. Cycles per hour and balance point are also factored in.
+  - Added "Resist Score" card
+  - Resist Score is a measure of the rate at which your home's temperature changes when no heat/cool is running compared to other homes
+  - Added new "Temperature Profile" card
+  - Shows the "Resist" data much like the old Temperature Profile card
+  - Also added a heat profile line to show the rate of heat change when your heat is running
+  - Also added a heat profile line to show the rate of heat change when your cool is running
+    
+    
+---
+
 ### Beestat 1.22 (12/13/2018 - 1/23/2019)
 ### Bug Fixes:
 - Fixed temperature incorrectly rounding on System and Recent Activity [[#84]](https://github.com/ziebelje/beestat-issues/issues/84)
