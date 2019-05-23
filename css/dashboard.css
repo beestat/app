@@ -1,0 +1,386 @@
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.highcharts-container, .highcharts-container svg { width: 100% !important; }
+
+body {
+  background: #111;
+  font-family: Montserrat;
+  font-weight: 300;
+  font-size: 13px;
+  color: #ecf0f1;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* lightblue.light */
+::selection { background: #45aaf2; }
+
+
+
+
+
+
+
+/* Fonts */
+@font-face{
+  font-family:"Montserrat";
+  font-weight:100;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_100.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_100.woff") format("woff"),url("../font/montserrat/montserrat_100.ttf") format("truetype"),url("../font/montserrat/montserrat_100.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:200;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_200.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_200.woff") format("woff"),url("../font/montserrat/montserrat_200.ttf") format("truetype"),url("../font/montserrat/montserrat_200.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:300;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_300.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_300.woff") format("woff"),url("../font/montserrat/montserrat_300.ttf") format("truetype"),url("../font/montserrat/montserrat_300.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:400;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_400.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_400.woff") format("woff"),url("../font/montserrat/montserrat_400.ttf") format("truetype"),url("../font/montserrat/montserrat_400.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:500;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_500.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_500.woff") format("woff"),url("../font/montserrat/montserrat_500.ttf") format("truetype"),url("../font/montserrat/montserrat_500.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:600;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_600.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_600.woff") format("woff"),url("../font/montserrat/montserrat_600.ttf") format("truetype"),url("../font/montserrat/montserrat_600.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:700;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_700.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_700.woff") format("woff"),url("../font/montserrat/montserrat_700.ttf") format("truetype"),url("../font/montserrat/montserrat_700.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:800;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_800.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_800.woff") format("woff"),url("../font/montserrat/montserrat_800.ttf") format("truetype"),url("../font/montserrat/montserrat_800.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:900;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_900.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_900.woff") format("woff"),url("../font/montserrat/montserrat_900.ttf") format("truetype"),url("../font/montserrat/montserrat_900.svg#Montserrat") format("svg")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Beestat logo */
+.beestat {
+  font-weight: 200;
+  font-size: 40px;
+  font-family: Montserrat;
+}
+
+.beestat > .bee {
+  color: #f7b731;
+}
+
+.beestat > .stat {
+  color: #20bf6b;
+}
+
+
+
+
+
+
+
+
+
+/* Link styles */
+a {
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+a:link {
+  color: #ecf0f1;
+  text-decoration: none;
+}
+
+a:visited {
+  color: #ecf0f1;
+}
+
+a:focus {
+  color: #ecf0f1;
+}
+
+a:hover {
+  color: #bdc3c7;
+  text-decoration: none;
+}
+
+a:active {
+  color: #ecf0f1;
+}
+
+a.inverted:link {
+  color: #2d98da;
+  text-decoration: none;
+}
+
+a.inverted:visited {
+  color: #2d98da;
+}
+
+a.inverted:focus {
+  color: #2d98da;
+}
+
+a.inverted:hover {
+  color: #45aaf2;
+  text-decoration: none;
+}
+
+a.inverted:active {
+  color: #2d98da;
+}
+
+
+
+
+
+
+
+
+.loading_wrapper {
+  display: flex;
+  justify-content: center;
+  height: 30px;
+}
+
+.loading_1, .loading_2 {
+  position: absolute;
+  border: 3px solid #f7b731;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  opacity: 0;
+  display: inline-block;
+
+  animation: loading 1200ms cubic-bezier(0, 0.2, 0.8, 1);
+  animation-iteration-count: infinite;
+}
+
+.loading_2 {
+  border: 2px solid #f7b731;
+  animation-delay: 400ms;
+}
+
+@keyframes loading {
+  0% {
+    transform: scale(.1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+
+
+/**
+ * This is a stripped down version of https://flexgridlite.elliotdahl.com/
+ * For futher reading: https://davidwalsh.name/flexbox-layouts;
+ */
+.row {
+  display: flex;
+  flex: 0 1 auto;
+  margin: 0 -8px 16px -8px;
+}
+.column {
+  /*flex: 0 0 auto;*/
+  flex-grow: 1;
+  flex-shrink: 0;
+  flex-basis: 0;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 8px 0 8px;
+}
+.column_1 {
+  flex-basis: 8.33333%;
+  max-width: 8.33333%;
+}
+.column_2 {
+  flex-basis: 16.66667%;
+  max-width: 16.66667%;
+}
+.column_3 {
+  flex-basis: 25%;
+  max-width: 25%;
+}
+.column_4 {
+  flex-basis: 33.33333%;
+  max-width: 33.33333%;
+}
+.column_5 {
+  flex-basis: 41.66667%;
+  max-width: 41.66667%;
+}
+.column_6 {
+  flex-basis: 50%;
+  max-width: 50%;
+}
+.column_7 {
+  flex-basis: 58.33333%;
+  max-width: 58.33333%;
+}
+.column_8 {
+  flex-basis: 66.66667%;
+  max-width: 66.66667%;
+}
+.column_9 {
+  flex-basis: 75%;
+  max-width: 75%;
+}
+.column_10 {
+  flex-basis: 83.33333%;
+  max-width: 83.33333%;
+}
+.column_11 {
+  flex-basis: 91.66667%;
+  max-width: 91.66667%;
+}
+.column_12 {
+  flex-basis: 100%;
+  max-width: 100%;
+}
+
+@media only screen and (max-width: 800px) {
+  .row {
+    display: block;
+  }
+  .column {
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+}
+
+
+
+
+
+/* Icons (materialdesignicons.com) */
+@font-face {
+  font-family: "Material Design Icons";
+  src: url("../font/material_icon/material_icon.eot?v=3.4.93");
+  src: url("../font/material_icon/material_icon.eot?#iefix&v=3.4.93") format("embedded-opentype"), url("../font/material_icon/material_icon.woff2?v=3.4.93") format("woff2"), url("../font/material_icon/material_icon.woff?v=3.4.93") format("woff"), url("../font/material_icon/material_icon.ttf?v=3.4.93") format("truetype"), url("../font/material_icon/material_icon.svg?v=3.4.93#materialdesigniconsregular") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.icon:before {
+  display: inline-block;
+  font: normal normal normal 24px/1 "Material Design Icons";
+  font-size: inherit;
+  text-rendering: auto;
+  line-height: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 24px;
+}
+
+.icon.air_filter:before { content: "\FD1F"; }
+.icon.air_purifier:before { content: "\FD20"; }
+.icon.alarm_snooze:before { content: "\F68D"; }
+.icon.arrow_left:before { content: "\F04D"; }
+.icon.battery_10:before { content: "\F07A"; }
+.icon.bell:before { content: "\F09A"; }
+.icon.bell_off:before { content: "\F09B"; }
+.icon.bullhorn:before { content: "\F0E6"; }
+.icon.border_none_variant:before { content: "\F8A3"; }
+.icon.calendar:before { content: "\F0ED"; }
+.icon.calendar_alert:before { content: "\FA30"; }
+.icon.calendar_edit:before { content: "\F8A6"; }
+.icon.calendar_range:before { content: "\F678"; }
+.icon.cancel:before { content: "\F739"; }
+.icon.cash:before { content: "\F114"; }
+.icon.chart_bell_curve:before { content: "\FC2C"; }
+.icon.chart_line:before { content: "\F12A"; }
+.icon.check:before { content: "\F12C"; }
+.icon.clock_outline:before { content: "\F150"; }
+.icon.close:before { content: "\F156"; }
+.icon.close_network:before { content: "\F15B"; }
+.icon.dots_vertical:before { content: "\F1D9"; }
+.icon.download:before { content: "\F1DA"; }
+.icon.exit_to_app:before { content: "\F206"; }
+.icon.eye:before { content: "\F208"; }
+.icon.eye_off:before { content: "\F209"; }
+.icon.fan:before { content: "\F210"; }
+.icon.fire:before { content: "\F238"; }
+.icon.gauge:before { content: "\F29A"; }
+.icon.google_play:before { content: "\F2BC"; }
+.icon.heart:before { content: "\F2D1"; }
+.icon.help_circle:before { content: "\F2D7"; }
+.icon.home:before { content: "\F2DC"; }
+.icon.home_floor_a:before { content: "\FD5F"; }
+.icon.information:before { content: "\F2FC"; }
+.icon.key:before { content: "\F306"; }
+.icon.layers:before { content: "\F328"; }
+.icon.magnify_minus:before { content: "\F34A"; }
+.icon.map_marker:before { content: "\F34E"; }
+.icon.menu_down:before { content: "\F35D"; }
+.icon.menu_up:before { content: "\F360"; }
+.icon.message:before { content: "\F361"; }
+.icon.numeric_1_box:before { content: "\F3A4"; }
+.icon.numeric_3_box:before { content: "\F3AA"; }
+.icon.numeric_7_box:before { content: "\F3B6"; }
+.icon.patreon:before { content: "\F881"; }
+.icon.pound:before { content: "\F423"; }
+.icon.snowflake:before { content: "\F716"; }
+.icon.swap_horizontal:before { content: "\F4E1"; }
+.icon.thermostat:before { content: "\F393"; }
+.icon.thumb_up:before { content: "\F513"; }
+.icon.tune:before { content: "\F62E"; }
+.icon.twitter:before { content: "\F544"; }
+.icon.update:before { content: "\F6AF"; }
+.icon.view_quilt:before { content: "\F574"; }
+.icon.water_off:before { content: "\F58D"; }
+.icon.water_percent:before { content: "\F58E"; }
+.icon.wifi_strength_1_alert:before { content: "\F91F"; }
+.icon.wifi_strength_4:before { content: "\F927"; }
+.icon.zigbee:before { content: "\FD1D"; }
+.icon.basket_fill:before { content: "\F077"; }
+.icon.basket_unfill:before { content: "\F078"; }
+
+.icon.f16:before { font-size: 16px; }
+.icon.f24:before { font-size: 24px; }
+.icon.f36:before { font-size: 36px; }
+.icon.f48:before { font-size: 48px; }
+.icon.f64:before { font-size: 64px; }

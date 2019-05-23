@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.beestat",
+      "sha256_cert_fingerprints": ["CD:96:DE:AD:E9:74:E6:B0:37:C4:D8:5A:D7:66:72:94:99:5E:14:22:53:29:0C:10:84:9E:0A:FD:F0:D6:FB:2F"]
+    }
+  }
+]

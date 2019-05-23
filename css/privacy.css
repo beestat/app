@@ -1,0 +1,283 @@
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.highcharts-container, .highcharts-container svg { width: 100% !important; }
+
+body {
+  background: #111;
+  font-family: Montserrat;
+  font-weight: 300;
+  font-size: 13px;
+  color: #ecf0f1;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Fonts */
+@font-face{
+  font-family:"Montserrat";
+  font-weight:100;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_100.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_100.woff") format("woff"),url("../font/montserrat/montserrat_100.ttf") format("truetype"),url("../font/montserrat/montserrat_100.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:200;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_200.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_200.woff") format("woff"),url("../font/montserrat/montserrat_200.ttf") format("truetype"),url("../font/montserrat/montserrat_200.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:300;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_300.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_300.woff") format("woff"),url("../font/montserrat/montserrat_300.ttf") format("truetype"),url("../font/montserrat/montserrat_300.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:400;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_400.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_400.woff") format("woff"),url("../font/montserrat/montserrat_400.ttf") format("truetype"),url("../font/montserrat/montserrat_400.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:500;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_500.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_500.woff") format("woff"),url("../font/montserrat/montserrat_500.ttf") format("truetype"),url("../font/montserrat/montserrat_500.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:600;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_600.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_600.woff") format("woff"),url("../font/montserrat/montserrat_600.ttf") format("truetype"),url("../font/montserrat/montserrat_600.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:700;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_700.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_700.woff") format("woff"),url("../font/montserrat/montserrat_700.ttf") format("truetype"),url("../font/montserrat/montserrat_700.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:800;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_800.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_800.woff") format("woff"),url("../font/montserrat/montserrat_800.ttf") format("truetype"),url("../font/montserrat/montserrat_800.svg#Montserrat") format("svg")
+}
+@font-face{
+  font-family:"Montserrat";
+  font-weight:900;
+  font-style:normal;
+  src:url("../font/montserrat/montserrat_900.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_900.woff") format("woff"),url("../font/montserrat/montserrat_900.ttf") format("truetype"),url("../font/montserrat/montserrat_900.svg#Montserrat") format("svg")
+}
+/*
+@font-face{
+  font-family:"Droid Serif";
+  font-weight:400;
+  font-style:normal;
+  src:url("../font/droid_serif/droid_serif_400.woff") format("woff"),url("../font/droid_serif/droid_serif_400.ttf") format("truetype")
+}*/
+
+
+/* Beestat logo */
+.beestat {
+  font-weight: 200;
+  font-size: 40px;
+  font-family: Montserrat;
+}
+
+.beestat > .bee {
+  color: #f1c40f;
+}
+
+.beestat > .stat {
+  color: #2ecc71;
+}
+
+/* Link styles */
+a {
+  cursor: pointer;
+}
+
+a:link {
+  color: #ecf0f1;
+  text-decoration: none;
+}
+
+a:visited {
+  color: #ecf0f1;
+}
+
+a:focus {
+  color: #ecf0f1;
+}
+
+a:hover {
+  color: #bdc3c7;
+  text-decoration: none;
+}
+
+a:active {
+  color: #ecf0f1;
+}
+
+h1 {
+  font-family: Montserrat;
+  font-weight: 200;
+  font-size: 24px;
+  margin: 0 0 8px 0;
+  color: #ecf0f1;
+}
+
+h2 {
+  font-family: Montserrat;
+  font-weight: 500;
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #bdc3c7;
+}
+
+.loading {
+  border: 5px solid #f7b731;
+  border-radius: 30px;
+  height: 30px;
+  /*left: 50%;*/
+  /*margin: -15px 0 0 -15px;*/
+  opacity: 0;
+  /*position: absolute;*/
+  /*top: 50%;*/
+  width: 30px;
+  display: inline-block;
+
+  animation: loading 1s ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes loading {
+    0% {
+    transform: scale(.1);
+    opacity: 0.0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+
+
+
+
+@keyframes spin {
+  from {
+    transform:rotate(0deg);
+  }
+  to {
+    transform:rotate(360deg);
+  }
+}
+
+/* Icons */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(../font/material_icons/material_icons.eot); /* For IE6-8 */
+  src: local('Material Icons'),
+       local('MaterialIcons-Regular'),
+       url(../font/material_icons/material_icons.woff2) format('woff2'),
+       url(../font/material_icons/material_icons.woff) format('woff'),
+       url(../font/material_icons/material_icons.ttf) format('truetype');
+}
+
+.icon {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+
+  /* Support for all WebKit browsers. */
+  -webkit-font-smoothing: antialiased;
+  /* Support for Safari and Chrome. */
+  text-rendering: optimizeLegibility;
+
+  /* Support for Firefox. */
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Support for IE. */
+  font-feature-settings: 'liga';
+}
+
+.icon.f18 { font-size: 18px; }
+.icon.f24 { font-size: 24px; }
+.icon.f36 { font-size: 36px; }
+.icon.f48 { font-size: 48px; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+._privacy .header {
+  padding: 16px;
+  overflow: auto;
+}
+
+._privacy .beestat {
+  float: left;
+  cursor: pointer;
+  line-height: 55px;
+}
+
+._privacy .log_in {
+  display: none;
+  float: right;
+  line-height: 55px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+._privacy .text {
+  /*font-family: Droid Serif;*/
+  padding: 16px;
+  background: #34495e;
+}
+
+._privacy .footer {
+  /*margin-top: 200px;*/
+  background: #2c3e50;
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 16px;
+}
+
+._privacy .footer_text {
+  font-weight: 500;
+}
+
+._privacy .footer_links {
+  margin-top: 32px;
+  font-weight: 200;
+}
