@@ -1098,6 +1098,17 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
         self.y_min_ = Math.min(self.y_min_, setpoint_value_heat);
         self.y_max_ = Math.max(self.y_max_, setpoint_value_heat);
       }
+    } else {
+
+      /**
+       * Explicitly add a null entry to force an empty spot on the line.
+       * Otherwise Highcharts will connect gaps (see #119).
+       */
+      series.setpoint_heat.data[x] = null;
+      series.setpoint_heat.chart_data.push([
+        x,
+        null
+      ]);
     }
 
     if (
@@ -1115,6 +1126,17 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
         self.y_min_ = Math.min(self.y_min_, setpoint_value_cool);
         self.y_max_ = Math.max(self.y_max_, setpoint_value_cool);
       }
+    } else {
+
+      /**
+       * Explicitly add a null entry to force an empty spot on the line.
+       * Otherwise Highcharts will connect gaps (see #119).
+       */
+      series.setpoint_cool.data[x] = null;
+      series.setpoint_cool.chart_data.push([
+        x,
+        null
+      ]);
     }
 
     // Indoor temperature
