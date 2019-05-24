@@ -1,5 +1,5 @@
 # Sponsors
-## BrowserStack ![BrowserStack](https://3fxtqy18kygf3on3bu39kh93-wpengine.netdna-ssl.com/wp-content/themes/browserstack/img/browserstack-logo.svg)
+### BrowserStack ![BrowserStack](https://3fxtqy18kygf3on3bu39kh93-wpengine.netdna-ssl.com/wp-content/themes/browserstack/img/browserstack-logo.svg)
 I use [BrowserStack](https://www.browserstack.com) to help me test and debug in devices that I do not have physical access to. They provide free access to their tools for open source projects.
 
 # Patch Notes
