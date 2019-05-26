@@ -191,7 +191,7 @@ beestat.series = {
   },
   'outdoor_humidity': {
     'name': 'Outdoor Humidity',
-    'color': beestat.style.color.bluegreen.base
+    'color': beestat.style.color.green.light
   },
 
   'calendar_event_home': {

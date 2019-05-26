@@ -538,6 +538,30 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
   });
 
   this.chart_.options.series.push({
+    'id': 'outdoor_humidity',
+    'data': series.outdoor_humidity.chart_data,
+    'yAxis': 2,
+    'name': beestat.series.outdoor_humidity.name,
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'spline',
+    'dashStyle': 'DashDot',
+    'visible': false,
+    'lineWidth': 1,
+    'color': beestat.series.outdoor_humidity.color,
+    'states': {'hover': {'lineWidthPlus': 0}},
+
+    /*
+     * Weird HighCharts bug...
+     * https://stackoverflow.com/questions/48374093/highcharts-highstock-line-change-to-area-bug
+     * https://github.com/highcharts/highcharts/issues/766
+     */
+    'linecap': 'square'
+  });
+
+  this.chart_.options.series.push({
     'data': series.indoor_temperature.chart_data,
     'yAxis': 0,
     'name': beestat.series.indoor_temperature.name,
