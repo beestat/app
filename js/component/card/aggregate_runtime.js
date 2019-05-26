@@ -299,7 +299,7 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
   this.chart_.options.series.push({
     'name': beestat.series.outdoor_temperature.name,
     'data': series.outdoor_temperature.chart_data,
-    'color': beestat.style.color.blue.light,
+    'color': beestat.series.outdoor_temperature.color,
     'type': 'spline',
     'yAxis': 1,
     'dashStyle': 'ShortDash',

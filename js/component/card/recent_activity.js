@@ -559,6 +559,7 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
   });
 
   this.chart_.options.series.push({
+    'color': beestat.series.outdoor_temperature.color,
     'data': series.outdoor_temperature.chart_data,
     'zones': beestat.component.chart.get_outdoor_temperature_zones(),
     'yAxis': 0,
@@ -585,14 +586,12 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
     'type': 'line',
     'color': beestat.series.setpoint_heat.color,
     'lineWidth': 1,
-    'dashStyle': 'ShortDash',
     'states': {'hover': {'lineWidthPlus': 0}},
     'step': 'right'
   });
 
   this.chart_.options.series.push({
     'data': series.setpoint_cool.chart_data,
-    'linkedTo': 'setpoint_heat',
     'yAxis': 0,
     'marker': {
       'enabled': false,
@@ -602,7 +601,6 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
     'type': 'line',
     'color': beestat.series.setpoint_cool.color,
     'lineWidth': 1,
-    'dashStyle': 'ShortDash',
     'states': {'hover': {'lineWidthPlus': 0}},
     'step': 'right'
   });
