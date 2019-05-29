@@ -337,6 +337,7 @@ a.inverted:active {
 .icon.clock_outline:before { content: "\F150"; }
 .icon.close:before { content: "\F156"; }
 .icon.close_network:before { content: "\F15B"; }
+.icon.code_tags:before { content: "\F174"; }
 .icon.dots_vertical:before { content: "\F1D9"; }
 .icon.download:before { content: "\F1DA"; }
 .icon.exit_to_app:before { content: "\F206"; }
