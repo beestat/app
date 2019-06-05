@@ -80,6 +80,7 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
               time_count
                 .set_value(self.state_.aggregate_runtime_time_count || '1')
                 .enable();
+              time_count.dispatchEvent('blur');
             }
           }
 
@@ -176,9 +177,9 @@ beestat.component.modal.aggregate_runtime_custom.prototype.get_buttons_ = functi
       beestat.setting(
         {
           'aggregate_runtime_time_count':
-            self.state_.aggregate_runtime_time_period === 'all' ?
-              0 :
-              self.state_.aggregate_runtime_time_count,
+            self.state_.aggregate_runtime_time_period === 'all'
+              ? 0
+              : self.state_.aggregate_runtime_time_count,
           'aggregate_runtime_time_period':
             self.state_.aggregate_runtime_time_period,
           'aggregate_runtime_group_by':
