@@ -44,7 +44,10 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
     var y_min = Infinity;
     var y_max = -Infinity;
     for (var type in beestat.cache.data.comparison_temperature_profile) {
-      var profile = beestat.cache.data.comparison_temperature_profile[type];
+      // Cloned because I mutate this data for temperature conversions.
+      var profile = beestat.clone(
+        beestat.cache.data.comparison_temperature_profile[type]
+      );
 
       if (profile !== null) {
         // Convert the data to Celsius if necessary
@@ -117,16 +120,13 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
       }
     }
 
-    // Set y_min and y_max to be equal but opposite so the graph is always
-    // centered.
+    /*
+     * Set y_min and y_max to be equal but opposite so the graph is always
+     * centered.
+     */
     var absolute_y_max = Math.max(Math.abs(y_min), Math.abs(y_max));
     y_min = absolute_y_max * -1;
     y_max = absolute_y_max;
-
-    // y_min = -5;
-    // y_max = 5;
-    // x_min = Math.min(x_min, 0);
-    // x_max = Math.max(x_max, 100);
 
     // Chart
     this.chart_.options.exporting.chartOptions.title.text = this.get_title_();
@@ -139,9 +139,6 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
     this.chart_.options.legend = {'enabled': false};
 
     this.chart_.options.xAxis = {
-      // 'categories': x_categories,
-      // 'min': x_min,
-      // 'max': x_max,
       'lineWidth': 0,
       'tickLength': 0,
       'tickInterval': 5,
