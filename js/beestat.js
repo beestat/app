@@ -17,7 +17,7 @@ beestat.ecobee_thermostat_models = {
   'nikeSmart': 'ecobee3 lite',
   'siEms': 'Smart Si EMS',
   'siSmart': 'Smart Si',
-  'vulcanSmart': 'vulcanSmart'
+  'vulcanSmart': 'SmartThermostat'
 };
 
 
