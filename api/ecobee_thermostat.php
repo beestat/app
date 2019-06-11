@@ -102,7 +102,7 @@ class ecobee_thermostat extends cora\crud {
     );
 
     // Loop over the returned thermostats and create/update them as necessary.
-    $ecobee_thermostat_ids_to_keep = [];
+    $thermostat_ids_to_keep = [];
     foreach($response['thermostatList'] as $api_thermostat) {
       $guid = sha1($api_thermostat['identifier'] . $api_thermostat['runtime']['firstConnected']);
 
@@ -141,7 +141,6 @@ class ecobee_thermostat extends cora\crud {
         );
       }
 
-      // $ecobee_thermostat_ids_to_keep[] = $ecobee_thermostat['ecobee_thermostat_id'];
       $thermostat_ids_to_keep[] = $thermostat['thermostat_id'];
 
       $ecobee_thermostat = $this->update(
@@ -262,6 +261,7 @@ class ecobee_thermostat extends cora\crud {
 
     // Inactivate any ecobee_thermostats that were no longer returned.
     $thermostats = $this->api('thermostat', 'read');
+    $ecobee_thermostat_ids_to_return = [];
     foreach($thermostats as $thermostat) {
       if(in_array($thermostat['thermostat_id'], $thermostat_ids_to_keep) === false) {
         $this->update(
@@ -281,11 +281,12 @@ class ecobee_thermostat extends cora\crud {
             ],
           ]
         );
-
+      } else {
+        $ecobee_thermostat_ids_to_return[] = $thermostat['ecobee_thermostat_id'];
       }
     }
 
-    return $this->read_id(['ecobee_thermostat_id' => $ecobee_thermostat_ids_to_keep]);
+    return $this->read_id(['ecobee_thermostat_id' => $ecobee_thermostat_ids_to_return]);
   }
 
   /**

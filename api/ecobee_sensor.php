@@ -102,7 +102,7 @@ class ecobee_sensor extends cora\crud {
     );
 
     // Loop over the returned sensors and create/update them as necessary.
-    $ecobee_sensor_ids_to_keep = [];
+    $sensor_ids_to_keep = [];
     foreach($response['thermostatList'] as $thermostat_api) {
       $guid = sha1($thermostat_api['identifier'] . $thermostat_api['runtime']['firstConnected']);
 
@@ -164,7 +164,7 @@ class ecobee_sensor extends cora\crud {
           );
         }
 
-        $ecobee_sensor_ids_to_keep[] = $ecobee_sensor['ecobee_sensor_id'];
+        $sensor_ids_to_keep[] = $sensor['sensor_id'];
 
         $this->update(
           [
@@ -182,6 +182,7 @@ class ecobee_sensor extends cora\crud {
         $attributes['name'] = $api_sensor['name'];
         $attributes['type'] = $api_sensor['type'];
         $attributes['in_use'] = $api_sensor['inUse'];
+        $attributes['inactive'] = 0;
 
         $attributes['temperature'] = null;
         $attributes['humidity'] = null;
@@ -231,12 +232,13 @@ class ecobee_sensor extends cora\crud {
     }
 
     // Inactivate any sensors that were no longer returned.
-    $ecobee_sensors = $this->read();
-    foreach($ecobee_sensors as $ecobee_sensor) {
-      if(in_array($ecobee_sensor['ecobee_sensor_id'], $ecobee_sensor_ids_to_keep) === false) {
+    $sensors = $this->api('sensor', 'read');
+    $ecobee_sensor_ids_to_return = [];
+    foreach($sensors as $sensor) {
+      if(in_array($sensor['sensor_id'], $sensor_ids_to_keep) === false) {
         $this->update(
           [
-            'ecobee_sensor_id' => $ecobee_sensor['ecobee_sensor_id'],
+            'ecobee_sensor_id' => $sensor['ecobee_sensor_id'],
             'inactive' => 1
           ]
         );
@@ -251,12 +253,12 @@ class ecobee_sensor extends cora\crud {
             ]
           ]
         );
+      } else {
+        $ecobee_sensor_ids_to_return[] = $sensor['ecobee_sensor_id'];
       }
     }
 
-    $return = $this->read_id(['ecobee_sensor_id' => $ecobee_sensor_ids_to_keep]);
-
-    return $return;
+    return $this->read_id(['ecobee_sensor_id' => $ecobee_sensor_ids_to_return]);
   }
 
 }
