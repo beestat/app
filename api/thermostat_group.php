@@ -56,7 +56,8 @@ class thermostat_group extends cora\crud {
       'read',
       [
         'attributes' => [
-        'thermostat_group_id' => $thermostat_group_id
+          'thermostat_group_id' => $thermostat_group_id,
+          'inactive' => 0
         ]
       ]
     );
