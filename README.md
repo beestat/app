@@ -1,17 +1,9 @@
 <h1 align="center">Welcome to beestat! 👋</h1>
 <p align="center">
-  <a href="https://github.com/beestat/app/issues" target="_blank">
-    <img src="https://img.shields.io/github/issues/beestat/app.svg" />
-  </a>
-  <a href="https://github.com/beestat/app/issues?q=is%3Aissue+is%3Aclosed" target="_blank">
-    <img src="https://img.shields.io/github/issues-closed/beestat/app.svg" />
-  </a>
-  <a href="https://github.com/beestat/app/blob/master/LICENSE" target="_blank">
-    <img src="https://img.shields.io/github/license/beestat/app.svg" />
-  </a>
-  <a href="https://github.com/beestat/app/commits/master" target="_blank">
-    <img src="https://img.shields.io/github/last-commit/beestat/app.svg" />
-  </a>
+  <a href="https://github.com/beestat/app/issues" target="_blank"><img src="https://img.shields.io/github/issues/beestat/app.svg" /></a>
+  <a href="https://github.com/beestat/app/issues?q=is%3Aissue+is%3Aclosed" target="_blank"><img src="https://img.shields.io/github/issues-closed/beestat/app.svg" /></a>
+  <a href="https://github.com/beestat/app/blob/master/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/beestat/app.svg" /></a>
+  <a href="https://github.com/beestat/app/commits/master" target="_blank"><img src="https://img.shields.io/github/last-commit/beestat/app.svg" /></a>
 </p>
 
 <p align="center">
