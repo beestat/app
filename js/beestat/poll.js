@@ -46,22 +46,42 @@ beestat.poll = function() {
       {
         'resource': 'thermostat',
         'method': 'read_id',
-        'alias': 'thermostat'
+        'alias': 'thermostat',
+        'arguments': {
+          'attributes': {
+            'inactive': 0
+          }
+        }
       },
       {
         'resource': 'sensor',
         'method': 'read_id',
-        'alias': 'sensor'
+        'alias': 'sensor',
+        'arguments': {
+          'attributes': {
+            'inactive': 0
+          }
+        }
       },
       {
         'resource': 'ecobee_thermostat',
         'method': 'read_id',
-        'alias': 'ecobee_thermostat'
+        'alias': 'ecobee_thermostat',
+        'arguments': {
+          'attributes': {
+            'inactive': 0
+          }
+        }
       },
       {
         'resource': 'ecobee_sensor',
         'method': 'read_id',
-        'alias': 'ecobee_sensor'
+        'alias': 'ecobee_sensor',
+        'arguments': {
+          'attributes': {
+            'inactive': 0
+          }
+        }
       }
     ],
     function(response) {
