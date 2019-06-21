@@ -328,15 +328,26 @@ class ecobee_runtime_thermostat extends cora\crud {
     $select = [];
     $group_by_order_by = [];
     switch($group_by) {
+      case 'week':
+        /**
+         * Week is a special case. If grouping by week, month, year, you can
+         * get one week listed twice if it spans across months. So the month
+         * group by is undesirable in this case.
+         *
+         * The second argument of 3 to the yearweek() function will cause
+         * MySQL to return the ISO 8601 week of the year.
+         *
+         * https://stackoverflow.com/a/11804076
+         */
+        $select[] = 'yearweek(`timestamp`, 3) `yearweek`';
+        $group_by_order_by[] = 'yearweek(`timestamp`, 3)';
+      break;
       case 'hour':
         $select[] = 'hour(`timestamp`) `hour`';
         $group_by_order_by[] = 'hour(`timestamp`)';
       case 'day':
         $select[] = 'day(`timestamp`) `day`';
         $group_by_order_by[] = 'day(`timestamp`)';
-      case 'week':
-        $select[] = 'week(`timestamp`) `week`';
-        $group_by_order_by[] = 'week(`timestamp`)';
       case 'month':
         $select[] = 'month(`timestamp`) `month`';
         $group_by_order_by[] = 'month(`timestamp`)';
@@ -395,6 +406,12 @@ class ecobee_runtime_thermostat extends cora\crud {
         if($row[$key] !== null) {
           $row[$key] = (float) $row[$key];
         }
+      }
+
+      if(isset($row['yearweek']) === true) {
+        $row['year'] = (int) substr($row['yearweek'], 0, 4);
+        $row['week'] = (int) substr($row['yearweek'], 4);
+        unset($row['yearweek']);
       }
 
       $return[] = $row;

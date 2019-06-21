@@ -70,9 +70,20 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
         var date_parts = this.value.match(/(?:h(\d+))?(?:d(\d+))?(?:w(\d+))?(?:m(\d+))?(?:y(\d+))?/);
         var hour = moment(date_parts[1], 'H').format('ha');
         var day = date_parts[2];
-        var week = date_parts[3];
         var month = moment(date_parts[4], 'M').format('MMM');
-        var year = date_parts[5];
+
+        var year;
+        var week;
+        if (beestat.setting('aggregate_runtime_group_by') === 'week') {
+          // ISO 8601 week of the year.
+          var yearweek_m = moment().isoWeek(date_parts[3])
+            .year(date_parts[5])
+            .day('Monday');
+          week = yearweek_m.format('MMM D');
+          year = yearweek_m.format('YYYY');
+        } else {
+          year = date_parts[5];
+        }
 
         var label_parts = [];
         switch (beestat.setting('aggregate_runtime_group_by')) {
@@ -86,8 +97,8 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
           }
           break;
         case 'week':
-          if (month !== current_month) {
-            label_parts.push(month);
+          if (week !== current_week) {
+            label_parts.push(week);
           }
           if (year !== current_year) {
             label_parts.push(year);
@@ -211,9 +222,20 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
       var date_parts = this.x.match(/(?:h(\d+))?(?:d(\d+))?(?:w(\d+))?(?:m(\d+))?(?:y(\d+))?/);
       var hour = moment(date_parts[1], 'H').format('ha');
       var day = date_parts[2];
-      var week = date_parts[3];
       var month = moment(date_parts[4], 'M').format('MMM');
-      var year = date_parts[5];
+
+      var year;
+      var week;
+      if (beestat.setting('aggregate_runtime_group_by') === 'week') {
+        // ISO 8601 week of the year.
+        var yearweek_m = moment().isoWeek(date_parts[3])
+          .year(date_parts[5])
+          .day('Monday');
+        week = yearweek_m.format('MMM D');
+        year = yearweek_m.format('YYYY');
+      } else {
+        year = date_parts[5];
+      }
 
       var label_parts = [];
       switch (beestat.setting('aggregate_runtime_group_by')) {
@@ -225,7 +247,8 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
         label_parts.push(year);
         break;
       case 'week':
-        label_parts.push(month);
+        label_parts.push('Week of');
+        label_parts.push(week + ',');
         label_parts.push(year);
         break;
       case 'day':
