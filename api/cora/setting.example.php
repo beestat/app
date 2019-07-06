@@ -202,16 +202,19 @@ final class setting {
    */
   public function get($setting) {
     if(array_key_exists($setting, $this->settings) === true) {
-      if(array_key_exists($this->settings['environment'], $this->settings[$setting]) === true) {
-        return $this->settings[$setting][$this->settings['environment']];
-      }
-      else {
+      if(is_array($this->settings[$setting]) === true) {
+        if(array_key_exists($this->settings['environment'], $this->settings[$setting]) === true) {
+          return $this->settings[$setting][$this->settings['environment']];
+        } else {
+          throw new \Exception('Setting does not exist for environment.');
+        }
+      } else {
         return $this->settings[$setting];
       }
-    }
-    else {
+    } else {
       throw new \Exception('Setting does not exist.', 1300);
     }
+  }
   }
 
   /**
