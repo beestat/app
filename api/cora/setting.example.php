@@ -201,8 +201,8 @@ final class setting {
    * @return mixed The setting
    */
   public function get($setting) {
-    if(array_key_exists($this->settings[$setting]) === true) {
-      if(array_key_exists($this->settings[$setting][$this->settings['environment']]) === true) {
+    if(array_key_exists($setting, $this->settings) === true) {
+      if(array_key_exists($this->settings['environment'], $this->settings[$setting]) === true) {
         return $this->settings[$setting][$this->settings['environment']];
       }
       else {
