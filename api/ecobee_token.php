@@ -129,7 +129,7 @@ class ecobee_token extends cora\crud {
    * @return int
    */
   public function delete($id) {
-    $database = database::get_second_instance();
+    $database = cora\database::get_second_instance();
 
     // Need to delete the token before logging out or else the delete fails.
     $return = $database->delete('ecobee_token', $id);
