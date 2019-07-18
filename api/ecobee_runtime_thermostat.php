@@ -404,7 +404,7 @@ class ecobee_runtime_thermostat extends cora\crud {
     while($row = $result->fetch_assoc()) {
       // Cast to floats for nice responses. The database normally handles this
       // in regular read operations.
-      foreach(['outdoor_temperature', 'zone_average_temperature', 'zone_heat_temperature', 'zone_cool_temperature'] as $key) {
+      foreach(['average_outdoor_temperature', 'min_outdoor_temperature', 'max_outdoor_temperature', 'zone_average_temperature', 'zone_heat_temperature', 'zone_cool_temperature'] as $key) {
         if($row[$key] !== null) {
           $row[$key] = (float) $row[$key];
         }
