@@ -177,6 +177,14 @@ beestat.series = {
     'name': 'Outdoor Temp',
     'color': beestat.style.color.gray.light
   },
+  'average_outdoor_temperature': {
+    'name': 'Average Outdoor Temp',
+    'color': beestat.style.color.gray.light
+  },
+  'min_max_outdoor_temperature': {
+    'name': 'Min/Max Outdoor Temp',
+    'color': '#000'
+  },
   'setpoint_heat': {
     'name': 'Setpoint',
     'color': beestat.style.color.orange.light

@@ -101,6 +101,9 @@ beestat.component.chart = function() {
       'states': {
         'hover': {
           'enabled': false
+        },
+        'inactive': {
+          'opacity': 1
         }
       }
     },

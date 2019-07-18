@@ -362,7 +362,9 @@ class ecobee_runtime_thermostat extends cora\crud {
     // subtract all higher tier heat/cool modes from the lower ones to avoid
     // double-counting.
     $select[] = 'count(*) `count`';
-    $select[] = 'cast(avg(`outdoor_temperature`) as decimal(4,1)) `outdoor_temperature`';
+    $select[] = 'cast(avg(`outdoor_temperature`) as decimal(4,1)) `average_outdoor_temperature`';
+    $select[] = 'cast(min(`outdoor_temperature`) as decimal(4,1)) `min_outdoor_temperature`';
+    $select[] = 'cast(max(`outdoor_temperature`) as decimal(4,1)) `max_outdoor_temperature`';
     $select[] = 'cast(avg(`zone_average_temperature`) as decimal(4,1)) `zone_average_temperature`';
     $select[] = 'cast(avg(`zone_heat_temperature`) as decimal(4,1)) `zone_heat_temperature`';
     $select[] = 'cast(avg(`zone_cool_temperature`) as decimal(4,1)) `zone_cool_temperature`';

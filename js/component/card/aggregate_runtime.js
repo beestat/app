@@ -272,15 +272,33 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
 
         switch (series_code) {
         case 'x':
+        case 'min_max_outdoor_temperature':
           continue;
           break;
-        case 'outdoor_temperature':
+        case 'average_outdoor_temperature':
           value = beestat.temperature({
             'temperature': value,
             'convert': false,
             'units': true,
             'round': 0
           });
+
+          value += ' (';
+          value += beestat.temperature({
+            'temperature': series.min_max_outdoor_temperature.data[this.x].min,
+            'convert': false,
+            'units': true,
+            'round': 0
+          });
+          value += ' 🢒 ';
+          value += beestat.temperature({
+            'temperature': series.min_max_outdoor_temperature.data[this.x].max,
+            'convert': false,
+            'units': true,
+            'round': 0
+          });
+          value += ')';
+
           break;
         default:
           value = beestat.time(value, 'hours');
@@ -320,14 +338,25 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
   });
 
   this.chart_.options.series.push({
-    'name': beestat.series.outdoor_temperature.name,
-    'data': series.outdoor_temperature.chart_data,
-    'color': beestat.series.outdoor_temperature.color,
+    'name': beestat.series.average_outdoor_temperature.name,
+    'data': series.average_outdoor_temperature.chart_data,
+    'color': beestat.series.average_outdoor_temperature.color,
     'type': 'spline',
     'yAxis': 1,
     'dashStyle': 'ShortDash',
     'lineWidth': 1,
     'zones': beestat.component.chart.get_outdoor_temperature_zones()
+  });
+
+  this.chart_.options.series.push({
+    'name': beestat.series.min_max_outdoor_temperature.name,
+    'data': series.min_max_outdoor_temperature.chart_data,
+    'color': beestat.series.min_max_outdoor_temperature.color,
+    'type': 'areasplinerange',
+    'yAxis': 1,
+    'fillOpacity': 0.2,
+    'lineWidth': 0,
+    'visible': false
   });
 
   this.chart_.render(parent);
@@ -369,7 +398,12 @@ beestat.component.card.aggregate_runtime.prototype.get_series_ = function() {
       'chart_data': [],
       'data': {}
     },
-    'outdoor_temperature': {
+    'average_outdoor_temperature': {
+      'enabled': true,
+      'chart_data': [],
+      'data': {}
+    },
+    'min_max_outdoor_temperature': {
       'enabled': true,
       'chart_data': [],
       'data': {}
@@ -477,7 +511,6 @@ beestat.component.card.aggregate_runtime.prototype.get_series_ = function() {
         beestat.setting('aggregate_runtime_gap_fill') === true &&
         i < (beestat.cache.aggregate_runtime.length - 1)
       ) {
-        var a = value;
         value = value *
           adjustment_factor /
           aggregate.count;
@@ -498,15 +531,33 @@ beestat.component.card.aggregate_runtime.prototype.get_series_ = function() {
       series[series_code].data[x] = value;
     });
 
-    // Outdoor temperature.
-    var outdoor_temperature_value = beestat.temperature({
-      'temperature': aggregate.outdoor_temperature
+    // Average outdoor temperature.
+    var average_outdoor_temperature_value = beestat.temperature({
+      'temperature': aggregate.average_outdoor_temperature
     });
 
-    series.outdoor_temperature.data[x] = outdoor_temperature_value;
-    series.outdoor_temperature.chart_data.push([
+    series.average_outdoor_temperature.data[x] = average_outdoor_temperature_value;
+    series.average_outdoor_temperature.chart_data.push([
       x,
-      outdoor_temperature_value
+      average_outdoor_temperature_value
+    ]);
+
+    // Min/max outdoor temperature.
+    var min_outdoor_temperature_value = beestat.temperature({
+      'temperature': aggregate.min_outdoor_temperature
+    });
+    var max_outdoor_temperature_value = beestat.temperature({
+      'temperature': aggregate.max_outdoor_temperature
+    });
+
+    series.min_max_outdoor_temperature.data[x] = {
+      'min': min_outdoor_temperature_value,
+      'max': max_outdoor_temperature_value
+    };
+    series.min_max_outdoor_temperature.chart_data.push([
+      x,
+      min_outdoor_temperature_value,
+      max_outdoor_temperature_value
     ]);
   });
 
