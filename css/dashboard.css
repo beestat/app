@@ -331,6 +331,7 @@ a.inverted:active {
 .icon.calendar_range:before { content: "\F678"; }
 .icon.cancel:before { content: "\F739"; }
 .icon.cash:before { content: "\F114"; }
+.icon.chart_bar_stacked:before { content: "\F769"; }
 .icon.chart_bell_curve:before { content: "\FC2C"; }
 .icon.chart_line:before { content: "\F12A"; }
 .icon.check:before { content: "\F12C"; }
