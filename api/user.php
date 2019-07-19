@@ -15,7 +15,7 @@ class user extends cora\crud {
       'log_out',
       'sync_patreon_status'
     ],
-    'public' => []
+    'public' => ['force_log_in']
   ];
 
   public static $converged = [];

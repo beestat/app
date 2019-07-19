@@ -66,7 +66,7 @@ class ecobee_runtime_thermostat extends cora\crud {
 
       $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
-      if($thermostat['sync_begin'] === null) {
+      if($thermostat['sync_begin'] !== $thermostat['first_connected']) {
         $this->sync_backwards($thermostat_id);
       } else {
         $this->sync_forwards($thermostat_id);
@@ -87,21 +87,30 @@ class ecobee_runtime_thermostat extends cora\crud {
   }
 
   /**
-   * Sync backwards from now until thermostat.first_connected. This should
-   * only be used when syncing for the first time.
+   * Sync backwards. When running for the first time it will sync from now all
+   * the way back to the first connected date. If it is called again it will
+   * check to see if a full backwards sync has already completed. If it has,
+   * it will throw an exception. If not, it will resume the backwards sync.
    *
-   * @param int $ecobee_thermostat_id
+   * @param int $thermostat_id
    */
   private function sync_backwards($thermostat_id) {
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
-    if($thermostat['sync_begin'] !== null) {
+    if($thermostat['sync_begin'] === $thermostat['first_connected']) {
       throw new \Exception('Full sync already performed; must call sync_forwards() now.');
     }
 
-    // Sync from when the thermostat was first connected until now.
-    $sync_begin = strtotime($thermostat['first_connected']);
-    $sync_end = time();
+    if($thermostat['sync_begin'] === null) {
+      // Sync from when the thermostat was first connected until now.
+      $sync_begin = strtotime($thermostat['first_connected']);
+      $sync_end = time();
+    }
+    else {
+      // Sync from when the thermostat was first connected until sync_end.
+      $sync_begin = strtotime($thermostat['first_connected']);
+      $sync_end = strtotime($thermostat['sync_begin']);
+    }
 
     $chunk_begin = $sync_end;
     $chunk_end = $sync_end;
@@ -125,11 +134,16 @@ class ecobee_runtime_thermostat extends cora\crud {
           'attributes' => [
             'thermostat_id' => $thermostat['thermostat_id'],
             'sync_begin' => date('Y-m-d H:i:s', $chunk_begin),
-            'sync_end' => date('Y-m-d H:i:s', $sync_end),
+            'sync_end' => date(
+              'Y-m-d H:i:s',
+              max(
+                $sync_end,
+                strtotime($thermostat['sync_end'])
+              )
+            )
           ]
         ]
       );
-
 
       // Because I am doing day-level syncing this will end up fetching an
       // overlapping day of data every time. But if I properly switch this to
@@ -458,6 +472,7 @@ class ecobee_runtime_thermostat extends cora\crud {
     $query = '
       select
         `ecobee_thermostat_id`,
+        `ecobee_runtime_thermostat_id`,
         `timestamp`,
 
         cast(greatest(0, (cast(`compressor_heat_1` as signed) - cast(`compressor_heat_2` as signed))) as unsigned) `compressor_heat_1`,

@@ -61,7 +61,8 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
     'lineColor': beestat.style.color.bluegray.light,
     'min': series.x.chart_data[0],
     'max': series.x.chart_data[series.x.chart_data.length - 1],
-    'minRange': 21600000,
+    // 'minRange': 21600000,
+    'minRange': 21600000/8,
     'tickLength': 0,
     'gridLineWidth': 0,
     'labels': {
@@ -383,33 +384,33 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
       'data': series.compressor_cool_1.chart_data,
       'yAxis': 1,
       'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
+        'enabled': true,
+        // 'states': {'hover': {'enabled': false}}
       },
       'name': 'Cool',
       'type': 'line',
       'color': beestat.series.compressor_cool_1.color,
-      'lineWidth': 10,
+      // 'lineWidth': 10,
       'linecap': 'square',
-      'states': {'hover': {'lineWidthPlus': 0}}
+      // 'states': {'hover': {'lineWidthPlus': 0}}
     });
   }
 
   if (series.compressor_cool_2.enabled === true) {
     this.chart_.options.series.push({
       'data': series.compressor_cool_2.chart_data,
-      'linkedTo': 'compressor_cool_1',
+      // 'linkedTo': 'compressor_cool_1',
       'yAxis': 1,
       'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
+        'enabled': true,
+        // 'states': {'hover': {'enabled': false}}
       },
       'name': beestat.series.compressor_cool_2.name,
       'type': 'line',
       'color': beestat.series.compressor_cool_2.color,
-      'lineWidth': 10,
+      // 'lineWidth': 10,
       'linecap': 'square',
-      'states': {'hover': {'lineWidthPlus': 0}}
+      // 'states': {'hover': {'lineWidthPlus': 0}}
     });
   }
 
@@ -851,13 +852,15 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     )
     .valueOf();
 
+
   /*
    * This creates a distinct object for each chunk of runtime so the total on
    * time can be computed for any given segment.
    */
   var durations = {};
 
-  beestat.cache.ecobee_runtime_thermostat.forEach(function(ecobee_runtime_thermostat, i) {
+  var ecobee_runtime_thermostats = this.get_adjusted_ecobee_runtime_thermostats_();
+  ecobee_runtime_thermostats.forEach(function(ecobee_runtime_thermostat, i) {
     if (ecobee_runtime_thermostat.ecobee_thermostat_id !== thermostat.ecobee_thermostat_id) {
       return;
     }
@@ -876,6 +879,8 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     }
     // TODO DO THIS FOR AUX
     // TODO DO THIS FOR COOL
+
+    // ecobee_runtime_thermostat['compressor_cool_1'] += ecobee_runtime_thermostat['compressor_cool_2'];
 
     beestat.component.card.recent_activity.optional_series.forEach(function(series_code) {
       if (durations[series_code] === undefined) {
@@ -906,16 +911,17 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
           break;
         }
 
+        var duration = original_durations[series_code] !== undefined
+          ? original_durations[series_code]
+          : ecobee_runtime_thermostat[series_code];
+
         series[series_code].enabled = true;
         series[series_code].chart_data.push([
           x,
           value
         ]);
-        series[series_code].data[x] = value;
 
-        var duration = original_durations[series_code] !== undefined
-          ? original_durations[series_code]
-          : ecobee_runtime_thermostat[series_code];
+        series[series_code].data[x] = value;
 
         durations[series_code][durations[series_code].length - 1].seconds += duration;
         // durations[series_code][durations[series_code].length - 1].seconds += ecobee_runtime_thermostat[series_code];
@@ -1400,4 +1406,133 @@ beestat.component.card.recent_activity.prototype.get_data_ = function() {
       self.rerender();
     })
     .send();
+};
+
+/**
+ * [get_adjusted_ecobee_runtime_thermostats_ description]
+ *
+ * @return {[type]} [description]
+ */
+beestat.component.card.recent_activity.prototype.get_adjusted_ecobee_runtime_thermostats_ = function() {
+  var ecobee_runtime_thermostats = [];
+  beestat.cache.ecobee_runtime_thermostat.forEach(function(ecobee_runtime_thermostat, i) {
+    var new_rows = {};
+    var directions = {};
+
+    /**
+     * Skip the first row as I look backwards to it to determine if runtimes
+     * are beginning or ending.
+     *
+     *
+     *
+     * sigh...now the issue is that I have this
+     * 300 fan: 300
+     * 600 fan: 150
+     * 750 fan: 0
+     * 900 fan: 0
+     *
+     * So the 750 fan 0 gets added, but no point is drawn there so the fan still
+     * appears to turn off at 600. I either need to insert a row at 749 with fan:1,
+     * or somehow get highcharts to put a marker on 750 because the previous value was positive.
+     * I think I could do if(off and previous on) value = 1
+     *
+     */
+    if (i > 0 && ecobee_runtime_thermostat.ecobee_runtime_thermostat_id === 752423131) { // test end
+    // if (i > 0 && ecobee_runtime_thermostat.ecobee_runtime_thermostat_id === 724690669) { // test begin
+    // if (i > 0) {
+
+      // beestat.cache.ecobee_runtime_thermostat[i - 1].compressor_heat_1 = 0;
+      // ecobee_runtime_thermostat.compressor_heat_1 = 90;
+
+      // Assign the directions (begin/end) and fill in stubs for new_rows.
+      beestat.component.card.recent_activity.optional_series.forEach(function(series_code) {
+        if (
+          ecobee_runtime_thermostat[series_code] > 0 &&
+          ecobee_runtime_thermostat[series_code] < 300
+        ) {
+          var new_row_timestamp_offset;
+          var previous_row = beestat.cache.ecobee_runtime_thermostat[i - 1];
+          if (previous_row[series_code] === 300) {
+            console.log(series_code + ' is turning off in ' + ecobee_runtime_thermostat[series_code] + 's');
+            directions[series_code] = 'end';
+            new_row_timestamp_offset = ecobee_runtime_thermostat[series_code];
+          } else {
+            console.log(series_code + ' turned on ' + ecobee_runtime_thermostat[series_code] + 's ago');
+            directions[series_code] = 'begin';
+            new_row_timestamp_offset =
+              (300 - ecobee_runtime_thermostat[series_code]);
+          }
+
+          var new_row = JSON.parse(JSON.stringify(ecobee_runtime_thermostat));
+          var new_row_timestamp_m = moment(ecobee_runtime_thermostat.timestamp)
+            .add(new_row_timestamp_offset, 'seconds');
+          new_row.timestamp_m = new_row_timestamp_m;
+          new_row.timestamp = new_row_timestamp_m.format('Y-MM-DD HH:mm:ss');
+          new_rows[new_row_timestamp_m.format('Y-MM-DD HH:mm:ss')] = new_row;
+        }
+      });
+    }
+
+    new_rows = Object.values(new_rows);
+    if (new_rows.length > 0) {
+      // Add the current row as it's easier to pretend it's new.
+      ecobee_runtime_thermostat.timestamp_m =
+        moment(ecobee_runtime_thermostat.timestamp);
+      new_rows.push(ecobee_runtime_thermostat);
+
+      // Sort the new rows so they can be looped over accurately.
+      new_rows.sort(function(a, b) {
+        return moment(a.timestamp).isAfter(moment(b.timestamp)) ? 1 : -1;
+      });
+
+      /**
+       * Go through each column one at a time filling in the appropriate
+       * values.
+       */
+      beestat.component.card.recent_activity.optional_series.forEach(function(series_code) {
+        var j;
+        var diff;
+        var time_left = new_rows[0][series_code];
+        if (directions[series_code] === 'begin') {
+          for (j = new_rows.length - 1; j > 0; j--) {
+            diff = new_rows[j].timestamp_m.diff(
+              new_rows[j - 1].timestamp_m,
+              'seconds'
+            );
+            new_rows[j][series_code] = Math.min(time_left, diff);
+            time_left = Math.max(0, time_left - diff);
+          }
+
+          // The first new_row will always be set to 0.
+          new_rows[0][series_code] = 0;
+        } else {
+          // var time_left = new_rows[0][series_code];
+          for (j = 0; j < new_rows.length - 1; j++) {
+            diff = new_rows[j + 1].timestamp_m.diff(
+              new_rows[j].timestamp_m,
+              'seconds'
+            );
+            new_rows[j][series_code] = Math.min(time_left, diff);
+            time_left = Math.max(0, time_left - diff);
+          }
+
+          // The last new_row will always be set to 0.
+          new_rows[j][series_code] = 0;
+        }
+      });
+
+      // Add all of the new rows to the list.
+      new_rows.forEach(function(new_row) {
+        ecobee_runtime_thermostats.push(new_row);
+      });
+
+      console.log(ecobee_runtime_thermostat);
+      console.log(new_rows);
+    } else {
+      // No new rows, so just add the original row to the list.
+      ecobee_runtime_thermostats.push(ecobee_runtime_thermostat);
+    }
+  });
+
+  return ecobee_runtime_thermostats;
 };
