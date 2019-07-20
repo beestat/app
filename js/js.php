@@ -19,7 +19,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/debounce.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/dispatcher.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/cache.js"></script>' . PHP_EOL;
-  echo '<script src="/js/beestat/clone.js"></script>' . PHP_EOL;
+  // echo '<script src="/js/beestat/clone.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/style.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/api.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/error.js"></script>' . PHP_EOL;

@@ -472,7 +472,6 @@ class ecobee_runtime_thermostat extends cora\crud {
     $query = '
       select
         `ecobee_thermostat_id`,
-        `ecobee_runtime_thermostat_id`,
         `timestamp`,
 
         cast(greatest(0, (cast(`compressor_heat_1` as signed) - cast(`compressor_heat_2` as signed))) as unsigned) `compressor_heat_1`,
