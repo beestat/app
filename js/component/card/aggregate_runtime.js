@@ -290,7 +290,7 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
             'units': true,
             'round': 0
           });
-          value += ' 🢒 ';
+          value += ' to ';
           value += beestat.temperature({
             'temperature': series.min_max_outdoor_temperature.data[this.x].max,
             'convert': false,
@@ -317,7 +317,8 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
 
       return beestat.component.chart.tooltip_formatter(
         label_parts.join(' '),
-        sections
+        sections,
+        150
       );
     }
   };
