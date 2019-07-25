@@ -356,9 +356,6 @@ class ecobee_runtime_thermostat extends cora\crud {
         $select[] = 'yearweek(`timestamp`, 3) `yearweek`';
         $group_by_order_by[] = 'yearweek(`timestamp`, 3)';
       break;
-      case 'hour':
-        $select[] = 'hour(`timestamp`) `hour`';
-        $group_by_order_by[] = 'hour(`timestamp`)';
       case 'day':
         $select[] = 'day(`timestamp`) `day`';
         $group_by_order_by[] = 'day(`timestamp`)';
@@ -372,9 +369,32 @@ class ecobee_runtime_thermostat extends cora\crud {
     }
     $group_by_order_by = array_reverse($group_by_order_by);
 
-    // This is a smidge sloppy but it gets the job done. Basically need to
-    // subtract all higher tier heat/cool modes from the lower ones to avoid
-    // double-counting.
+    /**
+     * Determine the appropriate start date. See #139 for more info. Basically
+     * this allows you to select "Past 2 months, grouped by month" and get
+     * data starting at the first of the previous month until now, instead of
+     * data starting 60 days ago which may include a third month.
+     */
+    switch($time_period) {
+      case 'week':
+        $start = 'date_format(now() - interval ' . (intval($time_count) - 1) . ' ' . $time_period . ' - interval (date_format(now(), "%w") - 1) day, "%Y-%m-%d 00:00:00")';
+      break;
+      case 'day':
+        $start = 'date_format(now() - interval ' . (intval($time_count) - 1) . ' ' . $time_period . ', "%Y-%m-%d 00:00:00")';
+      break;
+      case 'month':
+        $start = 'date_format(now() - interval ' . (intval($time_count) - 1) . ' ' . $time_period . ', "%Y-%m-01 00:00:00")';
+      break;
+      case 'year':
+        $start = 'date_format(now() - interval ' . (intval($time_count) - 1) . ' ' . $time_period . ', "%Y-01-01 00:00:00")';
+      break;
+    }
+
+    /**
+     * This is a smidge sloppy but it gets the job done. Basically need to
+     * subtract all higher tier heat/cool modes from the lower ones to avoid
+     * double-counting.
+     */
     $select[] = 'count(*) `count`';
     $select[] = 'cast(avg(`outdoor_temperature`) as decimal(4,1)) `average_outdoor_temperature`';
     $select[] = 'cast(min(`outdoor_temperature`) as decimal(4,1)) `min_outdoor_temperature`';
@@ -401,7 +421,7 @@ class ecobee_runtime_thermostat extends cora\crud {
       where
             `user_id` = ' . $this->session->get_user_id() . '
         and `ecobee_thermostat_id` = "' . $this->database->escape($ecobee_thermostat_id) . '" ' .
-        ($time_period !== 'all' ? ('and `timestamp` > now() - interval ' . intval($time_count) . ' ' . $time_period) : '') . '
+        ($time_period !== 'all' ? ('and `timestamp` >= ' . $start) : '') . '
         and `timestamp` <= now()
         and `zone_average_temperature` is not null
     ';

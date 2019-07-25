@@ -141,6 +141,10 @@ beestat.component.card.aggregate_runtime.prototype.decorate_contents_ = function
   var y_max_hours;
   var tick_interval;
   switch (beestat.setting('aggregate_runtime_group_by')) {
+  case 'year':
+    y_max_hours = 8760;
+    tick_interval = 2190;
+    break;
   case 'month':
     y_max_hours = 672;
     tick_interval = 168;
