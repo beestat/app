@@ -73,7 +73,9 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
     .set_size(24)
   ).render(humidity_container);
 
-  humidity_container.appendChild($.createElement('span').innerHTML(thermostat.humidity + '%'));
+  humidity_container.appendChild(
+    $.createElement('span').innerHTML(thermostat.humidity + '%')
+  );
 };
 
 /**
@@ -143,11 +145,11 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
     running_equipment.push('aux_1');
   }
 
-  var render_icon = function(parent, icon, color, text) {
+  var render_icon = function(icon_parent, icon, color, text) {
     (new beestat.component.icon(icon)
       .set_size(24)
       .set_color(color)
-    ).render(parent);
+    ).render(icon_parent);
 
     if (text !== undefined) {
       var sub = $.createElement('sub')
@@ -157,10 +159,11 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
           'color': color
         })
         .innerHTML(text);
-      parent.appendChild(sub);
+      icon_parent.appendChild(sub);
     } else {
       // A little spacer to help things look less uneven.
-      parent.appendChild($.createElement('span').style('margin-right', beestat.style.size.gutter / 4));
+      icon_parent.appendChild($.createElement('span')
+        .style('margin-right', beestat.style.size.gutter / 4));
     }
   };
 
@@ -228,7 +231,9 @@ beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
     thermostat.ecobee_thermostat_id
   ];
 
-  var climate = beestat.get_climate(ecobee_thermostat.json_program.currentClimateRef);
+  var climate = beestat.get_climate(
+    ecobee_thermostat.json_program.currentClimateRef
+  );
 
   var climate_container = $.createElement('div')
     .style({
@@ -295,7 +300,7 @@ beestat.component.card.system.prototype.decorate_top_right_ = function(parent) {
 /**
  * Get the title of the card.
  *
- * @return {string}
+ * @return {string} The title of the card.
  */
 beestat.component.card.system.prototype.get_title_ = function() {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
@@ -306,7 +311,7 @@ beestat.component.card.system.prototype.get_title_ = function() {
 /**
  * Get the subtitle of the card.
  *
- * @return {string}
+ * @return {string} The subtitle of the card.
  */
 beestat.component.card.system.prototype.get_subtitle_ = function() {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
@@ -315,7 +320,9 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
     thermostat.ecobee_thermostat_id
   ];
 
-  var climate = beestat.get_climate(ecobee_thermostat.json_program.currentClimateRef);
+  var climate = beestat.get_climate(
+    ecobee_thermostat.json_program.currentClimateRef
+  );
 
   // Is the temperature overridden?
   var override = (
@@ -349,10 +356,10 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
 
   var hvac_mode = hvac_modes[ecobee_thermostat.json_settings.hvacMode];
 
-  var heat = beestat.temperature({
+  heat = beestat.temperature({
     'temperature': heat
   });
-  var cool = beestat.temperature({
+  cool = beestat.temperature({
     'temperature': cool
   });
 
