@@ -201,10 +201,11 @@ beestat.component.chart.tooltip_positioner = function(
  *
  * @param {string} title The tooltip title.
  * @param {array} sections Data inside the tooltip.
+ * @param {number} first_column_min_width Minimum width of the first column.
  *
  * @return {string} The tooltip HTML.
  */
-beestat.component.chart.tooltip_formatter = function(title, sections) {
+beestat.component.chart.tooltip_formatter = function(title, sections, first_column_min_width) {
   var tooltip = $.createElement('div')
     .style({
       'background-color': beestat.style.color.bluegray.dark,
@@ -236,7 +237,7 @@ beestat.component.chart.tooltip_formatter = function(title, sections) {
 
         var td_label = $.createElement('td')
           .style({
-            'min-width': '115px',
+            'min-width': (first_column_min_width || 115) + 'px',
             'font-weight': beestat.style.font_weight.bold
           })
           .innerText(item.label);
