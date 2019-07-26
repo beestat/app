@@ -33,6 +33,9 @@ class thermostat extends cora\crud {
     ],
     'system_type' => [
       'type' => 'json'
+    ],
+    'weather' => [
+      'type' => 'json'
     ]
   ];
 

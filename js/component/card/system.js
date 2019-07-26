@@ -15,6 +15,7 @@ beestat.extend(beestat.component.card.system, beestat.component.card);
 
 beestat.component.card.system.prototype.decorate_contents_ = function(parent) {
   this.decorate_circle_(parent);
+  this.decorate_weather_(parent);
   this.decorate_equipment_(parent);
   this.decorate_climate_(parent);
 };
@@ -75,6 +76,72 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
 
   humidity_container.appendChild(
     $.createElement('span').innerHTML(thermostat.humidity + '%')
+  );
+};
+
+beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
+  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+
+  var temperature = beestat.temperature(thermostat.weather.temperature);
+  var temperature_whole = Math.floor(temperature);
+
+  var circle = $.createElement('div')
+    .style({
+      'padding': (beestat.style.size.gutter / 2),
+      'border-radius': '50%',
+      'background': beestat.style.color.bluegray.light,
+      'height': '66px',
+      'width': '66px',
+      'text-align': 'center',
+      'text-shadow': '1px 1px 1px rgba(0, 0, 0, 0.2)',
+      'position': 'absolute',
+      'top': '90px',
+      'left': '50%',
+      'margin-left': '40px',
+      'cursor': 'pointer',
+      'transition': 'background 200ms ease'
+    });
+  parent.appendChild(circle);
+
+  circle
+    .addEventListener('mouseover', function() {
+      circle.style('background', beestat.style.color.gray.dark);
+    })
+    .addEventListener('mouseout', function() {
+      circle.style('background', beestat.style.color.bluegray.light);
+    })
+    .addEventListener('click', function() {
+      (new beestat.component.modal.weather()).render();
+    });
+
+  var temperature_container = $.createElement('div');
+  circle.appendChild(temperature_container);
+
+  var temperature_whole_container = $.createElement('span')
+    .style({
+      'font-size': '22px',
+      'font-weight': beestat.style.font_weight.light
+    })
+    .innerHTML(temperature_whole);
+  temperature_container.appendChild(temperature_whole_container);
+
+  var humidity_container = $.createElement('div')
+    .style({
+      'display': 'inline-flex',
+      'align-items': 'center'
+    });
+  circle.appendChild(humidity_container);
+
+  (new beestat.component.icon('water_percent')
+    .set_size(16)
+  ).render(humidity_container);
+
+  humidity_container.appendChild(
+    $.createElement('span')
+      .innerHTML(thermostat.weather.humidity_relative + '%')
+      .style({
+        'font-size': '10px'
+      })
   );
 };
 

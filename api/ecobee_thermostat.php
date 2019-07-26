@@ -211,6 +211,7 @@ class ecobee_thermostat extends cora\crud {
       $attributes['property'] = $this->get_property($thermostat, $ecobee_thermostat);
       $attributes['filters'] = $this->get_filters($thermostat, $ecobee_thermostat);
       $attributes['json_alerts'] = $this->get_alerts($thermostat, $ecobee_thermostat);
+      $attributes['weather'] = $this->get_weather($thermostat, $ecobee_thermostat);
 
       $detected_system_type = $this->get_detected_system_type($thermostat, $ecobee_thermostat);
       if($thermostat['system_type'] === null) {
@@ -717,6 +718,147 @@ class ecobee_thermostat extends cora\crud {
     }
 
     return $detected_system_type;
+  }
+
+  /**
+   * Get the current weather status.
+   *
+   * @param array $thermostat
+   * @param array $ecobee_thermostat
+   *
+   * @return array
+   */
+  private function get_weather($thermostat, $ecobee_thermostat) {
+    $weather = [
+      'station' => null,
+      'dew_point' => null,
+      'barometric_pressure' => null,
+      'humidity_relative' => null,
+      'temperature_high' => null,
+      'temperature_low' => null,
+      'temperature' => null,
+      'wind_bearing' => null,
+      'wind_speed' => null,
+      'condition' => null
+    ];
+
+    if(isset($ecobee_thermostat['json_weather']['weatherStation']) === true) {
+      $weather['station'] = $ecobee_thermostat['json_weather']['weatherStation'];
+    }
+
+    if(
+      isset($ecobee_thermostat['json_weather']['forecasts']) === true &&
+      isset($ecobee_thermostat['json_weather']['forecasts'][0]) === true
+    ) {
+      $ecobee_weather = $ecobee_thermostat['json_weather']['forecasts'][0];
+
+      if(isset($ecobee_weather['dewpoint']) === true) {
+        $weather['dew_point'] = ($ecobee_weather['dewpoint'] / 10);
+      }
+
+      // Returned in MB (divide by 33.864 to get inHg)
+      if(isset($ecobee_weather['pressure']) === true) {
+        $weather['barometric_pressure'] = $ecobee_weather['pressure'];
+      }
+
+      if(isset($ecobee_weather['relativeHumidity']) === true) {
+        $weather['humidity_relative'] = $ecobee_weather['relativeHumidity'];
+      }
+
+      if(isset($ecobee_weather['tempHigh']) === true) {
+        $weather['temperature_high'] = ($ecobee_weather['tempHigh'] / 10);
+      }
+
+      if(isset($ecobee_weather['tempLow']) === true) {
+        $weather['temperature_low'] = ($ecobee_weather['tempLow'] / 10);
+      }
+
+      if(isset($ecobee_weather['temperature']) === true) {
+        $weather['temperature'] = ($ecobee_weather['temperature'] / 10);
+      }
+
+      if(isset($ecobee_weather['windBearing']) === true) {
+        $weather['wind_bearing'] = $ecobee_weather['windBearing'];
+      }
+
+      // mph
+      if(isset($ecobee_weather['windSpeed']) === true) {
+        $weather['wind_speed'] = $ecobee_weather['windSpeed'];
+      }
+
+      if(isset($ecobee_weather['weatherSymbol']) === true) {
+        switch($ecobee_weather['weatherSymbol']) {
+          case 0:
+            $weather['condition'] = 'sunny';
+          break;
+          case 1:
+            $weather['condition'] = 'few_clouds';
+          break;
+          case 2:
+            $weather['condition'] = 'partly_cloudy';
+          break;
+          case 3:
+            $weather['condition'] = 'mostly_cloudy';
+          break;
+          case 4:
+            $weather['condition'] = 'overcast';
+          break;
+          case 5:
+            $weather['condition'] = 'drizzle';
+          break;
+          case 6:
+            $weather['condition'] = 'rain';
+          break;
+          case 7:
+            $weather['condition'] = 'freezing_rain';
+          break;
+          case 8:
+            $weather['condition'] = 'showers';
+          break;
+          case 9:
+            $weather['condition'] = 'hail';
+          break;
+          case 10:
+            $weather['condition'] = 'snow';
+          break;
+          case 11:
+            $weather['condition'] = 'flurries';
+          break;
+          case 12:
+            $weather['condition'] = 'freezing_snow';
+          break;
+          case 13:
+            $weather['condition'] = 'blizzard';
+          break;
+          case 14:
+            $weather['condition'] = 'pellets';
+          break;
+          case 15:
+            $weather['condition'] = 'thunderstorm';
+          break;
+          case 16:
+            $weather['condition'] = 'windy';
+          break;
+          case 17:
+            $weather['condition'] = 'tornado';
+          break;
+          case 18:
+            $weather['condition'] = 'fog';
+          break;
+          case 19:
+            $weather['condition'] = 'haze';
+          break;
+          case 20:
+            $weather['condition'] = 'smoke';
+          break;
+          case 21:
+            $weather['condition'] = 'dust';
+          break;
+        }
+      }
+    }
+
+    return $weather;
   }
 
 }

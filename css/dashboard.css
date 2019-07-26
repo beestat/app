@@ -380,6 +380,19 @@ a.inverted:active {
 .icon.zigbee:before { content: "\FD1D"; }
 .icon.basket_fill:before { content: "\F077"; }
 .icon.basket_unfill:before { content: "\F078"; }
+.icon.weather_sunny:before { content: "\F599"; }
+.icon.weather_partly_cloudy:before { content: "\F595"; }
+.icon.weather_cloudy:before { content: "\F590"; }
+.icon.weather_pouring:before { content: "\F596"; }
+.icon.weather_hail:before { content: "\F592"; }
+.icon.weather_snowy:before { content: "\F598"; }
+.icon.weather_snowy_heavy:before { content: "\FF53"; }
+.icon.weather_lightning_rainy:before { content: "\F67D"; }
+.icon.weather_windy:before { content: "\F59D"; }
+.icon.weather_fog:before { content: "\F591"; }
+.icon.weather_hazy:before { content: "\FF4D"; }
+.icon.weather_tornado:before { content: "\FF55"; }
+.icon.cloud_question:before { content: "\FA38"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }

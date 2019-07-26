@@ -83,6 +83,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/patreon_hide.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/thermostat_info.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/help_score.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/weather.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button.js"></script>' . PHP_EOL;
