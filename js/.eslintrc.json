@@ -56,6 +56,7 @@
     "max-len": "warn",
     "no-negated-condition": "off",
     "max-lines-per-function": "off",
+    "function-paren-newline": "off",
 
     // Node.js and CommonJS
     "callback-return": "off",
