@@ -82,9 +82,6 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
 beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 
-  var temperature = beestat.temperature(thermostat.weather.temperature);
-  var temperature_whole = Math.floor(temperature);
-
   var circle = $.createElement('div')
     .style({
       'padding': (beestat.style.size.gutter / 2),
@@ -122,7 +119,11 @@ beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
       'font-size': '22px',
       'font-weight': beestat.style.font_weight.light
     })
-    .innerHTML(temperature_whole);
+    .innerHTML(beestat.temperature({
+      'round': 0,
+      'units': false,
+      'temperature': thermostat.weather.temperature
+    }));
   temperature_container.appendChild(temperature_whole_container);
 
   var humidity_container = $.createElement('div')
