@@ -17,8 +17,10 @@ class logger extends cora\api {
    * Use these for things that need where clauses outside of timestamp.
    * @param array $fields At least one field. These are not indexed.
    * @param string $timestamp The timestamp in microseconds.
+   * @param string $retention_policy The retention policy to write to.
+   * Defaults to "autogen" which is infinite.
    */
-  public function log_influx($measurement, $tags, $fields, $timestamp) {
+  public function log_influx($measurement, $tags, $fields, $timestamp, $retention_policy = null) {
     // If this is not configured, do not log.
     if(
       $this->setting->get('influx_database_host') === null ||
@@ -46,6 +48,7 @@ class logger extends cora\api {
       $this->setting->get('influx_database_port') .
       '/write' .
       '?db=' . $this->setting->get('influx_database_name') .
+      ($retention_policy !== null ? ('&rp=' . $retention_policy) : '') .
       '&precision=u';
 
     exec(

@@ -23,6 +23,12 @@ class external_api extends cora\api {
   protected static $log_mysql = 'error';
 
   /**
+   * Default retention policy when inserting data. Autogen is the default
+   * infinite one; also available is 30d.
+   */
+  protected static $influx_retention_policy = 'autogen';
+
+  /**
    * Whether or not to cache API calls. This will store a hash of the request
    * and the response in the database and check there before performing the
    * API call again.
@@ -230,7 +236,8 @@ class external_api extends cora\api {
           'http_code' => (int) $this->curl_info['http_code'],
           'connect_time' => round($this->curl_info['connect_time'], 4)
         ],
-        'timestamp' => $this->request_timestamp_microtime
+        'timestamp' => $this->request_timestamp_microtime,
+        'retention_policy' => $this::$influx_retention_policy
       ]
     );
   }
