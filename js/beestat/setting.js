@@ -56,27 +56,25 @@ beestat.setting = function(key, opt_value, opt_callback) {
     settings[key] = opt_value;
   }
 
-  var api_calls = [];
+  var api = new beestat.api();
+  api.set_callback(opt_callback);
+
   for (var k in settings) {
     if (user.json_settings[k] !== settings[k]) {
       user.json_settings[k] = settings[k];
 
       beestat.dispatcher.dispatchEvent('setting.' + k);
 
-      api_calls.push({
-        'resource': 'user',
-        'method': 'update_setting',
-        'arguments': {
+      api.add_call(
+        'user',
+        'update_setting',
+        {
           'key': k,
           'value': settings[k]
         }
-      });
+      );
     }
   }
 
-  if (api_calls.length > 0) {
-    beestat.api('api', 'batch', api_calls, opt_callback);
-  } else if (opt_callback !== undefined) {
-    opt_callback();
-  }
+  api.send();
 };

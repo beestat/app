@@ -6,6 +6,9 @@ beestat.component.card.aggregate_runtime = function() {
   var self = this;
 
   /*
+   * When a setting is changed clear all of the data. Then rerender which will
+   * trigger the loading state.
+   *
    * Debounce so that multiple setting changes don't re-trigger the same
    * event. This fires on the trailing edge so that all changes are accounted
    * for when rerendering.
@@ -712,10 +715,10 @@ beestat.component.card.aggregate_runtime.prototype.get_subtitle_ = function() {
 };
 
 /**
- * Determine whether or not enough data is currently available to render this
- * card.
+ * Is aggregate runtime data available?
  *
- * @return {boolean}
+ * @return {boolean} Whether or not enough data is currently available to
+ * render this card.
  */
 beestat.component.card.aggregate_runtime.prototype.data_available_ = function() {
   // Demo can juse grab whatever data is there.
@@ -738,7 +741,10 @@ beestat.component.card.aggregate_runtime.prototype.data_available_ = function() 
       beestat.setting('aggregate_runtime_time_period')
     ));
   }
-  required_sync_begin = moment.max(required_sync_begin, moment(thermostat.first_connected));
+  required_sync_begin = moment.max(
+    required_sync_begin,
+    moment(thermostat.first_connected)
+  );
   var required_sync_end = moment().subtract(1, 'hour');
 
   // Percentage
@@ -772,18 +778,20 @@ beestat.component.card.aggregate_runtime.prototype.get_data_ = function() {
   var self = this;
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 
-  beestat.api(
-    'ecobee_runtime_thermostat',
-    'get_aggregate_runtime',
-    {
-      'ecobee_thermostat_id': thermostat.ecobee_thermostat_id,
-      'time_period': beestat.setting('aggregate_runtime_time_period'),
-      'group_by': beestat.setting('aggregate_runtime_group_by'),
-      'time_count': beestat.setting('aggregate_runtime_time_count')
-    },
-    function(response) {
+  new beestat.api()
+    .add_call(
+      'ecobee_runtime_thermostat',
+      'get_aggregate_runtime',
+      {
+        'ecobee_thermostat_id': thermostat.ecobee_thermostat_id,
+        'time_period': beestat.setting('aggregate_runtime_time_period'),
+        'group_by': beestat.setting('aggregate_runtime_group_by'),
+        'time_count': beestat.setting('aggregate_runtime_time_count')
+      }
+    )
+    .set_callback(function(response) {
       beestat.cache.set('aggregate_runtime', response);
       self.rerender();
-    }
-  );
+    })
+    .send();
 };

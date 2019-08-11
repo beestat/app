@@ -64,7 +64,7 @@ beestat.generate_temperature_profile = function(callback) {
     }
   } else {
     beestat.cache.delete('data.comparison_temperature_profile');
-    new beestat.api2()
+    new beestat.api()
       .add_call(
         'thermostat_group',
         'generate_temperature_profile',
@@ -106,7 +106,7 @@ beestat.get_comparison_scores = function(callback) {
     'resist'
   ];
 
-  var api = new beestat.api2();
+  var api = new beestat.api();
   types.forEach(function(type) {
     beestat.cache.delete('data.comparison_scores_' + type);
     api.add_call(

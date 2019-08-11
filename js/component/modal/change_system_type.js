@@ -129,7 +129,7 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
         .set_background_hover_color()
         .removeEventListener('click');
 
-      new beestat.api2()
+      new beestat.api()
         .add_call(
           'thermostat_group',
           'update_system_types',

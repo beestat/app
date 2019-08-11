@@ -34,66 +34,71 @@ beestat.disable_poll = function() {
  * Poll the database for changes and update the cache.
  */
 beestat.poll = function() {
-  beestat.api(
-    'api',
-    'batch',
-    [
-      {
-        'resource': 'user',
-        'method': 'read_id',
-        'alias': 'user'
-      },
-      {
-        'resource': 'thermostat',
-        'method': 'read_id',
-        'alias': 'thermostat',
-        'arguments': {
-          'attributes': {
-            'inactive': 0
-          }
-        }
-      },
-      {
-        'resource': 'sensor',
-        'method': 'read_id',
-        'alias': 'sensor',
-        'arguments': {
-          'attributes': {
-            'inactive': 0
-          }
-        }
-      },
-      {
-        'resource': 'ecobee_thermostat',
-        'method': 'read_id',
-        'alias': 'ecobee_thermostat',
-        'arguments': {
-          'attributes': {
-            'inactive': 0
-          }
-        }
-      },
-      {
-        'resource': 'ecobee_sensor',
-        'method': 'read_id',
-        'alias': 'ecobee_sensor',
-        'arguments': {
-          'attributes': {
-            'inactive': 0
-          }
-        }
-      }
-    ],
-    function(response) {
-      beestat.cache.set('user', response.user);
-      beestat.cache.set('thermostat', response.thermostat);
-      beestat.cache.set('sensor', response.sensor);
-      beestat.cache.set('ecobee_thermostat', response.ecobee_thermostat);
-      beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
-      beestat.enable_poll();
-      beestat.dispatcher.dispatchEvent('poll');
-    }
+
+  var api = new beestat.api();
+
+  api.add_call(
+    'user',
+    'read_id',
+    {},
+    'user'
   );
+
+  api.add_call(
+    'thermostat',
+    'read_id',
+    {
+      'attributes': {
+        'inactive': 0
+      }
+    },
+    'thermostat'
+  );
+
+  api.add_call(
+    'sensor',
+    'read_id',
+    {
+      'attributes': {
+        'inactive': 0
+      }
+    },
+    'sensor'
+  );
+
+  api.add_call(
+    'ecobee_thermostat',
+    'read_id',
+    {
+      'attributes': {
+        'inactive': 0
+      }
+    },
+    'ecobee_thermostat'
+  );
+
+  api.add_call(
+    'ecobee_sensor',
+    'read_id',
+    {
+      'attributes': {
+        'inactive': 0
+      }
+    },
+    'ecobee_sensor'
+  );
+
+  api.set_callback(function(response) {
+    beestat.cache.set('user', response.user);
+    beestat.cache.set('thermostat', response.thermostat);
+    beestat.cache.set('sensor', response.sensor);
+    beestat.cache.set('ecobee_thermostat', response.ecobee_thermostat);
+    beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
+    beestat.enable_poll();
+    beestat.dispatcher.dispatchEvent('poll');
+  });
+
+  api.send();
 };
 
 beestat.default_poll_interval = 300000; // 5 minutes

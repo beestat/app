@@ -27,6 +27,7 @@
     "indent": ["error", 2],
     "init-declarations": "off",
     "linebreak-style": "off",
+    "lines-around-comment": "off",
     "max-len": ["error", {"ignoreUrls": true, "ignoreStrings": true}],
     "max-lines": "off",
     "max-depth": "off",

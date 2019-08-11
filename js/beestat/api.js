@@ -1,4 +1,4 @@
-beestat.api2 = function() {
+beestat.api = function() {
   this.api_calls_ = [];
 };
 
@@ -7,18 +7,14 @@ beestat.api2 = function() {
  *
  * @type {Object}
  */
-beestat.api2.cache = {};
-
-// if (window.localStorage.getItem('api_cache') !== null) {
-//   beestat.api2.cache = JSON.parse(window.localStorage.getItem('api_cache'));
-// }
+beestat.api.cache = {};
 
 /**
  * Beestat's local API key.
  *
  * @type {string}
  */
-beestat.api2.api_key = 'ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2';
+beestat.api.api_key = 'ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2';
 
 /**
  * Send an API call. If the api_call parameter is specified it will send that.
@@ -27,9 +23,9 @@ beestat.api2.api_key = 'ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2';
  *
  * @param {Object=} opt_api_call The API call object.
  *
- * @return {beestat.api2} This.
+ * @return {beestat.api} This.
  */
-beestat.api2.prototype.send = function(opt_api_call) {
+beestat.api.prototype.send = function(opt_api_call) {
   var self = this;
 
   this.xhr_ = new XMLHttpRequest();
@@ -37,7 +33,7 @@ beestat.api2.prototype.send = function(opt_api_call) {
   // If passing an actual API call, fire it off!
   if (opt_api_call !== undefined) {
     // Add in the API key
-    opt_api_call.api_key = beestat.api2.api_key;
+    opt_api_call.api_key = beestat.api.api_key;
 
     // Build the query string
     var query_string = Object.keys(opt_api_call)
@@ -66,9 +62,17 @@ beestat.api2.prototype.send = function(opt_api_call) {
       });
 
       if (uncached_batch_api_calls.length === 0) {
-        // If no API calls left, just fire off the callback with the data.
+        /**
+         * If no API calls left, just fire off the callback with the data.
+         * Timeout makes this behave like an actual API call in terms of
+         * program flow. Without this, if there is a rerender() inside a
+         * callback, the rerender can happen during a render which causes
+         * problems.
+         */
         if (this.callback_ !== undefined) {
-          this.callback_(this.cached_batch_api_calls_);
+          setTimeout(function() {
+            self.callback_(self.cached_batch_api_calls_);
+          }, 0);
         }
       } else {
         // If more than one API call left, fire off a batch API call.
@@ -80,7 +84,16 @@ beestat.api2.prototype.send = function(opt_api_call) {
       var cached = this.get_cached_(single_api_call);
       if (cached !== undefined) {
         if (this.callback_ !== undefined) {
-          this.callback_(cached.data);
+
+          /**
+           * Timeout makes this behave like an actual API call in terms of
+           * program flow. Without this, if there is a rerender() inside a
+           * callback, the rerender can happen during a render which causes
+           * problems.
+           */
+          setTimeout(function() {
+            self.callback_(cached.data);
+          }, 0);
         }
       } else {
         this.send(single_api_call);
@@ -99,9 +112,9 @@ beestat.api2.prototype.send = function(opt_api_call) {
  * @param {Object=} opt_args Optional arguments.
  * @param {string=} opt_alias Optional alias (required for batch API calls).
  *
- * @return {beestat.api2} This.
+ * @return {beestat.api} This.
  */
-beestat.api2.prototype.add_call = function(resource, method, opt_args, opt_alias) {
+beestat.api.prototype.add_call = function(resource, method, opt_args, opt_alias) {
   var api_call = {
     'resource': resource,
     'method': method,
@@ -121,9 +134,9 @@ beestat.api2.prototype.add_call = function(resource, method, opt_args, opt_alias
  *
  * @param {Function} callback The callback function.
  *
- * @return {beestat.api2} This.
+ * @return {beestat.api} This.
  */
-beestat.api2.prototype.set_callback = function(callback) {
+beestat.api.prototype.set_callback = function(callback) {
   this.callback_ = callback;
 
   return this;
@@ -134,7 +147,7 @@ beestat.api2.prototype.set_callback = function(callback) {
  *
  * @param {string} response_text Whatever the XHR request returned.
  */
-beestat.api2.prototype.load_ = function(response_text) {
+beestat.api.prototype.load_ = function(response_text) {
   var response;
   try {
     response = window.JSON.parse(response_text);
@@ -209,7 +222,7 @@ beestat.api2.prototype.load_ = function(response_text) {
  *
  * @return {boolean} Whether or not this is a batch API call.
  */
-beestat.api2.prototype.is_batch_ = function() {
+beestat.api.prototype.is_batch_ = function() {
   return this.api_calls_.length > 1;
 };
 
@@ -220,24 +233,14 @@ beestat.api2.prototype.is_batch_ = function() {
  * @param {*} data The data to cache.
  * @param {string} until Timestamp to cache until.
  */
-beestat.api2.prototype.cache_ = function(api_call, data, until) {
+beestat.api.prototype.cache_ = function(api_call, data, until) {
   var server_date = moment(this.xhr_.getResponseHeader('date'));
   var duration = moment.duration(moment(until).diff(server_date));
 
-  beestat.api2.cache[this.get_key_(api_call)] = {
+  beestat.api.cache[this.get_key_(api_call)] = {
     'data': data,
     'until': moment().add(duration.asSeconds(), 'seconds')
   };
-
-  /**
-   * Save the cache to localStorage to persist across reloads. It just happens
-   * to be annoying that localStorage only supports strings so I prefer to
-   * deal with myself.
-   */
-  // window.localStorage.setItem(
-  //   'api_cache',
-  //   window.JSON.stringify(beestat.api2.cache)
-  // );
 };
 
 /**
@@ -247,8 +250,8 @@ beestat.api2.prototype.cache_ = function(api_call, data, until) {
  *
  * @return {*} The cached data, or undefined if none.
  */
-beestat.api2.prototype.get_cached_ = function(api_call) {
-  var cached = beestat.api2.cache[this.get_key_(api_call)];
+beestat.api.prototype.get_cached_ = function(api_call) {
+  var cached = beestat.api.cache[this.get_key_(api_call)];
   if (
     cached !== undefined &&
     moment().isAfter(cached.until) === false
@@ -266,67 +269,6 @@ beestat.api2.prototype.get_cached_ = function(api_call) {
  *
  * @return {string} The cache key.
  */
-beestat.api2.prototype.get_key_ = function(api_call) {
+beestat.api.prototype.get_key_ = function(api_call) {
   return api_call.resource + '.' + api_call.method + '.' + api_call.arguments;
-};
-
-// TODO OLD DELETE THIS
-beestat.api = function(resource, method, args, callback) {
-  var xhr = new XMLHttpRequest();
-
-  var load = function() {
-    var response;
-    try {
-      response = window.JSON.parse(this.responseText);
-    } catch (e) {
-      beestat.error('API returned invalid response.', this.responseText);
-      return;
-    }
-
-    if (
-      response.data &&
-      (
-        response.data.error_code === 1004 || // Session is expired.
-        response.data.error_code === 10001 || // Could not get first token.
-        response.data.error_code === 10002 || // Could not refresh ecobee token; no token found.
-        response.data.error_code === 10003 // Could not refresh ecobee token; ecobee returned no token.
-      )
-    ) {
-      window.location.href = '/';
-    } else if (response.data && response.data.error_code === 1209) {
-      // Could not get lock; safe to ignore as that means sync is running.
-    } else if (response.success !== true) {
-      beestat.error(
-        'API call failed: ' + response.data.error_message,
-        JSON.stringify(response, null, 2)
-      );
-    } else if (callback !== undefined) {
-      callback(response.data);
-    }
-  };
-  xhr.addEventListener('load', load);
-
-  var api_key = 'ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2';
-  if (resource === 'api' && method === 'batch') {
-    args.forEach(function(api_call, i) {
-      if (args[i].arguments !== undefined) {
-        args[i].arguments = JSON.stringify(args[i].arguments);
-      }
-    });
-    xhr.open(
-      'POST',
-      '../api/?batch=' + JSON.stringify(args) +
-      '&api_key=' + api_key
-    );
-  } else {
-    xhr.open(
-      'POST',
-      '../api/?resource=' + resource +
-      '&method=' + method +
-      (args === undefined ? '' : '&arguments=' + JSON.stringify(args)) +
-      '&api_key=' + api_key
-    );
-  }
-
-  xhr.send();
 };

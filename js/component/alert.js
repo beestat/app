@@ -251,14 +251,16 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
     .set_background_hover_color(beestat.style.color.red.light)
     .render(dismiss_container)
     .addEventListener('click', function() {
-      beestat.api(
-        'thermostat',
-        'dismiss_alert',
-        {
-          'thermostat_id': beestat.setting('thermostat_id'),
-          'guid': self.alert_.guid
-        }
-      );
+      new beestat.api()
+        .add_call(
+          'thermostat',
+          'dismiss_alert',
+          {
+            'thermostat_id': beestat.setting('thermostat_id'),
+            'guid': self.alert_.guid
+          }
+        )
+        .send();
 
       beestat.cache.thermostat[beestat.setting('thermostat_id')].json_alerts.forEach(function(alert) {
         if (alert.guid === self.alert_.guid) {
@@ -286,14 +288,16 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
     .set_background_hover_color(beestat.style.color.red.light)
     .render(restore_container)
     .addEventListener('click', function() {
-      beestat.api(
-        'thermostat',
-        'restore_alert',
-        {
-          'thermostat_id': beestat.setting('thermostat_id'),
-          'guid': self.alert_.guid
-        }
-      );
+      new beestat.api()
+        .add_call(
+          'thermostat',
+          'restore_alert',
+          {
+            'thermostat_id': beestat.setting('thermostat_id'),
+            'guid': self.alert_.guid
+          }
+        )
+        .send();
 
       beestat.cache.thermostat[beestat.setting('thermostat_id')].json_alerts.forEach(function(alert) {
         if (alert.guid === self.alert_.guid) {

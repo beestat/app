@@ -1385,7 +1385,7 @@ beestat.component.card.recent_activity.prototype.get_data_ = function() {
   var self = this;
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 
-  new beestat.api2()
+  new beestat.api()
     .add_call(
       'ecobee_runtime_thermostat',
       'get_recent_activity',

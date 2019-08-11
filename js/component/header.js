@@ -150,13 +150,15 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     .set_text('Log Out')
     .set_icon('exit_to_app')
     .set_callback(function() {
-      beestat.api(
-        'user',
-        'log_out',
-        {'all': false},
-        function() {
+      new beestat.api()
+        .set_callback(function() {
           window.location.reload();
-        }
-      );
+        })
+        .add_call(
+          'user',
+          'log_out',
+          {'all': false}
+        )
+        .send();
     }));
 };

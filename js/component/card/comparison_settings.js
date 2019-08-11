@@ -72,7 +72,7 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
         beestat.remove_poll_interval(poll_interval);
         beestat.dispatcher.removeEventListener('poll.home_comparisons_load');
 
-        new beestat.api2()
+        new beestat.api()
           .add_call(
             'thermostat_group',
             'generate_temperature_profiles',
