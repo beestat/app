@@ -48,6 +48,10 @@ beestat.api.prototype.send = function(opt_api_call) {
     this.xhr_.open('POST', '../api/?' + query_string);
     this.xhr_.send();
   } else {
+    if (this.api_calls_.length === 0) {
+      throw new Error('Must add at least one API call.');
+    }
+
     if (this.is_batch_() === true) {
       // Only run uncached API calls.
       var uncached_batch_api_calls = [];
@@ -80,7 +84,6 @@ beestat.api.prototype.send = function(opt_api_call) {
       }
     } else {
       var single_api_call = this.api_calls_[0];
-
       var cached = this.get_cached_(single_api_call);
       if (cached !== undefined) {
         if (this.callback_ !== undefined) {
@@ -152,7 +155,12 @@ beestat.api.prototype.load_ = function(response_text) {
   try {
     response = window.JSON.parse(response_text);
   } catch (e) {
-    beestat.error('API returned invalid response.', response_text);
+    var detail = response_text;
+    if (detail === '') {
+      detail = this.xhr_.status + ' ' + this.xhr_.statusText;
+    }
+
+    beestat.error('API returned invalid response.', detail);
     return;
   }
 

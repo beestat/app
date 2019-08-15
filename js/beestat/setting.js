@@ -9,6 +9,9 @@
  * otherwise.
  */
 beestat.setting = function(key, opt_value, opt_callback) {
+  if(opt_value !== undefined) {
+    console.log(arguments);
+  }
   var user = beestat.get_user();
 
   var defaults = {
@@ -59,6 +62,8 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var api = new beestat.api();
   api.set_callback(opt_callback);
 
+  var has_calls = false;
+
   for (var k in settings) {
     if (user.json_settings[k] !== settings[k]) {
       user.json_settings[k] = settings[k];
@@ -73,8 +78,13 @@ beestat.setting = function(key, opt_value, opt_callback) {
           'value': settings[k]
         }
       );
+
+      has_calls = true;
     }
   }
 
-  api.send();
+  // If no settings changed no API call needs to be fired.
+  if (has_calls === true) {
+    api.send();
+  }
 };
