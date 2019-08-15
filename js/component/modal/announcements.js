@@ -29,14 +29,15 @@ beestat.component.modal.announcements.prototype.decorate_contents_ = function(pa
 
     icon.render(parent);
 
-    beestat.setting(
-      'last_read_announcement_id',
-      announcements[0].announcement_id
-    );
     beestat.dispatcher.dispatchEvent('view_announcements');
 
     parent.appendChild($.createElement('p').innerHTML(announcement.text));
   });
+
+  beestat.setting(
+    'last_read_announcement_id',
+    announcements[0].announcement_id
+  );
 };
 
 /**
