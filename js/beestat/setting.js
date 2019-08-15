@@ -9,9 +9,6 @@
  * otherwise.
  */
 beestat.setting = function(key, opt_value, opt_callback) {
-  if(opt_value !== undefined) {
-    console.log(arguments);
-  }
   var user = beestat.get_user();
 
   var defaults = {
