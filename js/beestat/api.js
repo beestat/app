@@ -183,6 +183,7 @@ beestat.api.prototype.load_ = function(response_text) {
       'API call failed: ' + response.data.error_message,
       JSON.stringify(response, null, 2)
     );
+    return;
   }
 
   // Cach responses
