@@ -110,24 +110,36 @@ class patreon extends external_api {
 
     $response = json_decode($curl_response, true);
     if ($response === null) {
+      // If this hasn't already been logged, log the error.
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response);
+      }
       throw new Exception('Invalid JSON');
     }
+
+ // "response": "{\"errors\":[{\"code\":1,\"code_name\":\"Unauthorized\",\"detail\":\"The server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.\",\"id\":\"f4776cc7-0965-4d24-833a-98c449c8ffc8\",\"status\":\"401\",\"title\":\"Unauthorized\"}]}"
 
     // If the token was expired, refresh it and try again. Trying again sets
     // auto_refresh_token to false to prevent accidental infinite refreshing if
     // something bad happens.
-    if (isset($response['status']) === true && $response['status']['code'] === 14) {
+    if (isset($response['errors']) === true && $response['status'] === '401') {
       // Authentication token has expired. Refresh your tokens.
       if ($auto_refresh_token === true) {
         $this->api('patreon_token', 'refresh');
         return $this->patreon_api($method, $endpoint, $arguments, false);
       }
       else {
+        if($this::$log_mysql !== 'all') {
+          $this->log_mysql($curl_response);
+        }
         throw new Exception($response['status']['message']);
       }
     }
-    else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
+    else if (isset($response['errors']) === true) {
       // Any other error
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response);
+      }
       throw new Exception($response['status']['message']);
     }
     else {
