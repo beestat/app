@@ -122,7 +122,7 @@ class patreon extends external_api {
     // If the token was expired, refresh it and try again. Trying again sets
     // auto_refresh_token to false to prevent accidental infinite refreshing if
     // something bad happens.
-    if (isset($response['errors']) === true && $response['status'] === '401') {
+    if (isset($response['errors']) === true && $response['errors'][0]['status'] === '401') {
       // Authentication token has expired. Refresh your tokens.
       if ($auto_refresh_token === true) {
         $this->api('patreon_token', 'refresh');
@@ -132,7 +132,7 @@ class patreon extends external_api {
         if($this::$log_mysql !== 'all') {
           $this->log_mysql($curl_response);
         }
-        throw new Exception($response['status']['message']);
+        throw new Exception($response['errors'][0]['detail']);
       }
     }
     else if (isset($response['errors']) === true) {
@@ -140,7 +140,7 @@ class patreon extends external_api {
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response);
       }
-      throw new Exception($response['status']['message']);
+      throw new Exception($response['errors'][0]['detail']);
     }
     else {
       return $response;
