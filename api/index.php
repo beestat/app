@@ -8,6 +8,9 @@
  * @author Jon Ziebell
  */
 
+// Allow access to the API from any domain.
+header('Access-Control-Allow-Origin: *');
+
 // Compress output.
 ob_start('ob_gzhandler');
 
