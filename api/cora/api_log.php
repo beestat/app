@@ -10,10 +10,6 @@ namespace cora;
  */
 class api_log extends crud {
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
 	/**
 	 * Insert an item into the api_log resource. Force the IP to the request IP
 	 * and disallow overriding the timestamp.
@@ -24,8 +20,12 @@ class api_log extends crud {
 	 */
 	public function create($attributes) {
 		$attributes['request_ip'] = ip2long($_SERVER['REMOTE_ADDR']);
+    $attributes['user_id'] = $this->session->get_user_id();
 		unset($attributes['request_timestamp']);
-		return parent::create($attributes);
+
+		// Insert using the transactionless connection.
+		$database = database::get_transactionless_instance();
+    return $database->create($this->resource, $attributes);
 	}
 
 	/**
@@ -39,20 +39,20 @@ class api_log extends crud {
 	 */
 	public function get_number_requests_since($request_ip, $timestamp) {
 		$request_ip_escaped = $this->database->escape(ip2long($request_ip));
-		$timestamp_escaped = $this->database->escape($timestamp);
+		$timestamp_escaped = $this->database->escape(
+			date('Y-m-d H:i:s', $timestamp)
+		);
+
 		$query = '
 			select
-				count(*) as number_requests_since
+				count(*) `number_requests_since`
 			from
-				api_log
+				`api_log`
 			where
-				    request_ip = ' . $request_ip_escaped . '
-				and request_timestamp >= from_unixtime(' . $timestamp_escaped . ')
+				    `request_ip` = ' . $request_ip_escaped . '
+				and `request_timestamp` >= ' . $timestamp_escaped . '
 		';
 
-		// Getting the number of requests since a certain date is considered
-		// overhead since it's only used for rate limiting. See "Important" note in
-		// documentation.
 		$result = $this->database->query($query);
 		$row = $result->fetch_assoc();
 

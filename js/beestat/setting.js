@@ -14,14 +14,14 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var defaults = {
     'recent_activity_time_period': 'day',
     'recent_activity_time_count': 3,
-    'aggregate_runtime_time_period': 'month',
-    'aggregate_runtime_time_count': 2,
-    'aggregate_runtime_group_by': 'day',
-    'aggregate_runtime_gap_fill': true,
+
+    'runtime_thermostat_summary_time_count': 0,
+    'runtime_thermostat_summary_time_period': 'all',
+    'runtime_thermostat_summary_group_by': 'month',
+    'runtime_thermostat_summary_gap_fill': true,
+
     'comparison_region': 'global',
-    'comparison_property_type': 'similar',
-    'comparison_period': 0,
-    'comparison_period_custom': moment().format('M/D/YYYY')
+    'comparison_property_type': 'similar'
   };
 
   if (user.json_settings === null) {

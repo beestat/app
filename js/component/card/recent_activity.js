@@ -14,7 +14,6 @@ beestat.component.card.recent_activity.optional_series = [
   'compressor_cool_2',
   'auxiliary_heat_1',
   'auxiliary_heat_2',
-  'auxiliary_heat_3',
   'fan',
   'dehumidifier',
   'economizer',
@@ -183,40 +182,40 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
       var sections = [];
 
       // HVAC Mode
-      var hvac_mode;
-      var hvac_mode_color;
+      var system_mode;
+      var system_mode_color;
 
-      switch (series.hvac_mode.data[self.x]) {
+      switch (series.system_mode.data[self.x]) {
       case 'auto':
-        hvac_mode = 'Auto';
-        hvac_mode_color = beestat.style.color.gray.base;
+        system_mode = 'Auto';
+        system_mode_color = beestat.style.color.gray.base;
         break;
       case 'heat':
-        hvac_mode = 'Heat';
-        hvac_mode_color = beestat.series.compressor_heat_1.color;
+        system_mode = 'Heat';
+        system_mode_color = beestat.series.compressor_heat_1.color;
         break;
       case 'cool':
-        hvac_mode = 'Cool';
-        hvac_mode_color = beestat.series.compressor_cool_1.color;
+        system_mode = 'Cool';
+        system_mode_color = beestat.series.compressor_cool_1.color;
         break;
       case 'off':
-        hvac_mode = 'Off';
-        hvac_mode_color = beestat.style.color.gray.base;
+        system_mode = 'Off';
+        system_mode_color = beestat.style.color.gray.base;
         break;
-      case 'auxHeatOnly':
-        hvac_mode = 'Aux';
-        hvac_mode_color = beestat.series.auxiliary_heat_1.color;
+      case 'auxiliary_heat':
+        system_mode = 'Aux';
+        system_mode_color = beestat.series.auxiliary_heat_1.color;
         break;
       }
 
       var section_1 = [];
       sections.push(section_1);
 
-      if (hvac_mode !== undefined) {
+      if (system_mode !== undefined) {
         section_1.push({
           'label': 'Mode',
-          'value': hvac_mode,
-          'color': hvac_mode_color
+          'value': system_mode,
+          'color': system_mode_color
         });
       }
 
@@ -263,7 +262,7 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
             return;
           }
 
-          switch (series.hvac_mode.data[self.x]) {
+          switch (series.system_mode.data[self.x]) {
           case 'heat':
             if (series.setpoint_heat.data[self.x] === null) {
               return;
@@ -451,8 +450,7 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
 
   [
     'auxiliary_heat_1',
-    'auxiliary_heat_2',
-    'auxiliary_heat_3'
+    'auxiliary_heat_2'
   ].forEach(function(equipment) {
     if (series[equipment].enabled === true) {
       self.chart_.options.series.push({
@@ -585,7 +583,7 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
   this.chart_.options.series.push({
     'color': beestat.series.outdoor_temperature.color,
     'data': series.outdoor_temperature.chart_data,
-    'zones': beestat.component.chart.get_outdoor_temperature_zones(),
+    // 'zones': beestat.component.chart.get_outdoor_temperature_zones(),
     'yAxis': 0,
     'name': beestat.series.outdoor_temperature.name,
     'marker': {
@@ -638,7 +636,7 @@ beestat.component.card.recent_activity.prototype.decorate_contents_ = function(p
    * loaded. If the data is not available, poll until it becomes available.
    */
   if (this.data_available_() === true) {
-    if (beestat.cache.ecobee_runtime_thermostat.length === 0) {
+    if (beestat.cache.runtime_thermostat.length === 0) {
       this.get_data_();
     } else {
       this.hide_loading_();
@@ -808,7 +806,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       'chart_data': [],
       'data': {}
     },
-    'hvac_mode': {
+    'system_mode': {
       'enabled': true,
       'chart_data': [],
       'data': {}
@@ -857,12 +855,43 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
    */
   var durations = {};
 
-  beestat.cache.ecobee_runtime_thermostat.forEach(function(ecobee_runtime_thermostat, i) {
-    if (ecobee_runtime_thermostat.ecobee_thermostat_id !== thermostat.ecobee_thermostat_id) {
-      return;
+  beestat.cache.runtime_thermostat.forEach(function(runtime_thermostat, i) {
+    // if (runtime_thermostat.ecobee_thermostat_id !== thermostat.ecobee_thermostat_id) {
+    //   return;
+    // }
+    //
+
+    if (runtime_thermostat.compressor_mode === 'heat') {
+      runtime_thermostat.compressor_heat_1 = runtime_thermostat.compressor_1;
+      runtime_thermostat.compressor_heat_2 = runtime_thermostat.compressor_2;
+      runtime_thermostat.compressor_cool_1 = 0;
+      runtime_thermostat.compressor_cool_2 = 0;
+    } else if (runtime_thermostat.compressor_mode === 'cool') {
+      runtime_thermostat.compressor_heat_1 = 0;
+      runtime_thermostat.compressor_heat_2 = 0;
+      runtime_thermostat.compressor_cool_1 = runtime_thermostat.compressor_1;
+      runtime_thermostat.compressor_cool_2 = runtime_thermostat.compressor_2;
+    } else if (runtime_thermostat.compressor_mode === 'off') {
+      runtime_thermostat.compressor_heat_1 = 0;
+      runtime_thermostat.compressor_heat_2 = 0;
+      runtime_thermostat.compressor_cool_1 = 0;
+      runtime_thermostat.compressor_cool_2 = 0;
+    } else {
+      runtime_thermostat.compressor_heat_1 = null;
+      runtime_thermostat.compressor_heat_2 = null;
+      runtime_thermostat.compressor_cool_1 = null;
+      runtime_thermostat.compressor_cool_2 = null;
     }
 
-    var x = moment(ecobee_runtime_thermostat.timestamp).valueOf();
+    runtime_thermostat.humidifier = 0;
+    runtime_thermostat.dehumidifier = 0;
+    runtime_thermostat.ventilator = 0;
+    runtime_thermostat.economizer = 0;
+
+    // The string includes +00:00 as the UTC offset but moment knows what time
+    // zone my PC is in...or at least it has a guess. This means that beestat
+    // graphs can now show up in local time instead of thermostat time.
+    var x = moment(runtime_thermostat.timestamp).valueOf();
     if (x < min_x) {
       return;
     }
@@ -870,9 +899,9 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     series.x.chart_data.push(x);
 
     var original_durations = {};
-    if (ecobee_runtime_thermostat.compressor_heat_2 > 0) {
-      original_durations.compressor_heat_1 = ecobee_runtime_thermostat.compressor_heat_1;
-      ecobee_runtime_thermostat.compressor_heat_1 = ecobee_runtime_thermostat.compressor_heat_2;
+    if (runtime_thermostat.compressor_heat_2 > 0) {
+      original_durations.compressor_heat_1 = runtime_thermostat.compressor_heat_1;
+      runtime_thermostat.compressor_heat_1 = runtime_thermostat.compressor_heat_2;
     }
     // TODO DO THIS FOR AUX
     // TODO DO THIS FOR COOL
@@ -883,12 +912,12 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       }
 
       // if (series_code === 'compressor_heat_1') {
-        // ecobee_runtime_thermostat
+        // runtime_thermostat
       // }
 
       if (
-        ecobee_runtime_thermostat[series_code] !== null &&
-        ecobee_runtime_thermostat[series_code] > 0
+        runtime_thermostat[series_code] !== null &&
+        runtime_thermostat[series_code] > 0
       ) {
         var value;
         switch (series_code) {
@@ -915,10 +944,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
 
         var duration = original_durations[series_code] !== undefined
           ? original_durations[series_code]
-          : ecobee_runtime_thermostat[series_code];
+          : runtime_thermostat[series_code];
 
         durations[series_code][durations[series_code].length - 1].seconds += duration;
-        // durations[series_code][durations[series_code].length - 1].seconds += ecobee_runtime_thermostat[series_code];
+        // durations[series_code][durations[series_code].length - 1].seconds += runtime_thermostat[series_code];
         series[series_code].durations[x] = durations[series_code][durations[series_code].length - 1];
       } else {
         series[series_code].chart_data.push([
@@ -1002,7 +1031,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
      * Display a fixed schedule in demo mode.
      */
     if (window.is_demo === true) {
-      var m = moment(ecobee_runtime_thermostat.timestamp);
+      var m = moment(runtime_thermostat.timestamp);
 
       // Moment and ecobee use different indexes for the days of the week
       var day_of_week_index = (m.day() + 6) % 7;
@@ -1018,33 +1047,33 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
 
       this_calendar_event = 'calendar_event_' + ecobee_thermostat.json_program.schedule[day_of_week_index][chunk_of_day_index];
     } else {
-      if (ecobee_runtime_thermostat.zone_calendar_event === null) {
-        if (ecobee_runtime_thermostat.zone_climate === null) {
+      if (runtime_thermostat.event === null) {
+        if (runtime_thermostat.climate === null) {
           this_calendar_event = 'calendar_event_other';
         } else {
-          this_calendar_event = 'calendar_event_' + ecobee_runtime_thermostat.zone_climate.toLowerCase();
+          this_calendar_event = 'calendar_event_' + runtime_thermostat.climate.toLowerCase();
         }
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/SmartRecovery/i) !== null) {
+      } else if (runtime_thermostat.event.match(/SmartRecovery/i) !== null) {
         this_calendar_event = 'calendar_event_smartrecovery';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^home$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^home$/i) !== null) {
         this_calendar_event = 'calendar_event_home';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^away$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^away$/i) !== null) {
         this_calendar_event = 'calendar_event_away';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^smarthome$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^smarthome$/i) !== null) {
         this_calendar_event = 'calendar_event_smarthome';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^smartaway$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^smartaway$/i) !== null) {
         this_calendar_event = 'calendar_event_smartaway';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^auto$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^auto$/i) !== null) {
         this_calendar_event = 'calendar_event_hold';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^today$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^today$/i) !== null) {
         this_calendar_event = 'calendar_event_hold';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^hold$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^hold$/i) !== null) {
         this_calendar_event = 'calendar_event_hold';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^vacation$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^vacation$/i) !== null) {
         this_calendar_event = 'calendar_event_vacation';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/(\S\S\S\s\d+\s\d\d\d\d)|(\d{12})/i) !== null) {
+      } else if (runtime_thermostat.event.match(/(\S\S\S\s\d+\s\d\d\d\d)|(\d{12})/i) !== null) {
         this_calendar_event = 'calendar_event_vacation';
-      } else if (ecobee_runtime_thermostat.zone_calendar_event.match(/^quicksave$/i) !== null) {
+      } else if (runtime_thermostat.event.match(/^quicksave$/i) !== null) {
         this_calendar_event = 'calendar_event_quicksave';
       } else {
         this_calendar_event = 'calendar_event_other';
@@ -1066,7 +1095,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       };
 
       beestat.series[this_calendar_event] = {
-        'name': ecobee_runtime_thermostat.zone_climate,
+        'name': runtime_thermostat.climate,
         'color': beestat.style.color.bluegreen.base
       };
     }
@@ -1091,13 +1120,13 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
 
     /*
      * HVAC Mode. This isn't graphed but it's available for the tooltip.
-     * series.hvac_mode.chart_data.push([x, ecobee_runtime_thermostat.hvac_mode]);
+     * series.system_mode.chart_data.push([x, runtime_thermostat.system_mode]);
      */
-    series.hvac_mode.data[x] = ecobee_runtime_thermostat.hvac_mode;
+    series.system_mode.data[x] = runtime_thermostat.system_mode;
 
     // Setpoints
-    var setpoint_value_heat = beestat.temperature({'temperature': ecobee_runtime_thermostat.zone_heat_temperature});
-    var setpoint_value_cool = beestat.temperature({'temperature': ecobee_runtime_thermostat.zone_cool_temperature});
+    var setpoint_value_heat = beestat.temperature({'temperature': runtime_thermostat.setpoint_heat});
+    var setpoint_value_cool = beestat.temperature({'temperature': runtime_thermostat.setpoint_cool});
 
     // NOTE: At one point I was also factoring in your heat/cool differential
     // plus the extra degree offset ecobee adds when you are "away". That made
@@ -1105,10 +1134,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     // be confusing.
 
     if (
-      ecobee_runtime_thermostat.hvac_mode === 'auto' ||
-      ecobee_runtime_thermostat.hvac_mode === 'heat' ||
-      ecobee_runtime_thermostat.hvac_mode === 'auxHeatOnly' ||
-      ecobee_runtime_thermostat.hvac_mode === null // Need this for the explicit null to remove from the graph.
+      runtime_thermostat.system_mode === 'auto' ||
+      runtime_thermostat.system_mode === 'heat' ||
+      runtime_thermostat.system_mode === 'auxiliary_heat' ||
+      runtime_thermostat.system_mode === null // Need this for the explicit null to remove from the graph.
     ) {
       series.setpoint_heat.data[x] = setpoint_value_heat;
       series.setpoint_heat.chart_data.push([
@@ -1134,9 +1163,9 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     }
 
     if (
-      ecobee_runtime_thermostat.hvac_mode === 'auto' ||
-      ecobee_runtime_thermostat.hvac_mode === 'cool' ||
-      ecobee_runtime_thermostat.hvac_mode === null // Need this for the explicit null to remove from the graph.
+      runtime_thermostat.system_mode === 'auto' ||
+      runtime_thermostat.system_mode === 'cool' ||
+      runtime_thermostat.system_mode === null // Need this for the explicit null to remove from the graph.
     ) {
       series.setpoint_cool.data[x] = setpoint_value_cool;
       series.setpoint_cool.chart_data.push([
@@ -1162,7 +1191,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     }
 
     // Indoor temperature
-    var indoor_temperature_value = beestat.temperature(ecobee_runtime_thermostat.zone_average_temperature);
+    var indoor_temperature_value = beestat.temperature(runtime_thermostat.indoor_temperature);
     series.indoor_temperature.data[x] = indoor_temperature_value;
 
     /*
@@ -1181,10 +1210,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       ) ||
       indoor_temperature_value === null ||
       (
-        beestat.cache.ecobee_runtime_thermostat[i + 1] !== undefined &&
-        beestat.cache.ecobee_runtime_thermostat[i + 1].zone_average_temperature === null
+        beestat.cache.runtime_thermostat[i + 1] !== undefined &&
+        beestat.cache.runtime_thermostat[i + 1].indoor_temperature === null
       ) ||
-      i === (beestat.cache.ecobee_runtime_thermostat.length - 1)
+      i === (beestat.cache.runtime_thermostat.length - 1)
     ) {
       series.indoor_temperature.enabled = true;
       series.indoor_temperature.chart_data.push([
@@ -1199,7 +1228,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
     }
 
     // Outdoor temperature
-    var outdoor_temperature_value = beestat.temperature(ecobee_runtime_thermostat.outdoor_temperature);
+    var outdoor_temperature_value = beestat.temperature(runtime_thermostat.outdoor_temperature);
     series.outdoor_temperature.data[x] = outdoor_temperature_value;
 
     /*
@@ -1218,10 +1247,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       ) ||
       outdoor_temperature_value === null ||
       (
-        beestat.cache.ecobee_runtime_thermostat[i + 1] !== undefined &&
-        beestat.cache.ecobee_runtime_thermostat[i + 1].outdoor_temperature === null
+        beestat.cache.runtime_thermostat[i + 1] !== undefined &&
+        beestat.cache.runtime_thermostat[i + 1].outdoor_temperature === null
       ) ||
-      i === (beestat.cache.ecobee_runtime_thermostat.length - 1)
+      i === (beestat.cache.runtime_thermostat.length - 1)
     ) {
       series.outdoor_temperature.enabled = true;
       series.outdoor_temperature.chart_data.push([
@@ -1237,9 +1266,9 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
 
     // Indoor humidity
     var indoor_humidity_value;
-    if (ecobee_runtime_thermostat.zone_humidity !== null) {
+    if (runtime_thermostat.indoor_humidity !== null) {
       indoor_humidity_value = parseInt(
-        ecobee_runtime_thermostat.zone_humidity,
+        runtime_thermostat.indoor_humidity,
         10
       );
     } else {
@@ -1263,10 +1292,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       ) ||
       indoor_humidity_value === null ||
       (
-        beestat.cache.ecobee_runtime_thermostat[i + 1] !== undefined &&
-        beestat.cache.ecobee_runtime_thermostat[i + 1].zone_humidity === null
+        beestat.cache.runtime_thermostat[i + 1] !== undefined &&
+        beestat.cache.runtime_thermostat[i + 1].indoor_humidity === null
       ) ||
-      i === (beestat.cache.ecobee_runtime_thermostat.length - 1)
+      i === (beestat.cache.runtime_thermostat.length - 1)
     ) {
       series.indoor_humidity.enabled = true;
       series.indoor_humidity.chart_data.push([
@@ -1277,9 +1306,9 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
 
     // Outdoor humidity
     var outdoor_humidity_value;
-    if (ecobee_runtime_thermostat.outdoor_humidity !== null) {
+    if (runtime_thermostat.outdoor_humidity !== null) {
       outdoor_humidity_value = parseInt(
-        ecobee_runtime_thermostat.outdoor_humidity,
+        runtime_thermostat.outdoor_humidity,
         10
       );
     } else {
@@ -1303,10 +1332,10 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       ) ||
       outdoor_humidity_value === null ||
       (
-        beestat.cache.ecobee_runtime_thermostat[i + 1] !== undefined &&
-        beestat.cache.ecobee_runtime_thermostat[i + 1].outdoor_humidity === null
+        beestat.cache.runtime_thermostat[i + 1] !== undefined &&
+        beestat.cache.runtime_thermostat[i + 1].outdoor_humidity === null
       ) ||
-      i === (beestat.cache.ecobee_runtime_thermostat.length - 1)
+      i === (beestat.cache.runtime_thermostat.length - 1)
     ) {
       series.outdoor_humidity.enabled = true;
       series.outdoor_humidity.chart_data.push([
@@ -1387,16 +1416,22 @@ beestat.component.card.recent_activity.prototype.get_data_ = function() {
 
   new beestat.api()
     .add_call(
-      'ecobee_runtime_thermostat',
-      'get_recent_activity',
+      'runtime_thermostat',
+      'read',
       {
-        'ecobee_thermostat_id': thermostat.ecobee_thermostat_id,
-        'begin': null,
-        'end': null
+        'attributes': {
+          'thermostat_id': thermostat.thermostat_id,
+          'timestamp': {
+            'value': moment()
+              .subtract(7, 'd')
+              .format('YYYY-MM-DD'),
+            'operator': '>'
+          }
+        }
       }
     )
     .set_callback(function(response) {
-      beestat.cache.set('ecobee_runtime_thermostat', response);
+      beestat.cache.set('runtime_thermostat', response);
       self.rerender();
     })
     .send();

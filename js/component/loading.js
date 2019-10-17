@@ -1,5 +1,7 @@
 /**
- * Loading bar
+ * Loading thing.
+ *
+ * @param {string} text Optional text to display with the loading thing.
  */
 beestat.component.loading = function(text) {
   this.text_ = text;

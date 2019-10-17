@@ -37,11 +37,11 @@ beestat.layer.home_comparisons.prototype.decorate_ = function(parent) {
   cards.push([
     {
       'card': new beestat.component.card.comparison_settings(),
-      'size': 8
+      'size': 6
     },
     {
       'card': new beestat.component.card.my_home(),
-      'size': 4
+      'size': 6
     }
   ]);
 

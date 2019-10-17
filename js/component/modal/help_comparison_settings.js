@@ -14,9 +14,6 @@ beestat.extend(beestat.component.modal.help_comparison_settings, beestat.compone
 beestat.component.modal.help_comparison_settings.prototype.decorate_contents_ = function(parent) {
   parent.appendChild($.createElement('p').innerText('Comparison settings allow you to customize how your home is compared to the homes of other beestat users. All thermostats at the same physical address are compared together.'));
 
-  (new beestat.component.title('Date')).render(parent);
-  parent.appendChild($.createElement('p').innerText('This is the date your home\'s score is calculated on. Make some energy-saving improvements lately? Set this date back a few months and see what difference they made. Note that even though you\'re looking at your home in the past, beestat always compares to all other homes in the present.'));
-
   (new beestat.component.title('Region')).render(parent);
   parent.appendChild($.createElement('p').innerText('Compare your home to other homes within 250 miles (400km) or expand this to all homes globally.'));
 

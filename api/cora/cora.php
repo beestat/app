@@ -456,15 +456,18 @@ final class cora {
    */
   private function is_over_rate_limit() {
     $requests_per_minute = $this->setting->get('requests_per_minute');
+
     if($requests_per_minute === null) {
       return false;
     }
+
     $api_log_resource = new api_log();
     $requests_this_minute = $api_log_resource->get_number_requests_since(
       $_SERVER['REMOTE_ADDR'],
       time() - 60
     );
-    return ($requests_this_minute >= $requests_per_minute);
+
+    return ($requests_this_minute > $requests_per_minute);
   }
 
   /**

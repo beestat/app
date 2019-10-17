@@ -32,14 +32,18 @@ final class database extends \mysqli {
   private static $instance;
 
   /**
-   * The second singleton...use sparingly. Used when a second connection to
-   * the database is needed to escape a transcation (ex: for writing tokens).
-   * It can be used for writing logs as well but that would open up two
-   * connections per API call which is bad.
+   * A database singleton that does not use transactions.
    *
    * @var database
    */
-  private static $second_instance;
+  private static $transactionless_instance;
+
+  /**
+   * Whether or not to use transactions in this connection.
+   *
+   * @var bool
+   */
+  private $use_transactions = true;
 
   /**
    * Whether or not a transaction has been started. Used to make sure only one
@@ -150,6 +154,7 @@ final class database extends \mysqli {
     if(isset(self::$instance) === false) {
       self::$instance = new self();
     }
+
     return self::$instance;
   }
 
@@ -158,11 +163,13 @@ final class database extends \mysqli {
    *
    * @return database A new database object or the already created one.
    */
-  public static function get_second_instance() {
-    if(isset(self::$second_instance) === false) {
-      self::$second_instance = new self();
+  public static function get_transactionless_instance() {
+    if(isset(self::$transactionless_instance) === false) {
+      self::$transactionless_instance = new self();
+      self::$transactionless_instance->disable_transactions();
     }
-    return self::$second_instance;
+
+    return self::$transactionless_instance;
   }
 
   /**
@@ -239,7 +246,7 @@ final class database extends \mysqli {
     else if($value === false) {
       return '0';
     }
-    else if(is_int($value) === true || ctype_digit($value) === true) {
+    else if(is_int($value) === true) {
       return $value;
     }
     else {
@@ -354,7 +361,7 @@ final class database extends \mysqli {
     $query_type = substr(trim($query), 0, 6);
     if(
       in_array($query_type, ['insert', 'update', 'delete']) === true &&
-      $this->setting->get('use_transactions') === true
+      $this->use_transactions === true
     ) {
       $this->start_transaction();
     }
@@ -397,11 +404,12 @@ final class database extends \mysqli {
    * include arrays if you want to search in() something.
    * @param array $columns The columns to return. If not specified, all
    * columns are returned.
+   * @param mixed $order_by String or array of order_bys.
    *
    * @return array An array of the database rows with the specified columns.
    * Even a single result will still be returned in an array of size 1.
    */
-  public function read($resource, $attributes = [], $columns = []) {
+  public function read($resource, $attributes = [], $columns = [], $order_by = []) {
     $table = $this->get_table($resource);
 
     // Build the column listing.
@@ -424,10 +432,9 @@ final class database extends \mysqli {
     }
 
     // Build the where clause.
-    if(count($attributes) === 0) {
+    if (count($attributes) === 0) {
       $where = '';
-    }
-    else {
+    } else {
       $where = ' where ' .
         implode(
           ' and ',
@@ -439,9 +446,26 @@ final class database extends \mysqli {
         );
     }
 
+    if (is_array($order_by) === false) {
+      $order_by = [$order_by];
+    }
+
+    if (count($order_by) === 0) {
+      $order_by = '';
+    } else {
+      $order_by = ' order by ' .
+        implode(
+          ',',
+          array_map(
+            [$this, 'escape_identifier'],
+            $order_by
+          )
+        );
+    }
+
     // Put everything together and return the result.
     $query = 'select ' . $columns . ' from ' .
-      $this->escape_identifier($table) . $where;
+      $this->escape_identifier($table) . $where . $order_by;
     $result = $this->query($query);
 
     /**
@@ -564,12 +588,15 @@ final class database extends \mysqli {
    *
    * @param string $resource The resource to update.
    * @param array $attributes The attributes to set.
+   * @param array $return_mode Either "row" or "id". Specifying row will
+   * return the newly created row (does a database read). Specifying id will
+   * return just the ID of the created row.
    *
    * @throws \Exception If no attributes were specified.
    *
    * @return int The updated row.
    */
-  public function update($resource, $attributes) {
+  public function update($resource, $attributes, $return_mode = 'row') {
     $table = $this->get_table($resource);
 
     // TODO This will go away as soon as I switch to json type columns.
@@ -633,7 +660,12 @@ final class database extends \mysqli {
 
     $this->query($query);
 
-    return $this->read($resource, $where_attributes)[0];
+    if($return_mode === 'row') {
+      return $this->read($resource, $where_attributes)[0];
+    } else {
+      return $id;
+    }
+
   }
 
   /**
@@ -658,11 +690,14 @@ final class database extends \mysqli {
    * inserts.
    *
    * @param string $table The table to insert into.
-   * @param array $attributes The attributes to set on the row
+   * @param array $attributes The attributes to set on the row.
+   * @param array $return_mode Either "row" or "id". Specifying row will
+   * return the newly created row (does a database read). Specifying id will
+   * return just the ID of the created row.
    *
    * @return int The primary key of the inserted row.
    */
-  public function create($resource, $attributes) {
+  public function create($resource, $attributes, $return_mode = 'row') {
     $table = $this->get_table($resource);
 
     // TODO This will go away as soon as I switch to json type columns.
@@ -695,10 +730,13 @@ final class database extends \mysqli {
 
     $this->query($query);
 
-    $read_attributes = [];
-    $read_attributes[$table . '_id'] = $this->insert_id;
-    return $this->read($resource, $read_attributes)[0];
-    // return $this->insert_id;
+    if($return_mode === 'row') {
+      $read_attributes = [];
+      $read_attributes[$table . '_id'] = $this->insert_id;
+      return $this->read($resource, $read_attributes)[0];
+    } else {
+      return $this->insert_id;
+    }
   }
 
   /**
@@ -783,16 +821,18 @@ final class database extends \mysqli {
    * @param int $time_zone_offset Offset in minutes.
    */
   public function set_time_zone($time_zone_offset) {
-    // $time_zone_offset = -360;
     $operator = $time_zone_offset < 0 ? '-' : '+';
     $time_zone_offset = abs($time_zone_offset);
     $offset_hours = floor($time_zone_offset / 60);
     $offset_minutes = $time_zone_offset % 60;
-    // var_dump($offset_hours);
-    // var_dump($offset_minutes);
-    // var_dump('SET time_zone = "' . $operator . sprintf('%d', $offset_hours) . ':' . str_pad($offset_minutes, 2, STR_PAD_LEFT) . '"');
-    // die();
     $this->query('SET time_zone = "' . $operator . sprintf('%d', $offset_hours) . ':' . str_pad($offset_minutes, 2, STR_PAD_LEFT) . '"');
+  }
+
+  /**
+   * Disable transactions for this connection.
+   */
+  public function disable_transactions() {
+    $this->use_transactions = false;
   }
 
 }

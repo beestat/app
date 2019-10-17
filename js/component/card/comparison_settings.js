@@ -4,8 +4,10 @@
 beestat.component.card.comparison_settings = function() {
   var self = this;
 
-  // If the thermostat_group changes that means the property_type could change
-  // and thus need to rerender.
+  /*
+   * If the thermostat_group changes that means the property_type could change
+   * and thus need to rerender.
+   */
   beestat.dispatcher.addEventListener('cache.thermostat_group', function() {
     self.rerender();
   });
@@ -26,17 +28,6 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
   var thermostat_group = beestat.cache.thermostat_group[thermostat.thermostat_group_id];
 
   var row;
-
-  // Row
-  row = $.createElement('div').addClass('row');
-  parent.appendChild(row);
-
-  var column_date = $.createElement('div').addClass([
-    'column',
-    'column_12'
-  ]);
-  row.appendChild(column_date);
-  this.decorate_date_(column_date);
 
   // Row
   row = $.createElement('div').addClass('row');
@@ -90,129 +81,6 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
             (new beestat.layer.home_comparisons()).render();
           })
           .send();
-      }
-    });
-  }
-};
-
-/**
- * Decorate the date options.
- *
- * @param {rocket.Elements} parent
- */
-beestat.component.card.comparison_settings.prototype.decorate_date_ = function(parent) {
-  var self = this;
-
-  (new beestat.component.title('Date')).render(parent);
-
-  var periods = [
-    {
-      'value': 0,
-      'text': 'Today'
-    },
-    {
-      'value': 1,
-      'text': '1 Month Ago'
-    },
-    {
-      'value': 6,
-      'text': '6 Months Ago'
-    },
-    {
-      'value': 12,
-      'text': '12 Months Ago'
-    },
-    {
-      'value': 'custom',
-      'text': 'Custom'
-    }
-  ];
-
-  var current_comparison_period = beestat.setting('comparison_period');
-
-  var color = beestat.style.color.lightblue.base;
-
-  var input = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + color
-      // 'background-color': color
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
-    .set_icon('calendar')
-    .set_value(beestat.setting('comparison_period_custom'));
-
-  var button_group = new beestat.component.button_group();
-  periods.forEach(function(period) {
-    var button = new beestat.component.button()
-      .set_background_hover_color(color)
-      .set_text_color('#fff')
-      .set_text(period.text);
-
-    if (current_comparison_period === period.value) {
-      button.set_background_color(color);
-    } else {
-      button
-        .set_background_color(beestat.style.color.bluegray.light)
-        .addEventListener('click', function() {
-          // Update the setting
-          beestat.setting('comparison_period', period.value);
-
-          // Update the input to reflect the actual date.
-          input.set_value(period.value);
-
-          // Rerender real quick to change the selected button
-          self.rerender();
-
-          // Open up the loading window.
-          if (period.value === 'custom') {
-            self.show_loading_('Calculating Score for ' + beestat.setting('comparison_period_custom'));
-          } else {
-            self.show_loading_('Calculating Score for ' + period.text);
-          }
-
-          if (period.value === 'custom') {
-            self.focus_input_ = true;
-            // self.rerender();
-
-            beestat.generate_temperature_profile(function() {
-              // Rerender to get rid of the loader.
-              self.rerender();
-            });
-          } else {
-            beestat.generate_temperature_profile(function() {
-              // Rerender to get rid of the loader.
-              self.rerender();
-            });
-          }
-        });
-    }
-
-    button_group.add_button(button);
-  });
-  button_group.render(parent);
-
-  if (current_comparison_period === 'custom') {
-    var input_container = $.createElement('div')
-      .style('margin-top', beestat.style.size.gutter);
-    parent.appendChild(input_container);
-    input.render(input_container);
-
-    input.addEventListener('blur', function() {
-      var m = moment(input.get_value());
-      if (m.isValid() === false) {
-        beestat.error('That\'s not a valid date. Most any proper date format will work here.');
-      } else if (m.isAfter()) {
-        beestat.error('That\'s in the future. Fresh out of flux capacitors over here, sorry.');
-      } else if (m.isSame(moment(beestat.setting('comparison_period_custom')), 'date') === false) {
-        beestat.setting('comparison_period_custom', input.get_value());
-        beestat.generate_temperature_profile(function() {
-          // Rerender to get rid of the loader.
-          self.rerender();
-        });
       }
     });
   }
@@ -295,9 +163,9 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
   if (thermostat_group.property_structure_type !== null) {
     property_types.push({
       'value': 'same_structure',
-      'text': 'Type: '
-        + thermostat_group.property_structure_type.charAt(0).toUpperCase()
-        + thermostat_group.property_structure_type.slice(1)
+      'text': 'Type: ' +
+        thermostat_group.property_structure_type.charAt(0).toUpperCase() +
+        thermostat_group.property_structure_type.slice(1)
     });
   }
 
@@ -410,34 +278,15 @@ beestat.component.card.comparison_settings.prototype.decorate_top_right_ = funct
  * @return {boolean} Whether or not all of the data has been loaded.
  */
 beestat.component.card.comparison_settings.prototype.data_available_ = function() {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var sync_progress = beestat.get_sync_progress(beestat.setting('thermostat_id'));
 
-  var current_sync_begin = moment.utc(thermostat.sync_begin);
-  var current_sync_end = moment.utc(thermostat.sync_end);
-
-  var required_sync_begin = moment(thermostat.first_connected);
-  var required_sync_end = moment().subtract(1, 'hour');
-
-  // Percentage
-  var denominator = required_sync_end.diff(required_sync_begin, 'day');
-  var numerator_begin = moment.max(current_sync_begin, required_sync_begin);
-  var numerator_end = moment.min(current_sync_end, required_sync_end);
-  var numerator = numerator_end.diff(numerator_begin, 'day');
-  var percentage = numerator / denominator * 100;
-  if (isNaN(percentage) === true || percentage < 0) {
-    percentage = 0;
-  }
-
-  if (percentage >= 95) {
+  if (sync_progress >= 95) {
     this.show_loading_('Calculating Scores');
   } else {
     this.show_loading_('Syncing Data (' +
-      Math.round(percentage) +
+      Math.round(sync_progress) +
       '%)');
   }
 
-  return (
-    current_sync_begin.isSameOrBefore(required_sync_begin) &&
-    current_sync_end.isSameOrAfter(required_sync_end)
-  );
+  return sync_progress === 100;
 };

@@ -41,7 +41,7 @@ class patreon_token extends cora\crud {
       isset($response['access_token']) === false ||
       isset($response['refresh_token']) === false
     ) {
-      throw new Exception('Could not get first token');
+      throw new Exception('Could not get first token', 10100);
     }
 
     $new_patreon_token = [
@@ -68,18 +68,12 @@ class patreon_token extends cora\crud {
    * so that no other API call can attempt to get a token at the same time.
    * This way if two API calls fire off to patreon at the same time, then
    * return at the same time, then call token->refresh() at the same time,
-   * only one can run and actually refresh at a time. If the second one runs
-   * after that's fine as it will look up the token prior to refreshing.
-   *
-   * Also this creates a new database connection. If a token is written to the
-   * database, then the transaction gets rolled back, the token will be
-   * erased. I originally tried to avoid this by not using transactions except
-   * when syncing, but there are enough sync errors that happen where this
-   * causes a problem. The extra overhead of a second database connection
-   * every now and then shouldn't be that bad.
+   * only one can run and actually refresh at a time. If the transactionless
+   * one runs after that's fine as it will look up the token prior to
+   * refreshing.
    */
   public function refresh() {
-    $database = cora\database::get_second_instance();
+    $database = cora\database::get_transactionless_instance();
 
     $lock_name = 'patreon_token->refresh(' . $this->session->get_user_id() . ')';
     $database->get_lock($lock_name, 3);
@@ -92,7 +86,7 @@ class patreon_token extends cora\crud {
       ]
     );
     if(count($patreon_tokens) === 0) {
-      throw new Exception('Could not refresh patreon token; no token found.', 10002);
+      throw new Exception('Could not refresh patreon token; no token found.', 10101);
     }
     $patreon_token = $patreon_tokens[0];
 
@@ -115,7 +109,7 @@ class patreon_token extends cora\crud {
     ) {
       $this->delete($patreon_token['patreon_token_id']);
       $database->release_lock($lock_name);
-      throw new Exception('Could not refresh patreon token; patreon returned no token.', 10003);
+      throw new Exception('Could not refresh patreon token; patreon returned no token.', 10102);
     }
 
     $database->update(
@@ -139,7 +133,7 @@ class patreon_token extends cora\crud {
    * @return int
    */
   public function delete($id) {
-    $database = database::get_second_instance();
+    $database = database::get_transactionless_instance();
     $return = $database->delete('patreon_token', $id);
     return $return;
   }

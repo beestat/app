@@ -53,9 +53,9 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
         // Convert the data to Celsius if necessary
         var deltas_converted = {};
         for (var key in profile.deltas) {
-          deltas_converted[beestat.temperature({'temperature': key})] =
+          deltas_converted[beestat.temperature({'temperature': (key / 10)})] =
             beestat.temperature({
-              'temperature': profile.deltas[key],
+              'temperature': (profile.deltas[key] / 10),
               'delta': true,
               'round': 3
             });
@@ -150,7 +150,16 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
         'formatter': function() {
           return this.value + thermostat.temperature_unit;
         }
-      }
+      },
+      'plotLines': [
+        {
+          'color': beestat.series.outdoor_temperature.color,
+          'dashStyle': 'ShortDash',
+          'width': 1,
+          'value': beestat.temperature(thermostat.weather.temperature),
+          'zIndex': 2
+        }
+      ]
     };
 
     this.chart_.options.yAxis = [

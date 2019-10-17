@@ -84,14 +84,13 @@ beestat.style.font_size = {
 beestat.style.set = function(element, base_style, media_style) {
   element.style(base_style);
 
-  for(var media in media_style) {
+  for (var media in media_style) {
     var media_query_list = window.matchMedia(media);
 
     var handler = function(e) {
-      if(e.matches === true) {
+      if (e.matches === true) {
         element.style(media_style[e.media]);
-      }
-      else {
+      } else {
         element.style(base_style);
       }
     };
@@ -109,137 +108,174 @@ beestat.style.set = function(element, base_style, media_style) {
  * @return {object} RGB
  */
 beestat.style.hex_to_rgb = function(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  var result = (/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i).exec(hex);
   return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
+    'r': parseInt(result[1], 16),
+    'g': parseInt(result[2], 16),
+    'b': parseInt(result[3], 16)
   } : null;
 };
 
 // Can't put these in beestat.js because of the dependency issues with color.
-beestat.series = {
-  'compressor_cool_1': {
-    'name': 'Cool 1',
-    'color': beestat.style.color.lightblue.light
-  },
-  'compressor_cool_2': {
-    'name': 'Cool 2',
-    'color': beestat.style.color.lightblue.base
-  },
-  'compressor_heat_1': {
-    'name': 'Heat 1',
-    'color': beestat.style.color.orange.light
-  },
-  'compressor_heat_2': {
-    'name': 'Heat 2',
-    'color': beestat.style.color.orange.dark
-  },
-  'auxiliary_heat_1': {
-    'name': 'Aux',
-    'color': beestat.style.color.red.dark
-  },
-  'auxiliary_heat_2': {
-    'name': 'Aux 2',
-    'color': beestat.style.color.red.dark
-  },
-  'auxiliary_heat_3': {
-    'name': 'Aux 3',
-    'color': beestat.style.color.red.dark
-  },
-  'fan': {
-    'name': 'Fan',
-    'color': beestat.style.color.gray.base
-  },
+beestat.series = {};
 
-  'dehumidifier': {
-    'name': 'Dehumidifier',
-    'color': beestat.style.color.gray.light
-  },
-  'economizer': {
-    'name': 'Economizer',
-    'color': beestat.style.color.gray.light
-  },
-  'humidifier': {
-    'name': 'Humidifier',
-    'color': beestat.style.color.gray.light
-  },
-  'ventilator': {
-    'name': 'Ventilator',
-    'color': beestat.style.color.gray.light
-  },
+beestat.series.compressor_heat_1 = {
+  'name': 'Heat 1',
+  'color': beestat.style.color.orange.light
+};
 
-  'indoor_temperature': {
-    'name': 'Indoor Temp',
-    'color': beestat.style.color.gray.light
-  },
-  'outdoor_temperature': {
-    'name': 'Outdoor Temp',
-    'color': beestat.style.color.gray.light
-  },
-  'average_outdoor_temperature': {
-    'name': 'Average Outdoor Temp',
-    'color': beestat.style.color.gray.light
-  },
-  'min_max_outdoor_temperature': {
-    'name': 'Min/Max Outdoor Temp',
-    'color': '#000'
-  },
-  'setpoint_heat': {
-    'name': 'Setpoint',
-    'color': beestat.style.color.orange.light
-  },
-  'setpoint_cool': {
-    'name': 'Setpoint',
-    'color': beestat.style.color.lightblue.light
-  },
-  'indoor_humidity': {
-    'name': 'Indoor Humidity',
-    'color': beestat.style.color.bluegreen.base
-  },
-  'outdoor_humidity': {
-    'name': 'Outdoor Humidity',
-    'color': beestat.style.color.green.light
-  },
+beestat.series.compressor_heat_2 = {
+  'name': 'Heat 2',
+  'color': beestat.style.color.orange.dark
+};
 
-  'calendar_event_home': {
-    'name': 'Home',
-    'color': beestat.style.color.green.dark
-  },
-  'calendar_event_smarthome': {
-    'name': 'Smart Home',
-    'color': beestat.style.color.green.dark
-  },
-  'calendar_event_smartrecovery': {
-    'name': 'Smart Recovery',
-    'color': beestat.style.color.green.dark
-  },
-  'calendar_event_away': {
-    'name': 'Away',
-    'color': beestat.style.color.gray.dark
-  },
-  'calendar_event_smartaway': {
-    'name': 'Smart Away',
-    'color': beestat.style.color.gray.dark
-  },
-  'calendar_event_vacation': {
-    'name': 'Vacation',
-    'color': beestat.style.color.gray.dark
-  },
-  'calendar_event_sleep': {
-    'name': 'Sleep',
-    'color': beestat.style.color.purple.light
-  },
-  'calendar_event_hold': {
-    'name': 'Hold',
-    'color': beestat.style.color.gray.base
-  },
-  'calendar_event_quicksave': {
-    'name': 'QuickSave',
-    'color': beestat.style.color.gray.base
-  },
-  'calendar_event_other': {
-    'name': 'Other',
-    'color': beestat.style.color.gray.base
-  }
+beestat.series.auxiliary_heat_1 = {
+  'name': 'Aux',
+  'color': beestat.style.color.red.dark
+};
+
+beestat.series.auxiliary_heat_2 = {
+  'name': 'Aux 2',
+  'color': beestat.style.color.red.dark
+};
+
+beestat.series.compressor_cool_1 = {
+  'name': 'Cool 1',
+  'color': beestat.style.color.lightblue.light
+};
+
+beestat.series.compressor_cool_2 = {
+  'name': 'Cool 2',
+  'color': beestat.style.color.lightblue.base
+};
+
+beestat.series.fan = {
+  'name': 'Fan',
+  'color': beestat.style.color.gray.base
+};
+
+beestat.series.humidifier = {
+  'name': 'Humidifier',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.dehumidifier = {
+  'name': 'Dehumidifier',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.economizer = {
+  'name': 'Economizer',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.ventilator = {
+  'name': 'Ventilator',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.indoor_temperature = {
+  'name': 'Indoor Temp',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.outdoor_temperature = {
+  'name': 'Outdoor Temp',
+  'color': beestat.style.color.gray.light
+};
+
+beestat.series.indoor_humidity = {
+  'name': 'Indoor Humidity',
+  'color': beestat.style.color.bluegreen.base
+};
+
+beestat.series.outdoor_humidity = {
+  'name': 'Outdoor Humidity',
+  'color': beestat.style.color.green.light
+};
+
+beestat.series.setpoint_heat = {
+  'name': 'Setpoint',
+  'color': beestat.style.color.orange.light
+};
+
+beestat.series.setpoint_cool = {
+  'name': 'Setpoint',
+  'color': beestat.style.color.lightblue.light
+};
+
+// Runtime Summary
+beestat.series.sum_compressor_heat_1 = beestat.series.compressor_heat_1;
+beestat.series.sum_compressor_heat_2 = beestat.series.compressor_heat_2;
+beestat.series.sum_auxiliary_heat_1 = beestat.series.auxiliary_heat_1;
+beestat.series.sum_auxiliary_heat_2 = beestat.series.auxiliary_heat_2;
+beestat.series.sum_compressor_cool_1 = beestat.series.compressor_cool_1;
+beestat.series.sum_compressor_cool_2 = beestat.series.compressor_cool_2;
+beestat.series.sum_fan = beestat.series.fan;
+beestat.series.sum_humidifier = beestat.series.humidifier;
+beestat.series.sum_dehumidifier = beestat.series.dehumidifier;
+beestat.series.sum_economizer = beestat.series.economizer;
+beestat.series.sum_ventilator = beestat.series.ventilator;
+beestat.series.avg_indoor_temperature = beestat.series.indoor_temperature;
+beestat.series.avg_outdoor_temperature = beestat.series.outdoor_temperature;
+beestat.series.avg_indoor_humidity = beestat.series.indoor_humidity;
+beestat.series.avg_outdoor_humidity = beestat.series.outdoor_humidity;
+beestat.series.extreme_outdoor_temperature = {
+  'name': 'Outdoor Temp Extremes',
+  'color': beestat.style.color.gray.dark
+};
+
+beestat.series.setpoint_cool = {
+  'name': 'Setpoint',
+  'color': beestat.style.color.lightblue.light
+};
+
+beestat.series.calendar_event_home = {
+  'name': 'Home',
+  'color': beestat.style.color.green.dark
+};
+
+beestat.series.calendar_event_smarthome = {
+  'name': 'Smart Home',
+  'color': beestat.style.color.green.dark
+};
+
+beestat.series.calendar_event_smartrecovery = {
+  'name': 'Smart Recovery',
+  'color': beestat.style.color.green.dark
+};
+
+beestat.series.calendar_event_away = {
+  'name': 'Away',
+  'color': beestat.style.color.gray.dark
+};
+
+beestat.series.calendar_event_smartaway = {
+  'name': 'Smart Away',
+  'color': beestat.style.color.gray.dark
+};
+
+beestat.series.calendar_event_vacation = {
+  'name': 'Vacation',
+  'color': beestat.style.color.gray.dark
+};
+
+beestat.series.calendar_event_sleep = {
+  'name': 'Sleep',
+  'color': beestat.style.color.purple.light
+};
+
+beestat.series.calendar_event_hold = {
+  'name': 'Hold',
+  'color': beestat.style.color.gray.base
+};
+
+beestat.series.calendar_event_quicksave = {
+  'name': 'QuickSave',
+  'color': beestat.style.color.gray.base
+};
+
+beestat.series.calendar_event_other = {
+  'name': 'Other',
+  'color': beestat.style.color.gray.base
 };

@@ -85,7 +85,9 @@ beestat.layer.dashboard.prototype.decorate_ = function(parent) {
   ]);
   cards.push([
     {
-      'card': new beestat.component.card.aggregate_runtime(),
+      'card': new beestat.component.card.runtime_thermostat_summary(
+        beestat.setting('thermostat_id')
+      ),
       'size': 12
     }
   ]);

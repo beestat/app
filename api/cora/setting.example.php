@@ -178,16 +178,7 @@ final class setting {
      * The number of requests allowed in a single batch API call. Set to null
      * to disable.
      */
-    'batch_limit' => null,
-
-    /**
-     * Whether or not to wrap each individual or batch API call in a single
-     * transaction. When disabled, transactions are available but not used
-     * automatically.
-     *
-     * This must be set to false for now.
-     */
-    'use_transactions' => false
+    'batch_limit' => null
   ];
 
   /**

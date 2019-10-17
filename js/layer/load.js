@@ -120,6 +120,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     'announcement'
   );
 
+  api.add_call(
+    'runtime_thermostat_summary',
+    'read_id',
+    {},
+    'runtime_thermostat_summary'
+  );
+
   api.set_callback(function(response) {
     beestat.cache.set('user', response.user);
 
@@ -145,8 +152,8 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
     beestat.cache.set('address', response.address);
     beestat.cache.set('announcement', response.announcement);
-    beestat.cache.set('ecobee_runtime_thermostat', []);
-    beestat.cache.set('aggregate_runtime', []);
+    beestat.cache.set('runtime_thermostat', []);
+    beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
 
     // Set the active thermostat_id if this is your first time visiting.
     if (beestat.setting('thermostat_id') === undefined) {
@@ -170,24 +177,22 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
 
     // Rename series if only one stage is available.
     if (ecobee_thermostat.json_settings.coolStages === 1) {
-      beestat.series.compressor_cool_1.name = 'Cool';
+      beestat.series.sum_compressor_cool_1.name = 'Cool';
     }
     if (ecobee_thermostat.json_settings.heatStages === 1) {
-      beestat.series.compressor_heat_1.name = 'Heat';
+      beestat.series.sum_compressor_heat_1.name = 'Heat';
     }
 
     // Fix some other stuff for non-heat-pump.
     if (ecobee_thermostat.json_settings.hasHeatPump === false) {
       beestat.series.auxiliary_heat_1.name =
-        beestat.series.compressor_heat_1.name;
+        beestat.series.sum_compressor_heat_1.name;
       beestat.series.auxiliary_heat_1.color =
-        beestat.series.compressor_heat_1.color;
-      beestat.series.auxiliary_heat_2.name =
+        beestat.series.sum_compressor_heat_1.color;
+      beestat.series.sum_auxiliary_heat_2.name =
         beestat.series.compressor_heat_2.name;
-      beestat.series.auxiliary_heat_2.color =
+      beestat.series.sum_auxiliary_heat_2.color =
         beestat.series.compressor_heat_2.color;
-      beestat.series.auxiliary_heat_3.name = 'Heat 3';
-      beestat.series.auxiliary_heat_3.color = '#d35400';
     }
 
     /*
@@ -196,7 +201,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
      */
     new beestat.api()
       .add_call(
-        'ecobee_runtime_thermostat',
+        'runtime_thermostat',
         'sync',
         {
           'thermostat_id': thermostat.thermostat_id

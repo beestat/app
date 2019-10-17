@@ -227,8 +227,8 @@ class ecobee extends external_api {
     if (isset($response['status']) === true && $response['status']['code'] === 14) {
       // Authentication token has expired. Refresh your tokens.
       if ($auto_refresh_token === true) {
-        $this->api('ecobee_token', 'refresh');
-        return $this->ecobee_api($method, $endpoint, $arguments, false);
+        $ecobee_token = $this->api('ecobee_token', 'refresh');
+        return $this->ecobee_api($method, $endpoint, $arguments, false, $ecobee_token);
       }
       else {
         if($this::$log_mysql !== 'all') {

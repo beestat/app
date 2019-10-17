@@ -1,12 +1,12 @@
 /**
  * Custom date range for the aggregate runtime chart.
  */
-beestat.component.modal.aggregate_runtime_custom = function() {
+beestat.component.modal.runtime_thermostat_summary_custom = function() {
   beestat.component.modal.apply(this, arguments);
 };
-beestat.extend(beestat.component.modal.aggregate_runtime_custom, beestat.component.modal);
+beestat.extend(beestat.component.modal.runtime_thermostat_summary_custom, beestat.component.modal);
 
-beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = function(parent) {
+beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
   parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Aggregate Runtime chart.'));
@@ -22,26 +22,26 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
       'maxlength': 10
     })
     .set_icon('pound')
-    .set_value(beestat.setting('aggregate_runtime_time_count'));
+    .set_value(beestat.setting('runtime_thermostat_summary_time_count'));
 
-  self.state_.aggregate_runtime_time_count =
-    beestat.setting('aggregate_runtime_time_count');
+  self.state_.runtime_thermostat_summary_time_count =
+    beestat.setting('runtime_thermostat_summary_time_count');
 
   time_count.addEventListener('blur', function() {
-    self.state_.aggregate_runtime_time_count =
+    self.state_.runtime_thermostat_summary_time_count =
       parseInt(this.get_value(), 10) || 1;
   });
 
   // Button groups
   var options = {
-    'aggregate_runtime_time_period': [
+    'runtime_thermostat_summary_time_period': [
       'day',
       'week',
       'month',
       'year',
       'all'
     ],
-    'aggregate_runtime_group_by': [
+    'runtime_thermostat_summary_group_by': [
       'day',
       'week',
       'month',
@@ -57,13 +57,13 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
 
     let button_group = new beestat.component.button_group();
     options[key].forEach(function(value) {
-      let text = value.replace('aggregate_runtime_', '')
+      let text = value.replace('runtime_thermostat_summary_', '')
         .charAt(0)
         .toUpperCase() +
         value.slice(1) +
         (
           (
-            key === 'aggregate_runtime_time_period' &&
+            key === 'runtime_thermostat_summary_time_period' &&
             value !== 'all'
           ) ? 's' : ''
         );
@@ -73,12 +73,12 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
         .set_text_color('#fff')
         .set_text(text)
         .addEventListener('click', function() {
-          if (key === 'aggregate_runtime_time_period') {
+          if (key === 'runtime_thermostat_summary_time_period') {
             if (value === 'all') {
               time_count.set_value('∞').disable();
             } else if (time_count.get_value() === '∞') {
               time_count
-                .set_value(self.state_.aggregate_runtime_time_count || '1')
+                .set_value(self.state_.runtime_thermostat_summary_time_count || '1')
                 .enable();
               time_count.dispatchEvent('blur');
             }
@@ -98,7 +98,7 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
 
       if (current_type === value) {
         if (
-          key === 'aggregate_runtime_time_period' &&
+          key === 'runtime_thermostat_summary_time_period' &&
           value === 'all'
         ) {
           time_count.set_value('∞').disable();
@@ -128,13 +128,13 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
   time_count.render(column);
   column = $.createElement('div').addClass(['column column_10']);
   row.appendChild(column);
-  button_groups.aggregate_runtime_time_period.render(column);
+  button_groups.runtime_thermostat_summary_time_period.render(column);
   (new beestat.component.title('Group By')).render(parent);
   row = $.createElement('div').addClass('row');
   parent.appendChild(row);
   column = $.createElement('div').addClass(['column column_12']);
   row.appendChild(column);
-  button_groups.aggregate_runtime_group_by.render(column);
+  button_groups.runtime_thermostat_summary_group_by.render(column);
 };
 
 /**
@@ -142,7 +142,7 @@ beestat.component.modal.aggregate_runtime_custom.prototype.decorate_contents_ = 
  *
  * @return {string} Title
  */
-beestat.component.modal.aggregate_runtime_custom.prototype.get_title_ = function() {
+beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_title_ = function() {
   return 'Aggregate Runtime - Custom Range';
 };
 
@@ -151,7 +151,7 @@ beestat.component.modal.aggregate_runtime_custom.prototype.get_title_ = function
  *
  * @return {[beestat.component.button]} The buttons.
  */
-beestat.component.modal.aggregate_runtime_custom.prototype.get_buttons_ = function() {
+beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_buttons_ = function() {
   var self = this;
 
   var cancel = new beestat.component.button()
@@ -176,14 +176,14 @@ beestat.component.modal.aggregate_runtime_custom.prototype.get_buttons_ = functi
 
       beestat.setting(
         {
-          'aggregate_runtime_time_count':
-            self.state_.aggregate_runtime_time_period === 'all'
+          'runtime_thermostat_summary_time_count':
+            self.state_.runtime_thermostat_summary_time_period === 'all'
               ? 0
-              : self.state_.aggregate_runtime_time_count,
-          'aggregate_runtime_time_period':
-            self.state_.aggregate_runtime_time_period,
-          'aggregate_runtime_group_by':
-            self.state_.aggregate_runtime_group_by
+              : self.state_.runtime_thermostat_summary_time_count,
+          'runtime_thermostat_summary_time_period':
+            self.state_.runtime_thermostat_summary_time_period,
+          'runtime_thermostat_summary_group_by':
+            self.state_.runtime_thermostat_summary_group_by
         },
         undefined,
         function() {

@@ -41,7 +41,7 @@ class ecobee_token extends cora\crud {
       isset($response['access_token']) === false ||
       isset($response['refresh_token']) === false
     ) {
-      throw new Exception('Could not get first token.', 10001);
+      throw new Exception('Could not get first token.', 10000);
     }
 
     return [
@@ -57,23 +57,18 @@ class ecobee_token extends cora\crud {
    * so that no other API call can attempt to get a token at the same time.
    * This way if two API calls fire off to ecobee at the same time, then
    * return at the same time, then call token->refresh() at the same time,
-   * only one can run and actually refresh at a time. If the second one runs
-   * after that's fine as it will look up the token prior to refreshing.
+   * only one can run and actually refresh at a time. If the transactionless
+   * one runs after that's fine as it will look up the token prior to
+   * refreshing.
    *
-   * Also this creates a new database connection. If a token is written to the
-   * database, then the transaction gets rolled back, the token will be
-   * erased. I originally tried to avoid this by not using transactions except
-   * when syncing, but there are enough sync errors that happen where this
-   * causes a problem. The extra overhead of a second database connection
-   * every now and then shouldn't be that bad.
+   * @return array The new token.
    */
   public function refresh() {
-    $database = cora\database::get_second_instance();
+    $database = cora\database::get_transactionless_instance();
 
     $lock_name = 'ecobee_token->refresh(' . $this->session->get_user_id() . ')';
     $database->get_lock($lock_name, 3);
 
-    // $ecobee_tokens = $this->read();
     $ecobee_tokens = $database->read(
       'ecobee_token',
       [
@@ -81,7 +76,7 @@ class ecobee_token extends cora\crud {
       ]
     );
     if(count($ecobee_tokens) === 0) {
-      throw new Exception('Could not refresh ecobee token; no token found.', 10002);
+      throw new Exception('Could not refresh ecobee token; no token found.', 10001);
     }
     $ecobee_token = $ecobee_tokens[0];
 
@@ -104,10 +99,10 @@ class ecobee_token extends cora\crud {
     ) {
       $this->delete($ecobee_token['ecobee_token_id']);
       $database->release_lock($lock_name);
-      throw new Exception('Could not refresh ecobee token; ecobee returned no token.', 10003);
+      throw new Exception('Could not refresh ecobee token; ecobee returned no token.', 10002);
     }
 
-    $database->update(
+    $ecobee_token = $database->update(
       'ecobee_token',
       [
         'ecobee_token_id' => $ecobee_token['ecobee_token_id'],
@@ -118,6 +113,8 @@ class ecobee_token extends cora\crud {
     );
 
     $database->release_lock($lock_name);
+
+    return $ecobee_token;
   }
 
   /**
@@ -129,11 +126,10 @@ class ecobee_token extends cora\crud {
    * @return int
    */
   public function delete($id) {
-    $database = cora\database::get_second_instance();
+    $database = cora\database::get_transactionless_instance();
 
     // Need to delete the token before logging out or else the delete fails.
     $return = $database->delete('ecobee_token', $id);
-    // $return = parent::delete($id);
 
     // Log out
     $this->api('user', 'log_out', ['all' => true]);

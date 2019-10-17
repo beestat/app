@@ -212,6 +212,7 @@ class ecobee_thermostat extends cora\crud {
       $attributes['filters'] = $this->get_filters($thermostat, $ecobee_thermostat);
       $attributes['json_alerts'] = $this->get_alerts($thermostat, $ecobee_thermostat);
       $attributes['weather'] = $this->get_weather($thermostat, $ecobee_thermostat);
+      $attributes['time_zone'] = $this->get_time_zone($thermostat, $ecobee_thermostat);
 
       $detected_system_type = $this->get_detected_system_type($thermostat, $ecobee_thermostat);
       if($thermostat['system_type'] === null) {
@@ -448,23 +449,23 @@ class ecobee_thermostat extends cora\crud {
     $supported_types = [
       'furnaceFilter' => [
         'key' => 'furnace',
-        'sum_column' => 'fan'
+        'sum_column' => 'sum_fan'
       ],
       'humidifierFilter' => [
         'key' => 'humidifier',
-        'sum_column' => 'humidifier'
+        'sum_column' => 'sum_humidifier'
       ],
       'dehumidifierFilter' => [
         'key' => 'dehumidifier',
-        'sum_column' => 'dehumidifier'
+        'sum_column' => 'sum_dehumidifier'
       ],
       'ventilator' => [
         'key' => 'ventilator',
-        'sum_column' => 'ventilator'
+        'sum_column' => 'sum_ventilator'
       ],
       'uvLamp' => [
         'key' => 'uv_lamp',
-        'sum_column' => 'fan'
+        'sum_column' => 'sum_fan'
       ]
     ];
 
@@ -482,7 +483,7 @@ class ecobee_thermostat extends cora\crud {
             'life_units' => $notification['filterLifeUnits']
           ];
 
-          $sums[] = 'sum(case when `timestamp` > "' . $notification['filterLastChanged'] . '" then `' . $sum_column . '` else 0 end) `' . $key . '`';
+          $sums[] = 'sum(case when `date` > "' . $notification['filterLastChanged'] . '" then `' . $sum_column . '` else 0 end) `' . $key . '`';
           $min_timestamp = min($min_timestamp, strtotime($notification['filterLastChanged']));
         }
       }
@@ -493,11 +494,11 @@ class ecobee_thermostat extends cora\crud {
         select
           ' . implode(',', $sums) . '
         from
-          ecobee_runtime_thermostat
+          runtime_thermostat_summary
         where
               `user_id` = "' . $this->session->get_user_id() . '"
-          and `ecobee_thermostat_id` = "' . $ecobee_thermostat['ecobee_thermostat_id'] . '"
-          and `timestamp` > "' . date('Y-m-d', $min_timestamp) . '"
+          and `thermostat_id` = "' . $thermostat['thermostat_id'] . '"
+          and `date` >= "' . date('Y-m-d', $min_timestamp) . '"
       ';
 
       $result = $this->database->query($query);
@@ -859,6 +860,33 @@ class ecobee_thermostat extends cora\crud {
     }
 
     return $weather;
+  }
+
+  /**
+   * Get the current time zone. It's usually set. If not set use the offset
+   * minutes to find it. Worst case default to the most common time zone.
+   *
+   * @param array $thermostat
+   * @param array $ecobee_thermostat
+   *
+   * @return The time zone.
+   */
+  private function get_time_zone($thermostat, $ecobee_thermostat) {
+    $time_zone = $ecobee_thermostat['json_location']['timeZone'];
+
+    if (in_array($time_zone, timezone_identifiers_list()) === true) {
+      return $time_zone;
+    } else if ($ecobee_thermostat['json_location']['timeZoneOffsetMinutes'] !== '') {
+      $offset_seconds = $ecobee_thermostat['json_location']['timeZoneOffsetMinutes'] * 60;
+      $time_zone = timezone_name_from_abbr('', $offset_seconds, 1);
+      // Workaround for bug #44780
+      if ($time_zone === false) {
+        $time_zone = timezone_name_from_abbr('', $offset_seconds, 0);
+      }
+      return $time_zone;
+    } else {
+      return 'America/New_York';
+    }
   }
 
 }

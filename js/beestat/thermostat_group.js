@@ -3,6 +3,9 @@
  * defined settings. Updates the cache with the response which fires off the
  * event for anything bound to that data.
  *
+ * TODO: This can probably be refactored a bit. The API call is now gone
+ * because it's no longer possible to generate these on the fly as of 1.4.
+ *
  * @param {Function} callback Optional callback to fire when the API call
  * completes.
  */
@@ -12,76 +15,13 @@ beestat.generate_temperature_profile = function(callback) {
     thermostat.thermostat_group_id
   ];
 
-  var comparison_period = beestat.setting('comparison_period');
+  beestat.cache.set(
+    'data.comparison_temperature_profile',
+    thermostat_group.temperature_profile
+  );
 
-  // Fire off the API call to get the temperature profile.
-  var begin;
-  var end;
-  if (comparison_period === 'custom') {
-    end = moment(beestat.setting('comparison_period_custom'));
-
-    // If you picked today just set these to null to utilize the API cache.
-    if (end.isSame(moment(), 'date') === true) {
-      begin = null;
-      end = null;
-    } else {
-      begin = moment(beestat.setting('comparison_period_custom'));
-      begin.subtract(1, 'year');
-
-      end = end.format('YYYY-MM-DD');
-      begin = begin.format('YYYY-MM-DD');
-    }
-  } else if (comparison_period !== 0) {
-    begin = moment();
-    end = moment();
-
-    begin.subtract(comparison_period, 'month');
-    begin.subtract(1, 'year');
-
-    end.subtract(comparison_period, 'month');
-
-    end = end.format('YYYY-MM-DD');
-    begin = begin.format('YYYY-MM-DD');
-  } else {
-    // Set to null for "today" so the API cache gets used.
-    begin = null;
-    end = null;
-  }
-
-  /*
-   * If begin/end were null, just use what's already stored on the
-   * thermostat_group. This will take advantage of the cached data for a week
-   * and let the cron job update it as necessary.
-   */
-  if (begin === null && end === null) {
-    beestat.cache.set(
-      'data.comparison_temperature_profile',
-      thermostat_group.temperature_profile
-    );
-
-    if (callback !== undefined) {
-      callback();
-    }
-  } else {
-    beestat.cache.delete('data.comparison_temperature_profile');
-    new beestat.api()
-      .add_call(
-        'thermostat_group',
-        'generate_temperature_profile',
-        {
-          'thermostat_group_id': thermostat.thermostat_group_id,
-          'begin': begin,
-          'end': end
-        }
-      )
-      .set_callback(function(data) {
-        beestat.cache.set('data.comparison_temperature_profile', data);
-
-        if (callback !== undefined) {
-          callback();
-        }
-      })
-      .send();
+  if (callback !== undefined) {
+    callback();
   }
 };
 

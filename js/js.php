@@ -29,6 +29,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/poll.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/google_analytics.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/thermostat_group.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/highcharts.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/get_sync_progress.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -40,7 +42,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/alert.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/aggregate_runtime.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/alerts.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/comparison_settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/comparison_issue.js"></script>' . PHP_EOL;
@@ -57,6 +59,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/system.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/temperature_profiles.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart2.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/header.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/icon.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/layout.js"></script>' . PHP_EOL;
@@ -65,13 +69,13 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/menu.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/menu_item.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/modal/aggregate_runtime_custom.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/runtime_thermostat_summary_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/announcements.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_system_type.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_thermostat.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/error.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/filter_info.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/modal/help_aggregate_runtime.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/help_runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/help_alerts.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/help_home_efficiency.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/help_my_home.js"></script>' . PHP_EOL;

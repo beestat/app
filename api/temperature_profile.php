@@ -2,6 +2,8 @@
 
 /**
  * Some functionality for generating and working with temperature profiles.
+ * Per ecobee documentation: The values supplied for any given 5-minute
+ * interval is the value at the start of the interval and is not an average.
  *
  * @author Jon Ziebell
  */
@@ -20,22 +22,17 @@ class temperature_profile extends cora\api {
    * Generate a temperature profile for the specified thermostat.
    *
    * @param int $thermostat_id
-   * @param string $begin Begin date (local time).
-   * @param string $end End date (local time).
    *
    * @return array
    */
-  public function generate($thermostat_id, $begin, $end) {
+  public function generate($thermostat_id) {
     set_time_limit(0);
 
-    $save = ($begin === null && $end === null);
-
-    // Begin and end are dates, not timestamps. Force that.
-    if($begin !== null) {
-      $begin = date('Y-m-d 00:00:00', strtotime($begin));
-    }
-    if($end !== null) {
-      $end = date('Y-m-d 23:59:59', strtotime($end));
+    // Make sure the thermostat_id provided is one of yours since there's no
+    // user_id security on the runtime_thermostat table.
+    $thermostats = $this->api('thermostat', 'read_id');
+    if (isset($thermostats[$thermostat_id]) === false) {
+      throw new Exception('Invalid thermostat_id.', 10300);
     }
 
     /**
@@ -52,7 +49,7 @@ class temperature_profile extends cora\api {
      *
      * For now this is set to 30m, which I feel is an appropriate requirement.
      * I am not factoring in any variables outside of temperature for now.
-     * Note that 30m is a MINIMUM due to the zone_calendar_event logic that
+     * Note that 30m is a MINIMUM due to the event_runtime_thermostat_text_id logic that
      * will go back in time by 30m to account for sensor changes if the
      * calendar event changes.
      */
@@ -94,7 +91,7 @@ class temperature_profile extends cora\api {
 
     /**
      * How far back to query for additional data. For example, when the
-     * zone_calendar_event changes I pull data from 30m ago. If that data is
+     * event_runtime_thermostat_text_id changes I pull data from 30m ago. If that data is
      * not available in the current runtime chunk, then it will fail. This
      * will make sure that data is always included.
      */
@@ -110,23 +107,11 @@ class temperature_profile extends cora\api {
 
     // Get some stuff
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
-    $ecobee_thermostat_id = $thermostat['ecobee_thermostat_id'];
-
-    $ecobee_thermostat = $this->api('ecobee_thermostat', 'get', $thermostat['ecobee_thermostat_id']);
-    $this->database->set_time_zone($ecobee_thermostat['json_location']['timeZoneOffsetMinutes']);
 
     // Figure out all the starting and ending times. Round begin/end to the
     // nearest 5 minutes to help with the looping later on.
-    $offset = $ecobee_thermostat['json_location']['timeZoneOffsetMinutes'];
-    $end_timestamp = ($end === null ? (time() + ($offset * 60)) : strtotime($end));
-    $begin_timestamp = ($begin === null ? strtotime('-1 year', $end_timestamp) : strtotime($begin));
-
-    // Swap them if they are backwards.
-    if($end_timestamp < $begin_timestamp) {
-      $tmp = $end_timestamp;
-      $end_timestamp = $begin_timestamp;
-      $begin_timestamp = $tmp;
-    }
+    $end_timestamp = time();
+    $begin_timestamp = strtotime('-1 year', $end_timestamp);
 
     // Round to 5 minute intervals.
     $begin_timestamp = floor($begin_timestamp / 300) * 300;
@@ -144,9 +129,9 @@ class temperature_profile extends cora\api {
     );
 
     // Get all of the relevant data
-    $ecobee_thermostat_ids = [];
+    $thermostat_ids = [];
     foreach($group_thermostats as $thermostat) {
-      $ecobee_thermostat_ids[] = $thermostat['ecobee_thermostat_id'];
+      $thermostat_ids[] = $thermostat['thermostat_id'];
     }
 
     /**
@@ -157,12 +142,12 @@ class temperature_profile extends cora\api {
      */
     $memory_limit = 16; // mb
     $memory_per_thermostat_per_day = 0.6; // mb
-    $days = (int) floor($memory_limit / ($memory_per_thermostat_per_day * count($ecobee_thermostat_ids)));
+    $days = (int) floor($memory_limit / ($memory_per_thermostat_per_day * count($thermostat_ids)));
 
     $chunk_size = $days * 86400;
 
     if($chunk_size === 0) {
-      throw new Exception('Too many thermostats; cannot generate temperature profile.');
+      throw new Exception('Too many thermostats; cannot generate temperature profile.', 10301);
     }
 
     $current_timestamp = $begin_timestamp;
@@ -188,23 +173,20 @@ class temperature_profile extends cora\api {
         $query = '
           select
             `timestamp`,
-            `ecobee_thermostat_id`,
-            `zone_average_temperature`,
+            `thermostat_id`,
+            `indoor_temperature`,
             `outdoor_temperature`,
-            `compressor_heat_1`,
-            `compressor_heat_2`,
+            `compressor_1`,
+            `compressor_2`,
+            `compressor_mode`,
             `auxiliary_heat_1`,
             `auxiliary_heat_2`,
-            `auxiliary_heat_3`,
-            `compressor_cool_1`,
-            `compressor_cool_2`,
-            `zone_calendar_event`,
-            `zone_climate`
+            `event_runtime_thermostat_text_id`,
+            `climate_runtime_thermostat_text_id`
           from
-            `ecobee_runtime_thermostat`
+            `runtime_thermostat`
           where
-                `user_id` = ' . $this->database->escape($this->session->get_user_id()) . '
-            and `ecobee_thermostat_id` in (' . implode(',', $ecobee_thermostat_ids) . ')
+                `thermostat_id` in (' . implode(',', $thermostat_ids) . ')
             and `timestamp` >= "' . date('Y-m-d H:i:s', ($current_timestamp - $max_lookback)) . '"
             and `timestamp` < "' . date('Y-m-d H:i:s', ($chunk_end_timestamp + $max_lookahead)) . '"
         ';
@@ -216,44 +198,54 @@ class temperature_profile extends cora\api {
             $thermostat['system_type']['detected']['heat'] === 'compressor' ||
             $thermostat['system_type']['detected']['heat'] === 'geothermal'
           ) {
-            $row['heat'] = max(
-              $row['compressor_heat_1'],
-              $row['compressor_heat_2']
-            );
+            if($row['compressor_mode'] === 'heat') {
+              $row['heat'] = max(
+                $row['compressor_1'],
+                $row['compressor_2']
+              );
+            } else {
+              $row['heat'] = 0;
+            }
             $row['auxiliary_heat'] = max(
               $row['auxiliary_heat_1'],
-              $row['auxiliary_heat_2'],
-              $row['auxiliary_heat_3']
+              $row['auxiliary_heat_2']
             );
           } else {
             $row['heat'] = max(
               $row['auxiliary_heat_1'],
-              $row['auxiliary_heat_2'],
-              $row['auxiliary_heat_3']
+              $row['auxiliary_heat_2']
             );
             $row['auxiliary_heat'] = 0;
           }
 
-          $row['cool'] = max(
-            $row['compressor_cool_1'],
-            $row['compressor_cool_2']
-          );
+          if($row['compressor_mode'] === 'cool') {
+            $row['cool'] = max(
+              $row['compressor_1'],
+              $row['compressor_2']
+            );
+          } else {
+            $row['cool'] = 0;
+          }
 
           $timestamp = strtotime($row['timestamp']);
           if (isset($runtime[$timestamp]) === false) {
             $runtime[$timestamp] = [];
           }
-          $runtime[$timestamp][$row['ecobee_thermostat_id']] = $row;
+          $runtime[$timestamp][$row['thermostat_id']] = $row;
         }
       }
 
       if(
         isset($runtime[$current_timestamp]) === true && // Had data for at least one thermostat
-        isset($runtime[$current_timestamp][$ecobee_thermostat_id]) === true // Had data for the requested thermostat
+        isset($runtime[$current_timestamp][$thermostat_id]) === true // Had data for the requested thermostat
       ) {
-        $current_runtime = $runtime[$current_timestamp][$ecobee_thermostat_id];
+        $current_runtime = $runtime[$current_timestamp][$thermostat_id];
         if($current_runtime['outdoor_temperature'] !== null) {
-            $current_runtime['outdoor_temperature'] = round($current_runtime['outdoor_temperature'] / $smoothing) * $smoothing;
+          // Rounds to the nearest degree (because temperatures are stored in tenths).
+          $current_runtime['outdoor_temperature'] = round($current_runtime['outdoor_temperature'] / 10) * 10;
+
+          // Applies further smoothing if required.
+          $current_runtime['outdoor_temperature'] = round($current_runtime['outdoor_temperature'] / $smoothing) * $smoothing;
         }
 
         /**
@@ -263,7 +255,7 @@ class temperature_profile extends cora\api {
         $most_off = true;
         $all_off = true;
         if(
-          count($runtime[$current_timestamp]) < count($ecobee_thermostat_ids)
+          count($runtime[$current_timestamp]) < count($thermostat_ids)
         ) {
           // If I didn't get data at this timestamp for all thermostats in the
           // group, all off can't be true.
@@ -271,20 +263,17 @@ class temperature_profile extends cora\api {
           $most_off = false;
         }
         else {
-          foreach($runtime[$current_timestamp] as $runtime_ecobee_thermostat_id => $thermostat_runtime) {
+          foreach($runtime[$current_timestamp] as $runtime_thermostat_id => $thermostat_runtime) {
             if(
-              $thermostat_runtime['compressor_heat_1'] !== 0 ||
-              $thermostat_runtime['compressor_heat_2'] !== 0 ||
+              $thermostat_runtime['compressor_1'] !== 0 ||
+              $thermostat_runtime['compressor_2'] !== 0 ||
               $thermostat_runtime['auxiliary_heat_1'] !== 0 ||
               $thermostat_runtime['auxiliary_heat_2'] !== 0 ||
-              $thermostat_runtime['auxiliary_heat_3'] !== 0 ||
-              $thermostat_runtime['compressor_cool_1'] !== 0 ||
-              $thermostat_runtime['compressor_cool_2'] !== 0 ||
               $thermostat_runtime['outdoor_temperature'] === null ||
-              $thermostat_runtime['zone_average_temperature'] === null ||
+              $thermostat_runtime['indoor_temperature'] === null ||
               (
                 // Wasn't syncing this until mid-November 2018. Just going with December to be safe.
-                $thermostat_runtime['zone_climate'] === null &&
+                $thermostat_runtime['climate_runtime_thermostat_text_id'] === null &&
                 $current_timestamp > 1543640400
               )
             ) {
@@ -297,7 +286,7 @@ class temperature_profile extends cora\api {
               // If everything _but_ the requested thermostat is off. This is
               // used for the heat/cool scores as I need to only gather samples
               // when everything else is off.
-              if($runtime_ecobee_thermostat_id !== $ecobee_thermostat_id) {
+              if($runtime_thermostat_id !== $thermostat_id) {
                 $most_off = false;
               }
             }
@@ -383,8 +372,8 @@ class temperature_profile extends cora\api {
             isset($previous_runtime) === true &&
             (
               $current_runtime['outdoor_temperature'] !== $begin_runtime['heat']['outdoor_temperature'] ||
-              $current_runtime['zone_calendar_event'] !== $begin_runtime['heat']['zone_calendar_event'] ||
-              $current_runtime['zone_climate'] !== $begin_runtime['heat']['zone_climate'] ||
+              $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime['heat']['event_runtime_thermostat_text_id'] ||
+              $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime['heat']['climate_runtime_thermostat_text_id'] ||
               $most_off === false
             )
           ) ||
@@ -400,8 +389,8 @@ class temperature_profile extends cora\api {
             isset($previous_runtime) === true &&
             (
               $current_runtime['outdoor_temperature'] !== $begin_runtime['cool']['outdoor_temperature'] ||
-              $current_runtime['zone_calendar_event'] !== $begin_runtime['cool']['zone_calendar_event'] ||
-              $current_runtime['zone_climate'] !== $begin_runtime['cool']['zone_climate'] ||
+              $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime['cool']['event_runtime_thermostat_text_id'] ||
+              $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime['cool']['climate_runtime_thermostat_text_id'] ||
               $most_off === false
             )
           ) ||
@@ -417,8 +406,8 @@ class temperature_profile extends cora\api {
             isset($previous_runtime) === true &&
             (
               $current_runtime['outdoor_temperature'] !== $begin_runtime['resist']['outdoor_temperature'] ||
-              $current_runtime['zone_calendar_event'] !== $begin_runtime['resist']['zone_calendar_event'] ||
-              $current_runtime['zone_climate'] !== $begin_runtime['resist']['zone_climate'] ||
+              $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime['resist']['event_runtime_thermostat_text_id'] ||
+              $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime['resist']['climate_runtime_thermostat_text_id'] ||
               $all_off === false
             )
           )
@@ -426,25 +415,25 @@ class temperature_profile extends cora\api {
           // By default the end sample is the previous sample (five minutes ago).
           $offset = $five_minutes;
 
-          // If zone_calendar_event or zone_climate changes, need to ignore data
+          // If event_runtime_thermostat_text_id or climate_runtime_thermostat_text_id changes, need to ignore data
           // from the previous 30 minutes as there are sensors changing during
           // that time.
           if(
-            $current_runtime['zone_calendar_event'] !== $begin_runtime[$sample_type]['zone_calendar_event'] ||
-            $current_runtime['zone_climate'] !== $begin_runtime[$sample_type]['zone_climate']
+            $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime[$sample_type]['event_runtime_thermostat_text_id'] ||
+            $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime[$sample_type]['climate_runtime_thermostat_text_id']
           ) {
             $offset = $thirty_minutes;
           } else {
             // Start looking ahead into the next 30 minutes looking for changes
-            // to zone_calendar_event and zone_climate.
+            // to event_runtime_thermostat_text_id and climate_runtime_thermostat_text_id.
             $lookahead = $five_minutes;
             while($lookahead <= $thirty_minutes) {
               if(
                 isset($runtime[$current_timestamp + $lookahead]) === true &&
-                isset($runtime[$current_timestamp + $lookahead][$ecobee_thermostat_id]) === true &&
+                isset($runtime[$current_timestamp + $lookahead][$thermostat_id]) === true &&
                 (
-                  $runtime[$current_timestamp + $lookahead][$ecobee_thermostat_id]['zone_calendar_event'] !== $current_runtime['zone_calendar_event'] ||
-                  $runtime[$current_timestamp + $lookahead][$ecobee_thermostat_id]['zone_climate'] !== $current_runtime['zone_climate']
+                  $runtime[$current_timestamp + $lookahead][$thermostat_id]['event_runtime_thermostat_text_id'] !== $current_runtime['event_runtime_thermostat_text_id'] ||
+                  $runtime[$current_timestamp + $lookahead][$thermostat_id]['climate_runtime_thermostat_text_id'] !== $current_runtime['climate_runtime_thermostat_text_id']
                 )
               ) {
                 $offset = ($thirty_minutes - $lookahead);
@@ -462,16 +451,16 @@ class temperature_profile extends cora\api {
           // to this.
           if(
             isset($runtime[$current_timestamp - $offset]) === true &&
-            isset($runtime[$current_timestamp - $offset][$ecobee_thermostat_id]) === true &&
+            isset($runtime[$current_timestamp - $offset][$thermostat_id]) === true &&
             ($current_timestamp - $offset) > strtotime($begin_runtime[$sample_type]['timestamp'])
           ) {
-            $end_runtime = $runtime[$current_timestamp - $offset][$ecobee_thermostat_id];
+            $end_runtime = $runtime[$current_timestamp - $offset][$thermostat_id];
           } else {
             $end_runtime = null;
           }
 
           if($end_runtime !== null) {
-            $delta = $end_runtime['zone_average_temperature'] - $begin_runtime[$sample_type]['zone_average_temperature'];
+            $delta = $end_runtime['indoor_temperature'] - $begin_runtime[$sample_type]['indoor_temperature'];
             $duration = strtotime($end_runtime['timestamp']) - strtotime($begin_runtime[$sample_type]['timestamp']);
 
             if($duration > 0) {
@@ -500,7 +489,7 @@ class temperature_profile extends cora\api {
       if(
         $heat_on_for === 0 ||
         $current_runtime['outdoor_temperature'] === null ||
-        $current_runtime['zone_average_temperature'] === null ||
+        $current_runtime['indoor_temperature'] === null ||
         $current_runtime['auxiliary_heat'] > 0
       ) {
         unset($begin_runtime['heat']);
@@ -508,7 +497,7 @@ class temperature_profile extends cora\api {
       if(
         $cool_on_for === 0 ||
         $current_runtime['outdoor_temperature'] === null ||
-        $current_runtime['zone_average_temperature'] === null
+        $current_runtime['indoor_temperature'] === null
       ) {
         unset($begin_runtime['cool']);
       }
@@ -603,7 +592,7 @@ class temperature_profile extends cora\api {
 
     // Only actually save this profile to the thermostat if it was run with the
     // default settings (aka the last year). Anything else is not valid to save.
-    if($save === true) {
+    // if($save === true) {
       $this->api(
         'thermostat',
         'update',
@@ -614,7 +603,7 @@ class temperature_profile extends cora\api {
           ]
         ]
       );
-    }
+    // }
 
     $this->database->set_time_zone(0);
 
