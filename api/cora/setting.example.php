@@ -106,7 +106,7 @@ final class setting {
      * Used anytime the API needs to know where the site is at. Don't forget
      * the trailing slash.
      *
-     * Example: https://beestat.io/
+     * Example: https://app.beestat.io/
      */
     'beestat_root_uri' => '',
 

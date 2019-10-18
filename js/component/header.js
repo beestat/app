@@ -152,7 +152,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     .set_callback(function() {
       new beestat.api()
         .set_callback(function() {
-          window.location.reload();
+          window.location.href = window.location.href.replace('app.', '');
         })
         .add_call(
           'user',

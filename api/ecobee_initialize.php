@@ -24,6 +24,6 @@ if(isset($_GET['error_description']) === true) {
 
 $setting = cora\setting::get_instance();
 
-header('Location: ' . $setting->get('beestat_root_uri') . 'api/index.php?resource=ecobee&method=initialize&arguments=' . json_encode($arguments) . '&api_key=' . $setting->get('ecobee_api_key_local'));
+header('Location: ' . $setting->get('beestat_root_uri') . 'api/?resource=ecobee&method=initialize&arguments=' . json_encode($arguments) . '&api_key=' . $setting->get('ecobee_api_key_local'));
 
 die();

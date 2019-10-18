@@ -45,7 +45,12 @@ beestat.api.prototype.send = function(opt_api_call) {
     this.xhr_.addEventListener('load', function() {
       self.load_(this.responseText);
     });
-    this.xhr_.open('POST', '../api/?' + query_string);
+
+    // var endpoint = (window.environment === 'live')
+      // ? 'https://api.beestat.io/'
+      // : 'http://' + window.environment + '.api.beestat.io/';
+    // this.xhr_.open('POST', endpoint + '?' + query_string);
+    this.xhr_.open('POST', 'api/?' + query_string);
     this.xhr_.send();
   } else {
     if (this.api_calls_.length === 0) {
@@ -87,7 +92,6 @@ beestat.api.prototype.send = function(opt_api_call) {
       var cached = this.get_cached_(single_api_call);
       if (cached !== undefined) {
         if (this.callback_ !== undefined) {
-
           /**
            * Timeout makes this behave like an actual API call in terms of
            * program flow. Without this, if there is a rerender() inside a

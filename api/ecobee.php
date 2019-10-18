@@ -142,7 +142,7 @@ class ecobee extends external_api {
       }
 
       // Redirect to the proper location.
-      header('Location: ' . $this->setting->get('beestat_root_uri') . 'dashboard/');
+      header('Location: ' . $this->setting->get('beestat_root_uri'));
     }
     else if(isset($error) === true) {
       throw new Exception($error_description);

@@ -124,7 +124,6 @@ final class session {
     // Set all of the necessary cookies. Both *_session_key and *_user_id are
     // read every API request and made available to the API.
     $this->set_cookie('session_key', $session_key, $expire);
-    $this->set_cookie('session_user_id', $user_id, $expire);
     if(isset($additional_cookie_values) === true) {
       foreach($additional_cookie_values as $key => $value) {
         $this->set_cookie($key, $value, $expire, false);
@@ -157,8 +156,6 @@ final class session {
     }
 
     if($session_key === null) {
-      $this->delete_cookie('session_key');
-      $this->delete_cookie('session_user_id');
       return false;
     }
 
@@ -186,7 +183,6 @@ final class session {
         )
       ) {
         $this->delete_cookie('session_key');
-        $this->delete_cookie('session_user_id');
         return false;
       }
 
@@ -204,7 +200,6 @@ final class session {
     }
     else {
       $this->delete_cookie('session_key');
-      $this->delete_cookie('session_user_id');
       return false;
     }
   }
@@ -277,7 +272,7 @@ final class session {
 
   /**
    * Sets a cookie. If you want to set custom cookies, use the
-   * $additional_cookie_valeus argument on $session->create().
+   * $additional_cookie_values argument on $session->create().
    *
    * @param string $name The name of the cookie.
    * @param mixed $value The value of the cookie.
@@ -291,10 +286,13 @@ final class session {
     $this->setting = setting::get_instance();
     $path = '/'; // The current directory that the cookie is being set in.
     $secure = $this->setting->get('force_ssl');
-    $domain = null;
-    if($domain === null) { // See setting documentation for more info.
-      $domain = '';
-    }
+
+    preg_match(
+      '/https?:\/\/(.*?)\//',
+      $this->setting->get('beestat_root_uri'),
+      $matches
+    );
+    $domain = $matches[1];
 
     $cookie_success = setcookie(
       $name,
