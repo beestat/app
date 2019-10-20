@@ -379,7 +379,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_combined
         bucket[key] = sum / bucket[key].length;
 
         if (key.substring(key.length - 11) === 'temperature') {
-          bucket[key] = Math.round(bucket[key] * 10) / 10;
+          bucket[key] = beestat.temperature(Math.round(bucket[key] * 10) / 10);
         } else {
           bucket[key] = Math.round(bucket[key]);
         }
