@@ -191,7 +191,14 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
           : beestat.setting('runtime_thermostat_summary_group_by')
       );
   }
-  var end_m = moment();
+
+  // Make sure the current month, etc gets included (see #159).
+  var end_m = moment()
+    .endOf(
+      beestat.setting('runtime_thermostat_summary_group_by') === 'week'
+        ? 'isoweek'
+        : beestat.setting('runtime_thermostat_summary_group_by')
+    );
 
   var current_m = begin_m;
   while (current_m.isSameOrAfter(end_m) === false) {
