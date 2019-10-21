@@ -363,6 +363,9 @@ class runtime_thermostat extends cora\crud {
        * Also threw in null checks on a bunch of other fields just to simplify
        * the code later on. This happens so rarely that throwing away a whole
        * row for a null value shouldn't have any noticeable negative effect.
+       *
+       * Note: Don't ignore zoneHeatTemp or zoneCoolTemp. Sometimes those are
+       * legit null as the thermostat may be for heat/cool only (see #160).
        */
       if(
         $columns['hvacMode'] === null ||
@@ -370,8 +373,6 @@ class runtime_thermostat extends cora\crud {
         $columns['zoneHumidity'] === null ||
         $columns['outdoorTemp'] === null ||
         $columns['outdoorHumidity'] === null ||
-        $columns['zoneCoolTemp'] === null ||
-        $columns['zoneHeatTemp'] === null ||
         $columns['compHeat1'] === null ||
         $columns['compHeat2'] === null ||
         $columns['compCool1'] === null ||
