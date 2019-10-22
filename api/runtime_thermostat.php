@@ -16,8 +16,8 @@ class runtime_thermostat extends cora\crud {
   ];
 
   public static $cache = [
-    // 'sync' => 900, // 15 Minutes
-    // 'read' => 900,  // 15 Minutes
+    'sync' => 900, // 15 Minutes
+    'read' => 900,  // 15 Minutes
   ];
 
   /**
