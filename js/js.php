@@ -28,7 +28,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/setting.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/poll.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/google_analytics.js"></script>' . PHP_EOL;
-  echo '<script src="/js/beestat/thermostat_group.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/home_comparisons.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/highcharts.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/get_sync_progress.js"></script>' . PHP_EOL;
 

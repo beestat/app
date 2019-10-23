@@ -35,7 +35,7 @@ beestat.component.modal.help_score.prototype.decorate_contents_ = function(paren
 
   var strings = [];
 
-  var comparison_attributes = beestat.get_comparison_attributes(this.type_);
+  var comparison_attributes = beestat.home_comparisons.get_comparison_attributes(this.type_);
 
   if (comparison_attributes.system_type_heat !== undefined) {
     strings.push('Heat Type: ' + this.get_comparison_string_(comparison_attributes.system_type_heat));

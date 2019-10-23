@@ -30,7 +30,11 @@ beestat.layer.prototype.decorate_ = function(parent) {
 
 /**
  * Register a loader. Components do this. If the same function reference is
- * passed by multiple components, the duplicates will be removed.
+ * passed by multiple components, the duplicates will be removed. The loader
+ * was added so that I could have multiple cards on the same layer that need
+ * the same data. Each card adds a loader and when the layer loads it runs
+ * these functions. This way a layer can get the data one time instead of each
+ * component firing off a duplicate API call.
  *
  * @param {Function} loader A function to call when all of the components have
  * been added to the layer.

@@ -2,15 +2,7 @@
  * Temperature profiles.
  */
 beestat.component.card.temperature_profiles = function() {
-  var self = this;
-
-  beestat.dispatcher.addEventListener('cache.data.comparison_temperature_profile', function() {
-    self.rerender();
-  });
-
   beestat.component.card.apply(this, arguments);
-
-  this.layer_.register_loader(beestat.generate_temperature_profile);
 };
 beestat.extend(beestat.component.card.temperature_profiles, beestat.component.card);
 
@@ -22,17 +14,20 @@ beestat.extend(beestat.component.card.temperature_profiles, beestat.component.ca
 beestat.component.card.temperature_profiles.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
+  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat_group = beestat.cache.thermostat_group[
+    thermostat.thermostat_group_id
+  ];
+
   this.chart_ = new beestat.component.chart();
   this.chart_.options.chart.height = 300;
 
   if (
-    beestat.cache.data.comparison_temperature_profile === undefined
+    thermostat_group.temperature_profile === null
   ) {
     this.chart_.render(parent);
     this.show_loading_('Calculating');
   } else {
-    var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-
     // var x_categories = [];
     var trendlines = {};
     var raw = {};
@@ -43,10 +38,10 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
 
     var y_min = Infinity;
     var y_max = -Infinity;
-    for (var type in beestat.cache.data.comparison_temperature_profile) {
+    for (var type in thermostat_group.temperature_profile) {
       // Cloned because I mutate this data for temperature conversions.
       var profile = beestat.clone(
-        beestat.cache.data.comparison_temperature_profile[type]
+        thermostat_group.temperature_profile[type]
       );
 
       if (profile !== null) {

@@ -127,7 +127,7 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
           // Open up the loading window.
           self.show_loading_('Calculating Score for ' + region + ' region');
 
-          beestat.get_comparison_scores(function() {
+          beestat.home_comparisons.get_comparison_scores(function() {
             // Rerender to get rid of the loader.
             self.rerender();
           });
@@ -200,7 +200,7 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
           // Open up the loading window.
           self.show_loading_('Calculating Score for ' + property_type.text);
 
-          beestat.get_comparison_scores(function() {
+          beestat.home_comparisons.get_comparison_scores(function() {
             // Rerender to get rid of the loader.
             self.rerender();
           });

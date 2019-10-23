@@ -148,7 +148,7 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
 
           // Re-run comparison scores as they are invalid for the new system
           // type.
-          beestat.get_comparison_scores();
+          beestat.home_comparisons.get_comparison_scores();
 
           // Close the modal.
           self.dispose();
