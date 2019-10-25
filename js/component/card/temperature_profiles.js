@@ -1,7 +1,12 @@
 /**
  * Temperature profiles.
+ *
+ * @param {number} thermostat_group_id The thermostat_group_id this card is
+ * displaying data for.
  */
-beestat.component.card.temperature_profiles = function() {
+beestat.component.card.temperature_profiles = function(thermostat_group_id) {
+  this.thermostat_group_id_ = thermostat_group_id;
+
   beestat.component.card.apply(this, arguments);
 };
 beestat.extend(beestat.component.card.temperature_profiles, beestat.component.card);
@@ -12,15 +17,36 @@ beestat.extend(beestat.component.card.temperature_profiles, beestat.component.ca
  * @param {rocket.Elements} parent
  */
 beestat.component.card.temperature_profiles.prototype.decorate_contents_ = function(parent) {
-  var self = this;
+  var data = this.get_data_();
+  this.chart_ = new beestat.component.chart2.temperature_profiles(data);
+  this.chart_.render(parent);
+};
 
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+/**
+ * Get all of the series data.
+ *
+ * @return {object} The series data.
+ */
+beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
+    this.thermostat_group_id_
   ];
 
-  this.chart_ = new beestat.component.chart();
-  this.chart_.options.chart.height = 300;
+  var data = {
+    'x': [],
+    'series': {},
+    'metadata': {
+      'series': {},
+      'chart': {
+        'title': this.get_title_(),
+        'subtitle': this.get_subtitle_(),
+        'outdoor_temperature': beestat.temperature({
+          'temperature': (thermostat_group.weather.temperature / 10),
+          'round': 0
+        })
+      }
+    }
+  };
 
   if (
     thermostat_group.temperature_profile === null
@@ -28,10 +54,6 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
     this.chart_.render(parent);
     this.show_loading_('Calculating');
   } else {
-    // var x_categories = [];
-    var trendlines = {};
-    var raw = {};
-
     // Global x range.
     var x_min = Infinity;
     var x_max = -Infinity;
@@ -69,8 +91,8 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
         x_min = Math.min(x_min, this_x_min);
         x_max = Math.max(x_max, this_x_max);
 
-        trendlines[type] = [];
-        raw[type] = [];
+        data.series['trendline_' + type] = [];
+        data.series['raw_' + type] = [];
 
         /**
          * Data is stored internally as °F with 1 value per degree. That data
@@ -87,7 +109,7 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
          */
         var increment;
         var fixed;
-        if (thermostat.temperature_unit === '°F') {
+        if (beestat.setting('temperature_unit') === '°F') {
           increment = 1;
           fixed = 0;
         } else {
@@ -99,240 +121,27 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
           var y = (linear_trendline.slope * x_fixed) +
             linear_trendline.intercept;
 
-          trendlines[type].push([
+          data.series['trendline_' + type].push([
             parseFloat(x_fixed),
             y
           ]);
           if (profile.deltas[x_fixed] !== undefined) {
-            raw[type].push([
+            data.series['raw_' + type].push([
               parseFloat(x_fixed),
               profile.deltas[x_fixed]
             ]);
             y_min = Math.min(y_min, profile.deltas[x_fixed]);
             y_max = Math.max(y_max, profile.deltas[x_fixed]);
           }
+
+          data.metadata.chart.y_min = y_min;
+          data.metadata.chart.y_max = y_max;
         }
       }
     }
-
-    /*
-     * Set y_min and y_max to be equal but opposite so the graph is always
-     * centered.
-     */
-    var absolute_y_max = Math.max(Math.abs(y_min), Math.abs(y_max));
-    y_min = absolute_y_max * -1;
-    y_max = absolute_y_max;
-
-    // Chart
-    this.chart_.options.exporting.chartOptions.title.text = this.get_title_();
-    this.chart_.options.exporting.chartOptions.subtitle.text = this.get_subtitle_();
-
-    this.chart_.options.chart.backgroundColor = beestat.style.color.bluegray.base;
-    this.chart_.options.exporting.filename = 'Temperature Profiles';
-    this.chart_.options.chart.zoomType = null;
-    this.chart_.options.plotOptions.series.connectNulls = true;
-    this.chart_.options.legend = {'enabled': false};
-
-    this.chart_.options.xAxis = {
-      'lineWidth': 0,
-      'tickLength': 0,
-      'tickInterval': 5,
-      'gridLineWidth': 1,
-      'gridLineColor': beestat.style.color.bluegray.light,
-      'gridLineDashStyle': 'longdash',
-      'labels': {
-        'style': {'color': beestat.style.color.gray.base},
-        'formatter': function() {
-          return this.value + thermostat.temperature_unit;
-        }
-      },
-      'plotLines': [
-        {
-          'color': beestat.series.outdoor_temperature.color,
-          'dashStyle': 'ShortDash',
-          'width': 1,
-          'value': beestat.temperature(thermostat.weather.temperature),
-          'zIndex': 2
-        }
-      ]
-    };
-
-    this.chart_.options.yAxis = [
-      {
-        'alignTicks': false,
-        'gridLineColor': beestat.style.color.bluegray.light,
-        'gridLineDashStyle': 'longdash',
-        'title': {'text': null},
-        'labels': {
-          'style': {'color': beestat.style.color.gray.base},
-          'formatter': function() {
-            return this.value + thermostat.temperature_unit;
-          }
-        },
-        'min': y_min,
-        'max': y_max,
-        'plotLines': [
-          {
-            'color': beestat.style.color.bluegray.light,
-            'dashStyle': 'solid',
-            'width': 3,
-            'value': 0,
-            'zIndex': 1
-          }
-        ]
-      }
-    ];
-
-    this.chart_.options.tooltip = {
-      'shared': true,
-      'useHTML': true,
-      'borderWidth': 0,
-      'shadow': false,
-      'backgroundColor': null,
-      'followPointer': true,
-      'crosshairs': {
-        'width': 1,
-        'zIndex': 100,
-        'color': beestat.style.color.gray.light,
-        'dashStyle': 'shortDot',
-        'snap': false
-      },
-      'positioner': function(tooltip_width, tooltip_height, point) {
-        return beestat.component.chart.tooltip_positioner(
-          self.chart_.get_chart(),
-          tooltip_width,
-          tooltip_height,
-          point
-        );
-      },
-      'formatter': function() {
-        var sections = [];
-        var section = [];
-        this.points.forEach(function(point) {
-          var series = point.series;
-
-          var value = beestat.temperature({
-            'temperature': point.y,
-            'units': true,
-            'convert': false,
-            'delta': true,
-            'type': 'string'
-          }) + ' / hour';
-
-          if (series.name.indexOf('Raw') === -1) {
-            section.push({
-              'label': series.name,
-              'value': value,
-              'color': series.color
-            });
-          }
-        });
-        sections.push(section);
-
-        return beestat.component.chart.tooltip_formatter(
-          'Outdoor Temp: ' +
-          beestat.temperature({
-            'temperature': this.x,
-            'round': 0,
-            'units': true,
-            'convert': false
-          }),
-          sections
-        );
-      }
-    };
-
-    this.chart_.options.series = [];
-
-    // Trendline data
-    this.chart_.options.series.push({
-      'data': trendlines.heat,
-      'name': 'Indoor Heat Δ',
-      'color': beestat.series.compressor_heat_1.color,
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'line',
-      'lineWidth': 2,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    // Trendline data
-    this.chart_.options.series.push({
-      'data': trendlines.cool,
-      'name': 'Indoor Cool Δ',
-      'color': beestat.series.compressor_cool_1.color,
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'line',
-      'lineWidth': 2,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    // Trendline data
-    this.chart_.options.series.push({
-      'data': trendlines.resist,
-      'name': 'Indoor Δ',
-      'color': beestat.style.color.gray.dark,
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'line',
-      'lineWidth': 2,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    // Raw data
-    this.chart_.options.series.push({
-      'data': raw.heat,
-      'name': 'Heat Raw',
-      'color': beestat.series.compressor_heat_1.color,
-      'dashStyle': 'ShortDot',
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'spline',
-      'lineWidth': 1,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    // Raw data
-    this.chart_.options.series.push({
-      'data': raw.cool,
-      'name': 'Cool Raw',
-      'color': beestat.series.compressor_cool_1.color,
-      'dashStyle': 'ShortDot',
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'spline',
-      'lineWidth': 1,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    // Raw data
-    this.chart_.options.series.push({
-      'data': raw.resist,
-      'name': 'Resist Raw',
-      'color': beestat.style.color.gray.dark,
-      'dashStyle': 'ShortDot',
-      'marker': {
-        'enabled': false,
-        'states': {'hover': {'enabled': false}}
-      },
-      'type': 'spline',
-      'lineWidth': 1,
-      'states': {'hover': {'lineWidthPlus': 0}}
-    });
-
-    this.chart_.render(parent);
   }
+
+  return data;
 };
 
 /**

@@ -105,7 +105,8 @@ beestat.component.chart2.prototype.get_options_plotOptions_ = function() {
         'inactive': {
           'opacity': 1
         }
-      }
+      },
+      'connectNulls': this.get_options_plotOptions_series_connectNulls_()
     },
     'column': {
       'pointPadding': 0,
@@ -116,6 +117,15 @@ beestat.component.chart2.prototype.get_options_plotOptions_ = function() {
       }
     }
   };
+};
+
+/**
+ * Get whether or not to connect nulls.
+ *
+ * @return {boolean} Whether or not to connect nulls.
+ */
+beestat.component.chart2.prototype.get_options_plotOptions_series_connectNulls_ = function() {
+  return false;
 };
 
 /**
@@ -156,7 +166,7 @@ beestat.component.chart2.prototype.get_options_chart_ = function() {
       0,
       0
     ],
-    'zoomType': 'x',
+    'zoomType': this.get_options_chart_zoomType_(),
     'panning': true,
     'panKey': 'ctrl',
     'backgroundColor': beestat.style.color.bluegray.base,
@@ -164,8 +174,27 @@ beestat.component.chart2.prototype.get_options_chart_ = function() {
       'theme': {
         'display': 'none'
       }
-    }
+    },
+    'height': this.get_options_chart_height_()
   };
+};
+
+/**
+ * Get the height of the chart.
+ *
+ * @return {number} The height of the chart.
+ */
+beestat.component.chart2.prototype.get_options_chart_height_ = function() {
+  return null;
+};
+
+/**
+ * Get the zoomType option. Return null for no zoom.
+ *
+ * @return {string} The zoom type.
+ */
+beestat.component.chart2.prototype.get_options_chart_zoomType_ = function() {
+  return 'x';
 };
 
 /**
@@ -178,14 +207,14 @@ beestat.component.chart2.prototype.get_options_exporting_ = function() {
     'enabled': false,
     'sourceWidth': 980,
     'scale': 1,
-    'filename': 'beestat',
+    'filename': this.get_options_exporting_filename_(),
     'chartOptions': {
       'credits': {
         'text': 'beestat.io'
       },
       'title': {
         'align': 'left',
-        'text': null,
+        'text': this.get_options_exporting_chartOptions_title_text_(),
         'margin': beestat.style.size.gutter,
         'style': {
           'color': '#fff',
@@ -195,7 +224,7 @@ beestat.component.chart2.prototype.get_options_exporting_ = function() {
       },
       'subtitle': {
         'align': 'left',
-        'text': null,
+        'text': this.get_options_exporting_chartOptions_subtitle_text_(),
         'style': {
           'color': '#fff',
           'font-weight': beestat.style.font_weight.light,
@@ -215,6 +244,50 @@ beestat.component.chart2.prototype.get_options_exporting_ = function() {
       }
     }
   };
+};
+
+/**
+ * Get the exported chart title.
+ *
+ * @return {string} The exported chart title.
+ */
+beestat.component.chart2.prototype.get_options_exporting_chartOptions_title_text_ = function() {
+  return this.data_.metadata.chart.title;
+};
+
+/**
+ * Get the exported chart subtitle.
+ *
+ * @return {string} The exported chart subtitle.
+ */
+beestat.component.chart2.prototype.get_options_exporting_chartOptions_subtitle_text_ = function() {
+  return this.data_.metadata.chart.subtitle;
+};
+
+/**
+ * Get the exported chart filename.
+ *
+ * @return {string} The exported chart filename.
+ */
+beestat.component.chart2.prototype.get_options_exporting_filename_ = function() {
+  var title = this.get_options_exporting_chartOptions_title_text_();
+  var subtitle = this.get_options_exporting_chartOptions_subtitle_text_();
+
+  var filename = [];
+  if (title !== null) {
+    filename.push(title);
+  }
+
+  if (subtitle !== null) {
+    filename.push('-');
+    filename.push(subtitle);
+  }
+
+  if (filename.length === 0) {
+    filename.push('beestat');
+  }
+
+  return filename.join(' ');
 };
 
 /**

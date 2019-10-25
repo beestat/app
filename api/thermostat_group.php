@@ -29,6 +29,9 @@ class thermostat_group extends cora\crud {
   public static $converged = [
     'temperature_profile' => [
       'type' => 'json'
+    ],
+    'weather' => [
+      'type' => 'json'
     ]
   ];
 
@@ -314,7 +317,8 @@ class thermostat_group extends cora\crud {
       'property_age',
       'property_square_feet',
       'property_stories',
-      'property_structure_type'
+      'property_structure_type',
+      'weather'
     ];
 
     $thermostats = $this->api(
@@ -376,6 +380,11 @@ class thermostat_group extends cora\crud {
               // None beats null
               $final_attributes[$attribute] = $system_type;
             }
+          break;
+          default:
+            // Stuff that doesn't really matter (weather); just pick the last
+            // one.
+            $final_attributes[$attribute] = $thermostat[$attribute];
           break;
         }
       }

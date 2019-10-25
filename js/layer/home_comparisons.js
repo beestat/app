@@ -82,7 +82,7 @@ beestat.layer.home_comparisons.prototype.decorate_ = function(parent) {
 
     cards.push([
       {
-        'card': new beestat.component.card.temperature_profiles(),
+        'card': new beestat.component.card.temperature_profiles(thermostat_group.thermostat_group_id),
         'size': 12
       }
     ]);

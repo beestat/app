@@ -175,6 +175,9 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       thermostat.ecobee_thermostat_id
     ];
 
+    // Set the active temperature unit.
+    beestat.setting('temperature_unit', thermostat.temperature_unit);
+
     // Rename series if only one stage is available.
     if (ecobee_thermostat.json_settings.coolStages === 1) {
       beestat.series.sum_compressor_cool_1.name = 'Cool';

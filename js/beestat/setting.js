@@ -21,7 +21,9 @@ beestat.setting = function(key, opt_value, opt_callback) {
     'runtime_thermostat_summary_gap_fill': true,
 
     'comparison_region': 'global',
-    'comparison_property_type': 'similar'
+    'comparison_property_type': 'similar',
+
+    'temperature_unit': '°F'
   };
 
   if (user.json_settings === null) {

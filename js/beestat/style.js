@@ -279,3 +279,22 @@ beestat.series.calendar_event_other = {
   'name': 'Other',
   'color': beestat.style.color.gray.base
 };
+
+// Temperature Profiles
+beestat.series.indoor_heat_delta = {
+  'name': 'Indoor Heat Δ',
+  'color': beestat.series.compressor_heat_1.color
+};
+beestat.series.indoor_heat_delta_raw = beestat.series.indoor_heat_delta;
+
+beestat.series.indoor_cool_delta = {
+  'name': 'Indoor Cool Δ',
+  'color': beestat.series.compressor_cool_1.color
+};
+beestat.series.indoor_cool_delta_raw = beestat.series.indoor_cool_delta;
+
+beestat.series.indoor_resist_delta = {
+  'name': 'Indoor Δ',
+  'color': beestat.style.color.gray.dark
+};
+beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;

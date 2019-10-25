@@ -50,10 +50,7 @@ beestat.extend(beestat.component.card.runtime_thermostat_summary, beestat.compon
  */
 beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ = function(parent) {
   var data = this.get_data_();
-  this.chart_ = new beestat.component.chart2.runtime_thermostat_summary(
-    this.thermostat_id_,
-    data
-  );
+  this.chart_ = new beestat.component.chart2.runtime_thermostat_summary(data);
   this.chart_.render(parent);
 
   var sync_progress = beestat.get_sync_progress(this.thermostat_id_);
@@ -117,7 +114,11 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
     'x': [],
     'series': {},
     'metadata': {
-      'series': {}
+      'series': {},
+      'chart': {
+        'title': this.get_title_(),
+        'subtitle': this.get_subtitle_()
+      }
     }
   };
 

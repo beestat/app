@@ -1,14 +1,12 @@
 /**
  * Runtime thermostat summary chart.
  *
- * @param {number} thermostat_id The thermostat_id this chart is showing data
- * for.
  * @param {object} data The chart data.
  */
-beestat.component.chart2.runtime_thermostat_summary = function(thermostat_id, data) {
-  beestat.component.chart2.apply(this, arguments);
-  this.thermostat_id_ = thermostat_id;
+beestat.component.chart2.runtime_thermostat_summary = function(data) {
   this.data_ = data;
+
+  beestat.component.chart2.apply(this, arguments);
 };
 beestat.extend(beestat.component.chart2.runtime_thermostat_summary, beestat.component.chart2);
 
@@ -189,7 +187,7 @@ beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_yAxis_
           'color': beestat.style.color.gray.base
         },
         'formatter': function() {
-          return this.value + beestat.cache.thermostat[self.thermostat_id_].temperature_unit;
+          return this.value + beestat.setting('temperature_unit');
         }
       }
     }
