@@ -114,7 +114,7 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
         beestat.temperature({
           'round': 0,
           'units': true,
-          'temperature': thermostat.weather.temperature
+          'temperature': (thermostat.weather.temperature / 10)
         })
       )
       .style({
@@ -143,7 +143,7 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
         beestat.temperature({
           'round': 0,
           'units': false,
-          'temperature': thermostat.weather.temperature_low
+          'temperature': (thermostat.weather.temperature_low / 10)
         })
       )
       .style({
@@ -158,7 +158,7 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
         beestat.temperature({
           'round': 0,
           'units': false,
-          'temperature': thermostat.weather.temperature_high
+          'temperature': (thermostat.weather.temperature_high / 10)
         })
       )
   );
@@ -204,7 +204,7 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
       'value': beestat.temperature({
         'round': 0,
         'units': true,
-        'temperature': thermostat.weather.dew_point
+        'temperature': (thermostat.weather.dew_point / 10)
       })
     },
     {

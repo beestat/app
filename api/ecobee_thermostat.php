@@ -754,7 +754,7 @@ class ecobee_thermostat extends cora\crud {
       $ecobee_weather = $ecobee_thermostat['json_weather']['forecasts'][0];
 
       if(isset($ecobee_weather['dewpoint']) === true) {
-        $weather['dew_point'] = ($ecobee_weather['dewpoint'] / 10);
+        $weather['dew_point'] = $ecobee_weather['dewpoint'];
       }
 
       // Returned in MB (divide by 33.864 to get inHg)
@@ -767,15 +767,15 @@ class ecobee_thermostat extends cora\crud {
       }
 
       if(isset($ecobee_weather['tempHigh']) === true) {
-        $weather['temperature_high'] = ($ecobee_weather['tempHigh'] / 10);
+        $weather['temperature_high'] = $ecobee_weather['tempHigh'];
       }
 
       if(isset($ecobee_weather['tempLow']) === true) {
-        $weather['temperature_low'] = ($ecobee_weather['tempLow'] / 10);
+        $weather['temperature_low'] = $ecobee_weather['tempLow'];
       }
 
       if(isset($ecobee_weather['temperature']) === true) {
-        $weather['temperature'] = ($ecobee_weather['temperature'] / 10);
+        $weather['temperature'] = $ecobee_weather['temperature'];
       }
 
       if(isset($ecobee_weather['windBearing']) === true) {
