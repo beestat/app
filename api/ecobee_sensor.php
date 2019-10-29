@@ -15,10 +15,6 @@ class ecobee_sensor extends cora\crud {
     'public' => []
   ];
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Sync sensors.
    */
@@ -173,7 +169,7 @@ class ecobee_sensor extends cora\crud {
             'type' => $api_sensor['type'],
             'code' => (isset($api_sensor['code']) === true ? $api_sensor['code'] : null),
             'in_use' => ($api_sensor['inUse'] === true ? 1 : 0),
-            'json_capability' => $api_sensor['capability'],
+            'capability' => $api_sensor['capability'],
             'inactive' => 0
           ]
         );

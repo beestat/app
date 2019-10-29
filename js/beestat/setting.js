@@ -26,8 +26,8 @@ beestat.setting = function(key, opt_value, opt_callback) {
     'temperature_unit': '°F'
   };
 
-  if (user.json_settings === null) {
-    user.json_settings = {};
+  if (user.settings === null) {
+    user.settings = {};
   }
 
   /*
@@ -35,16 +35,16 @@ beestat.setting = function(key, opt_value, opt_callback) {
    * control. Just doing this so other parts of the application can be built out
    * properly.
    */
-  if (user.json_settings.thermostat_id !== undefined) {
-    user.json_settings.thermostat_id = parseInt(
-      user.json_settings.thermostat_id,
+  if (user.settings.thermostat_id !== undefined) {
+    user.settings.thermostat_id = parseInt(
+      user.settings.thermostat_id,
       10
     );
   }
 
   if (opt_value === undefined && typeof key !== 'object') {
-    if (user.json_settings[key] !== undefined) {
-      return user.json_settings[key];
+    if (user.settings[key] !== undefined) {
+      return user.settings[key];
     } else if (defaults[key] !== undefined) {
       return defaults[key];
     }
@@ -64,8 +64,8 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var has_calls = false;
 
   for (var k in settings) {
-    if (user.json_settings[k] !== settings[k]) {
-      user.json_settings[k] = settings[k];
+    if (user.settings[k] !== settings[k]) {
+      user.settings[k] = settings[k];
 
       beestat.dispatcher.dispatchEvent('setting.' + k);
 

@@ -32,15 +32,15 @@ beestat.component.modal.thermostat_info.prototype.decorate_contents_ = function(
     },
     {
       'name': 'Firmware Revision',
-      'value': ecobee_thermostat.json_version.thermostatFirmwareVersion
+      'value': ecobee_thermostat.version.thermostatFirmwareVersion
     },
     {
       'name': 'Weather Station',
-      'value': ecobee_thermostat.json_weather.weatherStation
+      'value': ecobee_thermostat.weather.weatherStation
     },
     {
       'name': 'First Connected',
-      'value': moment.utc(ecobee_thermostat.json_runtime.firstConnected).local()
+      'value': moment.utc(ecobee_thermostat.runtime.firstConnected).local()
         .format('MMM Do, YYYY')
     }
   ];

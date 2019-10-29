@@ -40,7 +40,7 @@ beestat.component.card.alerts.prototype.decorate_contents_ = function(parent) {
     .set_color(beestat.style.color.bluegray.light)
   ).render(this.no_alerts_);
 
-  thermostat.json_alerts.forEach(function(alert) {
+  thermostat.alerts.forEach(function(alert) {
     var alert_component = new beestat.component.alert(alert);
 
     alert_component.addEventListener('click', function() {

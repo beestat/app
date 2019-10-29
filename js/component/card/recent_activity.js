@@ -1045,7 +1045,7 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
         thermostat.ecobee_thermostat_id
       ];
 
-      this_calendar_event = 'calendar_event_' + ecobee_thermostat.json_program.schedule[day_of_week_index][chunk_of_day_index];
+      this_calendar_event = 'calendar_event_' + ecobee_thermostat.program.schedule[day_of_week_index][chunk_of_day_index];
     } else {
       if (runtime_thermostat.event === null) {
         if (runtime_thermostat.climate === null) {

@@ -69,8 +69,8 @@ beestat.component.modal.patreon_hide.prototype.hide_patreon_card_for_ = function
  */
 beestat.component.modal.patreon_hide.prototype.is_active_patron_ = function() {
   var user = beestat.get_user();
-  if (user.json_patreon_status !== null) {
-    return (user.json_patreon_status.patron_status === 'active_patron');
+  if (user.patreon_status !== null) {
+    return (user.patreon_status.patron_status === 'active_patron');
   }
   return null;
 };

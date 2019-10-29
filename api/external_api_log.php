@@ -7,15 +7,6 @@
  */
 class external_api_log extends cora\crud {
 
-  public static $converged = [
-    'request' => [
-      'type' => 'json'
-    ],
-    'response' => [
-      'type' => 'string'
-    ]
-  ];
-
   /**
    * Insert an item into the log table using the transactionless database
    * connection.

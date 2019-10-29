@@ -330,7 +330,7 @@ final class cora {
 
         if($api_cache !== null) {
           // If there was a cache entry available, use that.
-          $this->response_data[$index] = $api_cache['json_response_data'];
+          $this->response_data[$index] = $api_cache['response_data'];
           $this->from_cache[$index] = true;
           $this->cached_until[$index] = date('c', strtotime($api_cache['expires_at']));
         } else {

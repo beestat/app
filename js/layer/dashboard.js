@@ -51,8 +51,8 @@ beestat.layer.dashboard.prototype.decorate_ = function(parent) {
 
   var user = beestat.get_user();
   if (
-    user.json_patreon_status !== null &&
-    user.json_patreon_status.patron_status === 'active_patron'
+    user.patreon_status !== null &&
+    user.patreon_status.patron_status === 'active_patron'
   ) {
     show_patreon_card = false;
   }

@@ -26,17 +26,6 @@ class thermostat_group extends cora\crud {
     'get_scores' => 604800 // 7 Days
   ];
 
-  public static $converged = [
-    'temperature_profile' => [
-      'type' => 'json'
-    ],
-    'weather' => [
-      'type' => 'json'
-    ]
-  ];
-
-  public static $user_locked = true;
-
   /**
    * Generate the group temperature profile.
    *

@@ -9,10 +9,6 @@ namespace cora;
  */
 final class session {
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * The session_key for this session.
    *

@@ -7,8 +7,6 @@
  */
 class external_api_cache extends cora\crud {
 
-  public static $converged = [];
-
   public static $user_locked = false;
 
   public function delete($id) {

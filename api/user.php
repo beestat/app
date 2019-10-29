@@ -18,10 +18,6 @@ class user extends cora\crud {
     'public' => []
   ];
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Selects a user.
    *
@@ -177,10 +173,10 @@ class user extends cora\crud {
    */
   public function update_setting($key, $value) {
     $user = $this->get($this->session->get_user_id());
-    if($user['json_settings'] === null) {
+    if($user['settings'] === null) {
       $settings = [];
     } else {
-      $settings = $user['json_settings'];
+      $settings = $user['settings'];
     }
 
     $settings[$key] = $value;
@@ -189,7 +185,7 @@ class user extends cora\crud {
       $this->update(
         [
           'user_id' => $this->session->get_user_id(),
-          'json_settings' => $settings
+          'settings' => $settings
         ]
       );
     }
@@ -206,10 +202,10 @@ class user extends cora\crud {
    */
   public function update_sync_status($key) {
     $user = $this->get($this->session->get_user_id());
-    if($user['json_sync_status'] === null) {
+    if($user['sync_status'] === null) {
       $sync_status = [];
     } else {
-      $sync_status = $user['json_sync_status'];
+      $sync_status = $user['sync_status'];
     }
 
     $sync_status[$key] = date('Y-m-d H:i:s');
@@ -217,7 +213,7 @@ class user extends cora\crud {
     $this->update(
       [
         'user_id' => $this->session->get_user_id(),
-        'json_sync_status' => $sync_status
+        'sync_status' => $sync_status
       ]
     );
 
@@ -264,7 +260,7 @@ class user extends cora\crud {
           $this->update(
             [
               'user_id' => $this->session->get_user_id(),
-              'json_patreon_status' => $include['attributes']
+              'patreon_status' => $include['attributes']
             ]
           );
         }
@@ -275,7 +271,7 @@ class user extends cora\crud {
         $this->update(
           [
             'user_id' => $this->session->get_user_id(),
-            'json_patreon_status' => null
+            'patreon_status' => null
           ]
         );
       } else {
@@ -283,7 +279,7 @@ class user extends cora\crud {
         $this->update(
           [
             'user_id' => $this->session->get_user_id(),
-            'json_patreon_status' => [
+            'patreon_status' => [
               'patron_status' => 'not_patron'
             ]
           ]

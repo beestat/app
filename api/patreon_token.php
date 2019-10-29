@@ -7,10 +7,6 @@
  */
 class patreon_token extends cora\crud {
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Obtain Patreon access & refresh tokens. If a token already exists for
    * this user, overwrite it.

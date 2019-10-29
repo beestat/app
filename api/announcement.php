@@ -17,18 +17,6 @@ class announcement extends cora\crud {
     ]
   ];
 
-  public static $converged = [
-    'title' => [
-      'type' => 'string'
-    ],
-    'text' => [
-      'type' => 'string'
-    ],
-    'icon' => [
-      'type' => 'string'
-    ]
-  ];
-
   public static $user_locked = false;
 
 }

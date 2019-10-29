@@ -160,56 +160,56 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
 
   var running_equipment = [];
 
-  if (ecobee_thermostat.json_equipment_status.indexOf('fan') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('fan') !== -1) {
     running_equipment.push('fan');
   }
 
-  if (ecobee_thermostat.json_equipment_status.indexOf('ventilator') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('ventilator') !== -1) {
     running_equipment.push('ventilator');
   }
-  if (ecobee_thermostat.json_equipment_status.indexOf('humidifier') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('humidifier') !== -1) {
     running_equipment.push('humidifier');
   }
-  if (ecobee_thermostat.json_equipment_status.indexOf('dehumidifier') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('dehumidifier') !== -1) {
     running_equipment.push('dehumidifier');
   }
-  if (ecobee_thermostat.json_equipment_status.indexOf('economizer') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('economizer') !== -1) {
     running_equipment.push('economizer');
   }
 
-  if (ecobee_thermostat.json_equipment_status.indexOf('compCool2') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('compCool2') !== -1) {
     running_equipment.push('cool_2');
-  } else if (ecobee_thermostat.json_equipment_status.indexOf('compCool1') !== -1) {
+  } else if (ecobee_thermostat.equipment_status.indexOf('compCool1') !== -1) {
     running_equipment.push('cool_1');
   }
 
-  if (ecobee_thermostat.json_settings.hasHeatPump === true) {
-    if (ecobee_thermostat.json_equipment_status.indexOf('heatPump3') !== -1) {
+  if (ecobee_thermostat.settings.hasHeatPump === true) {
+    if (ecobee_thermostat.equipment_status.indexOf('heatPump3') !== -1) {
       running_equipment.push('heat_3');
-    } else if (ecobee_thermostat.json_equipment_status.indexOf('heatPump2') !== -1) {
+    } else if (ecobee_thermostat.equipment_status.indexOf('heatPump2') !== -1) {
       running_equipment.push('heat_2');
-    } else if (ecobee_thermostat.json_equipment_status.indexOf('heatPump') !== -1) {
+    } else if (ecobee_thermostat.equipment_status.indexOf('heatPump') !== -1) {
       running_equipment.push('heat_1');
     }
-    if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat3') !== -1) {
+    if (ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1) {
       running_equipment.push('aux_3');
-    } else if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat2') !== -1) {
+    } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1) {
       running_equipment.push('aux_2');
-    } else if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat1') !== -1) {
+    } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1) {
       running_equipment.push('aux_1');
     }
-  } else if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat3') !== -1) {
+  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1) {
     running_equipment.push('heat_3');
-  } else if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat2') !== -1) {
+  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1) {
     running_equipment.push('heat_2');
-  } else if (ecobee_thermostat.json_equipment_status.indexOf('auxHeat1') !== -1) {
+  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1) {
     running_equipment.push('heat_1');
   }
 
-  if (ecobee_thermostat.json_equipment_status.indexOf('compHotWater') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('compHotWater') !== -1) {
     running_equipment.push('heat_1');
   }
-  if (ecobee_thermostat.json_equipment_status.indexOf('auxHotWater') !== -1) {
+  if (ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1) {
     running_equipment.push('aux_1');
   }
 
@@ -300,7 +300,7 @@ beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
   ];
 
   var climate = beestat.get_climate(
-    ecobee_thermostat.json_program.currentClimateRef
+    ecobee_thermostat.program.currentClimateRef
   );
 
   var climate_container = $.createElement('div')
@@ -389,26 +389,26 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
   ];
 
   var climate = beestat.get_climate(
-    ecobee_thermostat.json_program.currentClimateRef
+    ecobee_thermostat.program.currentClimateRef
   );
 
   // Is the temperature overridden?
   var override = (
-    ecobee_thermostat.json_runtime.desiredHeat !== climate.heatTemp ||
-    ecobee_thermostat.json_runtime.desiredCool !== climate.coolTemp
+    ecobee_thermostat.runtime.desiredHeat !== climate.heatTemp ||
+    ecobee_thermostat.runtime.desiredCool !== climate.coolTemp
   );
 
   // Get the heat/cool values to display.
   var heat;
   if (override === true) {
-    heat = ecobee_thermostat.json_runtime.desiredHeat / 10;
+    heat = ecobee_thermostat.runtime.desiredHeat / 10;
   } else {
     heat = climate.heatTemp / 10;
   }
 
   var cool;
   if (override === true) {
-    cool = ecobee_thermostat.json_runtime.desiredCool / 10;
+    cool = ecobee_thermostat.runtime.desiredCool / 10;
   } else {
     cool = climate.coolTemp / 10;
   }
@@ -422,7 +422,7 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
     'heat': 'Heat'
   };
 
-  var hvac_mode = hvac_modes[ecobee_thermostat.json_settings.hvacMode];
+  var hvac_mode = hvac_modes[ecobee_thermostat.settings.hvacMode];
 
   heat = beestat.temperature({
     'temperature': heat
@@ -433,7 +433,7 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
 
   var subtitle = hvac_mode;
 
-  if (ecobee_thermostat.json_settings.hvacMode !== 'off') {
+  if (ecobee_thermostat.settings.hvacMode !== 'off') {
     if (override === true) {
       subtitle += ' / Overridden';
     } else {
@@ -441,15 +441,15 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
     }
   }
 
-  if (ecobee_thermostat.json_settings.hvacMode === 'auto') {
+  if (ecobee_thermostat.settings.hvacMode === 'auto') {
     subtitle += ' / ' + heat + ' - ' + cool;
   } else if (
-    ecobee_thermostat.json_settings.hvacMode === 'heat' ||
-    ecobee_thermostat.json_settings.hvacMode === 'auxHeatOnly'
+    ecobee_thermostat.settings.hvacMode === 'heat' ||
+    ecobee_thermostat.settings.hvacMode === 'auxHeatOnly'
   ) {
     subtitle += ' / ' + heat;
   } else if (
-    ecobee_thermostat.json_settings.hvacMode === 'cool'
+    ecobee_thermostat.settings.hvacMode === 'cool'
   ) {
     subtitle += ' / ' + cool;
   }

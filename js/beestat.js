@@ -47,7 +47,7 @@ beestat.get_climate = function(climate_ref) {
     thermostat.ecobee_thermostat_id
   ];
 
-  var climates = ecobee_thermostat.json_program.climates;
+  var climates = ecobee_thermostat.program.climates;
 
   for (var i = 0; i < climates.length; i++) {
     if (climates[i].climateRef === climate_ref) {
@@ -68,36 +68,36 @@ beestat.get_thermostat_color = function(thermostat_id) {
   ];
 
   if (
-    ecobee_thermostat.json_equipment_status.indexOf('compCool2') !== -1 ||
-    ecobee_thermostat.json_equipment_status.indexOf('compCool1') !== -1
+    ecobee_thermostat.equipment_status.indexOf('compCool2') !== -1 ||
+    ecobee_thermostat.equipment_status.indexOf('compCool1') !== -1
   ) {
     return beestat.style.color.blue.light;
   } else if (
-    ecobee_thermostat.json_settings.hasHeatPump === true &&
+    ecobee_thermostat.settings.hasHeatPump === true &&
     (
-      ecobee_thermostat.json_equipment_status.indexOf('auxHeat3') !== -1 ||
-      ecobee_thermostat.json_equipment_status.indexOf('auxHeat2') !== -1 ||
-      ecobee_thermostat.json_equipment_status.indexOf('auxHeat1') !== -1 ||
-      ecobee_thermostat.json_equipment_status.indexOf('auxHotWater') !== -1
+      ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1 ||
+      ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1 ||
+      ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1 ||
+      ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1
     )
   ) {
     return beestat.style.color.red.base;
   } else if (
     (
-      ecobee_thermostat.json_settings.hasHeatPump === false &&
+      ecobee_thermostat.settings.hasHeatPump === false &&
       (
-        ecobee_thermostat.json_equipment_status.indexOf('auxHeat3') !== -1 ||
-        ecobee_thermostat.json_equipment_status.indexOf('auxHeat2') !== -1 ||
-        ecobee_thermostat.json_equipment_status.indexOf('auxHeat1') !== -1 ||
-        ecobee_thermostat.json_equipment_status.indexOf('compHotWater') !== -1 ||
-        ecobee_thermostat.json_equipment_status.indexOf('auxHotWater') !== -1
+        ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1 ||
+        ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1 ||
+        ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1 ||
+        ecobee_thermostat.equipment_status.indexOf('compHotWater') !== -1 ||
+        ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1
       )
     ) ||
     (
-      ecobee_thermostat.json_settings.hasHeatPump === true &&
+      ecobee_thermostat.settings.hasHeatPump === true &&
       (
-        ecobee_thermostat.json_equipment_status.indexOf('heatPump1') !== -1 ||
-        ecobee_thermostat.json_equipment_status.indexOf('heatPump2') !== -1
+        ecobee_thermostat.equipment_status.indexOf('heatPump1') !== -1 ||
+        ecobee_thermostat.equipment_status.indexOf('heatPump2') !== -1
       )
     )
   ) {
@@ -173,9 +173,9 @@ beestat.has_early_access = function() {
   var user = beestat.get_user();
   return user.user_id === 1 ||
   (
-    user.json_patreon_status !== null &&
-    user.json_patreon_status.patron_status === 'active_patron' &&
-    user.json_patreon_status.currently_entitled_amount_cents >= 500
+    user.patreon_status !== null &&
+    user.patreon_status.patron_status === 'active_patron' &&
+    user.patreon_status.currently_entitled_amount_cents >= 500
   );
 };
 

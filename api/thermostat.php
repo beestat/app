@@ -21,26 +21,6 @@ class thermostat extends cora\crud {
     'sync' => 300 // 5 Minutes
   ];
 
-  public static $converged = [
-    'filters' => [
-      'type' => 'json'
-    ],
-    'temperature_profile' => [
-      'type' => 'json'
-    ],
-    'property' => [
-      'type' => 'json'
-    ],
-    'system_type' => [
-      'type' => 'json'
-    ],
-    'weather' => [
-      'type' => 'json'
-    ]
-  ];
-
-  public static $user_locked = true;
-
   /**
    * Sync all thermostats for the current user with their associated service.
    */
@@ -72,7 +52,7 @@ class thermostat extends cora\crud {
    */
   public function dismiss_alert($thermostat_id, $guid) {
     $thermostat = $this->get($thermostat_id);
-    foreach($thermostat['json_alerts'] as &$alert) {
+    foreach($thermostat['alerts'] as &$alert) {
       if($alert['guid'] === $guid) {
         $alert['dismissed'] = true;
         break;
@@ -81,7 +61,7 @@ class thermostat extends cora\crud {
     $this->update(
       [
         'thermostat_id' => $thermostat_id,
-        'json_alerts' => $thermostat['json_alerts']
+        'alerts' => $thermostat['alerts']
       ]
     );
   }
@@ -94,7 +74,7 @@ class thermostat extends cora\crud {
    */
   public function restore_alert($thermostat_id, $guid) {
     $thermostat = $this->get($thermostat_id);
-    foreach($thermostat['json_alerts'] as &$alert) {
+    foreach($thermostat['alerts'] as &$alert) {
       if($alert['guid'] === $guid) {
         $alert['dismissed'] = false;
         break;
@@ -103,7 +83,7 @@ class thermostat extends cora\crud {
     $this->update(
       [
         'thermostat_id' => $thermostat_id,
-        'json_alerts' => $thermostat['json_alerts']
+        'alerts' => $thermostat['alerts']
       ]
     );
   }

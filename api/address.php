@@ -17,14 +17,6 @@ class address extends cora\crud {
     'public' => []
   ];
 
-  public static $converged = [
-    'normalized' => [
-      'type' => 'json'
-    ]
-  ];
-
-  public static $user_locked = true;
-
   /**
    * Search for an address based on an address string. This will make an API
    * call to Smarty Streets using that address string (after first checking

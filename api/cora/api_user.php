@@ -12,8 +12,6 @@ namespace cora;
  */
 class api_user extends crud {
 
-  public static $converged = [];
-
   public static $user_locked = false;
 
 }

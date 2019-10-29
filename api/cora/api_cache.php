@@ -9,10 +9,6 @@ namespace cora;
  */
 class api_cache extends crud {
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Insert an item into the current resource with the provided attributes.
    * Setting of the primary key column is not allowed and will be overwritten
@@ -45,7 +41,7 @@ class api_cache extends crud {
       $attributes = [];
       $attributes['key'] = $key;
       $attributes['expires_at'] = date('Y-m-d H:i:s', time() + $duration);
-      $attributes['json_response_data'] = $response_data;
+      $attributes['response_data'] = $response_data;
       $attributes['request_resource'] = $api_call['resource'];
       $attributes['request_method'] = $api_call['method'];
 
@@ -63,7 +59,7 @@ class api_cache extends crud {
 
       $attributes = [];
       $attributes['expires_at'] = date('Y-m-d H:i:s', time() + $duration);
-      $attributes['json_response_data'] = $response_data;
+      $attributes['response_data'] = $response_data;
       $attributes['api_cache_id'] = $cache_hit['api_cache_id'];
 
       return $this->update($attributes);

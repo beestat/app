@@ -15,10 +15,6 @@ class ecobee_thermostat extends cora\crud {
     'public' => []
   ];
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Sync thermostats.
    */
@@ -135,7 +131,7 @@ class ecobee_thermostat extends cora\crud {
           [
             'attributes' => [
               'ecobee_thermostat_id' => $ecobee_thermostat['ecobee_thermostat_id'],
-              'json_alerts' => []
+              'alerts' => []
             ]
           ]
         );
@@ -150,27 +146,27 @@ class ecobee_thermostat extends cora\crud {
           'identifier' => $api_thermostat['identifier'],
           'utc_time' => $api_thermostat['utcTime'],
           'model_number' => $api_thermostat['modelNumber'],
-          'json_runtime' => $api_thermostat['runtime'],
-          'json_extended_runtime' => $api_thermostat['extendedRuntime'],
-          'json_electricity' => $api_thermostat['electricity'],
-          'json_settings' => $api_thermostat['settings'],
-          'json_location' => $api_thermostat['location'],
-          'json_program' => $api_thermostat['program'],
-          'json_events' => $api_thermostat['events'],
-          'json_device' => $api_thermostat['devices'],
-          'json_technician' => $api_thermostat['technician'],
-          'json_utility' => $api_thermostat['utility'],
-          'json_management' => $api_thermostat['management'],
-          'json_alerts' => $api_thermostat['alerts'],
-          'json_weather' => $api_thermostat['weather'],
-          'json_house_details' => $api_thermostat['houseDetails'],
-          'json_oem_cfg' => $api_thermostat['oemCfg'],
-          'json_equipment_status' => trim($api_thermostat['equipmentStatus']) !== '' ? explode(',', $api_thermostat['equipmentStatus']) : [],
-          'json_notification_settings' => $api_thermostat['notificationSettings'],
-          'json_privacy' => $api_thermostat['privacy'],
-          'json_version' => $api_thermostat['version'],
-          'json_remote_sensors' => $api_thermostat['remoteSensors'],
-          'json_audio' => $api_thermostat['audio'],
+          'runtime' => $api_thermostat['runtime'],
+          'extended_runtime' => $api_thermostat['extendedRuntime'],
+          'electricity' => $api_thermostat['electricity'],
+          'settings' => $api_thermostat['settings'],
+          'location' => $api_thermostat['location'],
+          'program' => $api_thermostat['program'],
+          'events' => $api_thermostat['events'],
+          'device' => $api_thermostat['devices'],
+          'technician' => $api_thermostat['technician'],
+          'utility' => $api_thermostat['utility'],
+          'management' => $api_thermostat['management'],
+          'alerts' => $api_thermostat['alerts'],
+          'weather' => $api_thermostat['weather'],
+          'house_details' => $api_thermostat['houseDetails'],
+          'oem_cfg' => $api_thermostat['oemCfg'],
+          'equipment_status' => trim($api_thermostat['equipmentStatus']) !== '' ? explode(',', $api_thermostat['equipmentStatus']) : [],
+          'notification_settings' => $api_thermostat['notificationSettings'],
+          'privacy' => $api_thermostat['privacy'],
+          'version' => $api_thermostat['version'],
+          'remote_sensors' => $api_thermostat['remoteSensors'],
+          'audio' => $api_thermostat['audio'],
           'inactive' => 0
         ]
       );
@@ -210,7 +206,7 @@ class ecobee_thermostat extends cora\crud {
 
       $attributes['property'] = $this->get_property($thermostat, $ecobee_thermostat);
       $attributes['filters'] = $this->get_filters($thermostat, $ecobee_thermostat);
-      $attributes['json_alerts'] = $this->get_alerts($thermostat, $ecobee_thermostat);
+      $attributes['alerts'] = $this->get_alerts($thermostat, $ecobee_thermostat);
       $attributes['weather'] = $this->get_weather($thermostat, $ecobee_thermostat);
       $attributes['time_zone'] = $this->get_time_zone($thermostat, $ecobee_thermostat);
 
@@ -302,28 +298,28 @@ class ecobee_thermostat extends cora\crud {
   private function get_address($thermostat, $ecobee_thermostat) {
     $address_parts = [];
 
-    if(isset($ecobee_thermostat['json_location']['streetAddress']) === true) {
-      $address_parts[] = $ecobee_thermostat['json_location']['streetAddress'];
+    if(isset($ecobee_thermostat['location']['streetAddress']) === true) {
+      $address_parts[] = $ecobee_thermostat['location']['streetAddress'];
     }
-    if(isset($ecobee_thermostat['json_location']['city']) === true) {
-      $address_parts[] = $ecobee_thermostat['json_location']['city'];
+    if(isset($ecobee_thermostat['location']['city']) === true) {
+      $address_parts[] = $ecobee_thermostat['location']['city'];
     }
-    if(isset($ecobee_thermostat['json_location']['provinceState']) === true) {
-      $address_parts[] = $ecobee_thermostat['json_location']['provinceState'];
+    if(isset($ecobee_thermostat['location']['provinceState']) === true) {
+      $address_parts[] = $ecobee_thermostat['location']['provinceState'];
     }
-    if(isset($ecobee_thermostat['json_location']['postalCode']) === true) {
-      $address_parts[] = $ecobee_thermostat['json_location']['postalCode'];
+    if(isset($ecobee_thermostat['location']['postalCode']) === true) {
+      $address_parts[] = $ecobee_thermostat['location']['postalCode'];
     }
 
     if(
-      isset($ecobee_thermostat['json_location']['country']) === true &&
-      trim($ecobee_thermostat['json_location']['country']) !== ''
+      isset($ecobee_thermostat['location']['country']) === true &&
+      trim($ecobee_thermostat['location']['country']) !== ''
     ) {
-      if(preg_match('/(^USA?$)|(united.?states)/i', $ecobee_thermostat['json_location']['country']) === 1) {
+      if(preg_match('/(^USA?$)|(united.?states)/i', $ecobee_thermostat['location']['country']) === 1) {
         $country = 'USA';
       }
       else {
-        $country = $ecobee_thermostat['json_location']['country'];
+        $country = $ecobee_thermostat['location']['country'];
       }
     }
     else {
@@ -359,8 +355,8 @@ class ecobee_thermostat extends cora\crud {
      * "semiDetached", "townhouse", "Townhouse"
      */
     $property['structure_type'] = null;
-    if(isset($ecobee_thermostat['json_house_details']['style']) === true) {
-      $structure_type = $ecobee_thermostat['json_house_details']['style'];
+    if(isset($ecobee_thermostat['house_details']['style']) === true) {
+      $structure_type = $ecobee_thermostat['house_details']['style'];
       if(preg_match('/^detached$/i', $structure_type) === 1) {
         $property['structure_type'] = 'detached';
       }
@@ -388,8 +384,8 @@ class ecobee_thermostat extends cora\crud {
      * Example values from ecobee: "0", "1", "2", "3", "4", "5", "8", "9", "10"
      */
     $property['stories'] = null;
-    if(isset($ecobee_thermostat['json_house_details']['numberOfFloors']) === true) {
-      $stories = $ecobee_thermostat['json_house_details']['numberOfFloors'];
+    if(isset($ecobee_thermostat['house_details']['numberOfFloors']) === true) {
+      $stories = $ecobee_thermostat['house_details']['numberOfFloors'];
       if(ctype_digit((string) $stories) === true && $stories > 0) {
         $property['stories'] = (int) $stories;
       }
@@ -404,8 +400,8 @@ class ecobee_thermostat extends cora\crud {
      * "9000", "9500", "10000"
      */
     $property['square_feet'] = null;
-    if(isset($ecobee_thermostat['json_house_details']['size']) === true) {
-      $square_feet = $ecobee_thermostat['json_house_details']['size'];
+    if(isset($ecobee_thermostat['house_details']['size']) === true) {
+      $square_feet = $ecobee_thermostat['house_details']['size'];
       if(ctype_digit((string) $square_feet) === true && $square_feet > 0) {
         $property['square_feet'] = (int) $square_feet;
       }
@@ -425,8 +421,8 @@ class ecobee_thermostat extends cora\crud {
      * "121", "122", "123", "124"
      */
     $property['age'] = null;
-    if(isset($ecobee_thermostat['json_house_details']['age']) === true) {
-      $age = $ecobee_thermostat['json_house_details']['age'];
+    if(isset($ecobee_thermostat['house_details']['age']) === true) {
+      $age = $ecobee_thermostat['house_details']['age'];
       if(ctype_digit((string) $age) === true) {
         $property['age'] = (int) $age;
       }
@@ -471,8 +467,8 @@ class ecobee_thermostat extends cora\crud {
 
     $sums = [];
     $min_timestamp = INF;
-    if(isset($ecobee_thermostat['json_notification_settings']['equipment']) === true) {
-      foreach($ecobee_thermostat['json_notification_settings']['equipment'] as $notification) {
+    if(isset($ecobee_thermostat['notification_settings']['equipment']) === true) {
+      foreach($ecobee_thermostat['notification_settings']['equipment'] as $notification) {
         if($notification['enabled'] === true && isset($supported_types[$notification['type']]) === true) {
           $key = $supported_types[$notification['type']]['key'];
           $sum_column = $supported_types[$notification['type']]['sum_column'];
@@ -522,7 +518,7 @@ class ecobee_thermostat extends cora\crud {
   private function get_alerts($thermostat, $ecobee_thermostat) {
     // Get a list of all ecobee thermostat alerts
     $new_alerts = [];
-    foreach($ecobee_thermostat['json_alerts'] as $ecobee_thermostat_alert) {
+    foreach($ecobee_thermostat['alerts'] as $ecobee_thermostat_alert) {
       $alert = [];
       $alert['timestamp'] = date(
         'Y-m-d H:i:s',
@@ -539,7 +535,7 @@ class ecobee_thermostat extends cora\crud {
     }
 
     // Cool Differential Temperature
-    if($ecobee_thermostat['json_settings']['stage1CoolingDifferentialTemp'] / 10 === 0.5) {
+    if($ecobee_thermostat['settings']['stage1CoolingDifferentialTemp'] / 10 === 0.5) {
       $alert = [
         'timestamp' => date('Y-m-d H:i:s'),
         'text' => 'Cool Differential Temperature is set to 0.5°F; we recommend at least 1.0°F',
@@ -554,7 +550,7 @@ class ecobee_thermostat extends cora\crud {
     }
 
     // Heat Differential Temperature
-    if($ecobee_thermostat['json_settings']['stage1HeatingDifferentialTemp'] / 10 === 0.5) {
+    if($ecobee_thermostat['settings']['stage1HeatingDifferentialTemp'] / 10 === 0.5) {
       $alert = [
         'timestamp' => date('Y-m-d H:i:s'),
         'text' => 'Heat Differential Temperature is set to 0.5°F; we recommend at least 1.0°F',
@@ -570,13 +566,13 @@ class ecobee_thermostat extends cora\crud {
 
     // Get the guids for easy comparison
     $new_guids = array_column($new_alerts, 'guid');
-    $existing_guids = array_column($thermostat['json_alerts'], 'guid');
+    $existing_guids = array_column($thermostat['alerts'], 'guid');
 
     $guids_to_add = array_diff($new_guids, $existing_guids);
     $guids_to_remove = array_diff($existing_guids, $new_guids);
 
     // Remove any removed alerts
-    $final_alerts = $thermostat['json_alerts'];
+    $final_alerts = $thermostat['alerts'];
     foreach($final_alerts as $key => $thermostat_alert) {
       if(in_array($thermostat_alert['guid'], $guids_to_remove) === true) {
         unset($final_alerts[$key]);
@@ -652,8 +648,8 @@ class ecobee_thermostat extends cora\crud {
   private function get_detected_system_type($thermostat, $ecobee_thermostat) {
     $detected_system_type = [];
 
-    $settings = $ecobee_thermostat['json_settings'];
-    $devices = $ecobee_thermostat['json_device'];
+    $settings = $ecobee_thermostat['settings'];
+    $devices = $ecobee_thermostat['device'];
 
     // Get a list of all outputs. These get their type set when they get
     // connected to a wire so it's a pretty reliable way to see what's hooked
@@ -743,15 +739,15 @@ class ecobee_thermostat extends cora\crud {
       'condition' => null
     ];
 
-    if(isset($ecobee_thermostat['json_weather']['weatherStation']) === true) {
-      $weather['station'] = $ecobee_thermostat['json_weather']['weatherStation'];
+    if(isset($ecobee_thermostat['weather']['weatherStation']) === true) {
+      $weather['station'] = $ecobee_thermostat['weather']['weatherStation'];
     }
 
     if(
-      isset($ecobee_thermostat['json_weather']['forecasts']) === true &&
-      isset($ecobee_thermostat['json_weather']['forecasts'][0]) === true
+      isset($ecobee_thermostat['weather']['forecasts']) === true &&
+      isset($ecobee_thermostat['weather']['forecasts'][0]) === true
     ) {
-      $ecobee_weather = $ecobee_thermostat['json_weather']['forecasts'][0];
+      $ecobee_weather = $ecobee_thermostat['weather']['forecasts'][0];
 
       if(isset($ecobee_weather['dewpoint']) === true) {
         $weather['dew_point'] = $ecobee_weather['dewpoint'];
@@ -872,12 +868,12 @@ class ecobee_thermostat extends cora\crud {
    * @return The time zone.
    */
   private function get_time_zone($thermostat, $ecobee_thermostat) {
-    $time_zone = $ecobee_thermostat['json_location']['timeZone'];
+    $time_zone = $ecobee_thermostat['location']['timeZone'];
 
     if (in_array($time_zone, timezone_identifiers_list()) === true) {
       return $time_zone;
-    } else if ($ecobee_thermostat['json_location']['timeZoneOffsetMinutes'] !== '') {
-      $offset_seconds = $ecobee_thermostat['json_location']['timeZoneOffsetMinutes'] * 60;
+    } else if ($ecobee_thermostat['location']['timeZoneOffsetMinutes'] !== '') {
+      $offset_seconds = $ecobee_thermostat['location']['timeZoneOffsetMinutes'] * 60;
       $time_zone = timezone_name_from_abbr('', $offset_seconds, 1);
       // Workaround for bug #44780
       if ($time_zone === false) {

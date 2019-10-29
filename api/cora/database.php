@@ -39,6 +39,13 @@ final class database extends \mysqli {
   private static $transactionless_instance;
 
   /**
+   * Column types
+   *
+   * @var array
+   */
+  private static $types;
+
+  /**
    * Whether or not to use transactions in this connection.
    *
    * @var bool
@@ -63,7 +70,7 @@ final class database extends \mysqli {
   /**
    * The total time all queries have taken to execute.
    *
-   * @var float;
+   * @var float
    */
   private $query_time = 0;
 
@@ -348,6 +355,7 @@ final class database extends \mysqli {
    * FUNCTION DIRECTLY. THIS FUNCTION DOES NOT DO IT FOR YOU.
    *
    * @param string $query The query to execute.
+   * @param int $resultmode Just here because PHP requires it.
    *
    * @throws DuplicateEntryException if the query failed due to a duplicate
    * entry (unique key violation)
@@ -356,7 +364,7 @@ final class database extends \mysqli {
    *
    * @return mixed The result directly from $mysqli->query.
    */
-  public function query($query, $resultmode = NULL) {
+  public function query($query, $resultmode = null) {
     // If this was an insert, update or delete, start a transaction
     $query_type = substr(trim($query), 0, 6);
     if(
@@ -486,10 +494,6 @@ final class database extends \mysqli {
       else if($field_info->type === 245) {
         $json_fields[] = $field_info->name;
       }
-      else if(substr($field_info->name, 0, 5) === 'json_') {
-        // TODO This will go away as soon as I switch to json type columns.
-        $json_fields[] = $field_info->name;
-      }
     }
 
     $results = [];
@@ -504,6 +508,7 @@ final class database extends \mysqli {
       foreach($json_fields as $json_field) {
         $row[$json_field] = json_decode($row[$json_field], true);
       }
+
 
       // Diverge the converged column.
       if(
@@ -590,7 +595,8 @@ final class database extends \mysqli {
    * @param array $attributes The attributes to set.
    * @param array $return_mode Either "row" or "id". Specifying row will
    * return the newly created row (does a database read). Specifying id will
-   * return just the ID of the created row.
+   * return just the ID of the created row instead of performing another query
+   * to get the whole inserted row.
    *
    * @throws \Exception If no attributes were specified.
    *
@@ -599,9 +605,8 @@ final class database extends \mysqli {
   public function update($resource, $attributes, $return_mode = 'row') {
     $table = $this->get_table($resource);
 
-    // TODO This will go away as soon as I switch to json type columns.
     foreach($attributes as $key => $value) {
-      if(substr($key, 0, 5) === 'json_') {
+      if($this->get_type($resource, $key) === 'json') {
         if($value === null) {
           $attributes[$key] = null;
         }
@@ -700,9 +705,8 @@ final class database extends \mysqli {
   public function create($resource, $attributes, $return_mode = 'row') {
     $table = $this->get_table($resource);
 
-    // TODO This will go away as soon as I switch to json type columns.
     foreach($attributes as $key => $value) {
-      if(substr($key, 0, 5) === 'json_') {
+      if($this->get_type($resource, $key) === 'json') {
         if($value === null) {
           $attributes[$key] = null;
         }
@@ -767,6 +771,47 @@ final class database extends \mysqli {
   private function get_table($resource) {
     $class_parts = explode('\\', $resource);
     return end($class_parts);
+  }
+
+  /**
+   * Get the type of a specific column.
+   *
+   * @param string $table The table.
+   * @param string $column The column.
+   *
+   * @return string The type.
+   */
+  private function get_type($resource, $column) {
+    $table = $this->get_table($resource);
+
+    // If this column is in converged, get the type from there.
+    if(
+      class_exists($resource) === true && // This will also call the autoloader to make sure it's loaded
+      isset($resource::$converged) === true &&
+      isset($resource::$converged[$column]) === true
+    ) {
+      return $resource::$converged[$column]['type'];
+    }
+
+    // Otherwise query the entire schema (and cache it) to see what the type is.
+    if(isset(self::$types) === false) {
+      self::$types = [];
+      $result = $this->query('
+        select
+          `table_name`,
+          `column_name`,
+          `data_type`
+        from
+          `information_schema`.`columns`
+        where
+          `table_schema` = ' . $this->escape($this->setting->get('database_name')) . '
+      ');
+      while($row = $result->fetch_assoc()) {
+        self::$types[$row['table_name'] . '.' . $row['column_name']] = $row['data_type'];
+      }
+    }
+
+    return self::$types[$table . '.' . $column];
   }
 
   /**

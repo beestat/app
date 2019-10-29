@@ -262,7 +262,7 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
         )
         .send();
 
-      beestat.cache.thermostat[beestat.setting('thermostat_id')].json_alerts.forEach(function(alert) {
+      beestat.cache.thermostat[beestat.setting('thermostat_id')].alerts.forEach(function(alert) {
         if (alert.guid === self.alert_.guid) {
           alert.dismissed = true;
         }
@@ -299,7 +299,7 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
         )
         .send();
 
-      beestat.cache.thermostat[beestat.setting('thermostat_id')].json_alerts.forEach(function(alert) {
+      beestat.cache.thermostat[beestat.setting('thermostat_id')].alerts.forEach(function(alert) {
         if (alert.guid === self.alert_.guid) {
           alert.dismissed = false;
         }

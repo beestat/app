@@ -19,10 +19,6 @@ class sensor extends cora\crud {
     'sync' => 300 // 5 Minutes
   ];
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * Sync all sensors connected to this account. Once Nest support is
    * added this will need to check for all connected accounts and run the

@@ -7,10 +7,6 @@
  */
 class ecobee_token extends cora\crud {
 
-  public static $converged = [];
-
-  public static $user_locked = true;
-
   /**
    * This should be called when connecting a new user. Get the access/refresh
    * tokens, then attach them to a brand new anonymous user.
