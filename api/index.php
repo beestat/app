@@ -1,5 +1,7 @@
 <?php
 
+die('Beestat is down until around 10pm Eastern for some minor database maintenance.');
+
 /**
  * Entry point for the API. This sets up cora, the error/exception handlers,
  * and then sends the request off for processing. All requests should start
