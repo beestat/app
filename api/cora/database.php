@@ -798,16 +798,16 @@ final class database extends \mysqli {
       self::$types = [];
       $result = $this->query('
         select
-          `table_name`,
-          `column_name`,
-          `data_type`
+          `TABLE_NAME`,
+          `COLUMN_NAME`,
+          `DATA_TYPE`
         from
           `information_schema`.`columns`
         where
           `table_schema` = ' . $this->escape($this->setting->get('database_name')) . '
       ');
       while($row = $result->fetch_assoc()) {
-        self::$types[$row['table_name'] . '.' . $row['column_name']] = $row['data_type'];
+        self::$types[$row['TABLE_NAME'] . '.' . $row['COLUMN_NAME']] = $row['DATA_TYPE'];
       }
     }
 
