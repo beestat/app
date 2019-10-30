@@ -207,7 +207,7 @@ beestat.component.card.temperature_profiles.prototype.decorate_top_right_ = func
     .set_text('Download Chart')
     .set_icon('download')
     .set_callback(function() {
-      self.chart_.get_chart().exportChartLocal();
+      self.chart_.export();
     }));
 
   menu.add_menu_item(new beestat.component.menu_item()
