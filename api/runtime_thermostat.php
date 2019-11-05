@@ -329,7 +329,11 @@ class runtime_thermostat extends cora\crud {
         'timestamp' => [
           'value' => [
             $this->get_utc_datetime(
-              $columns_begin['date'] . ' ' . $columns_begin['time'],
+              date(
+                'Y-m-d H:i:s',
+                strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
+              ),
+              // $columns_begin['date'] . ' ' . $columns_begin['time'],
               $thermostat['time_zone']
             ),
             $this->get_utc_datetime(
