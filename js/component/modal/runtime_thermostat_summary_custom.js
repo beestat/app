@@ -1,5 +1,5 @@
 /**
- * Custom date range for the aggregate runtime chart.
+ * Custom date range for the Runtime Summary chart.
  */
 beestat.component.modal.runtime_thermostat_summary_custom = function() {
   beestat.component.modal.apply(this, arguments);
@@ -9,7 +9,7 @@ beestat.extend(beestat.component.modal.runtime_thermostat_summary_custom, beesta
 beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
-  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Aggregate Runtime chart.'));
+  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Runtime Summary chart.'));
 
   // Time count
   var time_count = new beestat.component.input.text()
@@ -143,7 +143,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
  * @return {string} Title
  */
 beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_title_ = function() {
-  return 'Aggregate Runtime - Custom Range';
+  return 'Runtime Summary - Custom Range';
 };
 
 /**
