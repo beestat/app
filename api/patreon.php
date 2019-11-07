@@ -43,6 +43,10 @@ class patreon extends external_api {
     }
 
     echo '<html><head><title></title></head><body><script type="text/javascript">window.close();</script></body>';
+
+    // Need to commit the transaction so the stuff gets saved.
+    $this->database->commit_transaction();
+
     die();
   }
 
