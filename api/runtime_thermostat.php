@@ -10,7 +10,8 @@ class runtime_thermostat extends cora\crud {
   public static $exposed = [
     'private' => [
       'read',
-      'sync'
+      'sync',
+      'download'
     ],
     'public' => []
   ];
@@ -82,6 +83,7 @@ class runtime_thermostat extends cora\crud {
         )
       );
     } else {
+      $this->user_lock($thermostat_id);
       $thermostat_ids = [$thermostat_id];
     }
 
@@ -267,6 +269,8 @@ class runtime_thermostat extends cora\crud {
    * @param int $end
    */
   private function sync_($thermostat_id, $begin, $end) {
+    $this->user_lock($thermostat_id);
+
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
     $ecobee_thermostat = $this->api('ecobee_thermostat', 'get', $thermostat['ecobee_thermostat_id']);
 
@@ -333,7 +337,6 @@ class runtime_thermostat extends cora\crud {
                 'Y-m-d H:i:s',
                 strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
               ),
-              // $columns_begin['date'] . ' ' . $columns_begin['time'],
               $thermostat['time_zone']
             ),
             $this->get_utc_datetime(
@@ -526,8 +529,26 @@ class runtime_thermostat extends cora\crud {
    */
   private function get_utc_datetime($local_datetime, $local_time_zone) {
     $local_time_zone = new DateTimeZone($local_time_zone);
+    $utc_time_zone = new DateTimeZone('UTC');
     $date_time = new DateTime($local_datetime, $local_time_zone);
-    $date_time->setTimezone(new DateTimeZone('UTC'));
+    $date_time->setTimezone($utc_time_zone);
+
+    return $date_time->format('Y-m-d H:i:s');
+  }
+
+  /**
+   * Convert a UTC datetime string to a UTC datetime string.
+   *
+   * @param string $utc_datetime Local datetime string.
+   * @param string $local_time_zone The local time zone to convert from.
+   *
+   * @return string The UTC datetime string.
+   */
+  private function get_local_datetime($utc_datetime, $local_time_zone) {
+    $local_time_zone = new DateTimeZone($local_time_zone);
+    $utc_time_zone = new DateTimeZone('UTC');
+    $date_time = new DateTime($utc_datetime, $utc_time_zone);
+    $date_time->setTimezone($local_time_zone);
 
     return $date_time->format('Y-m-d H:i:s');
   }
@@ -544,7 +565,7 @@ class runtime_thermostat extends cora\crud {
    * @return array
    */
   public function read($attributes = [], $columns = []) {
-    $thermostats = $this->api('thermostat', 'read_id');
+    $this->user_lock($attributes['thermostat_id']);
 
     // Check for exceptions.
     if (isset($attributes['thermostat_id']) === false) {
@@ -553,10 +574,6 @@ class runtime_thermostat extends cora\crud {
 
     if (isset($attributes['timestamp']) === false) {
       throw new \Exception('Missing required attribute: timestamp.', 10202);
-    }
-
-    if (isset($thermostats[$attributes['thermostat_id']]) === false) {
-      throw new \Exception('Invalid thermostat_id.', 10203);
     }
 
     if (
@@ -571,7 +588,7 @@ class runtime_thermostat extends cora\crud {
       }
     }
 
-    $thermostat = $thermostats[$attributes['thermostat_id']];
+    $thermostat = $this->api('thermostat', 'get', $attributes['thermostat_id']);
     $max_range = 2592000; // 30 days
     if (
       (
@@ -657,6 +674,148 @@ class runtime_thermostat extends cora\crud {
     }
 
     return $runtime_thermostats;
+  }
+
+  /**
+   * Download all data that exists for a specific thermostat.
+   *
+   * @param int $thermostat_id
+   * @param string $download_begin Optional; the date to begin the download.
+   * @param string $download_end Optional; the date to end the download.
+   */
+  public function download($thermostat_id, $download_begin = null, $download_end = null) {
+    set_time_limit(120);
+
+    $this->user_lock($thermostat_id);
+
+    $thermostat = $this->api('thermostat', 'get', $thermostat_id);
+    $ecobee_thermostat = $this->api(
+      'ecobee_thermostat',
+      'get',
+      $thermostat['ecobee_thermostat_id']
+    );
+
+    if($download_begin === null) {
+      $download_begin = strtotime($thermostat['first_connected']);
+    } else {
+      $download_begin = strtotime($download_begin);
+    }
+
+    if($download_end === null) {
+      $download_end = time();
+    } else {
+      $download_end = strtotime($download_end);
+    }
+
+    $chunk_begin = $download_begin;
+    $chunk_end = $download_begin;
+
+    $bytes = 0;
+
+    $output = fopen('php://output', 'w');
+    $needs_header = true;
+    do {
+      $chunk_end = strtotime('+1 week', $chunk_begin);
+      $chunk_end = min($chunk_end, $download_end);
+
+      $runtime_thermostats = $this->database->read(
+        'runtime_thermostat',
+        [
+          'thermostat_id' => $thermostat_id,
+          'timestamp' => [
+            'value' => [date('Y-m-d H:i:s', $chunk_begin), date('Y-m-d H:i:s', $chunk_end)] ,
+            'operator' => 'between'
+          ]
+        ],
+        [],
+        'timestamp' // order by
+      );
+
+      // Get the appropriate runtime_thermostat_texts.
+      $runtime_thermostat_text_ids = array_unique(array_merge(
+        array_column($runtime_thermostats, 'event_runtime_thermostat_text_id'),
+        array_column($runtime_thermostats, 'climate_runtime_thermostat_text_id')
+      ));
+      $runtime_thermostat_texts = $this->api(
+        'runtime_thermostat_text',
+        'read_id',
+        [
+          'attributes' => [
+            'runtime_thermostat_text_id' => $runtime_thermostat_text_ids
+          ]
+        ]
+      );
+
+
+      if ($needs_header === true && count($runtime_thermostats) > 0) {
+        $headers = array_keys($runtime_thermostats[0]);
+
+        // Remove the IDs and rename two columns.
+        unset($headers[array_search('runtime_thermostat_id', $headers)]);
+        unset($headers[array_search('thermostat_id', $headers)]);
+        $headers[array_search('event_runtime_thermostat_text_id', $headers)] = 'event';
+        $headers[array_search('climate_runtime_thermostat_text_id', $headers)] = 'climate';
+
+        $bytes += fputcsv($output, $headers);
+        $needs_header = false;
+      }
+
+      foreach($runtime_thermostats as $runtime_thermostat) {
+        unset($runtime_thermostat['runtime_thermostat_id']);
+        unset($runtime_thermostat['thermostat_id']);
+
+        $runtime_thermostat['timestamp'] = $this->get_local_datetime(
+          $runtime_thermostat['timestamp'],
+          $thermostat['time_zone']
+        );
+
+        // Return temperatures in a human-readable format.
+        foreach(['indoor_temperature', 'outdoor_temperature', 'setpoint_heat', 'setpoint_cool'] as $key) {
+          if($runtime_thermostat[$key] !== null) {
+            $runtime_thermostat[$key] /= 10;
+          }
+        }
+
+        // Replace event and climate with their string values.
+        if ($runtime_thermostat['event_runtime_thermostat_text_id'] !== null) {
+          $runtime_thermostat['event_runtime_thermostat_text_id'] = $runtime_thermostat_texts[$runtime_thermostat['event_runtime_thermostat_text_id']]['value'];
+        }
+
+        if ($runtime_thermostat['climate_runtime_thermostat_text_id'] !== null) {
+          $runtime_thermostat['climate_runtime_thermostat_text_id'] = $runtime_thermostat_texts[$runtime_thermostat['climate_runtime_thermostat_text_id']]['value'];
+        }
+
+        $bytes += fputcsv($output, $runtime_thermostat);
+      }
+
+      $chunk_begin = strtotime('+1 day', $chunk_end);
+    } while ($chunk_end < $download_end);
+    fclose($output);
+
+    header('Content-type: text/csv');
+    header('Content-Length: ' . $bytes);
+    header('Content-Disposition: attachment; filename="Beestat Export - ' . $ecobee_thermostat['identifier'] . '.csv"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    die();
+  }
+
+  /**
+   * Since this table does not have a user_id column, security must be handled
+   * manually. Call this with a thermostat_id to verify that the current user
+   * has access to the requested thermostat.
+   *
+   * @param int $thermostat_id
+   *
+   * @throws \Exception If the current user doesn't have access to the
+   * requested thermostat.
+   */
+  private function user_lock($thermostat_id) {
+    $thermostats = $this->api('thermostat', 'read_id');
+    if (isset($thermostats[$thermostat_id]) === false) {
+      throw new \Exception('Invalid thermostat_id.', 10203);
+    }
   }
 
 }

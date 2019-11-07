@@ -147,6 +147,13 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   menu.add_menu_item(announcements_menu_item);
 
   menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Download Data')
+    .set_icon('download')
+    .set_callback(function() {
+      (new beestat.component.modal.download_data()).render();
+    }));
+
+  menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')
     .set_icon('exit_to_app')
     .set_callback(function() {

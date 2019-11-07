@@ -74,6 +74,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/announcements.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_system_type.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_thermostat.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/download_data.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/error.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/filter_info.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/help_runtime_thermostat_summary.js"></script>' . PHP_EOL;
