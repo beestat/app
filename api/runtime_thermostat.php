@@ -792,13 +792,13 @@ class runtime_thermostat extends cora\crud {
     } while ($chunk_end < $download_end);
     fclose($output);
 
-    header('Content-type: text/csv');
-    header('Content-Length: ' . $bytes);
-    header('Content-Disposition: attachment; filename="Beestat Export - ' . $ecobee_thermostat['identifier'] . '.csv"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-
-    die();
+    $this->cora->set_headers([
+      'Content-Type' => 'text/csv',
+      'Content-Length' => $bytes,
+      'Content-Disposition' => 'attachment; filename="Beestat Export - ' . $ecobee_thermostat['identifier'] . '.csv"',
+      'Pragma' => 'no-cache',
+      'Expires' => '0',
+    ], true);
   }
 
   /**

@@ -587,24 +587,24 @@ final class cora {
    * @throws \Exception If this is not a batch request and the content type
    * was altered from application/json without a custom response.
    */
-  // public function set_headers($headers, $custom_response = false) {
-  //   if(isset($this->request['batch']) === true) {
-  //     if($custom_response === true) {
-  //       throw new \Exception('Batch API requests can not use a custom response.', 1015);
-  //     }
-  //     if($this->content_type_is_json($headers) === false) {
-  //       throw new \Exception('Batch API requests must return JSON.', 1014);
-  //     }
-  //   }
-  //   else {
-  //     // Not a batch request
-  //     if($custom_response === false && $this->content_type_is_json($headers) === false) {
-  //       throw new \Exception('Non-custom responses must return JSON.', 1016);
-  //     }
-  //   }
-  //   $this->headers = $headers;
-  //   $this->custom_response = $custom_response;
-  // }
+  public function set_headers($headers, $custom_response = false) {
+    if(isset($this->request['batch']) === true) {
+      if($custom_response === true) {
+        throw new \Exception('Batch API requests can not use a custom response.', 1015);
+      }
+      if($this->content_type_is_json($headers) === false) {
+        throw new \Exception('Batch API requests must return JSON.', 1014);
+      }
+    }
+    else {
+      // Not a batch request
+      if($custom_response === false && $this->content_type_is_json($headers) === false) {
+        throw new \Exception('Non-custom responses must return JSON.', 1016);
+      }
+    }
+    $this->headers = $headers;
+    $this->custom_response = $custom_response;
+  }
 
   /**
    * Return whether or not the current output headers indicate that the
