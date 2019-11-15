@@ -424,8 +424,6 @@ class runtime_thermostat extends cora\crud {
       $data['auxiliary_heat_1'] = $columns['auxHeat1'] - $columns['auxHeat2'];
       $data['auxiliary_heat_2'] = $columns['auxHeat2'];
 
-      $data['fan'] = $columns['fan'];
-
       if($columns['humidifier'] > 0) {
         $data['accessory_type'] = 'humidifier';
         $data['accessory'] = $columns['humidifier'];
@@ -442,6 +440,17 @@ class runtime_thermostat extends cora\crud {
         $data['accessory_type'] = 'off';
         $data['accessory'] = 0;
       }
+
+      // Ecobee does not report fan usage when it does not control the fan, so
+      // this will mark the fan as running when certain equipment is on.
+      $data['fan'] = max(
+        $columns['fan'],
+        $data['compressor_1'],
+        $data['compressor_2'],
+        $data['auxiliary_heat_1'],
+        $data['auxiliary_heat_2'],
+        $data['accessory']
+      );
 
       $system_modes = [
         'auto' => 'auto',
