@@ -101,7 +101,7 @@ class runtime_thermostat_summary extends cora\crud {
         sum(case when `compressor_mode` = "heat" then `compressor_2` else 0 end) `sum_compressor_heat_2`,
         sum(`auxiliary_heat_1`) `sum_auxiliary_heat_1`,
         sum(`auxiliary_heat_2`) `sum_auxiliary_heat_2`,
-        sum(`fan`) `fan`,
+        sum(`fan`) `sum_fan`,
         sum(case when `accessory_type` = "humidifier" then `accessory` else 0 end) `sum_humidifier`,
         sum(case when `accessory_type` = "dehumidifier" then `accessory` else 0 end) `sum_dehumidifier`,
         sum(case when `accessory_type` = "ventilator" then `accessory` else 0 end) `sum_ventilator`,
