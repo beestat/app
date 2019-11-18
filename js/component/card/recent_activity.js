@@ -883,10 +883,17 @@ beestat.component.card.recent_activity.prototype.get_series_ = function() {
       runtime_thermostat.compressor_cool_2 = null;
     }
 
+    // Set these to 0 because they don't exist anymore.
     runtime_thermostat.humidifier = 0;
     runtime_thermostat.dehumidifier = 0;
     runtime_thermostat.ventilator = 0;
     runtime_thermostat.economizer = 0;
+
+    // Now set one to an appropriate value to make the rest of the code work.
+    if (runtime_thermostat.accessory_type !== 'off') {
+      runtime_thermostat[runtime_thermostat.accessory_type] = runtime_thermostat.accessory;
+    }
+
 
     // The string includes +00:00 as the UTC offset but moment knows what time
     // zone my PC is in...or at least it has a guess. This means that beestat
