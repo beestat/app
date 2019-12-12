@@ -25,7 +25,7 @@ beestat.component.modal.help_temperature_profiles.prototype.decorate_contents_ =
   parent.appendChild($.createElement('p').innerText('Temperature profiles tell you how fast or slow your indoor temperature changes. This is powerful information that can tell you a lot about your home and help you make informed decisions.'));
 
   (new beestat.component.title('Heat / Cool')).render(parent);
-  parent.appendChild($.createElement('p').innerText('The orange and blue lines represent the rate at which your home heats or cools for any given outdoor temperature. The dotted lines are the raw data, and the solid line is a trendline for that data. For heat pump owners, the outdoor temperature where the orange line crosses the y-axis is called your balance point and tells you when you need an auxiliary source of heat to keep your home warm.'));
+  parent.appendChild($.createElement('p').innerText('The orange and blue lines represent the rate at which your home heats or cools for any given outdoor temperature. The dotted lines are the raw data, and the solid line is a trendline for that data. For heat pump owners, the outdoor temperature where the orange line crosses the x-axis is called your balance point and tells you when you need an auxiliary source of heat to keep your home warm.'));
 
   (new beestat.component.title('Resist')).render(parent);
   parent.appendChild($.createElement('p').innerText('The gray line represents the rate at which your home gains or loses heat when your HVAC system is completely off. The dotted lines are the raw data, and the solid line is a trendline for that data.'));
