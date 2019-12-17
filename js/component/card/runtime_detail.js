@@ -72,9 +72,16 @@ beestat.component.card.runtime_detail.prototype.decorate_contents_ = function(pa
     );
   }
 
+  // Don't go before there's data.
   required_begin = moment.max(
     required_begin,
     moment(thermostat.first_connected)
+  );
+
+  // Don't go after now.
+  required_end = moment.min(
+    required_end,
+    moment().subtract(1, 'hour')
   );
 
   /**
