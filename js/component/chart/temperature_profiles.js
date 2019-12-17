@@ -3,19 +3,19 @@
  *
  * @param {object} data The chart data.
  */
-beestat.component.chart2.temperature_profiles = function(data) {
+beestat.component.chart.temperature_profiles = function(data) {
   this.data_ = data;
 
-  beestat.component.chart2.apply(this, arguments);
+  beestat.component.chart.apply(this, arguments);
 };
-beestat.extend(beestat.component.chart2.temperature_profiles, beestat.component.chart2);
+beestat.extend(beestat.component.chart.temperature_profiles, beestat.component.chart);
 
 /**
  * Override for get_options_xAxis_labels_formatter_.
  *
  * @return {Function} xAxis labels formatter.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_xAxis_labels_formatter_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_labels_formatter_ = function() {
   return function() {
     return this.value + beestat.setting('temperature_unit');
   };
@@ -26,7 +26,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_xAxis_labels
  *
  * @return {Array} All of the series to display on the chart.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_series_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_series_ = function() {
   var series = [];
 
   // Trendline data
@@ -124,7 +124,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_series_ = fu
  *
  * @return {Array} The y-axis options.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_yAxis_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_yAxis_ = function() {
   var absolute_y_max = Math.max(
     Math.abs(this.data_.metadata.chart.y_min),
     Math.abs(this.data_.metadata.chart.y_max)
@@ -165,7 +165,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_yAxis_ = fun
  *
  * @return {Function} The tooltip formatter.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_tooltip_formatter_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_formatter_ = function() {
   var self = this;
 
   return function() {
@@ -210,7 +210,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_tooltip_form
  *
  * @return {string} The zoom type.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_chart_zoomType_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_chart_zoomType_ = function() {
   return null;
 };
 
@@ -219,7 +219,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_chart_zoomTy
  *
  * @return {object} The legend options.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_legend_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_legend_ = function() {
   return {
     'enabled': false
   };
@@ -230,7 +230,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_legend_ = fu
  *
  * @return {object} The xAxis options.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_xAxis_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_ = function() {
   return {
     'lineWidth': 0,
     'tickLength': 0,
@@ -273,7 +273,7 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_xAxis_ = fun
  *
  * @return {number} The height of the chart.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_chart_height_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_chart_height_ = function() {
   return 300;
 };
 
@@ -282,6 +282,6 @@ beestat.component.chart2.temperature_profiles.prototype.get_options_chart_height
  *
  * @return {boolean} Whether or not to connect nulls.
  */
-beestat.component.chart2.temperature_profiles.prototype.get_options_plotOptions_series_connectNulls_ = function() {
+beestat.component.chart.temperature_profiles.prototype.get_options_plotOptions_series_connectNulls_ = function() {
   return true;
 };

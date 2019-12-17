@@ -6,7 +6,11 @@ html {
   box-sizing: inherit;
 }
 
+/* Highcharts */
 .highcharts-container, .highcharts-container svg { width: 100% !important; }
+.crisp_edges {
+  shape-rendering: crispEdges;
+}
 
 body {
   background: #111;

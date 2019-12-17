@@ -15,11 +15,16 @@ beestat.dispatcher = new beestat.dispatcher_();
  *
  * @param {string|array} type The event type or an array of event types.
  * @param {Function} listener Event Listener.
+ *
+ * @return {beestat.dispatcher_} this.
  */
 beestat.dispatcher_.prototype.addEventListener = function(type, listener) {
   if (typeof type === 'object') {
     for (var i = 0; i < type.length; i++) {
-      rocket.EventTarget.prototype.addEventListener.apply(this, [type[i], listener]);
+      rocket.EventTarget.prototype.addEventListener.apply(this, [
+        type[i],
+        listener
+      ]);
     }
   } else {
     rocket.EventTarget.prototype.addEventListener.apply(this, arguments);

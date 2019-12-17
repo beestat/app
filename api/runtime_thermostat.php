@@ -622,6 +622,14 @@ class runtime_thermostat extends cora\crud {
       throw new \Exception('Max range is 30 days.', 10205);
     }
 
+    // Accept timestamps in roughly any format; always convert back to something nice and in UTC
+    if (is_array($attributes['timestamp']['value']) === true) {
+      $attributes['timestamp']['value'][0] = date('c', strtotime($attributes['timestamp']['value'][0]));
+      $attributes['timestamp']['value'][1] = date('c', strtotime($attributes['timestamp']['value'][1]));
+    } else {
+      $attributes['timestamp']['value'] = date('c', strtotime($attributes['timestamp']['value']));
+    }
+
     // Read the data.
     $runtime_thermostats = $this->database->read(
       'runtime_thermostat',

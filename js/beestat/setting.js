@@ -12,8 +12,13 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var user = beestat.get_user();
 
   var defaults = {
-    'recent_activity_time_period': 'day',
-    'recent_activity_time_count': 3,
+    'runtime_detail_smoothing': true,
+    'runtime_detail_range_type': 'dynamic',
+    'runtime_detail_range_static_begin': moment()
+      .subtract(3, 'day')
+      .format('MM/DD/YYYY'),
+    'runtime_detail_range_static_end': moment().format('MM/DD/YYYY'),
+    'runtime_detail_range_dynamic': 3,
 
     'runtime_thermostat_summary_time_count': 0,
     'runtime_thermostat_summary_time_period': 'all',
@@ -82,8 +87,15 @@ beestat.setting = function(key, opt_value, opt_callback) {
     }
   }
 
-  // If no settings changed no API call needs to be fired.
+  /**
+   * If no settings changed no API call needs to be fired. In that case also
+   * fire the callback since the API isn't doing it.
+   */
   if (has_calls === true) {
     api.send();
+  } else {
+    if (opt_callback !== undefined) {
+      opt_callback();
+    }
   }
 };

@@ -128,6 +128,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   );
 
   api.set_callback(function(response) {
+
     beestat.cache.set('user', response.user);
 
     // Rollbar isn't defined on dev.
@@ -152,7 +153,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
     beestat.cache.set('address', response.address);
     beestat.cache.set('announcement', response.announcement);
-    beestat.cache.set('runtime_thermostat', []);
     beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
 
     // Set the active thermostat_id if this is your first time visiting.
@@ -241,6 +241,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     ) {
       (new beestat.component.modal.announcements()).render();
     }
+
   });
 
   api.send();

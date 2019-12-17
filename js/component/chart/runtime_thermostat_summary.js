@@ -3,19 +3,19 @@
  *
  * @param {object} data The chart data.
  */
-beestat.component.chart2.runtime_thermostat_summary = function(data) {
+beestat.component.chart.runtime_thermostat_summary = function(data) {
   this.data_ = data;
 
-  beestat.component.chart2.apply(this, arguments);
+  beestat.component.chart.apply(this, arguments);
 };
-beestat.extend(beestat.component.chart2.runtime_thermostat_summary, beestat.component.chart2);
+beestat.extend(beestat.component.chart.runtime_thermostat_summary, beestat.component.chart);
 
 /**
  * Override for get_options_xAxis_labels_formatter_.
  *
  * @return {Function} xAxis labels formatter.
  */
-beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_xAxis_labels_formatter_ = function() {
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_labels_formatter_ = function() {
   var current_month;
   var current_year;
 
@@ -71,7 +71,7 @@ beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_xAxis_
  *
  * @return {Array} All of the series to display on the chart.
  */
-beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_series_ = function() {
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_series_ = function() {
   var self = this;
   var series = [];
 
@@ -128,9 +128,7 @@ beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_series
  *
  * @return {Array} The y-axis options.
  */
-beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_yAxis_ = function() {
-  var self = this;
-
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ = function() {
   var y_max_hours;
   var tick_interval;
   switch (beestat.setting('runtime_thermostat_summary_group_by')) {
@@ -199,7 +197,7 @@ beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_yAxis_
  *
  * @return {Function} The tooltip formatter.
  */
-beestat.component.chart2.runtime_thermostat_summary.prototype.get_options_tooltip_formatter_ = function() {
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip_formatter_ = function() {
   var self = this;
 
   return function() {

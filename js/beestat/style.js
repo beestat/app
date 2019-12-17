@@ -191,16 +191,16 @@ beestat.series.indoor_humidity = {
 
 beestat.series.outdoor_humidity = {
   'name': 'Outdoor Humidity',
-  'color': beestat.style.color.green.light
+  'color': beestat.style.color.bluegreen.base
 };
 
 beestat.series.setpoint_heat = {
-  'name': 'Setpoint',
+  'name': 'Heat Setpoint',
   'color': beestat.style.color.orange.light
 };
 
 beestat.series.setpoint_cool = {
-  'name': 'Setpoint',
+  'name': 'Cool Setpoint',
   'color': beestat.style.color.lightblue.light
 };
 
@@ -223,11 +223,6 @@ beestat.series.avg_outdoor_humidity = beestat.series.outdoor_humidity;
 beestat.series.extreme_outdoor_temperature = {
   'name': 'Outdoor Temp Extremes',
   'color': beestat.style.color.gray.dark
-};
-
-beestat.series.setpoint_cool = {
-  'name': 'Setpoint',
-  'color': beestat.style.color.lightblue.light
 };
 
 beestat.series.calendar_event_home = {
@@ -278,6 +273,11 @@ beestat.series.calendar_event_quicksave = {
 beestat.series.calendar_event_other = {
   'name': 'Other',
   'color': beestat.style.color.gray.base
+};
+
+beestat.series.calendar_event_custom = {
+  'name': 'Custom',
+  'color': beestat.style.color.bluegreen.base
 };
 
 // Temperature Profiles

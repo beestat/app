@@ -18,7 +18,7 @@ beestat.extend(beestat.component.card.temperature_profiles, beestat.component.ca
  */
 beestat.component.card.temperature_profiles.prototype.decorate_contents_ = function(parent) {
   var data = this.get_data_();
-  this.chart_ = new beestat.component.chart2.temperature_profiles(data);
+  this.chart_ = new beestat.component.chart.temperature_profiles(data);
   this.chart_.render(parent);
 };
 

@@ -50,7 +50,7 @@ beestat.extend(beestat.component.card.runtime_thermostat_summary, beestat.compon
  */
 beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ = function(parent) {
   var data = this.get_data_();
-  this.chart_ = new beestat.component.chart2.runtime_thermostat_summary(data);
+  this.chart_ = new beestat.component.chart.runtime_thermostat_summary(data);
   this.chart_.render(parent);
 
   var sync_progress = beestat.get_sync_progress(this.thermostat_id_);
