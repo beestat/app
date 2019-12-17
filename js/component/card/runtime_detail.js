@@ -434,12 +434,16 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
       data.series.outdoor_humidity.push(outdoor_humidity_moving);
       data.metadata.series.outdoor_humidity.active = true;
 
-      var indoor_temperature_moving = this.get_average_(moving, 'indoor_temperature');
+      var indoor_temperature_moving = beestat.temperature(
+        this.get_average_(moving, 'indoor_temperature')
+      );
       data.series.indoor_temperature.push(indoor_temperature_moving);
       y_min_max(indoor_temperature_moving);
       data.metadata.series.indoor_temperature.active = true;
 
-      var outdoor_temperature_moving = this.get_average_(moving, 'outdoor_temperature');
+      var outdoor_temperature_moving = beestat.temperature(
+        this.get_average_(moving, 'outdoor_temperature')
+      );
       data.series.outdoor_temperature.push(outdoor_temperature_moving);
       y_min_max(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.active = true;
@@ -453,13 +457,14 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
         runtime_thermostat.system_mode === 'heat' ||
         runtime_thermostat.system_mode === 'auxiliary_heat'
       ) {
-        data.series.setpoint_heat.push(
-          beestat.temperature(runtime_thermostat.setpoint_heat)
+        var setpoint_heat = beestat.temperature(
+          runtime_thermostat.setpoint_heat
         );
+        data.series.setpoint_heat.push(setpoint_heat);
+        y_min_max(setpoint_heat);
 
         data.metadata.series.setpoint_heat.active = true;
 
-        y_min_max(runtime_thermostat.setpoint_heat);
       } else {
         data.series.setpoint_heat.push(null);
       }
@@ -468,13 +473,14 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
         runtime_thermostat.system_mode === 'auto' ||
         runtime_thermostat.system_mode === 'cool'
       ) {
-        data.series.setpoint_cool.push(
-          beestat.temperature(runtime_thermostat.setpoint_cool)
+        var setpoint_cool = beestat.temperature(
+          runtime_thermostat.setpoint_cool
         );
+        data.series.setpoint_cool.push(setpoint_cool);
+        y_min_max(setpoint_cool);
 
         data.metadata.series.setpoint_cool.active = true;
 
-        y_min_max(runtime_thermostat.setpoint_cool);
       } else {
         data.series.setpoint_cool.push(null);
       }

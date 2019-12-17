@@ -15,8 +15,6 @@
  */
 // beestat.temperature = function(temperature, convert, round, include_units) {
 beestat.temperature = function(args) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-
   // Allow passing a single argument of temperature for convenience.
   if (typeof args !== 'object' || args === null) {
     args = {
@@ -38,7 +36,7 @@ beestat.temperature = function(args) {
   }
 
   // Convert to Celcius if necessary and asked for.
-  if (convert === true && thermostat.temperature_unit === '°C') {
+  if (convert === true && beestat.setting('temperature_unit') === '°C') {
     if (delta === true) {
       temperature *= (5 / 9);
     } else {
@@ -65,7 +63,7 @@ beestat.temperature = function(args) {
 
   // Append units if asked for.
   if (units === true) {
-    temperature += thermostat.temperature_unit;
+    temperature += beestat.setting('temperature_unit');
   }
 
   return temperature;
