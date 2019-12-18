@@ -312,8 +312,7 @@ beestat.component.chart.runtime_detail.prototype.get_options_tooltip_formatter_ 
         value = beestat.temperature({
           'temperature': values[point.series.name],
           'convert': false,
-          'units': true,
-          'round': 0
+          'units': true
         });
       } else if (point.series.name.includes('humidity') === true) {
         group = 'data';
