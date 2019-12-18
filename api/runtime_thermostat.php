@@ -601,7 +601,7 @@ class runtime_thermostat extends cora\crud {
     }
 
     $thermostat = $this->api('thermostat', 'get', $attributes['thermostat_id']);
-    $max_range = 2592000; // 30 days
+    $max_range = 2678000; // 31 days
     if (
       (
         is_array($attributes['timestamp']) === true &&
@@ -619,7 +619,7 @@ class runtime_thermostat extends cora\crud {
         strtotime($attributes['timestamp']['value']) - min(strtotime($thermostat['first_connected']), strtotime($thermostat['sync_begin'])) > $max_range
       )
     ) {
-      throw new \Exception('Max range is 30 days.', 10205);
+      throw new \Exception('Max range is 31 days. ' . (time() - strtotime($attributes['timestamp']['value'])), 10205);
     }
 
     // Accept timestamps in roughly any format; always convert back to something nice and in UTC
