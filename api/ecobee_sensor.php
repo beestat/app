@@ -100,14 +100,12 @@ class ecobee_sensor extends cora\crud {
     // Loop over the returned sensors and create/update them as necessary.
     $sensor_ids_to_keep = [];
     foreach($response['thermostatList'] as $thermostat_api) {
-      $guid = sha1($thermostat_api['identifier'] . $thermostat_api['runtime']['firstConnected']);
-
       $ecobee_thermostat = $this->api(
         'ecobee_thermostat',
         'get',
         [
           'attributes' => [
-            'guid' => $guid
+            'identifier' => $thermostat_api['identifier']
           ]
         ]
       );

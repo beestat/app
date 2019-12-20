@@ -62,12 +62,11 @@ class ecobee extends external_api {
         $ecobee_token
       );
 
-      $guids = [];
+      $identifiers = [];
       $email_addresses = [];
       foreach($response['thermostatList'] as $thermostat) {
         $runtime = $thermostat['runtime'];
-        $guid = sha1($thermostat['identifier'] . $runtime['firstConnected']);
-        $guids[] = $guid;
+        $identifiers[] = $thermostat['identifier'];
 
         $notification_settings = $thermostat['notificationSettings'];
         $email_addresses = array_merge($email_addresses, $notification_settings['emailAddresses']);
@@ -79,7 +78,7 @@ class ecobee extends external_api {
       $existing_ecobee_thermostats = $this->database->read(
         'ecobee_thermostat',
         [
-          'guid' => $guids
+          'identifier' => $identifiers
         ]
       );
 

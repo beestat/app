@@ -100,11 +100,9 @@ class ecobee_thermostat extends cora\crud {
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];
     foreach($response['thermostatList'] as $api_thermostat) {
-      $guid = sha1($api_thermostat['identifier'] . $api_thermostat['runtime']['firstConnected']);
-
       $ecobee_thermostat = $this->get(
         [
-          'guid' => $guid
+          'identifier' => $api_thermostat['identifier']
         ]
       );
 
@@ -123,7 +121,7 @@ class ecobee_thermostat extends cora\crud {
       else {
         // Thermostat does not exist.
         $ecobee_thermostat = $this->create([
-          'guid' => $guid
+          'identifier' => $api_thermostat['identifier']
         ]);
         $thermostat = $this->api(
           'thermostat',
