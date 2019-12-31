@@ -177,6 +177,6 @@ beestat.component.card.sensors.prototype.decorate_top_right_ = function(parent) 
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      (new beestat.component.modal.help_sensors()).render();
+      window.open('https://www.notion.so/Sensors-d279d6fb4afc4f199409be2eb323140b');
     }));
 };

@@ -170,7 +170,7 @@ beestat.component.card.alerts.prototype.decorate_top_right_ = function(parent) {
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      (new beestat.component.modal.help_alerts()).render();
+      window.open('https://www.notion.so/Alerts-dd453829dc7c47019a775130c93bde0c');
     });
   menu.add_menu_item(menu_item_help);
 };

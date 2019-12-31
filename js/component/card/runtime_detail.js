@@ -244,7 +244,7 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      (new beestat.component.modal.help_runtime_detail()).render();
+      window.open('https://www.notion.so/Runtime-Detail-e499fb13fd4441f4b3f096baca1cb138');
     }));
 };
 

@@ -361,7 +361,7 @@ beestat.component.card.system.prototype.decorate_top_right_ = function(parent) {
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      (new beestat.component.modal.help_system()).render();
+      window.open('https://www.notion.so/beestat/System-44b441bdd99b4c3991d6e0ace2dce893');
     }));
 };
 

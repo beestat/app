@@ -267,7 +267,7 @@ beestat.component.card.comparison_settings.prototype.decorate_top_right_ = funct
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      (new beestat.component.modal.help_comparison_settings()).render();
+      window.open('https://www.notion.so/Comparison-Settings-596040eadd014928830b4d1d54692761');
     }));
 };
 
