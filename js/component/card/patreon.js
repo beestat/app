@@ -41,7 +41,7 @@ beestat.component.card.patreon.prototype.decorate_top_right_ = function(parent) 
     .set_text_color('#fff')
     .set_background_hover_color(beestat.style.color.green.light)
     .addEventListener('click', function() {
-      (new beestat.component.modal.patreon_hide()).render();
+      (new beestat.component.modal.enjoy_beestat()).render();
     })
     .render(parent);
 };
