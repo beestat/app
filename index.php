@@ -24,27 +24,5 @@
   if($setting->is_demo() === true || preg_match('/app\.beestat\.io/', $_SERVER['HTTP_HOST']) !== 0) {
     require 'app.php';
   } else {
-
-    // When on regular beestat.io, delete these cookies.
-    setcookie(
-      'session_key',
-      '',
-      time() - 86400,
-      '/',
-      '',
-      true,
-      true
-    );
-
-    setcookie(
-      'session_user_id',
-      '',
-      time() - 86400,
-      '/',
-      '',
-      true,
-      true
-    );
-
     require 'www.php';
   }
