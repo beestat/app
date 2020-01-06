@@ -7,7 +7,7 @@
       "sizes": "36x36 48x48 72x72 96x96 128x128 144x144 192x192 256x256 512x512"
     }
   ],
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#37474f",
   "theme_color": "#37474f"
