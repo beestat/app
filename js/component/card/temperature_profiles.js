@@ -194,6 +194,32 @@ beestat.component.card.temperature_profiles.prototype.get_title_ = function() {
 };
 
 /**
+ * Get the subtitle of the card.
+ *
+ * @return {string} The subtitle.
+ */
+beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function() {
+  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat_group = beestat.cache.thermostat_group[
+    thermostat.thermostat_group_id
+  ];
+
+  /*
+   * All profiles are calculated at the same time, and resist is the most
+   * guaranteed one to have.
+   */
+  if (thermostat_group.temperature_profile.resist !== undefined) {
+    var generated_at_m = moment(
+      thermostat_group.temperature_profile.resist.metadata.generated_at
+    );
+
+    return 'Generated ' + generated_at_m.format('MMM Do @ h a') + ' (updated weekly)';
+  }
+
+  return null;
+};
+
+/**
  * Decorate the menu.
  *
  * @param {rocket.Elements} parent
