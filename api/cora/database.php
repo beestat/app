@@ -413,11 +413,13 @@ final class database extends \mysqli {
    * @param array $columns The columns to return. If not specified, all
    * columns are returned.
    * @param mixed $order_by String or array of order_bys.
+   * @param mixed $limit Number or array of numbers as arguments to the MySQL
+   * limit clause.
    *
    * @return array An array of the database rows with the specified columns.
    * Even a single result will still be returned in an array of size 1.
    */
-  public function read($resource, $attributes = [], $columns = [], $order_by = []) {
+  public function read($resource, $attributes = [], $columns = [], $order_by = [], $limit = []) {
     $table = $this->get_table($resource);
 
     // Build the column listing.
@@ -454,6 +456,7 @@ final class database extends \mysqli {
         );
     }
 
+    // Order by
     if (is_array($order_by) === false) {
       $order_by = [$order_by];
     }
@@ -471,9 +474,27 @@ final class database extends \mysqli {
         );
     }
 
+    // Limit
+    if (is_array($limit) === false) {
+      $limit = [$limit];
+    }
+
+    if (count($limit) === 0) {
+      $limit = '';
+    } else {
+      $limit = ' limit ' .
+        implode(
+          ',',
+          array_map(
+            [$this, 'escape'],
+            $limit
+          )
+        );
+    }
+
     // Put everything together and return the result.
     $query = 'select ' . $columns . ' from ' .
-      $this->escape_identifier($table) . $where . $order_by;
+      $this->escape_identifier($table) . $where . $order_by . $limit;
     $result = $this->query($query);
 
     /**

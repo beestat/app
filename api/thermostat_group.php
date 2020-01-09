@@ -204,56 +204,70 @@ class thermostat_group extends cora\crud {
       unset($attributes['address_radius']);
     }
 
-    // Get all matching thermostat groups.
-    $other_thermostat_groups = $this->database->read(
-      'thermostat_group',
-      $attributes
-    );
-
-    // Get all the scores from the other thermostat groups
     $scores = [];
-    foreach($other_thermostat_groups as $other_thermostat_group) {
-      if(
-        isset($other_thermostat_group['temperature_profile'][$type]) === true &&
-        isset($other_thermostat_group['temperature_profile'][$type]['score']) === true &&
-        $other_thermostat_group['temperature_profile'][$type]['score'] !== null &&
-        isset($other_thermostat_group['temperature_profile'][$type]['metadata']) === true &&
-        isset($other_thermostat_group['temperature_profile'][$type]['metadata']['generated_at']) === true &&
-        strtotime($other_thermostat_group['temperature_profile'][$type]['metadata']['generated_at']) > strtotime('-1 month')
-      ) {
-        // Skip thermostat_groups that are too far away.
+    $limit_start = 0;
+    $limit_count = 1000;
+
+    /**
+     * Selecting lots of rows can eventually run PHP out of memory, so chunk
+     * this up into several queries to avoid that.
+     */
+    do {
+      // Get all matching thermostat groups.
+      $other_thermostat_groups = $this->database->read(
+        'thermostat_group',
+        $attributes,
+        [], // columns
+        [], // order_by
+        [$limit_start, $limit_count] // limit
+      );
+
+      // Get all the scores from the other thermostat groups
+      foreach($other_thermostat_groups as $other_thermostat_group) {
         if(
-          isset($address_radius) === true &&
-          $this->haversine_great_circle_distance(
-            $address_latitude,
-            $address_longitude,
-            $other_thermostat_group['address_latitude'],
-            $other_thermostat_group['address_longitude']
-          ) > $address_radius
+          isset($other_thermostat_group['temperature_profile'][$type]) === true &&
+          isset($other_thermostat_group['temperature_profile'][$type]['score']) === true &&
+          $other_thermostat_group['temperature_profile'][$type]['score'] !== null &&
+          isset($other_thermostat_group['temperature_profile'][$type]['metadata']) === true &&
+          isset($other_thermostat_group['temperature_profile'][$type]['metadata']['generated_at']) === true &&
+          strtotime($other_thermostat_group['temperature_profile'][$type]['metadata']['generated_at']) > strtotime('-1 month')
         ) {
-          continue;
-        }
+          // Skip thermostat_groups that are too far away.
+          if(
+            isset($address_radius) === true &&
+            $this->haversine_great_circle_distance(
+              $address_latitude,
+              $address_longitude,
+              $other_thermostat_group['address_latitude'],
+              $other_thermostat_group['address_longitude']
+            ) > $address_radius
+          ) {
+            continue;
+          }
 
-        // Ignore profiles with too few datapoints. Ideally this would be time-
-        // based...so don't use a profile if it hasn't experienced a full year
-        // or heating/cooling system, but that isn't stored presently. A good
-        // approximation is to make sure there is a solid set of data driving
-        // the profile.
-        $required_delta_count = (($type === 'resist') ? 40 : 20);
-        if(count($other_thermostat_group['temperature_profile'][$type]['deltas']) < $required_delta_count) {
-          continue;
-        }
+          // Ignore profiles with too few datapoints. Ideally this would be time-
+          // based...so don't use a profile if it hasn't experienced a full year
+          // or heating/cooling system, but that isn't stored presently. A good
+          // approximation is to make sure there is a solid set of data driving
+          // the profile.
+          $required_delta_count = (($type === 'resist') ? 40 : 20);
+          if(count($other_thermostat_group['temperature_profile'][$type]['deltas']) < $required_delta_count) {
+            continue;
+          }
 
-        // Round the scores so they can be better displayed on a histogram or
-        // bell curve.
-        // TODO: Might be able to get rid of this? I don't think new scores are calculated at this level of detail anymore...
-        // $scores[] = round(
-        //   $other_thermostat_group['temperature_profile'][$type]['score'],
-        //   1
-        // );
-        $scores[] = $other_thermostat_group['temperature_profile'][$type]['score'];
+          // Round the scores so they can be better displayed on a histogram or
+          // bell curve.
+          // TODO: Might be able to get rid of this? I don't think new scores are calculated at this level of detail anymore...
+          // $scores[] = round(
+          //   $other_thermostat_group['temperature_profile'][$type]['score'],
+          //   1
+          // );
+          $scores[] = $other_thermostat_group['temperature_profile'][$type]['score'];
+        }
       }
-    }
+
+      $limit_start += $limit_count;
+    } while (count($other_thermostat_groups) === $limit_count);
 
     sort($scores);
 
