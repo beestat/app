@@ -310,7 +310,7 @@ class runtime extends cora\api {
 
 
     $this->sync_runtime_thermostat($thermostat, $response);
-    // $this->sync_runtime_sensor($thermostat, $response);
+    $this->sync_runtime_sensor($thermostat, $response);
   }
 
   private function sync_runtime_thermostat($thermostat, $response) {
