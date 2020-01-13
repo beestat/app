@@ -5,7 +5,7 @@
  * @param {number} thermostat_id The thermostat_id this card is displaying
  * data for
  */
-beestat.component.card.runtime_detail = function(thermostat_id) {
+beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
   var self = this;
 
   this.thermostat_id_ = thermostat_id;
@@ -24,9 +24,9 @@ beestat.component.card.runtime_detail = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.runtime_detail_smoothing',
-      'setting.runtime_detail_range_type',
-      'setting.runtime_detail_range_dynamic',
+      'setting.runtime_thermostat_detail_smoothing',
+      'setting.runtime_thermostat_detail_range_type',
+      'setting.runtime_thermostat_detail_range_dynamic',
       'cache.runtime_thermostat'
     ],
     change_function
@@ -34,28 +34,28 @@ beestat.component.card.runtime_detail = function(thermostat_id) {
 
   beestat.component.card.apply(this, arguments);
 };
-beestat.extend(beestat.component.card.runtime_detail, beestat.component.card);
+beestat.extend(beestat.component.card.runtime_thermostat_detail, beestat.component.card);
 
 /**
  * Decorate
  *
  * @param {rocket.ELements} parent
  */
-beestat.component.card.runtime_detail.prototype.decorate_contents_ = function(parent) {
+beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
   var data = this.get_data_();
-  this.chart_ = new beestat.component.chart.runtime_detail(data);
+  this.chart_ = new beestat.component.chart.runtime_thermostat_detail(data);
   this.chart_.render(parent);
 
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var required_begin;
   var required_end;
-  if (beestat.setting('runtime_detail_range_type') === 'dynamic') {
+  if (beestat.setting('runtime_thermostat_detail_range_type') === 'dynamic') {
     required_begin = moment()
       .subtract(
-        beestat.setting('runtime_detail_range_dynamic'),
+        beestat.setting('runtime_thermostat_detail_range_dynamic'),
         'day'
       )
       .second(0);
@@ -65,10 +65,10 @@ beestat.component.card.runtime_detail.prototype.decorate_contents_ = function(pa
       .second(0);
   } else {
     required_begin = moment(
-      beestat.setting('runtime_detail_range_static_begin') + ' 00:00:00'
+      beestat.setting('runtime_thermostat_detail_range_static_begin') + ' 00:00:00'
     );
     required_end = moment(
-      beestat.setting('runtime_detail_range_static_end') + ' 23:59:59'
+      beestat.setting('runtime_thermostat_detail_range_static_end') + ' 23:59:59'
     );
   }
 
@@ -96,7 +96,7 @@ beestat.component.card.runtime_detail.prototype.decorate_contents_ = function(pa
       var value;
       var operator;
 
-      if (beestat.setting('runtime_detail_range_type') === 'dynamic') {
+      if (beestat.setting('runtime_thermostat_detail_range_type') === 'dynamic') {
         value = required_begin.format();
         operator = '>=';
       } else {
@@ -150,7 +150,7 @@ beestat.component.card.runtime_detail.prototype.decorate_contents_ = function(pa
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(parent) {
+beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ = function(parent) {
   var self = this;
 
   var menu = (new beestat.component.menu()).render(parent);
@@ -160,13 +160,13 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
     .set_icon('numeric_1_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_detail_range_dynamic') !== 1 ||
-        beestat.setting('runtime_detail_range_type') !== 'dynamic'
+        beestat.setting('runtime_thermostat_detail_range_dynamic') !== 1 ||
+        beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
         beestat.cache.delete('runtime_thermostat');
         beestat.setting({
-          'runtime_detail_range_dynamic': 1,
-          'runtime_detail_range_type': 'dynamic'
+          'runtime_thermostat_detail_range_dynamic': 1,
+          'runtime_thermostat_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -176,13 +176,13 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
     .set_icon('numeric_3_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_detail_range_dynamic') !== 3 ||
-        beestat.setting('runtime_detail_range_type') !== 'dynamic'
+        beestat.setting('runtime_thermostat_detail_range_dynamic') !== 3 ||
+        beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
         beestat.cache.delete('runtime_thermostat');
         beestat.setting({
-          'runtime_detail_range_dynamic': 3,
-          'runtime_detail_range_type': 'dynamic'
+          'runtime_thermostat_detail_range_dynamic': 3,
+          'runtime_thermostat_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -192,13 +192,13 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
     .set_icon('numeric_7_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_detail_range_dynamic') !== 7 ||
-        beestat.setting('runtime_detail_range_type') !== 'dynamic'
+        beestat.setting('runtime_thermostat_detail_range_dynamic') !== 7 ||
+        beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
         beestat.cache.delete('runtime_thermostat');
         beestat.setting({
-          'runtime_detail_range_dynamic': 7,
-          'runtime_detail_range_type': 'dynamic'
+          'runtime_thermostat_detail_range_dynamic': 7,
+          'runtime_thermostat_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -207,7 +207,7 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
     .set_text('Custom')
     .set_icon('calendar_edit')
     .set_callback(function() {
-      (new beestat.component.modal.runtime_detail_custom()).render();
+      (new beestat.component.modal.runtime_thermostat_detail_custom()).render();
     }));
 
   menu.add_menu_item(new beestat.component.menu_item()
@@ -224,19 +224,19 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
       self.chart_.reset_zoom();
     }));
 
-  if (beestat.setting('runtime_detail_smoothing') === true) {
+  if (beestat.setting('runtime_thermostat_detail_smoothing') === true) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Disable Smothing')
       .set_icon('chart_line')
       .set_callback(function() {
-        beestat.setting('runtime_detail_smoothing', false);
+        beestat.setting('runtime_thermostat_detail_smoothing', false);
       }));
   } else {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Enable Smoothing')
       .set_icon('chart_bell_curve')
       .set_callback(function() {
-        beestat.setting('runtime_detail_smoothing', true);
+        beestat.setting('runtime_thermostat_detail_smoothing', true);
       }));
   }
 
@@ -253,7 +253,7 @@ beestat.component.card.runtime_detail.prototype.decorate_top_right_ = function(p
  *
  * @return {object} The series data.
  */
-beestat.component.card.runtime_detail.prototype.get_data_ = function() {
+beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function() {
   var data = {
     'x': [],
     'series': {},
@@ -352,7 +352,7 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
    * Figure out what date range to use.
    * var begin_m = moment()
    *   .subtract(
-   *     beestat.setting('runtime_detail_range_dynamic'),
+   *     beestat.setting('runtime_thermostat_detail_range_dynamic'),
    *     'day'
    *   );
    * begin_m
@@ -364,18 +364,18 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
 
   var begin_m;
   var end_m;
-  if (beestat.setting('runtime_detail_range_type') === 'dynamic') {
+  if (beestat.setting('runtime_thermostat_detail_range_type') === 'dynamic') {
     begin_m = moment().subtract(
-      beestat.setting('runtime_detail_range_dynamic'),
+      beestat.setting('runtime_thermostat_detail_range_dynamic'),
       'day'
     );
     end_m = moment().subtract(1, 'hour');
   } else {
     begin_m = moment(
-      beestat.setting('runtime_detail_range_static_begin') + ' 00:00:00'
+      beestat.setting('runtime_thermostat_detail_range_static_begin') + ' 00:00:00'
     );
     end_m = moment(
-      beestat.setting('runtime_detail_range_static_end') + ' 23:59:59'
+      beestat.setting('runtime_thermostat_detail_range_static_end') + ' 23:59:59'
     );
   }
 
@@ -395,7 +395,7 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
   // Initialize moving average.
   var moving = [];
   var moving_count;
-  if (beestat.setting('runtime_detail_smoothing') === true) {
+  if (beestat.setting('runtime_thermostat_detail_smoothing') === true) {
     moving_count = 15;
   } else {
     moving_count = 1;
@@ -757,7 +757,7 @@ beestat.component.card.runtime_detail.prototype.get_data_ = function() {
  *
  * @return {array} The runtime_thermostat rows.
  */
-beestat.component.card.runtime_detail.prototype.get_runtime_thermostat_by_date_ = function() {
+beestat.component.card.runtime_thermostat_detail.prototype.get_runtime_thermostat_by_date_ = function() {
   var runtime_thermostats = {};
   if (beestat.cache.runtime_thermostat !== undefined) {
     beestat.cache.runtime_thermostat.forEach(function(runtime_thermostat) {
@@ -777,7 +777,7 @@ beestat.component.card.runtime_detail.prototype.get_runtime_thermostat_by_date_ 
  *
  * @return {number} The average.
  */
-beestat.component.card.runtime_detail.prototype.get_average_ = function(runtime_thermostats, series_code) {
+beestat.component.card.runtime_thermostat_detail.prototype.get_average_ = function(runtime_thermostats, series_code) {
   var average = 0;
   var count = 0;
   for (var i = 0; i < runtime_thermostats.length; i++) {
@@ -794,7 +794,7 @@ beestat.component.card.runtime_detail.prototype.get_average_ = function(runtime_
  *
  * @return {string} Title
  */
-beestat.component.card.runtime_detail.prototype.get_title_ = function() {
+beestat.component.card.runtime_thermostat_detail.prototype.get_title_ = function() {
   return 'Runtime Detail';
 };
 
@@ -803,19 +803,19 @@ beestat.component.card.runtime_detail.prototype.get_title_ = function() {
  *
  * @return {string} Subtitle
  */
-beestat.component.card.runtime_detail.prototype.get_subtitle_ = function() {
-  if (beestat.setting('runtime_detail_range_type') === 'dynamic') {
-    var s = (beestat.setting('runtime_detail_range_dynamic') > 1) ? 's' : '';
+beestat.component.card.runtime_thermostat_detail.prototype.get_subtitle_ = function() {
+  if (beestat.setting('runtime_thermostat_detail_range_type') === 'dynamic') {
+    var s = (beestat.setting('runtime_thermostat_detail_range_dynamic') > 1) ? 's' : '';
 
     return 'Past ' +
-      beestat.setting('runtime_detail_range_dynamic') +
+      beestat.setting('runtime_thermostat_detail_range_dynamic') +
       ' day' +
       s;
   }
 
-  var begin = moment(beestat.setting('runtime_detail_range_static_begin'))
+  var begin = moment(beestat.setting('runtime_thermostat_detail_range_static_begin'))
     .format('MMM D, YYYY');
-  var end = moment(beestat.setting('runtime_detail_range_static_end'))
+  var end = moment(beestat.setting('runtime_thermostat_detail_range_static_end'))
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;
@@ -830,7 +830,7 @@ beestat.component.card.runtime_detail.prototype.get_subtitle_ = function() {
  *
  * @return {boolean} Whether or not the data is synced.
  */
-beestat.component.card.runtime_detail.prototype.data_synced_ = function(required_sync_begin, required_sync_end) {
+beestat.component.card.runtime_thermostat_detail.prototype.data_synced_ = function(required_sync_begin, required_sync_end) {
   // Demo can just grab whatever data is there.
   if (window.is_demo === true) {
     return true;

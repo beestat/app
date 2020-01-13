@@ -350,12 +350,12 @@ a.inverted:active {
 .icon.eye_off:before { content: "\F209"; }
 .icon.fan:before { content: "\F210"; }
 .icon.fire:before { content: "\F238"; }
-.icon.gauge:before { content: "\F29A"; }
 .icon.google_play:before { content: "\F2BC"; }
 .icon.heart:before { content: "\F2D1"; }
 .icon.help_circle:before { content: "\F2D7"; }
 .icon.home:before { content: "\F2DC"; }
 .icon.home_floor_a:before { content: "\FD5F"; }
+.icon.home_group:before { content: "\FDB0"; }
 .icon.information:before { content: "\F2FC"; }
 .icon.key:before { content: "\F306"; }
 .icon.layers:before { content: "\F328"; }
@@ -371,6 +371,8 @@ a.inverted:active {
 .icon.pound:before { content: "\F423"; }
 .icon.snowflake:before { content: "\F716"; }
 .icon.swap_horizontal:before { content: "\F4E1"; }
+.icon.signal_variant:before { content: "\F60A"; }
+.icon.tablet_dashboard:before { content: "\FEEB"; }
 .icon.thermostat:before { content: "\F393"; }
 .icon.thumb_up:before { content: "\F513"; }
 .icon.tune:before { content: "\F62E"; }

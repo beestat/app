@@ -143,8 +143,8 @@ if ('serviceWorker' in navigator) {
 beestat.width = window.innerWidth;
 window.addEventListener('resize', rocket.throttle(100, function() {
   var breakpoints = [
-    500,
-    600
+    600,
+    650
   ];
 
   breakpoints.forEach(function(breakpoint) {

@@ -79,7 +79,7 @@ beestat.layer.dashboard.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.runtime_detail(
+      'card': new beestat.component.card.runtime_thermostat_detail(
         beestat.setting('thermostat_id')
       ),
       'size': 12

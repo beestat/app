@@ -176,6 +176,8 @@ class ecobee_sensor extends cora\crud {
         $attributes['name'] = $api_sensor['name'];
         $attributes['type'] = $api_sensor['type'];
         $attributes['in_use'] = $api_sensor['inUse'];
+        $attributes['identifier'] = $api_sensor['id'];
+        $attributes['capability'] = $api_sensor['capability'];
         $attributes['inactive'] = 0;
 
         $attributes['temperature'] = null;

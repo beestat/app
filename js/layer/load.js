@@ -204,7 +204,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
      */
     new beestat.api()
       .add_call(
-        'runtime_thermostat',
+        'runtime',
         'sync',
         {
           'thermostat_id': thermostat.thermostat_id

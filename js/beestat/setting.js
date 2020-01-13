@@ -12,13 +12,21 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var user = beestat.get_user();
 
   var defaults = {
-    'runtime_detail_smoothing': true,
-    'runtime_detail_range_type': 'dynamic',
-    'runtime_detail_range_static_begin': moment()
+    'runtime_thermostat_detail_smoothing': true,
+    'runtime_thermostat_detail_range_type': 'dynamic',
+    'runtime_thermostat_detail_range_static_begin': moment()
       .subtract(3, 'day')
       .format('MM/DD/YYYY'),
-    'runtime_detail_range_static_end': moment().format('MM/DD/YYYY'),
-    'runtime_detail_range_dynamic': 3,
+    'runtime_thermostat_detail_range_static_end': moment().format('MM/DD/YYYY'),
+    'runtime_thermostat_detail_range_dynamic': 3,
+
+    'runtime_sensor_detail_smoothing': true,
+    'runtime_sensor_detail_range_type': 'dynamic',
+    'runtime_sensor_detail_range_static_begin': moment()
+      .subtract(3, 'day')
+      .format('MM/DD/YYYY'),
+    'runtime_sensor_detail_range_static_end': moment().format('MM/DD/YYYY'),
+    'runtime_sensor_detail_range_dynamic': 3,
 
     'runtime_thermostat_summary_time_count': 0,
     'runtime_thermostat_summary_time_period': 'all',

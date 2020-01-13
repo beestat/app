@@ -22,18 +22,39 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   var self = this;
 
   var pages;
-  pages = [
-    {
-      'layer': 'dashboard',
-      'text': 'Dashboard',
-      'icon': 'gauge'
-    },
-    {
-      'layer': 'home_comparisons',
-      'text': 'Home Comparisons',
-      'icon': 'home'
-    }
-  ];
+
+  if (false && beestat.has_early_access() === true) {
+    pages = [
+      {
+        'layer': 'dashboard',
+        'text': 'Dashboard',
+        'icon': 'tablet_dashboard'
+      },
+      {
+        'layer': 'sensors',
+        'text': 'Sensors',
+        'icon': 'signal_variant'
+      },
+      {
+        'layer': 'home_comparisons',
+        'text': 'Comparisons',
+        'icon': 'home_group'
+      }
+    ];
+  } else {
+    pages = [
+      {
+        'layer': 'dashboard',
+        'text': 'Dashboard',
+        'icon': 'tablet_dashboard'
+      },
+      {
+        'layer': 'home_comparisons',
+        'text': 'Home Comparisons',
+        'icon': 'home_group'
+      }
+    ];
+  }
 
   var gutter = beestat.style.size.gutter;
 
@@ -77,7 +98,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       .set_icon(page.icon)
       .set_text_color(beestat.style.color.bluegray.dark);
 
-    if (beestat.width > 500) {
+    if (beestat.width > 650) {
       button.set_text(page.text);
     }
 

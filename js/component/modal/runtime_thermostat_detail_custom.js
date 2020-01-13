@@ -1,12 +1,12 @@
 /**
  * Custom date range for the Runtime Detail chart.
  */
-beestat.component.modal.runtime_detail_custom = function() {
+beestat.component.modal.runtime_thermostat_detail_custom = function() {
   beestat.component.modal.apply(this, arguments);
-  this.state_.runtime_detail_range_type = beestat.setting('runtime_detail_range_type');
-  this.state_.runtime_detail_range_dynamic = beestat.setting('runtime_detail_range_dynamic');
-  this.state_.runtime_detail_range_static_begin = beestat.setting('runtime_detail_range_static_begin');
-  this.state_.runtime_detail_range_static_end = beestat.setting('runtime_detail_range_static_end');
+  this.state_.runtime_thermostat_detail_range_type = beestat.setting('runtime_thermostat_detail_range_type');
+  this.state_.runtime_thermostat_detail_range_dynamic = beestat.setting('runtime_thermostat_detail_range_dynamic');
+  this.state_.runtime_thermostat_detail_range_static_begin = beestat.setting('runtime_thermostat_detail_range_static_begin');
+  this.state_.runtime_thermostat_detail_range_static_end = beestat.setting('runtime_thermostat_detail_range_static_end');
   this.state_.error = {
     'max_range': false,
     'invalid_range_begin': false,
@@ -14,19 +14,19 @@ beestat.component.modal.runtime_detail_custom = function() {
     'out_of_sync_range': false
   };
 };
-beestat.extend(beestat.component.modal.runtime_detail_custom, beestat.component.modal);
+beestat.extend(beestat.component.modal.runtime_thermostat_detail_custom, beestat.component.modal);
 
 /**
  * Decorate.
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.modal.runtime_detail_custom.prototype.decorate_contents_ = function(parent) {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_contents_ = function(parent) {
   parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Runtime Detail chart.'));
 
   this.decorate_range_type_(parent);
 
-  if (this.state_.runtime_detail_range_type === 'dynamic') {
+  if (this.state_.runtime_thermostat_detail_range_type === 'dynamic') {
     this.decorate_range_dynamic_(parent);
   } else {
     this.decorate_range_static_(parent);
@@ -40,7 +40,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_contents_ = fun
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.modal.runtime_detail_custom.prototype.decorate_range_type_ = function(parent) {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_range_type_ = function(parent) {
   var self = this;
 
   var button_group = new beestat.component.button_group();
@@ -49,13 +49,13 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_type_ = f
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
-      this.state_.runtime_detail_range_type === 'dynamic'
+      this.state_.runtime_thermostat_detail_range_type === 'dynamic'
         ? beestat.style.color.lightblue.base
         : beestat.style.color.bluegray.base
     )
     .set_text('Dynamic')
     .addEventListener('click', function() {
-      self.state_.runtime_detail_range_type = 'dynamic';
+      self.state_.runtime_thermostat_detail_range_type = 'dynamic';
       self.rerender();
     }));
 
@@ -63,13 +63,13 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_type_ = f
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
-      this.state_.runtime_detail_range_type === 'static'
+      this.state_.runtime_thermostat_detail_range_type === 'static'
         ? beestat.style.color.lightblue.base
         : beestat.style.color.bluegray.base
     )
     .set_text('Static')
     .addEventListener('click', function() {
-      self.state_.runtime_detail_range_type = 'static';
+      self.state_.runtime_thermostat_detail_range_type = 'static';
       self.rerender();
     }));
 
@@ -86,11 +86,11 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_type_ = f
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ = function(parent) {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_range_static_ = function(parent) {
   var self = this;
 
-  var runtime_detail_static_range_begin;
-  var runtime_detail_static_range_end;
+  var runtime_thermostat_detail_static_range_begin;
+  var runtime_thermostat_detail_static_range_end;
 
   /**
    * Check whether or not a value is outside of where data is synced.
@@ -104,13 +104,13 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
     var max = moment(thermostat.sync_end);
 
     var begin = moment.min(
-      moment(runtime_detail_static_range_begin.get_value()),
-      moment(runtime_detail_static_range_end.get_value())
+      moment(runtime_thermostat_detail_static_range_begin.get_value()),
+      moment(runtime_thermostat_detail_static_range_end.get_value())
     );
 
     var end = moment.max(
-      moment(runtime_detail_static_range_begin.get_value() + ' 00:00:00'),
-      moment(runtime_detail_static_range_end.get_value() + ' 23:59:59')
+      moment(runtime_thermostat_detail_static_range_begin.get_value() + ' 00:00:00'),
+      moment(runtime_thermostat_detail_static_range_end.get_value() + ' 23:59:59')
     );
 
     if (
@@ -123,7 +123,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
     }
   };
 
-  runtime_detail_static_range_begin = new beestat.component.input.text()
+  runtime_thermostat_detail_static_range_begin = new beestat.component.input.text()
     .set_style({
       'width': 110,
       'text-align': 'center',
@@ -133,16 +133,16 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
       'maxlength': 10
     })
     .set_icon('calendar')
-    .set_value(this.state_.runtime_detail_range_static_begin);
+    .set_value(this.state_.runtime_thermostat_detail_range_static_begin);
 
-  runtime_detail_static_range_begin.addEventListener('blur', function() {
+  runtime_thermostat_detail_static_range_begin.addEventListener('blur', function() {
     var m = moment(this.get_value());
     if (m.isValid() === true) {
       self.state_.error.invalid_range_begin = false;
 
       var value = m.format('M/D/YYYY');
 
-      var diff = Math.abs(m.diff(moment(runtime_detail_static_range_end.get_value()), 'day')) + 1;
+      var diff = Math.abs(m.diff(moment(runtime_thermostat_detail_static_range_end.get_value()), 'day')) + 1;
       if (diff > 30) {
         self.state_.error.max_range = true;
       } else {
@@ -151,16 +151,16 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
 
       check_out_of_sync_range();
 
-      self.state_.runtime_detail_range_static_begin = value;
+      self.state_.runtime_thermostat_detail_range_static_begin = value;
       self.rerender();
     } else {
-      self.state_.runtime_detail_range_static_begin = this.get_value();
+      self.state_.runtime_thermostat_detail_range_static_begin = this.get_value();
       self.state_.error.invalid_range_begin = true;
       self.rerender();
     }
   });
 
-  runtime_detail_static_range_end = new beestat.component.input.text()
+  runtime_thermostat_detail_static_range_end = new beestat.component.input.text()
     .set_style({
       'width': 110,
       'text-align': 'center',
@@ -170,16 +170,16 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
       'maxlength': 10
     })
     .set_icon('calendar')
-    .set_value(this.state_.runtime_detail_range_static_end);
+    .set_value(this.state_.runtime_thermostat_detail_range_static_end);
 
-  runtime_detail_static_range_end.addEventListener('blur', function() {
+  runtime_thermostat_detail_static_range_end.addEventListener('blur', function() {
     var m = moment(this.get_value());
     if (m.isValid() === true) {
       self.state_.error.invalid_range_end = false;
 
       var value = m.format('M/D/YYYY');
 
-      var diff = Math.abs(m.diff(moment(runtime_detail_static_range_begin.get_value()), 'day')) + 1;
+      var diff = Math.abs(m.diff(moment(runtime_thermostat_detail_static_range_begin.get_value()), 'day')) + 1;
       if (diff > 30) {
         self.state_.error.max_range = true;
       } else {
@@ -188,10 +188,10 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
 
       check_out_of_sync_range();
 
-      self.state_.runtime_detail_range_static_end = value;
+      self.state_.runtime_thermostat_detail_range_static_end = value;
       self.rerender();
     } else {
-      self.state_.runtime_detail_range_static_end = this.get_value();
+      self.state_.runtime_thermostat_detail_range_static_end = this.get_value();
       self.state_.error.invalid_range_end = true;
       self.rerender();
     }
@@ -205,7 +205,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
   row.appendChild(column);
 
   span = $.createElement('span').style('display', 'inline-block');
-  runtime_detail_static_range_begin.render(span);
+  runtime_thermostat_detail_static_range_begin.render(span);
   column.appendChild(span);
 
   span = $.createElement('span')
@@ -218,7 +218,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
   column.appendChild(span);
 
   span = $.createElement('span').style('display', 'inline-block');
-  runtime_detail_static_range_end.render(span);
+  runtime_thermostat_detail_static_range_end.render(span);
   column.appendChild(span);
 };
 
@@ -227,10 +227,10 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_static_ =
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.modal.runtime_detail_custom.prototype.decorate_range_dynamic_ = function(parent) {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_range_dynamic_ = function(parent) {
   var self = this;
 
-  var runtime_detail_range_dynamic = new beestat.component.input.text()
+  var runtime_thermostat_detail_range_dynamic = new beestat.component.input.text()
     .set_style({
       'width': 75,
       'text-align': 'center',
@@ -240,9 +240,9 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_dynamic_ 
       'maxlength': 2
     })
     .set_icon('pound')
-    .set_value(beestat.setting('runtime_detail_range_dynamic'));
+    .set_value(beestat.setting('runtime_thermostat_detail_range_dynamic'));
 
-  runtime_detail_range_dynamic.addEventListener('blur', function() {
+  runtime_thermostat_detail_range_dynamic.addEventListener('blur', function() {
     var value = parseInt(this.get_value(), 10);
     if (isNaN(value) === true || value === 0) {
       value = 1;
@@ -250,7 +250,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_dynamic_ 
       value = 30;
     }
     this.set_value(value);
-    self.state_.runtime_detail_range_dynamic = value;
+    self.state_.runtime_thermostat_detail_range_dynamic = value;
   });
 
   var span;
@@ -261,7 +261,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_dynamic_ 
   row.appendChild(column);
 
   span = $.createElement('span').style('display', 'inline-block');
-  runtime_detail_range_dynamic.render(span);
+  runtime_thermostat_detail_range_dynamic.render(span);
   column.appendChild(span);
 
   span = $.createElement('span')
@@ -278,7 +278,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_range_dynamic_ 
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.modal.runtime_detail_custom.prototype.decorate_error_ = function(parent) {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_error_ = function(parent) {
   var div = $.createElement('div').style('color', beestat.style.color.red.base);
   if (this.state_.error.max_range === true) {
     div.appendChild($.createElement('div').innerText('Max range is 30 days.'));
@@ -300,7 +300,7 @@ beestat.component.modal.runtime_detail_custom.prototype.decorate_error_ = functi
  *
  * @return {string} Title
  */
-beestat.component.modal.runtime_detail_custom.prototype.get_title_ = function() {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_title_ = function() {
   return 'Runtime Detail - Custom Range';
 };
 
@@ -309,7 +309,7 @@ beestat.component.modal.runtime_detail_custom.prototype.get_title_ = function() 
  *
  * @return {[beestat.component.button]} The buttons.
  */
-beestat.component.modal.runtime_detail_custom.prototype.get_buttons_ = function() {
+beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_buttons_ = function() {
   var self = this;
 
   var cancel = new beestat.component.button()
@@ -344,19 +344,19 @@ beestat.component.modal.runtime_detail_custom.prototype.get_buttons_ = function(
           .set_background_hover_color()
           .removeEventListener('click');
 
-        if (moment(self.state_.runtime_detail_range_static_begin).isAfter(moment(self.state_.runtime_detail_range_static_end)) === true) {
-          var temp = self.state_.runtime_detail_range_static_begin;
-          self.state_.runtime_detail_range_static_begin = self.state_.runtime_detail_range_static_end;
-          self.state_.runtime_detail_range_static_end = temp;
+        if (moment(self.state_.runtime_thermostat_detail_range_static_begin).isAfter(moment(self.state_.runtime_thermostat_detail_range_static_end)) === true) {
+          var temp = self.state_.runtime_thermostat_detail_range_static_begin;
+          self.state_.runtime_thermostat_detail_range_static_begin = self.state_.runtime_thermostat_detail_range_static_end;
+          self.state_.runtime_thermostat_detail_range_static_end = temp;
         }
 
         beestat.cache.delete('runtime_thermostat');
         beestat.setting(
           {
-            'runtime_detail_range_type': self.state_.runtime_detail_range_type,
-            'runtime_detail_range_dynamic': self.state_.runtime_detail_range_dynamic,
-            'runtime_detail_range_static_begin': self.state_.runtime_detail_range_static_begin,
-            'runtime_detail_range_static_end': self.state_.runtime_detail_range_static_end
+            'runtime_thermostat_detail_range_type': self.state_.runtime_thermostat_detail_range_type,
+            'runtime_thermostat_detail_range_dynamic': self.state_.runtime_thermostat_detail_range_dynamic,
+            'runtime_thermostat_detail_range_static_begin': self.state_.runtime_thermostat_detail_range_static_begin,
+            'runtime_thermostat_detail_range_static_end': self.state_.runtime_thermostat_detail_range_static_end
           },
           undefined,
           function() {

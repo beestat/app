@@ -1,21 +1,21 @@
 /**
- * Runtime thermostat summary chart.
+ * Runtime thermostat detail chart.
  *
  * @param {object} data The chart data.
  */
-beestat.component.chart.runtime_detail = function(data) {
+beestat.component.chart.runtime_thermostat_detail = function(data) {
   this.data_ = data;
 
   beestat.component.chart.apply(this, arguments);
 };
-beestat.extend(beestat.component.chart.runtime_detail, beestat.component.chart);
+beestat.extend(beestat.component.chart.runtime_thermostat_detail, beestat.component.chart);
 
 /**
  * Override for get_options_xAxis_labels_formatter_.
  *
  * @return {Function} xAxis labels formatter.
  */
-beestat.component.chart.runtime_detail.prototype.get_options_xAxis_labels_formatter_ = function() {
+beestat.component.chart.runtime_thermostat_detail.prototype.get_options_xAxis_labels_formatter_ = function() {
   var current_day;
   var current_hour;
 
@@ -43,7 +43,7 @@ beestat.component.chart.runtime_detail.prototype.get_options_xAxis_labels_format
  *
  * @return {Array} All of the series to display on the chart.
  */
-beestat.component.chart.runtime_detail.prototype.get_options_series_ = function() {
+beestat.component.chart.runtime_thermostat_detail.prototype.get_options_series_ = function() {
   var self = this;
   var series = [];
 
@@ -170,7 +170,7 @@ beestat.component.chart.runtime_detail.prototype.get_options_series_ = function(
  *
  * @return {Array} The y-axis options.
  */
-beestat.component.chart.runtime_detail.prototype.get_options_yAxis_ = function() {
+beestat.component.chart.runtime_thermostat_detail.prototype.get_options_yAxis_ = function() {
   /**
    * Highcharts doesn't seem to respect axis behavior well so just overriding
    * it completely here.
@@ -245,7 +245,7 @@ beestat.component.chart.runtime_detail.prototype.get_options_yAxis_ = function()
  *
  * @return {Function} The tooltip formatter.
  */
-beestat.component.chart.runtime_detail.prototype.get_options_tooltip_formatter_ = function() {
+beestat.component.chart.runtime_thermostat_detail.prototype.get_options_tooltip_formatter_ = function() {
   var self = this;
 
   return function() {
