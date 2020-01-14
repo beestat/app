@@ -55,6 +55,8 @@ class logger extends cora\api {
       'curl ' .
       '-u ' . $this->setting->get('influx_database_username') . ':' . $this->setting->get('influx_database_password') . ' ' .
       '-POST "' . $url . '" ' .
+      '--silent ' . // silent; keeps logs out of stderr
+      '--show-error ' . // override silent on failure
       '--max-time 10 ' .
       '--connect-timeout 5 ' .
       '--data-binary \'' . $data_binary . '\' > /dev/null &'
