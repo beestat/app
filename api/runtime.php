@@ -590,37 +590,53 @@ class runtime extends cora\api {
           $sensor_identifier = substr($key, 0, strrpos($key, ':'));
           $capability_identifier = substr($key, strrpos($key, ':') + 1);
 
-          $sensor = $sensors_by_identifier[$sensor_identifier];
-          $sensor_id = $sensors_by_identifier[$sensor_identifier]['sensor_id'];
+          /**
+           * Most of the time the pattern is that a sensor will have an
+           * identifier in the format XX:YY. Then the runtime report will
+           * return data keyed by XX:YY:ZZ, where ZZ is the capability_id as
+           * defined in sensor.capabilities.
+           *
+           * Some sensors have an identifier in the format XX:YY:ZZ, with a
+           * single entry in the capabilities array with no id. This makes
+           * little sense, but whatever. In these cases ecobee keys data by
+           * XX:YY:ZZ in the runtime report. This is a different pattern which
+           * has to be accounted for.
+           *
+           * For now I am simply ignoring this situation.
+           */
+          if (isset($sensors_by_identifier[$sensor_identifier]) === true) {
+            $sensor = $sensors_by_identifier[$sensor_identifier];
+            $sensor_id = $sensors_by_identifier[$sensor_identifier]['sensor_id'];
 
-          if (isset($datas[$sensor['sensor_id']]) === false) {
-            $datas[$sensor['sensor_id']] = [
-              'sensor_id' => $sensor['sensor_id'],
-              'timestamp' => $this->get_utc_datetime(
-                $columns['date'] . ' ' . $columns['time'],
-                $thermostat['time_zone']
-              )
-            ];
-          }
+            if (isset($datas[$sensor['sensor_id']]) === false) {
+              $datas[$sensor['sensor_id']] = [
+                'sensor_id' => $sensor['sensor_id'],
+                'timestamp' => $this->get_utc_datetime(
+                  $columns['date'] . ' ' . $columns['time'],
+                  $thermostat['time_zone']
+                )
+              ];
+            }
 
-          foreach($sensor['capability'] as $capability) {
-            if(
-              $capability['id'] == $capability_identifier &&
-              in_array($capability['type'], ['temperature', 'occupancy']) === true
-            ) {
-              $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+            foreach($sensor['capability'] as $capability) {
+              if(
+                $capability['id'] == $capability_identifier &&
+                in_array($capability['type'], ['temperature', 'occupancy']) === true
+              ) {
+                $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+              }
             }
           }
-        }
 
-        // Create or update the database
-        foreach ($datas as $data) {
-          if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
-            $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
-            $this->database->update('runtime_sensor', $data, 'id');
-          }
-          else {
-            $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+          // Create or update the database
+          foreach ($datas as $data) {
+            if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
+              $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
+              $this->database->update('runtime_sensor', $data, 'id');
+            }
+            else {
+              $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+            }
           }
         }
       }
