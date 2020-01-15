@@ -511,115 +511,117 @@ class runtime extends cora\api {
      * actually returned just in case the returned data goes outside of what I
      * requested for some reason.
      */
-    $ecobee_columns = $response['sensorList'][0]['columns'];
-    $columns_begin = $this->get_columns(
-      $response['sensorList'][0]['data'][0],
-      $response['sensorList'][0]['columns']
-    );
-    $columns_end = $this->get_columns(
-      $response['sensorList'][0]['data'][count($response['sensorList'][0]['data']) - 1],
-      $ecobee_columns
-    );
-
-    // Get a list of sensors
-    $sensors = $this->api(
-      'sensor',
-      'read',
-      [
-        'attributes' => [
-          'thermostat_id' => $thermostat['thermostat_id']
-        ]
-      ]
-    );
-
-    // Get a list of sensors indexed by code
-    $sensors_by_identifier = [];
-    foreach($sensors as $sensor) {
-      $sensors_by_identifier[$sensor['identifier']] = $sensor;
-    }
-
-    $existing_rows = $this->database->read(
-      'runtime_sensor',
-      [
-        'sensor_id' => array_column($sensors, 'sensor_id'),
-        'timestamp' => [
-          'value' => [
-            $this->get_utc_datetime(
-              date(
-                'Y-m-d H:i:s',
-                strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
-              ),
-              $thermostat['time_zone']
-            ),
-            $this->get_utc_datetime(
-              date(
-                'Y-m-d H:i:s',
-                strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
-              ),
-              $thermostat['time_zone']
-            )
-          ],
-          'operator' => 'between'
-        ]
-      ]
-    );
-
-    $existing_timestamps = [];
-    foreach($existing_rows as $existing_row) {
-      if (isset($existing_timestamps[$existing_row['sensor_id']]) === false) {
-        $existing_timestamps[$existing_row['sensor_id']] = [];
-      }
-      $existing_timestamps[$existing_row['sensor_id']][$existing_row['timestamp']] = $existing_row['runtime_sensor_id'];
-    }
-
-    // Loop over the ecobee data. Ecobee if you're reading this please don't
-    // format your identifiers like this in the future.
-    foreach ($response['sensorList'][0]['data'] as $row) {
-      $columns = $this->get_columns(
-        $row,
+    if (count($response['sensorList']) > 0) {
+      $ecobee_columns = $response['sensorList'][0]['columns'];
+      $columns_begin = $this->get_columns(
+        $response['sensorList'][0]['data'][0],
+        $response['sensorList'][0]['columns']
+      );
+      $columns_end = $this->get_columns(
+        $response['sensorList'][0]['data'][count($response['sensorList'][0]['data']) - 1],
         $ecobee_columns
       );
-        $datas = [];
 
-      foreach ($columns as $key => $value) {
-        if ($key === 'date' || $key === 'time') {
-          continue;
-        }
+      // Get a list of sensors
+      $sensors = $this->api(
+        'sensor',
+        'read',
+        [
+          'attributes' => [
+            'thermostat_id' => $thermostat['thermostat_id']
+          ]
+        ]
+      );
 
-        $sensor_identifier = substr($key, 0, strrpos($key, ':'));
-        $capability_identifier = substr($key, strrpos($key, ':') + 1);
-
-        $sensor = $sensors_by_identifier[$sensor_identifier];
-        $sensor_id = $sensors_by_identifier[$sensor_identifier]['sensor_id'];
-
-        if (isset($datas[$sensor['sensor_id']]) === false) {
-          $datas[$sensor['sensor_id']] = [
-            'sensor_id' => $sensor['sensor_id'],
-            'timestamp' => $this->get_utc_datetime(
-              $columns['date'] . ' ' . $columns['time'],
-              $thermostat['time_zone']
-            )
-          ];
-        }
-
-        foreach($sensor['capability'] as $capability) {
-          if(
-            $capability['id'] == $capability_identifier &&
-            in_array($capability['type'], ['temperature', 'occupancy']) === true
-          ) {
-            $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
-          }
-        }
+      // Get a list of sensors indexed by code
+      $sensors_by_identifier = [];
+      foreach($sensors as $sensor) {
+        $sensors_by_identifier[$sensor['identifier']] = $sensor;
       }
 
-      // Create or update the database
-      foreach ($datas as $data) {
-        if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
-          $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
-          $this->database->update('runtime_sensor', $data, 'id');
+      $existing_rows = $this->database->read(
+        'runtime_sensor',
+        [
+          'sensor_id' => array_column($sensors, 'sensor_id'),
+          'timestamp' => [
+            'value' => [
+              $this->get_utc_datetime(
+                date(
+                  'Y-m-d H:i:s',
+                  strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
+                ),
+                $thermostat['time_zone']
+              ),
+              $this->get_utc_datetime(
+                date(
+                  'Y-m-d H:i:s',
+                  strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
+                ),
+                $thermostat['time_zone']
+              )
+            ],
+            'operator' => 'between'
+          ]
+        ]
+      );
+
+      $existing_timestamps = [];
+      foreach($existing_rows as $existing_row) {
+        if (isset($existing_timestamps[$existing_row['sensor_id']]) === false) {
+          $existing_timestamps[$existing_row['sensor_id']] = [];
         }
-        else {
-          $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+        $existing_timestamps[$existing_row['sensor_id']][$existing_row['timestamp']] = $existing_row['runtime_sensor_id'];
+      }
+
+      // Loop over the ecobee data. Ecobee if you're reading this please don't
+      // format your identifiers like this in the future.
+      foreach ($response['sensorList'][0]['data'] as $row) {
+        $columns = $this->get_columns(
+          $row,
+          $ecobee_columns
+        );
+          $datas = [];
+
+        foreach ($columns as $key => $value) {
+          if ($key === 'date' || $key === 'time') {
+            continue;
+          }
+
+          $sensor_identifier = substr($key, 0, strrpos($key, ':'));
+          $capability_identifier = substr($key, strrpos($key, ':') + 1);
+
+          $sensor = $sensors_by_identifier[$sensor_identifier];
+          $sensor_id = $sensors_by_identifier[$sensor_identifier]['sensor_id'];
+
+          if (isset($datas[$sensor['sensor_id']]) === false) {
+            $datas[$sensor['sensor_id']] = [
+              'sensor_id' => $sensor['sensor_id'],
+              'timestamp' => $this->get_utc_datetime(
+                $columns['date'] . ' ' . $columns['time'],
+                $thermostat['time_zone']
+              )
+            ];
+          }
+
+          foreach($sensor['capability'] as $capability) {
+            if(
+              $capability['id'] == $capability_identifier &&
+              in_array($capability['type'], ['temperature', 'occupancy']) === true
+            ) {
+              $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+            }
+          }
+        }
+
+        // Create or update the database
+        foreach ($datas as $data) {
+          if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
+            $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
+            $this->database->update('runtime_sensor', $data, 'id');
+          }
+          else {
+            $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+          }
         }
       }
     }
