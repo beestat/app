@@ -175,7 +175,7 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
         'download_end': download_end
       };
 
-      window.location.href = '/api/?resource=runtime_thermostat&method=download&arguments=' + JSON.stringify(download_arguments) + '&api_key=' + beestat.api.api_key;
+      window.location.href = '/api/?resource=runtime&method=download&arguments=' + JSON.stringify(download_arguments) + '&api_key=' + beestat.api.api_key;
 
       self.dispose();
     });
