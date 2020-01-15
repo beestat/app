@@ -828,7 +828,7 @@ class runtime extends cora\api {
         $bytes += fputcsv($output, $runtime_thermostat);
       }
 
-      $chunk_begin = strtotime('+1 day', $chunk_end);
+      $chunk_begin = $chunk_end;
     } while ($chunk_end < $download_end);
     fclose($output);
 
