@@ -39,7 +39,7 @@ beestat.component.modal.error.prototype.get_title_ = function() {
     'Looks like you broke it again.',
     'Yep, it\'s broken.',
     'Something went wrong.',
-    'You have died of dysentry.',
+    'You have died of dysentery.',
     'What a happy accident.',
     'Witty title for an error.',
     'Greedo shot first!',
