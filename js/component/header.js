@@ -23,7 +23,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
 
   var pages;
 
-  if (false && beestat.has_early_access() === true) {
+  if (beestat.has_early_access() === true) {
     pages = [
       {
         'layer': 'dashboard',
