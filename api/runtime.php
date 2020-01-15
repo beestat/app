@@ -580,7 +580,8 @@ class runtime extends cora\api {
           $row,
           $ecobee_columns
         );
-          $datas = [];
+
+        $datas = [];
 
         foreach ($columns as $key => $value) {
           if ($key === 'date' || $key === 'time') {
@@ -623,20 +624,24 @@ class runtime extends cora\api {
                 $capability['id'] == $capability_identifier &&
                 in_array($capability['type'], ['temperature', 'occupancy']) === true
               ) {
-                $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+                if ($value === null) {
+                  $datas[$sensor['sensor_id']][$capability['type']] = null;
+                } else {
+                  $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+                }
               }
             }
           }
+        }
 
-          // Create or update the database
-          foreach ($datas as $data) {
-            if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
-              $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
-              $this->database->update('runtime_sensor', $data, 'id');
-            }
-            else {
-              $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
-            }
+        // Create or update the database
+        foreach ($datas as $data) {
+          if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
+            $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
+            $this->database->update('runtime_sensor', $data, 'id');
+          }
+          else {
+            $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
           }
         }
       }
