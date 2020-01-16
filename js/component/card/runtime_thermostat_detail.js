@@ -396,7 +396,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
   var moving = [];
   var moving_count;
   if (beestat.setting('runtime_thermostat_detail_smoothing') === true) {
-    moving_count = 15;
+    moving_count = 10;
   } else {
     moving_count = 1;
   }
@@ -786,6 +786,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_average_ = functi
       count++;
     }
   }
+
   return average / count;
 };
 
