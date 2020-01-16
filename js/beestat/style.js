@@ -24,22 +24,22 @@ beestat.style.color = {
   'bluegreen': {
     'light': '#2bcbba',
     'base': '#0fb9b1',
-    'dark': ''
+    'dark': '#00867e'
   },
   'lightblue': {
     'light': '#45aaf2',
     'base': '#2d98da',
-    'dark': ''
+    'dark': '#147fc1'
   },
   'blue': {
     'light': '#4b7bec',
     'base': '#3867d6',
-    'dark': ''
+    'dark': '#1f4ebd'
   },
   'purple': {
     'light': '#a55eea',
     'base': '#8854d0',
-    'dark': ''
+    'dark': '#6f3bb7'
   },
   'gray': {
     'light': '#d1d8e0',

@@ -71,7 +71,19 @@ beestat.component.chart.prototype.get_options_legend_ = function() {
     'itemHiddenStyle': {
       'color': '#7f8c8d'
     },
-    'labelFormatter': this.get_options_legend_labelFormatter_()
+    'labelFormatter': this.get_options_legend_labelFormatter_(),
+
+
+    // 'layout': 'vertical',
+    // 'align': 'right',
+    // 'verticalAlign': 'top'
+
+    // 'maxHeight': 1000, // To prevent the navigation thing
+    // 'floating': true,
+    // 'verticalAlign': 'top',
+    // 'y': 50,
+    // 'borderWidth': 1
+    //
   };
 };
 
@@ -175,8 +187,18 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
         'display': 'none'
       }
     },
-    'height': this.get_options_chart_height_()
+    'height': this.get_options_chart_height_(),
+    'events': this.get_options_chart_events_()
   };
+};
+
+/**
+ * Get the events list for the chart.
+ *
+ * @return {number} The events list for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_events_ = function() {
+  return null;
 };
 
 /**
@@ -240,7 +262,8 @@ beestat.component.chart.prototype.get_options_exporting_ = function() {
           beestat.style.size.gutter,
           beestat.style.size.gutter,
           beestat.style.size.gutter
-        ]
+        ],
+        'events': this.get_options_exporting_chart_events_()
       }
     }
   };
@@ -288,6 +311,15 @@ beestat.component.chart.prototype.get_options_exporting_filename_ = function() {
   }
 
   return filename.join(' ');
+};
+
+/**
+ * Get the events list for the chart on export.
+ *
+ * @return {string} The events list for the chart on export.
+ */
+beestat.component.chart.prototype.get_options_exporting_chart_events_ = function() {
+  return null;
 };
 
 /**
