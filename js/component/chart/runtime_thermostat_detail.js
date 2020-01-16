@@ -176,8 +176,8 @@ beestat.component.chart.runtime_thermostat_detail.prototype.get_options_yAxis_ =
    * it completely here.
    */
 
-  var y_min = Math.floor((this.data_.metadata.chart.y_min - 5) / 10) * 10;
-  var y_max = Math.ceil((this.data_.metadata.chart.y_max + 10) / 10) * 10;
+  var y_min = Math.floor((this.data_.metadata.chart.y_min) / 10) * 10;
+  var y_max = Math.ceil((this.data_.metadata.chart.y_max) / 10) * 10;
   var tick_positions = [];
   var tick_interval = (beestat.setting('temperature_unit') === '°F') ? 10 : 5;
   var current_tick_position =
