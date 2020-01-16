@@ -20,10 +20,7 @@ beestat.component.card.sensors.prototype.decorate_contents_ = function(parent) {
     if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
       if (sensor.type === 'thermostat') {
         internal_sensor = sensor;
-      } else if (
-        sensor.type === 'ecobee3_remote_sensor' ||
-        sensor.type === 'switch_plus'
-      ) {
+      } else {
         sensors.push(sensor);
       }
     }

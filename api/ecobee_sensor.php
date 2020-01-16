@@ -16,6 +16,32 @@ class ecobee_sensor extends cora\crud {
   ];
 
   /**
+   * Normal read_id, but filter out unsupported sensor types.
+   *
+   * @param array $attributes
+   * @param array $columns
+   *
+   * @return array
+   */
+  public function read_id($attributes = [], $columns = []) {
+    $ecobee_sensors = parent::read_id($attributes, $columns);
+
+    $return = [];
+    foreach($ecobee_sensors as $ecobee_sensor) {
+      if (
+        in_array(
+          $ecobee_sensor['type'],
+          ['ecobee3_remote_sensor', 'thermostat']
+        ) === true
+      ) {
+        $return[$ecobee_sensor['ecobee_sensor_id']] = $ecobee_sensor;
+      }
+    }
+
+    return $return;
+  }
+
+  /**
    * Sync sensors.
    */
   public function sync() {

@@ -20,6 +20,32 @@ class sensor extends cora\crud {
   ];
 
   /**
+   * Normal read_id, but filter out unsupported sensor types.
+   *
+   * @param array $attributes
+   * @param array $columns
+   *
+   * @return array
+   */
+  public function read_id($attributes = [], $columns = []) {
+    $sensors = parent::read_id($attributes, $columns);
+
+    $return = [];
+    foreach($sensors as $sensor) {
+      if (
+        in_array(
+          $sensor['type'],
+          ['ecobee3_remote_sensor', 'thermostat']
+        ) === true
+      ) {
+        $return[$sensor['sensor_id']] = $sensor;
+      }
+    }
+
+    return $return;
+  }
+
+  /**
    * Sync all sensors connected to this account. Once Nest support is
    * added this will need to check for all connected accounts and run the
    * appropriate ones.
