@@ -214,12 +214,12 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
       }
     }));
 
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Custom')
-    .set_icon('calendar_edit')
-    .set_callback(function() {
-      (new beestat.component.modal.runtime_sensor_detail_custom()).render();
-    }));
+  // menu.add_menu_item(new beestat.component.menu_item()
+  //   .set_text('Custom')
+  //   .set_icon('calendar_edit')
+  //   .set_callback(function() {
+  //     (new beestat.component.modal.runtime_sensor_detail_custom()).render();
+  //   }));
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Download Chart')

@@ -171,7 +171,6 @@ window.addEventListener('resize', rocket.throttle(100, function() {
  */
 beestat.has_early_access = function() {
   var user = beestat.get_user();
-  return user.user_id === 1;
   return user.user_id === 1 ||
   (
     user.patreon_status !== null &&
