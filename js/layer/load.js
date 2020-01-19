@@ -217,6 +217,8 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
 
     (new beestat.layer.dashboard()).render();
 
+    (function(t,e,s,o){var n,a,c;t.SMCX=t.SMCX||[],e.getElementById(o)||(n=e.getElementsByTagName(s),a=n[n.length-1],c=e.createElement(s),c.type="text/javascript",c.async=!0,c.id=o,c.src=["https:"===location.protocol?"https://":"http://","widget.surveymonkey.com/collect/website/js/tRaiETqnLgj758hTBazgd3l5quHMqTNHHqqwJzbJnYh9TbgqEvZWl1oNUNBmUtXh.js"].join(""),a.parentNode.insertBefore(c,a))})(window,document,"script","smcx-sdk");
+
     /*
      * If never seen an announcement, or if there is an unread important
      * announcement, show the modal.
