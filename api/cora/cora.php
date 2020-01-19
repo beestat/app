@@ -691,6 +691,55 @@ final class cora {
         'error_extra_info' => $this->error_extra_info
       ]
     ];
+
+    $session = session::get_instance();
+    $user_id = $session->get_user_id();
+
+    if(isset($this->request['api_key']) === true) {
+      $api_user_resource = new api_user();
+      $api_users = $api_user_resource->read(['api_key' => $this->request['api_key']]);
+      $api_user_id = $api_users[0]['api_user_id'];
+    }
+    else {
+      $api_user_id = null;
+    }
+
+    // Send data to Sentry for error logging.
+    $data = [
+      'event_id' => str_replace('-', '', exec('uuidgen -r')),
+      'timestamp' => date('c'),
+      'logger' => 'cora',
+      'platform' => 'php',
+      'level' => 'error',
+      'tags' => [
+        'api_call' => 'foo',
+        'error_code' => $error_code
+      ],
+      'extra' => [
+        'user_id' => $user_id,
+        'api_user_id' => $api_user_id,
+        'error_file' => $error_file,
+        'error_line' => $error_line,
+        'error_trace' => $error_trace
+      ],
+      'exception' => [
+        'type' => 'Exception',
+        'value' => $error_message,
+        'handled' => false
+      ]
+    ];
+
+    exec(
+      'curl ' .
+      '-H "Content-Type: application/json" ' .
+      '-H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=' . $this->setting->get('sentry_key') . '" ' .
+      '--silent ' . // silent; keeps logs out of stderr
+      '--show-error ' . // override silent on failure
+      '--max-time 10 ' .
+      '--connect-timeout 5 ' .
+      '--data \'' . json_encode($data) . '\' ' .
+      '"https://sentry.io/api/' . $this->setting->get('sentry_project_id') . '/store/" > /dev/null &'
+    );
   }
 
   /**

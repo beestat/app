@@ -164,6 +164,12 @@ final class setting {
     'influx_database_password' => '',
 
     /**
+     * Key and project id obtained from the Sentry DSN. See sentry.io.
+     */
+    'sentry_key' => '',
+    'sentry_project_id' => '',
+
+    /**
      * Whether or not SSL is required.
      */
     'force_ssl' => true,
