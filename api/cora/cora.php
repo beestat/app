@@ -712,7 +712,6 @@ final class cora {
       'platform' => 'php',
       'level' => 'error',
       'tags' => [
-        'api_call' => 'foo',
         'error_code' => $error_code
       ],
       'extra' => [
