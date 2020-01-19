@@ -705,6 +705,7 @@ final class cora {
     }
 
     // Send data to Sentry for error logging.
+    // https://docs.sentry.io/development/sdk-dev/event-payloads/
     $data = [
       'event_id' => str_replace('-', '', exec('uuidgen -r')),
       'timestamp' => date('c'),
@@ -715,7 +716,6 @@ final class cora {
         'error_code' => $error_code
       ],
       'extra' => [
-        'user_id' => $user_id,
         'api_user_id' => $api_user_id,
         'error_file' => $error_file,
         'error_line' => $error_line,
@@ -725,6 +725,10 @@ final class cora {
         'type' => 'Exception',
         'value' => $error_message,
         'handled' => false
+      ],
+      'user' => [
+        'id' => $user_id,
+        'ip_address' => $_SERVER['REMOTE_ADDR']
       ]
     ];
 
