@@ -129,7 +129,7 @@ class patreon_token extends cora\crud {
    * @return int
    */
   public function delete($id) {
-    $database = database::get_transactionless_instance();
+    $database = cora\database::get_transactionless_instance();
     $return = $database->delete('patreon_token', $id);
     return $return;
   }
