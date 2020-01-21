@@ -68,7 +68,8 @@ class ecobee_token extends cora\crud {
     $ecobee_tokens = $database->read(
       'ecobee_token',
       [
-        'user_id' => $this->session->get_user_id()
+        'user_id' => $this->session->get_user_id(),
+        'deleted' => false
       ]
     );
     if(count($ecobee_tokens) === 0) {
@@ -94,6 +95,7 @@ class ecobee_token extends cora\crud {
       isset($response['refresh_token']) === false
     ) {
       $this->delete($ecobee_token['ecobee_token_id']);
+      $this->api('user', 'log_out', ['all' => true]);
       $database->release_lock($lock_name);
       throw new Exception('Could not refresh ecobee token; ecobee returned no token.', 10002);
     }
@@ -125,10 +127,7 @@ class ecobee_token extends cora\crud {
     $database = cora\database::get_transactionless_instance();
 
     // Need to delete the token before logging out or else the delete fails.
-    $return = $database->delete('ecobee_token', $id);
-
-    // Log out
-    $this->api('user', 'log_out', ['all' => true]);
+    $return = $database->delete($this->resource, $id);
 
     return $return;
   }

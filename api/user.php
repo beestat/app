@@ -144,7 +144,9 @@ class user extends cora\crud {
     }
 
     if($all === true) {
-      $database = cora\database::get_instance();
+      // Sometimes I need to log out and then throw an exception. Using the
+      // transactionless instance makes sure that actually works.
+      $database = cora\database::get_transactionless_instance();
       $sessions = $database->read(
         'cora\session',
         [
@@ -154,7 +156,7 @@ class user extends cora\crud {
       );
       $success = true;
       foreach($sessions as $session) {
-        $success &= $this->session->delete($session['session_key']);
+        $success &= $database->delete('cora\session', $session['session_id']);
       }
       return $success;
     }

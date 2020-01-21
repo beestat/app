@@ -187,7 +187,8 @@ class ecobee extends external_api {
           []
         );
         if(count($ecobee_tokens) !== 1) {
-          throw new Exception('No token for this user');
+          $this->api('user', 'log_out', ['all' => true]);
+          throw new cora\exception('No ecobee access for this user.', 10501, false);
         }
         $ecobee_token = $ecobee_tokens[0];
       }
@@ -235,6 +236,15 @@ class ecobee extends external_api {
         }
         throw new Exception($response['status']['message']);
       }
+    }
+    else if (isset($response['status']) === true && $response['status']['code'] === 16) {
+      // Token has been deauthorized by user. You must re-request authorization.
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response);
+      }
+      $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
+      $this->api('user', 'log_out', ['all' => true]);
+      throw new cora\exception('Ecobee access was revoked by user.', 10500, false);
     }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
       // Any other error

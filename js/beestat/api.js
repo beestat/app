@@ -46,10 +46,6 @@ beestat.api.prototype.send = function(opt_api_call) {
       self.load_(this.responseText);
     });
 
-    // var endpoint = (window.environment === 'live')
-      // ? 'https://api.beestat.io/'
-      // : 'http://' + window.environment + '.api.beestat.io/';
-    // this.xhr_.open('POST', endpoint + '?' + query_string);
     this.xhr_.open('POST', 'api/?' + query_string);
     this.xhr_.send();
   } else {
@@ -172,10 +168,12 @@ beestat.api.prototype.load_ = function(response_text) {
   if (
     response.data &&
     (
-      response.data.error_code === 1004 || // Session is expired.
-      response.data.error_code === 10001 || // Could not get first token.
-      response.data.error_code === 10002 || // Could not refresh ecobee token; no token found.
-      response.data.error_code === 10003 // Could not refresh ecobee token; ecobee returned no token.
+      response.data.error_code === 1004  || // Session is expired.
+      response.data.error_code === 10000 || // Could not get first token.
+      response.data.error_code === 10001 || // Could not refresh ecobee token; no token found.
+      response.data.error_code === 10002 || // Could not refresh ecobee token; ecobee returned no token.
+      response.data.error_code === 10500 || // Ecobee access was revoked by user.
+      response.data.error_code === 10501    // No ecobee access for this user.
     )
   ) {
     window.location.href = '/';

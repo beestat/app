@@ -271,6 +271,10 @@ final class cora {
     $session = session::get_instance();
     $session_is_valid = $session->touch($this->api_user['session_key']);
 
+    // Make sure the updated session timestamp doesn't get rolled back on
+    // exception.
+    $this->database->commit_transaction();
+
     // Process each request.
     foreach($this->api_calls as $api_call) {
       // Store the currently running API call for tracking if an error occurs.
@@ -291,7 +295,7 @@ final class cora {
       // If the request requires a session, make sure it's valid.
       if($call_type === 'private') {
         if($session_is_valid === false) {
-          throw new \Exception('Session is expired.', 1004);
+          throw new exception('Session is expired.', 1004, false);
         }
       }
 
@@ -638,7 +642,8 @@ final class cora {
       $error_code,
       $error_file,
       $error_line,
-      debug_backtrace(false)
+      debug_backtrace(false),
+      true
     );
     die(); // Do not continue execution; shutdown handler will now run.
   }
@@ -655,7 +660,8 @@ final class cora {
       $e->getCode(),
       $e->getFile(),
       $e->getLine(),
-      $e->getTrace()
+      $e->getTrace(),
+      (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
     );
     die(); // Do not continue execution; shutdown handler will now run.
   }
@@ -671,7 +677,7 @@ final class cora {
    * @param int $error_line The line of the file the error happened on.
    * @param array $error_trace The stack trace for the error.
    */
-  public function set_error_response($error_message, $error_code, $error_file, $error_line, $error_trace) {
+  public function set_error_response($error_message, $error_code, $error_file, $error_line, $error_trace, $reportable) {
     // There are a few places that call this function to set an error response,
     // so this can't just be done in the exception handler alone. If an error
     // occurs, rollback the current transaction. Also only attempt to roll back
@@ -706,43 +712,45 @@ final class cora {
 
     // Send data to Sentry for error logging.
     // https://docs.sentry.io/development/sdk-dev/event-payloads/
-    $data = [
-      'event_id' => str_replace('-', '', exec('uuidgen -r')),
-      'timestamp' => date('c'),
-      'logger' => 'cora',
-      'platform' => 'php',
-      'level' => 'error',
-      'tags' => [
-        'error_code' => $error_code
-      ],
-      'extra' => [
-        'api_user_id' => $api_user_id,
-        'error_file' => $error_file,
-        'error_line' => $error_line,
-        'error_trace' => $error_trace
-      ],
-      'exception' => [
-        'type' => 'Exception',
-        'value' => $error_message,
-        'handled' => false
-      ],
-      'user' => [
-        'id' => $user_id,
-        'ip_address' => $_SERVER['REMOTE_ADDR']
-      ]
-    ];
+    if ($reportable === true) {
+      $data = [
+        'event_id' => str_replace('-', '', exec('uuidgen -r')),
+        'timestamp' => date('c'),
+        'logger' => 'cora',
+        'platform' => 'php',
+        'level' => 'error',
+        'tags' => [
+          'error_code' => $error_code
+        ],
+        'extra' => [
+          'api_user_id' => $api_user_id,
+          'error_file' => $error_file,
+          'error_line' => $error_line,
+          'error_trace' => $error_trace
+        ],
+        'exception' => [
+          'type' => 'Exception',
+          'value' => $error_message,
+          'handled' => false
+        ],
+        'user' => [
+          'id' => $user_id,
+          'ip_address' => $_SERVER['REMOTE_ADDR']
+        ]
+      ];
 
-    exec(
-      'curl ' .
-      '-H "Content-Type: application/json" ' .
-      '-H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=' . $this->setting->get('sentry_key') . '" ' .
-      '--silent ' . // silent; keeps logs out of stderr
-      '--show-error ' . // override silent on failure
-      '--max-time 10 ' .
-      '--connect-timeout 5 ' .
-      '--data \'' . json_encode($data) . '\' ' .
-      '"https://sentry.io/api/' . $this->setting->get('sentry_project_id') . '/store/" > /dev/null &'
-    );
+      exec(
+        'curl ' .
+        '-H "Content-Type: application/json" ' .
+        '-H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=' . $this->setting->get('sentry_key') . '" ' .
+        '--silent ' . // silent; keeps logs out of stderr
+        '--show-error ' . // override silent on failure
+        '--max-time 10 ' .
+        '--connect-timeout 5 ' .
+        '--data \'' . json_encode($data) . '\' ' .
+        '"https://sentry.io/api/' . $this->setting->get('sentry_project_id') . '/store/" > /dev/null &'
+      );
+    }
   }
 
   /**
@@ -779,7 +787,8 @@ final class cora {
           $error['type'],
           $error['file'],
           $error['line'],
-          debug_backtrace(false)
+          debug_backtrace(false),
+          true
         );
       }
 
@@ -824,7 +833,8 @@ final class cora {
         $e->getCode(),
         $e->getFile(),
         $e->getLine(),
-        $e->getTrace()
+        $e->getTrace(),
+        (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
       );
       $this->set_default_headers();
       $this->output_headers();

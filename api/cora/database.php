@@ -695,18 +695,21 @@ final class database extends \mysqli {
   }
 
   /**
-   * Actually delete a row from a table by the primary key.
+   * Set deleted = 1 on the database row.
    *
-   * @param string $table The table to delete from.
+   * @param string $resource The table to delete from.
    * @param int $id The value of the primary key to delete.
    *
    * @return int The number of rows affected by the delete (could be 0).
    */
-  public function delete($table, $id) {
-    $query = 'delete from ' . $this->escape_identifier($table) .
-      ' where ' . $this->escape_identifier($table . '_id') . ' = ' .
-      $this->escape($id);
-    $this->query($query);
+  public function delete($resource, $id) {
+    $table = $this->get_table($resource);
+
+    $attributes = [];
+    $attributes[$table . '_id'] = $id;
+    $attributes['deleted'] = true;
+
+    $this->update($resource, $attributes);
 
     return $this->affected_rows;
   }

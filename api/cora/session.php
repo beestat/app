@@ -225,13 +225,7 @@ final class session {
 
     $sessions = $database->read('cora\session', ['session_key' => $session_key]);
     if(count($sessions) === 1) {
-      $database->update(
-        'cora\session',
-        [
-          'session_id' => $sessions[0]['session_id'],
-          'deleted' => 1
-        ]
-      );
+      $database->delete('cora\session', $sessions[0]['session_id']);
       // Remove these if the current session got logged out.
       if($session_key === $this->session_key) {
         $this->session_key = null;

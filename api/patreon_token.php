@@ -74,11 +74,11 @@ class patreon_token extends cora\crud {
     $lock_name = 'patreon_token->refresh(' . $this->session->get_user_id() . ')';
     $database->get_lock($lock_name, 3);
 
-    // $patreon_tokens = $this->read();
     $patreon_tokens = $database->read(
       'patreon_token',
       [
-        'user_id' => $this->session->get_user_id()
+        'user_id' => $this->session->get_user_id(),
+        'deleted' => false
       ]
     );
     if(count($patreon_tokens) === 0) {
@@ -130,7 +130,7 @@ class patreon_token extends cora\crud {
    */
   public function delete($id) {
     $database = cora\database::get_transactionless_instance();
-    $return = $database->delete('patreon_token', $id);
+    $return = $database->delete($this->resource, $id);
     return $return;
   }
 
