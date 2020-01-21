@@ -217,7 +217,7 @@ class runtime extends cora\api {
         ]
       );
 
-      $chunk_begin = strtotime('+1 day', $chunk_end);
+      $chunk_begin = $chunk_end;
 
       $this->database->commit_transaction();
     } while ($chunk_end < $sync_end);
