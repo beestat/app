@@ -112,7 +112,7 @@ class external_api extends cora\api {
           $this->log_mysql($curl_response);
         }
 
-        throw new Exception('Could not connect to ' . $this->resource . '.');
+        throw new cora\exception('Could not connect to ' . $this->resource . '.', 10600, false);
       }
 
       // General (success) logging
