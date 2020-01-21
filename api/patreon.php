@@ -27,7 +27,6 @@ class patreon extends external_api {
    */
   public function authorize() {
     header('Location: https://www.patreon.com/oauth2/authorize?response_type=code&client_id=' . $this->setting->get('patreon_client_id') . '&redirect_uri=' . $this->setting->get('patreon_redirect_uri') . '&scope=identity');
-    die();
   }
 
   /**
@@ -42,12 +41,10 @@ class patreon extends external_api {
       $this->api('user', 'sync_patreon_status');
     }
 
-    echo '<html><head><title></title></head><body><script type="text/javascript">window.close();</script></body>';
+    echo '<html><head><title></title></head><body><script type="text/javascript">window.close();</script></body></html><!--';
 
     // Need to commit the transaction so the stuff gets saved.
     $this->database->commit_transaction();
-
-    die();
   }
 
   /**

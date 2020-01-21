@@ -28,7 +28,6 @@ class ecobee extends external_api {
    */
   public function authorize() {
     header('Location: https://api.ecobee.com/authorize?response_type=code&client_id=' . $this->setting->get('ecobee_client_id') . '&redirect_uri=' . $this->setting->get('ecobee_redirect_uri') . '&scope=smartRead');
-    die();
   }
 
   /**
