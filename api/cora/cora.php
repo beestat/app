@@ -720,10 +720,10 @@ final class cora {
         'platform' => 'php',
         'level' => 'error',
         'tags' => [
-          'error_code' => $error_code
+          'error_code' => $error_code,
+          'api_user_id' => $api_user_id
         ],
         'extra' => [
-          'api_user_id' => $api_user_id,
           'error_file' => $error_file,
           'error_line' => $error_line,
           'error_trace' => $error_trace
