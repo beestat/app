@@ -511,7 +511,10 @@ class runtime extends cora\api {
      * actually returned just in case the returned data goes outside of what I
      * requested for some reason.
      */
-    if (count($response['sensorList']) > 0) {
+    if (
+      count($response['sensorList']) > 0 &&
+      count($response['sensorList'][0]['data']) > 0
+    ) {
       $ecobee_columns = $response['sensorList'][0]['columns'];
       $columns_begin = $this->get_columns(
         $response['sensorList'][0]['data'][0],
