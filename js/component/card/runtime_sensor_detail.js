@@ -144,7 +144,11 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
         .add_call(
           'thermostat',
           'read_id',
-          {},
+          {
+            'attributes': {
+              'inactive': 0
+            }
+          },
           'thermostat'
         )
         .set_callback(function(response) {

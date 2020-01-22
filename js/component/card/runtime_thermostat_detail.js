@@ -133,7 +133,11 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
         .add_call(
           'thermostat',
           'read_id',
-          {},
+          {
+            'attributes': {
+              'inactive': 0
+            }
+          },
           'thermostat'
         )
         .set_callback(function(response) {
