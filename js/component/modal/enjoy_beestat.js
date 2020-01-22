@@ -45,7 +45,6 @@ beestat.component.modal.enjoy_beestat.prototype.hide_patreon_card_for_ = functio
       .add(amount, unit)
       .format('YYYY-MM-DD HH:mm:ss')
   );
-  beestat.cards.patreon.dispose();
 };
 
 /**

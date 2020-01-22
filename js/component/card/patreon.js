@@ -4,7 +4,10 @@
 beestat.component.card.patreon = function() {
   var self = this;
 
-  beestat.dispatcher.addEventListener('cache.user', function() {
+  beestat.dispatcher.addEventListener([
+    'cache.user',
+    'setting.patreon_hide_until'
+  ], function() {
     self.rerender();
   });
 
