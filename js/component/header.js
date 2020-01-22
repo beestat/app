@@ -177,21 +177,23 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       (new beestat.component.modal.download_data()).render();
     }));
 
-  if (beestat.user.patreon_is_connected() === false) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Link Patreon')
-      .set_icon('patreon')
-      .set_callback(function() {
-        (new beestat.component.modal.patreon_status()).render();
-        window.open('../api/?resource=patreon&method=authorize&arguments={}&api_key=ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2');
-      }));
-  } else {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Patreon Status')
-      .set_icon('patreon')
-      .set_callback(function() {
-        (new beestat.component.modal.patreon_status()).render();
-      }));
+  if (window.is_demo === false) {
+    if (beestat.user.patreon_is_connected() === false) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Link Patreon')
+        .set_icon('patreon')
+        .set_callback(function() {
+          (new beestat.component.modal.patreon_status()).render();
+          window.open('../api/?resource=patreon&method=authorize&arguments={}&api_key=ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2');
+        }));
+    } else {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Patreon Status')
+        .set_icon('patreon')
+        .set_callback(function() {
+          (new beestat.component.modal.patreon_status()).render();
+        }));
+    }
   }
 
   menu.add_menu_item(new beestat.component.menu_item()
