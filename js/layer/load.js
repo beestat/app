@@ -136,10 +136,10 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       Rollbar.configure({
         'payload': {
           'person': {
-            'id': beestat.get_user().user_id
+            'id': beestat.user.get().user_id
           },
           'beestat': {
-            'user_id': beestat.get_user().user_id
+            'user_id': beestat.user.get().user_id
           }
         }
       });

@@ -9,7 +9,7 @@
  * otherwise.
  */
 beestat.setting = function(key, opt_value, opt_callback) {
-  var user = beestat.get_user();
+  var user = beestat.user.get();
 
   var defaults = {
     'runtime_thermostat_detail_smoothing': true,

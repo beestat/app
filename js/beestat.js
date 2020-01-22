@@ -164,21 +164,6 @@ window.addEventListener('resize', rocket.throttle(100, function() {
   });
 }));
 
-/**
- * Whether or not the current user gets access to early release features.
- *
- * @return {boolean} Early access or not.
- */
-beestat.has_early_access = function() {
-  var user = beestat.get_user();
-  return user.user_id === 1 ||
-  (
-    user.patreon_status !== null &&
-    user.patreon_status.patron_status === 'active_patron' &&
-    user.patreon_status.currently_entitled_amount_cents >= 500
-  );
-};
-
 // First run
 var $ = rocket.extend(rocket.$, rocket);
 $.ready(function() {

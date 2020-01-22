@@ -8,7 +8,10 @@ beestat.component.header = function(active_layer) {
 
   this.active_layer_ = active_layer;
 
-  beestat.dispatcher.addEventListener('view_announcements', function() {
+  beestat.dispatcher.addEventListener([
+    'view_announcements',
+    'cache.user'
+  ], function() {
     self.rerender();
   });
 
@@ -23,7 +26,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
 
   var pages;
 
-  if (beestat.has_early_access() === true) {
+  if (beestat.user.has_early_access() === true) {
     pages = [
       {
         'layer': 'dashboard',
@@ -174,12 +177,22 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       (new beestat.component.modal.download_data()).render();
     }));
 
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Link Patreon')
-    .set_icon('patreon')
-    .set_callback(function() {
-      (new beestat.component.modal.enjoy_beestat()).render();
-    }));
+  if (beestat.user.patreon_is_connected() === false) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Link Patreon')
+      .set_icon('patreon')
+      .set_callback(function() {
+        (new beestat.component.modal.patreon_status()).render();
+        window.open('../api/?resource=patreon&method=authorize&arguments={}&api_key=ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2');
+      }));
+  } else {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Patreon Status')
+      .set_icon('patreon')
+      .set_callback(function() {
+        (new beestat.component.modal.patreon_status()).render();
+      }));
+  }
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')

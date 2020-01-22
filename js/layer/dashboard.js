@@ -46,33 +46,11 @@ beestat.layer.dashboard.prototype.decorate_ = function(parent) {
     }
   ]);
 
-  // Show the Patreon card by default; look for reasons to hide it.
-  var show_patreon_card = true;
-
-  var user = beestat.get_user();
-  if (
-    user.patreon_status !== null &&
-    user.patreon_status.patron_status === 'active_patron'
-  ) {
-    show_patreon_card = false;
-  }
-
-  if (
-    (
-      beestat.setting('patreon_hide_until') !== undefined &&
-      moment.utc(beestat.setting('patreon_hide_until')).isAfter(moment.utc())
-    ) ||
-    window.is_demo === true
-  ) {
-    show_patreon_card = false;
-  }
-
-  if (show_patreon_card === true) {
+  if (beestat.component.card.patreon.should_show() === true) {
     cards.push([
       {
         'card': new beestat.component.card.patreon(),
-        'size': 12,
-        'global': 'patreon' // TODO REMOVE THIS
+        'size': 12
       }
     ]);
   }

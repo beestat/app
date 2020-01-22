@@ -85,6 +85,7 @@ beestat.component.prototype.dispose = function() {
   var child = this.component_container_.parentNode();
   var parent = child.parentNode();
   parent.removeChild(child);
+  this.rendered_ = false;
 };
 
 beestat.component.prototype.decorate_ = function() {

@@ -30,9 +30,6 @@ beestat.component.layout.prototype.decorate_ = function(parent) {
       row_element.appendChild(column_element);
 
       column.card.render(column_element);
-      if (column.global !== undefined) {
-        beestat.cards[column.global] = column.card;
-      }
     });
   });
 };

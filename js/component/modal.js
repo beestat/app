@@ -160,6 +160,8 @@ beestat.component.modal.prototype.dispose = function() {
 
   $(window).removeEventListener('keydown.modal');
   $(window).removeEventListener('click.modal');
+
+  this.rendered_ = false;
 };
 
 /**
@@ -168,10 +170,12 @@ beestat.component.modal.prototype.dispose = function() {
  * all the fancy animation and that is not desirable when rerendering.
  */
 beestat.component.modal.prototype.rerender = function() {
-  this.modal_content_.innerHTML('');
-  this.decorate_header_(this.modal_content_);
-  this.decorate_contents_(this.modal_content_);
-  this.decorate_buttons_(this.modal_content_);
+  if (this.rendered_ === true) {
+    this.modal_content_.innerHTML('');
+    this.decorate_header_(this.modal_content_);
+    this.decorate_contents_(this.modal_content_);
+    this.decorate_buttons_(this.modal_content_);
+  }
 };
 
 /**

@@ -34,7 +34,6 @@ beestat.disable_poll = function() {
  * Poll the database for changes and update the cache.
  */
 beestat.poll = function() {
-
   var api = new beestat.api();
 
   api.add_call(
@@ -101,5 +100,6 @@ beestat.poll = function() {
   api.send();
 };
 
-beestat.default_poll_interval = 300000; // 5 minutes
+// Five minutes
+beestat.default_poll_interval = 300000;
 beestat.poll_intervals = [beestat.default_poll_interval];
