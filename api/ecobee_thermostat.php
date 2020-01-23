@@ -868,7 +868,7 @@ class ecobee_thermostat extends cora\crud {
   private function get_time_zone($thermostat, $ecobee_thermostat) {
     $time_zone = $ecobee_thermostat['location']['timeZone'];
 
-    if (in_array($time_zone, timezone_identifiers_list()) === true) {
+    if (in_array($time_zone, timezone_identifiers_list(DateTimeZone::ALL_WITH_BC)) === true) {
       return $time_zone;
     } else if ($ecobee_thermostat['location']['timeZoneOffsetMinutes'] !== '') {
       $offset_seconds = $ecobee_thermostat['location']['timeZoneOffsetMinutes'] * 60;
