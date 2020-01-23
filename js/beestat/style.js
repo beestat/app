@@ -131,7 +131,7 @@ beestat.series.compressor_heat_2 = {
 
 beestat.series.auxiliary_heat_1 = {
   'name': 'Aux',
-  'color': beestat.style.color.red.dark
+  'color': beestat.style.color.red.base
 };
 
 beestat.series.auxiliary_heat_2 = {
