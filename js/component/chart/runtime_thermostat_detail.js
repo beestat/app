@@ -309,8 +309,18 @@ beestat.component.chart.runtime_thermostat_detail.prototype.get_options_tooltip_
         group = 'data';
         label = beestat.series[point.series.name].name;
         color = point.series.color;
+
+        if (
+          point.series.name === 'indoor_temperature' ||
+          point.series.name === 'outdoor_temperature'
+        ) {
+          value = self.data_.metadata.series[point.series.name].data[point.x.valueOf()];
+        } else {
+          value = values[point.series.name];
+        }
+
         value = beestat.temperature({
-          'temperature': values[point.series.name],
+          'temperature': value,
           'convert': false,
           'units': true
         });
@@ -318,7 +328,17 @@ beestat.component.chart.runtime_thermostat_detail.prototype.get_options_tooltip_
         group = 'data';
         label = beestat.series[point.series.name].name;
         color = point.series.color;
-        value = Math.round(values[point.series.name]) + '%';
+
+        if (
+          point.series.name === 'indoor_humidity' ||
+          point.series.name === 'outdoor_humidity'
+        ) {
+          value = self.data_.metadata.series[point.series.name].data[point.x.valueOf()];
+        } else {
+          value = values[point.series.name];
+        }
+
+        value = Math.round(value) + '%';
       } else if (
         point.series.name === 'fan' ||
         point.series.name === 'compressor_heat_1' ||

@@ -344,27 +344,24 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
     data.series[series_code] = [];
     data.metadata.series[series_code] = {
       'active': false,
-      'durations': {}
+      'durations': {},
+
+      /**
+       * Note to future self: This can be used for all series. Need to
+       * populate the raw data points for each series here. The tooltip should
+       * get data from here and not the chart points array. Then the series
+       * data can be whatever is necessary to produce a performance-optimized
+       * chart as long as there is one series (dummy) that has a point at
+       * every x-value. That will allow a smooth tooltip, lightweight lines,
+       * and accurate data.
+       */
+      'data': {}
     };
     durations[series_code] = {'seconds': 0};
   });
 
   data.metadata.series.calendar_event_name = {};
   data.metadata.series.system_mode = {};
-
-  /*
-   * Figure out what date range to use.
-   * var begin_m = moment()
-   *   .subtract(
-   *     beestat.setting('runtime_thermostat_detail_range_dynamic'),
-   *     'day'
-   *   );
-   * begin_m
-   *   .minute(Math.ceil(begin_m.minute() / 5) * 5)
-   *   .second(0)
-   *   .millisecond(0);
-   * var end_m = moment();
-   */
 
   var begin_m;
   var end_m;
@@ -432,16 +429,22 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
        */
       var indoor_humidity_moving = this.get_average_(moving, 'indoor_humidity');
       data.series.indoor_humidity.push(indoor_humidity_moving);
+      data.metadata.series.indoor_humidity.data[current_m.valueOf()] =
+        runtime_thermostat.indoor_humidity;
       data.metadata.series.indoor_humidity.active = true;
 
       var outdoor_humidity_moving = this.get_average_(moving, 'outdoor_humidity');
       data.series.outdoor_humidity.push(outdoor_humidity_moving);
+      data.metadata.series.outdoor_humidity.data[current_m.valueOf()] =
+        runtime_thermostat.outdoor_humidity;
       data.metadata.series.outdoor_humidity.active = true;
 
       var indoor_temperature_moving = beestat.temperature(
         this.get_average_(moving, 'indoor_temperature')
       );
       data.series.indoor_temperature.push(indoor_temperature_moving);
+      data.metadata.series.indoor_temperature.data[current_m.valueOf()] =
+        runtime_thermostat.indoor_temperature;
       y_min_max(indoor_temperature_moving);
       data.metadata.series.indoor_temperature.active = true;
 
@@ -449,6 +452,8 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
         this.get_average_(moving, 'outdoor_temperature')
       );
       data.series.outdoor_temperature.push(outdoor_temperature_moving);
+      data.metadata.series.outdoor_temperature.data[current_m.valueOf()] =
+        runtime_thermostat.outdoor_temperature;
       y_min_max(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.active = true;
 
