@@ -728,10 +728,12 @@ class runtime extends cora\api {
    * Download all data that exists for a specific thermostat.
    *
    * @param int $thermostat_id
-   * @param string $download_begin Optional; the date to begin the download.
-   * @param string $download_end Optional; the date to end the download.
+   * @param string $download_begin The timestamp to begin the download. If a
+   * time zone is not specified, UTC is assumed.
+   * @param string $download_end The timestamp to end the download. If a time
+   * zone is not specified, UTC is assumed.
    */
-  public function download($thermostat_id, $download_begin = null, $download_end = null) {
+  public function download($thermostat_id, $download_begin, $download_end) {
     set_time_limit(120);
 
     $this->user_lock($thermostat_id);
@@ -743,17 +745,25 @@ class runtime extends cora\api {
       $thermostat['ecobee_thermostat_id']
     );
 
-    if($download_begin === null) {
-      $download_begin = strtotime($thermostat['first_connected']);
-    } else {
-      $download_begin = strtotime($download_begin);
+    // Allow for inverted arguments.
+    if (strtotime($download_end) < strtotime($download_begin)) {
+      $temp = $download_begin;
+      $download_begin = $download_end;
+      $download_end = $temp;
     }
 
-    if($download_end === null) {
-      $download_end = time();
-    } else {
-      $download_end = strtotime($download_end);
-    }
+    // Clamp
+    $download_begin = strtotime($download_begin);
+    $download_begin = max(strtotime($thermostat['first_connected']), $download_begin);
+    $download_begin = min(time(), $download_begin);
+
+    $download_end = strtotime($download_end);
+    $download_end = max(strtotime($thermostat['first_connected']), $download_end);
+    $download_end = min(time(), $download_end);
+
+    // Round begin/end down to the next 5 minutes.
+    $download_begin = floor($download_begin / 300) * 300;
+    $download_end = floor($download_end / 300) * 300;
 
     $chunk_begin = $download_begin;
     $chunk_end = $download_begin;
@@ -771,7 +781,7 @@ class runtime extends cora\api {
         [
           'thermostat_id' => $thermostat_id,
           'timestamp' => [
-            'value' => [date('Y-m-d H:i:s', $chunk_begin), date('Y-m-d H:i:s', $chunk_end)] ,
+            'value' => [date('Y-m-d H:i:s', $chunk_begin), date('Y-m-d H:i:s', $chunk_end)],
             'operator' => 'between'
           ]
         ],
@@ -808,19 +818,22 @@ class runtime extends cora\api {
         $needs_header = false;
       }
 
+      $runtime_thermostats_by_timestamp = [];
       foreach($runtime_thermostats as $runtime_thermostat) {
         unset($runtime_thermostat['runtime_thermostat_id']);
         unset($runtime_thermostat['thermostat_id']);
-
-        $runtime_thermostat['timestamp'] = $this->get_local_datetime(
-          $runtime_thermostat['timestamp'],
-          $thermostat['time_zone']
-        );
 
         // Return temperatures in a human-readable format.
         foreach(['indoor_temperature', 'outdoor_temperature', 'setpoint_heat', 'setpoint_cool'] as $key) {
           if($runtime_thermostat[$key] !== null) {
             $runtime_thermostat[$key] /= 10;
+            if(
+              isset($thermostat['setting']['temperature_unit']) === true &&
+              $thermostat['setting']['temperature_unit'] === '°C'
+            ) {
+              $runtime_thermostat[$key] =
+                round(($runtime_thermostat[$key] - 32) * (5 / 9), 1);
+            }
           }
         }
 
@@ -833,7 +846,30 @@ class runtime extends cora\api {
           $runtime_thermostat['climate_runtime_thermostat_text_id'] = $runtime_thermostat_texts[$runtime_thermostat['climate_runtime_thermostat_text_id']]['value'];
         }
 
-        $bytes += fputcsv($output, $runtime_thermostat);
+        $strtotime = strtotime($runtime_thermostat['timestamp']);
+        $runtime_thermostats_by_timestamp[$strtotime] = $runtime_thermostat;
+
+        // Now remove it since it's not used.
+        unset($runtime_thermostats_by_timestamp[$strtotime]['timestamp']);
+      }
+
+      $current_timestamp = $chunk_begin;
+      while($current_timestamp <= $chunk_end) {
+        $local_datetime = $this->get_local_datetime(
+          date('Y-m-d H:i:s', $current_timestamp),
+          $thermostat['time_zone']
+        );
+
+        if(isset($runtime_thermostats_by_timestamp[$current_timestamp]) === true) {
+          $csv_row = array_merge(
+            [$local_datetime],
+            $runtime_thermostats_by_timestamp[$current_timestamp]
+          );
+        } else {
+          $csv_row = [$local_datetime];
+        }
+        $bytes += fputcsv($output, $csv_row);
+        $current_timestamp += 300;
       }
 
       $chunk_begin = $chunk_end;

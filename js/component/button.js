@@ -100,6 +100,10 @@ beestat.component.button.prototype.decorate_ = function(parent) {
   this.button_.addEventListener('click', function() {
     self.dispatchEvent('click');
   });
+
+  this.button_.addEventListener('mousedown', function() {
+    self.dispatchEvent('mousedown');
+  });
 };
 
 /**

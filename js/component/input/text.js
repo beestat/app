@@ -2,7 +2,24 @@
  * Input parent class.
  */
 beestat.component.input.text = function() {
+  var self = this;
+
   this.input_ = $.createElement('input');
+
+  // Add these up top so they don't get re-added on rerender.
+  this.input_.addEventListener('focus', function() {
+    self.input_.style({
+      'background': beestat.style.color.bluegray.dark
+    });
+  });
+
+  this.input_.addEventListener('blur', function() {
+    self.dispatchEvent('blur');
+    self.input_.style({
+      'background': beestat.style.color.bluegray.light
+    });
+  });
+
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.input.text, beestat.component.input);
@@ -15,8 +32,6 @@ beestat.component.input.text.prototype.rerender_on_breakpoint_ = false;
  * @param {rocket.Elements} parent
  */
 beestat.component.input.text.prototype.decorate_ = function(parent) {
-  var self = this;
-
   this.input_
     .setAttribute('type', 'text')
     .style({
@@ -55,19 +70,6 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
 
     (new beestat.component.icon(this.icon_).set_size(16).set_color('#fff')).render(icon_container);
   }
-
-  this.input_.addEventListener('focus', function() {
-    self.input_.style({
-      'background': beestat.style.color.bluegray.dark
-    });
-  });
-
-  this.input_.addEventListener('blur', function() {
-    self.dispatchEvent('blur');
-    self.input_.style({
-      'background': beestat.style.color.bluegray.light
-    });
-  });
 
   if (this.value_ !== undefined) {
     this.input_.value(this.value_);

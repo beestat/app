@@ -3,125 +3,212 @@
  */
 beestat.component.modal.download_data = function() {
   beestat.component.modal.apply(this, arguments);
+  this.state_.range_begin = moment().hour(0)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+  this.state_.range_end = this.state_.range_begin.clone();
 };
 beestat.extend(beestat.component.modal.download_data, beestat.component.modal);
 
+/**
+ * Decorate.
+ *
+ * @param {rocket.Elements} parent
+ */
 beestat.component.modal.download_data.prototype.decorate_contents_ = function(parent) {
+  parent.appendChild($.createElement('p').innerHTML('Beestat stores, at a minimum, the past year of raw thermostat logs. Select a date range to download.'));
+  this.decorate_range_(parent);
+  this.decorate_presets_(parent);
+  this.decorate_error_(parent);
+
+  // Fire off this event once to get everything updated.
+  this.dispatchEvent('range_change');
+};
+
+/**
+ * Decorate range inputs.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.modal.download_data.prototype.decorate_range_ = function(parent) {
   var self = this;
 
-  parent.appendChild($.createElement('p').innerHTML('Choose a custom download range.'));
+  (new beestat.component.title('Date Range')).render(parent);
 
-  self.state_.download_data_time_count = 1;
-
-  // Time count
-  var time_count = new beestat.component.input.text()
+  var range_begin = new beestat.component.input.text()
     .set_style({
-      'width': 75,
+      'width': 110,
       'text-align': 'center',
       'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
     })
     .set_attribute({
       'maxlength': 10
     })
-    .set_icon('pound')
-    .set_value(self.state_.download_data_time_count);
+    .set_icon('calendar')
+    .set_value(this.state_.range_begin.format('M/D/YYYY'));
 
-  time_count.addEventListener('blur', function() {
-    self.state_.download_data_time_count =
-      parseInt(this.get_value(), 10) || 1;
+  range_begin.addEventListener('blur', function() {
+    self.state_.range_begin = moment(this.get_value());
+    self.dispatchEvent('range_change');
   });
 
-  // Button groups
-  var options = {
-    'download_data_time_period': [
-      'day',
-      'week',
-      'month',
-      'year',
-      'all'
-    ]
-  };
+  var range_end = new beestat.component.input.text()
+    .set_style({
+      'width': 110,
+      'text-align': 'center',
+      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
+    })
+    .set_attribute({
+      'maxlength': 10
+    })
+    .set_icon('calendar')
+    .set_value(this.state_.range_end.format('M/D/YYYY'));
 
-  var button_groups = {};
+  range_end.addEventListener('blur', function() {
+    self.state_.range_end = moment(this.get_value());
+    self.dispatchEvent('range_change');
+  });
 
-  this.selected_buttons_ = {};
-  for (let key in options) {
-    let current_type = 'month';
+  // Update the inputs if the range changes.
+  this.addEventListener('range_change', function() {
+    if (self.state_.range_begin.isValid() === true) {
+      range_begin.set_value(self.state_.range_begin.format('M/D/YYYY'));
+    }
 
-    let button_group = new beestat.component.button_group();
-    options[key].forEach(function(value) {
-      let text = value.replace('download_data_', '')
-        .charAt(0)
-        .toUpperCase() +
-        value.slice(1) +
-        (
-          (
-            key === 'download_data_time_period' &&
-            value !== 'all'
-          ) ? 's' : ''
-        );
+    if (self.state_.range_end.isValid() === true) {
+      range_end.set_value(self.state_.range_end.format('M/D/YYYY'));
+    }
+  });
 
-      let button = new beestat.component.button()
-        .set_background_hover_color(beestat.style.color.lightblue.base)
-        .set_text_color('#fff')
-        .set_text(text)
-        .addEventListener('click', function() {
-          if (key === 'download_data_time_period') {
-            if (value === 'all') {
-              time_count.set_value('∞').disable();
-            } else if (time_count.get_value() === '∞') {
-              time_count
-                .set_value(self.state_.download_data_time_count || '1')
-                .enable();
-              time_count.dispatchEvent('blur');
-            }
-          }
+  var span;
 
-          if (current_type !== value) {
-            this.set_background_color(beestat.style.color.lightblue.base);
-            if (self.selected_buttons_[key] !== undefined) {
-              self.selected_buttons_[key]
-                .set_background_color(beestat.style.color.bluegray.base);
-            }
-            self.selected_buttons_[key] = this;
-            self.state_[key] = value;
-            current_type = value;
-          }
-        });
-
-      if (current_type === value) {
-        if (
-          key === 'download_data_time_period' &&
-          value === 'all'
-        ) {
-          time_count.set_value('∞').disable();
-        }
-
-        button.set_background_color(beestat.style.color.lightblue.base);
-        self.state_[key] = value;
-        self.selected_buttons_[key] = button;
-      } else {
-        button.set_background_color(beestat.style.color.bluegray.base);
-      }
-
-      button_group.add_button(button);
-    });
-    button_groups[key] = button_group;
-  }
-
-  // Display it all
-  var row;
-  var column;
-
-  (new beestat.component.title('Time Period')).render(parent);
-  row = $.createElement('div').addClass('row');
+  var row = $.createElement('div').addClass('row');
   parent.appendChild(row);
-  column = $.createElement('div').addClass(['column column_2']);
+  var column = $.createElement('div').addClass(['column column_12']);
   row.appendChild(column);
-  time_count.render(column);
-  column = $.createElement('div').addClass(['column column_10']);
+
+  span = $.createElement('span').style('display', 'inline-block');
+  range_begin.render(span);
+  column.appendChild(span);
+
+  span = $.createElement('span')
+    .style({
+      'display': 'inline-block',
+      'margin-left': beestat.style.size.gutter,
+      'margin-right': beestat.style.size.gutter
+    })
+    .innerText('to');
+  column.appendChild(span);
+
+  span = $.createElement('span').style('display', 'inline-block');
+  range_end.render(span);
+  column.appendChild(span);
+};
+
+/**
+ * Decorate preset options.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.modal.download_data.prototype.decorate_presets_ = function(parent) {
+  var self = this;
+
+  (new beestat.component.title('Presets')).render(parent);
+
+  var row = $.createElement('div').addClass('row');
+  parent.appendChild(row);
+  var column = $.createElement('div').addClass(['column column_12']);
   row.appendChild(column);
-  button_groups.download_data_time_period.render(column);
+
+  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+
+  var now = moment().hour(0)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+
+  var presets = [
+    {
+      'label': 'Today',
+      'range_begin': now.clone(),
+      'range_end': now.clone(),
+      'button': new beestat.component.button()
+    },
+    {
+      'label': 'This Week',
+      'range_begin': now.clone().startOf('week'),
+      'range_end': now.clone(),
+      'button': new beestat.component.button()
+    },
+    {
+      'label': 'This Month',
+      'range_begin': now.clone().startOf('month'),
+      'range_end': now.clone(),
+      'button': new beestat.component.button()
+    },
+    {
+      'label': 'All Time',
+      'range_begin': moment.max(moment(thermostat.first_connected), now.clone().subtract(1, 'year')),
+      'range_end': now.clone(),
+      'button': new beestat.component.button()
+    }
+  ];
+
+  var button_group = new beestat.component.button_group();
+  presets.forEach(function(preset) {
+    preset.button
+      .set_background_color(beestat.style.color.bluegray.base)
+      .set_background_hover_color(beestat.style.color.lightblue.base)
+      .set_text_color('#fff')
+      .set_text(preset.label)
+      .addEventListener('mousedown', function() {
+        self.state_.range_begin = preset.range_begin;
+        self.state_.range_end = preset.range_end;
+        self.dispatchEvent('range_change');
+      });
+    button_group.add_button(preset.button);
+  });
+
+  // Highlight the preset if the current date range matches.
+  this.addEventListener('range_change', function() {
+    presets.forEach(function(preset) {
+      if (
+        preset.range_begin.isSame(self.state_.range_begin) &&
+        preset.range_end.isSame(self.state_.range_end)
+      ) {
+        preset.button.set_background_color(beestat.style.color.lightblue.base);
+      } else {
+        preset.button.set_background_color(beestat.style.color.bluegray.base);
+      }
+    });
+  });
+
+  button_group.render(column);
+};
+
+/**
+ * Decorate the error area.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.modal.download_data.prototype.decorate_error_ = function(parent) {
+  var self = this;
+
+  var div = $.createElement('div').style('color', beestat.style.color.red.base);
+
+  // Display errors as necessary.
+  this.addEventListener('range_change', function() {
+    div.innerHTML('');
+    if (self.state_.range_begin.isValid() === false) {
+      div.appendChild($.createElement('div').innerText('Invalid begin date.'));
+    }
+    if (self.state_.range_end.isValid() === false) {
+      div.appendChild($.createElement('div').innerText('Invalid end date.'));
+    }
+  });
+
+  parent.appendChild(div);
 };
 
 /**
@@ -154,25 +241,23 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')
-    .set_text('Download Data')
+    .set_text('Download')
     .addEventListener('click', function() {
-      var download_begin;
-      var download_end = null;
-      if (self.state_.download_data_time_period === 'all') {
-        download_begin = null;
+      var range_begin;
+      var range_end;
+      if (self.state_.range_end.isBefore(self.state_.range_begin) === true) {
+        range_begin = self.state_.range_end;
+        range_end = self.state_.range_begin;
       } else {
-        download_begin = moment().utc()
-          .subtract(
-            self.state_.download_data_time_count,
-            self.state_.download_data_time_period
-          )
-          .format('YYYY-MM-DD HH:mm:ss');
+        range_begin = self.state_.range_begin;
+        range_end = self.state_.range_end;
       }
 
       var download_arguments = {
         'thermostat_id': beestat.setting('thermostat_id'),
-        'download_begin': download_begin,
-        'download_end': download_end
+        'download_begin': range_begin.format(),
+        'download_end': range_end.hour(23).minute(55)
+          .format()
       };
 
       window.location.href = '/api/?resource=runtime&method=download&arguments=' + JSON.stringify(download_arguments) + '&api_key=' + beestat.api.api_key;
