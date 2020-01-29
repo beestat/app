@@ -444,7 +444,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
       );
       data.series.indoor_temperature.push(indoor_temperature_moving);
       data.metadata.series.indoor_temperature.data[current_m.valueOf()] =
-        runtime_thermostat.indoor_temperature;
+        beestat.temperature(runtime_thermostat.indoor_temperature);
       y_min_max(indoor_temperature_moving);
       data.metadata.series.indoor_temperature.active = true;
 
@@ -453,7 +453,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
       );
       data.series.outdoor_temperature.push(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.data[current_m.valueOf()] =
-        runtime_thermostat.outdoor_temperature;
+        beestat.temperature(runtime_thermostat.outdoor_temperature);
       y_min_max(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.active = true;
 
