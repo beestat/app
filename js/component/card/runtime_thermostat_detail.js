@@ -625,7 +625,10 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
 
       // Reset accessories
       if (runtime_thermostat.accessory === 0) {
-        durations[runtime_thermostat.accessory_type] = {'seconds': 0};
+        durations.humidifier = {'seconds': 0};
+        durations.dehumidifier = {'seconds': 0};
+        durations.ventilator = {'seconds': 0};
+        durations.economizer = {'seconds': 0};
       }
 
       // Equipment
