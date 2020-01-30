@@ -857,7 +857,7 @@ final class database extends \mysqli {
       ');
     $row = $result->fetch_assoc();
     if($row['lock'] !== 1) {
-      throw new \Exception('Could not get lock.', 1209);
+      throw new exception('Could not get lock.', 1209);
     }
   }
 

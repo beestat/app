@@ -46,9 +46,10 @@ class sensor extends cora\crud {
   }
 
   /**
-   * Sync all sensors connected to this account. Once Nest support is
-   * added this will need to check for all connected accounts and run the
-   * appropriate ones.
+   * Sync all sensors for the current user. If we fail to get a lock, fail
+   * silently (catch the exception) and just return false.
+   *
+   * @return boolean true if the sync ran, false if not.
    */
   public function sync() {
     // Skip this for the demo
@@ -56,20 +57,24 @@ class sensor extends cora\crud {
       return;
     }
 
-    $lock_name = 'sensor->sync(' . $this->session->get_user_id() . ')';
-    $this->database->get_lock($lock_name);
+    try {
+      $lock_name = 'sensor->sync(' . $this->session->get_user_id() . ')';
+      $this->database->get_lock($lock_name);
 
-    $this->api('ecobee_sensor', 'sync');
+      $this->api('ecobee_sensor', 'sync');
 
-    $this->api(
-      'user',
-      'update_sync_status',
-      [
-        'key' => 'sensor'
-      ]
-    );
+      $this->api(
+        'user',
+        'update_sync_status',
+        [
+          'key' => 'sensor'
+        ]
+      );
 
-    $this->database->release_lock($lock_name);
+      $this->database->release_lock($lock_name);
+    } catch(cora\exception $e) {
+      return false;
+    }
   }
 
 }

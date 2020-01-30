@@ -31,6 +31,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/highcharts.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/get_sync_progress.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/user.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/ecobee.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -42,6 +43,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/alert.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/down_notification.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/alerts.js"></script>' . PHP_EOL;

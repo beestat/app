@@ -20,7 +20,6 @@ beestat.ecobee_thermostat_models = {
   'vulcanSmart': 'SmartThermostat'
 };
 
-
 /**
  * Get a default value for an argument if it is not currently set.
  *
@@ -104,16 +103,6 @@ beestat.get_thermostat_color = function(thermostat_id) {
     return beestat.style.color.orange.base;
   }
   return beestat.style.color.bluegray.dark;
-};
-
-/**
- * Get the current user.
- *
- * @return {object}
- */
-beestat.get_user = function() {
-  var user_id = Object.keys(beestat.cache.user)[0];
-  return beestat.cache.user[user_id];
 };
 
 // Register service worker

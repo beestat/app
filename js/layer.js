@@ -22,6 +22,8 @@ beestat.layer.prototype.render = function() {
 
   body.innerHTML('');
   body.appendChild(container);
+
+  beestat.ecobee.notify_if_down();
 };
 
 beestat.layer.prototype.decorate_ = function(parent) {

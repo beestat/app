@@ -33,6 +33,8 @@ class runtime extends cora\api {
    *
    * @param int $thermostat_id Optional thermostat_id to sync. If not set will
    * sync all thermostats attached to this user.
+   *
+   * @return boolean true if the sync ran, false if not.
    */
   public function sync($thermostat_id = null) {
     // Skip this for the demo
@@ -42,54 +44,58 @@ class runtime extends cora\api {
 
     set_time_limit(0);
 
-    if($thermostat_id === null) {
-      $thermostat_ids = array_keys(
-        $this->api(
-          'thermostat',
-          'read_id',
-          [
-            'attributes' => [
-              'inactive' => 0
+    try {
+      if($thermostat_id === null) {
+        $thermostat_ids = array_keys(
+          $this->api(
+            'thermostat',
+            'read_id',
+            [
+              'attributes' => [
+                'inactive' => 0
+              ]
             ]
-          ]
-        )
-      );
-    } else {
-      $this->user_lock($thermostat_id);
-      $thermostat_ids = [$thermostat_id];
-    }
-
-    foreach($thermostat_ids as $thermostat_id) {
-      // Get a lock to ensure that this is not invoked more than once at a time
-      // per thermostat.
-      $lock_name = 'runtime->sync(' . $thermostat_id . ')';
-      $this->database->get_lock($lock_name);
-
-      $thermostat = $this->api('thermostat', 'get', $thermostat_id);
-
-      if(
-        $thermostat['sync_begin'] === $thermostat['first_connected'] ||
-        (
-          $thermostat['sync_begin'] !== null &&
-          strtotime($thermostat['sync_begin']) <= strtotime('-1 year')
-        )
-      ) {
-        $this->sync_forwards($thermostat_id);
+          )
+        );
       } else {
-        $this->sync_backwards($thermostat_id);
+        $this->user_lock($thermostat_id);
+        $thermostat_ids = [$thermostat_id];
       }
 
-      // If only syncing one thermostat this will delay the sync of the other
-      // thermostat. Not a huge deal, just FYI.
-      $this->api(
-        'user',
-        'update_sync_status',
-        [
-          'key' => 'runtime'
-        ]
-      );
+      foreach($thermostat_ids as $thermostat_id) {
+        // Get a lock to ensure that this is not invoked more than once at a time
+        // per thermostat.
+        $lock_name = 'runtime->sync(' . $thermostat_id . ')';
+        $this->database->get_lock($lock_name);
 
-      $this->database->release_lock($lock_name);
+        $thermostat = $this->api('thermostat', 'get', $thermostat_id);
+
+        if(
+          $thermostat['sync_begin'] === $thermostat['first_connected'] ||
+          (
+            $thermostat['sync_begin'] !== null &&
+            strtotime($thermostat['sync_begin']) <= strtotime('-1 year')
+          )
+        ) {
+          $this->sync_forwards($thermostat_id);
+        } else {
+          $this->sync_backwards($thermostat_id);
+        }
+
+        // If only syncing one thermostat this will delay the sync of the other
+        // thermostat. Not a huge deal, just FYI.
+        $this->api(
+          'user',
+          'update_sync_status',
+          [
+            'key' => 'runtime'
+          ]
+        );
+
+        $this->database->release_lock($lock_name);
+      }
+    } catch(cora\exception $e) {
+      return false;
     }
   }
 

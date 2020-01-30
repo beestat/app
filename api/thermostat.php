@@ -22,26 +22,35 @@ class thermostat extends cora\crud {
   ];
 
   /**
-   * Sync all thermostats for the current user with their associated service.
+   * Sync all thermostats for the current user. If we fail to get a lock, fail
+   * silently (catch the exception) and just return false.
+   *
+   * @return boolean true if the sync ran, false if not.
    */
   public function sync() {
     // Skip this for the demo
     if($this->setting->is_demo() === true) {
-      return;
+      return true;
     }
 
-    $lock_name = 'thermostat->sync(' . $this->session->get_user_id() . ')';
-    $this->database->get_lock($lock_name);
+    try {
+      $lock_name = 'thermostat->sync(' . $this->session->get_user_id() . ')';
+      $this->database->get_lock($lock_name);
 
-    $this->api('ecobee_thermostat', 'sync');
+      $this->api('ecobee_thermostat', 'sync');
 
-    $this->api(
-      'user',
-      'update_sync_status',
-      ['key' => 'thermostat']
-    );
+      $this->api(
+        'user',
+        'update_sync_status',
+        ['key' => 'thermostat']
+      );
 
-    $this->database->release_lock($lock_name);
+      $this->database->release_lock($lock_name);
+
+      return true;
+    } catch(cora\exception $e) {
+      return false;
+    }
   }
 
   /**

@@ -95,6 +95,8 @@ beestat.poll = function() {
     beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
     beestat.enable_poll();
     beestat.dispatcher.dispatchEvent('poll');
+
+    beestat.ecobee.notify_if_down();
   });
 
   api.send();

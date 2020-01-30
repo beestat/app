@@ -34,7 +34,7 @@ beestat.component.menu_item.prototype.decorate_ = function(parent) {
       .render(parent);
 
     // Events
-      parent.addEventListener('mouseenter', function() {
+    parent.addEventListener('mouseenter', function() {
       parent.style({
         'background': beestat.style.color.blue.light,
         'color': '#fff'
@@ -48,7 +48,7 @@ beestat.component.menu_item.prototype.decorate_ = function(parent) {
     });
     parent.addEventListener('click', function() {
       self.menu_.dispose();
-      if(self.callback_ !== undefined) {
+      if (self.callback_ !== undefined) {
         self.callback_();
       }
     });

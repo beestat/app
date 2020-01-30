@@ -178,8 +178,6 @@ beestat.api.prototype.load_ = function(response_text) {
   ) {
     window.location.href = '/';
     return;
-  } else if (response.data && response.data.error_code === 1209) {
-    // Could not get lock; safe to ignore as that means sync is running.
   } else if (response.success !== true) {
     beestat.error(
       'API call failed: ' + response.data.error_message,

@@ -128,7 +128,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   );
 
   api.set_callback(function(response) {
-
     beestat.cache.set('user', response.user);
 
     // Rollbar isn't defined on dev.
@@ -216,6 +215,8 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.enable_poll();
 
     (new beestat.layer.dashboard()).render();
+
+    beestat.ecobee.notify_if_down();
 
     /*
      * If never seen an announcement, or if there is an unread important

@@ -19,7 +19,6 @@ beestat.component.menu.prototype.decorate_ = function(parent) {
     .set_bubble_text(this.bubble_text_)
     .set_bubble_color(this.bubble_color_)
     .set_text_color('#fff')
-    // .set_background_hover_color(beestat.style.color.bluegray.light)
     .set_background_hover_color('rgba(255, 255, 255, 0.1')
     .addEventListener('click', function() {
       // Did I just try to open the same menu as last time?
@@ -41,12 +40,20 @@ beestat.component.menu.prototype.decorate_ = function(parent) {
  * Close this menu by hiding the container and removing the event listeners.
  */
 beestat.component.menu.prototype.dispose = function() {
+  var self = this;
+  beestat.component.menu.open_menu.rendered_ = false;
+  this.rendered_ = false;
+
   if (beestat.component.menu.open_menu !== undefined) {
     var container = beestat.component.menu.open_menu.container_;
     container.style('transform', 'scale(0)');
 
     delete beestat.component.menu.open_menu;
     setTimeout(function() {
+      self.menu_items_.forEach(function(menu_item) {
+        menu_item.dispose();
+      });
+
       container.parentNode().removeChild(container);
     }, 200);
   }
