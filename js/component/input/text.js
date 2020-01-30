@@ -38,9 +38,7 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
       'border': 'none',
       'background': beestat.style.color.bluegray.light,
       'border-radius': beestat.style.size.border_radius,
-      // 'border-bottom': ('1px solid ' + beestat.style.color.gray.dark),
       'padding': (beestat.style.size.gutter / 2),
-      // 'background': 'none',
       'color': '#fff',
       'outline': 'none',
       'transition': 'background 200ms ease'
@@ -68,7 +66,9 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
       'padding-left': '24px'
     });
 
-    (new beestat.component.icon(this.icon_).set_size(16).set_color('#fff')).render(icon_container);
+    (new beestat.component.icon(this.icon_).set_size(16)
+      .set_color('#fff'))
+      .render(icon_container);
   }
 
   if (this.value_ !== undefined) {
@@ -79,14 +79,19 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
 };
 
 /**
- * Set the value in the input field.
+ * Set the value in the input field. This bypasses the set_ function to avoid
+ * rerendering when the input value is set. It's unnecessary and can also
+ * cause minor issues if you try to set the value, then do something else with
+ * the input immediately after.
  *
  * @param {string} value
  *
  * @return {beestat.component.input.text} This.
  */
 beestat.component.input.text.prototype.set_value = function(value) {
-  return this.set_('value', value);
+  this.value_ = value;
+  this.input_.value(value);
+  return this;
 };
 
 /**
