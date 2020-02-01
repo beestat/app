@@ -37,6 +37,20 @@ beestat.poll = function() {
   var api = new beestat.api();
 
   api.add_call(
+    'thermostat',
+    'sync',
+    {},
+    'thermostat_sync'
+  );
+
+  api.add_call(
+    'sensor',
+    'sync',
+    {},
+    'sensor_sync'
+  );
+
+  api.add_call(
     'user',
     'read_id',
     {},
@@ -94,7 +108,6 @@ beestat.poll = function() {
     beestat.cache.set('ecobee_thermostat', response.ecobee_thermostat);
     beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
     beestat.enable_poll();
-    beestat.dispatcher.dispatchEvent('poll');
 
     beestat.ecobee.notify_if_down();
   });

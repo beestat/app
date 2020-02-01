@@ -16,7 +16,7 @@ class sensor extends cora\crud {
   ];
 
   public static $cache = [
-    'sync' => 300 // 5 Minutes
+    'sync' => 180 // 3 Minutes
   ];
 
   /**

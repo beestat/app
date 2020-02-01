@@ -5,9 +5,17 @@
 beestat.component.card.system = function() {
   var self = this;
 
-  beestat.dispatcher.addEventListener('poll', function() {
+  var change_function = beestat.debounce(function() {
     self.rerender();
-  });
+  }, 10);
+
+  beestat.dispatcher.addEventListener(
+    [
+      'cache.thermostat',
+      'cache.ecobee_thermostat'
+    ],
+    change_function
+  );
 
   beestat.component.card.apply(this, arguments);
 };

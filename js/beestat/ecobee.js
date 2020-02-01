@@ -16,10 +16,10 @@ beestat.ecobee.notify_if_down = function() {
       beestat.ecobee.down_notification_ = new beestat.component.down_notification();
     }
 
-    // if (down === true) {
-    //   beestat.ecobee.down_notification_.render($('body'));
-    // } else {
-    //   beestat.ecobee.down_notification_.dispose();
-    // }
+    if (down === true) {
+      beestat.ecobee.down_notification_.render($('body'));
+    } else {
+      beestat.ecobee.down_notification_.dispose();
+    }
   }
 };
