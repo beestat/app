@@ -82,18 +82,18 @@ class runtime extends cora\api {
           $this->sync_backwards($thermostat_id);
         }
 
-        // If only syncing one thermostat this will delay the sync of the other
-        // thermostat. Not a huge deal, just FYI.
-        $this->api(
-          'user',
-          'update_sync_status',
-          [
-            'key' => 'runtime'
-          ]
-        );
-
         $this->database->release_lock($lock_name);
       }
+
+      // If only syncing one thermostat this will delay the sync of the other
+      // thermostat. Not a huge deal, just FYI.
+      $this->api(
+        'user',
+        'update_sync_status',
+        [
+          'key' => 'runtime'
+        ]
+      );
     } catch(cora\exception $e) {
       return false;
     }
