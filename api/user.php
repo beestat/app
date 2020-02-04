@@ -166,7 +166,14 @@ class user extends cora\crud {
   }
 
   /**
-   * Set a setting on a user.
+   * Set a setting on a user. This utilizes a lock because all settings are
+   * stored in a single JSON column. If multiple settings are updated rapidly,
+   * they will both read from the user at the same time, then run their
+   * updates sequentially and overwrite each other with old data.
+   *
+   * Don't release the lock either...wait for the database connection to close
+   * and the transaction to commit otherwise anything waiting will start and
+   * get old data.
    *
    * @param string $key
    * @param string $value
@@ -174,6 +181,9 @@ class user extends cora\crud {
    * @return array The new settings list.
    */
   public function update_setting($key, $value) {
+    $lock_name = 'user->update_setting(' . $this->session->get_user_id() . ')';
+    $this->database->get_lock($lock_name, 1);
+
     $user = $this->get($this->session->get_user_id());
     if($user['settings'] === null) {
       $settings = [];

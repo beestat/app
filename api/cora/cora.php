@@ -1030,15 +1030,6 @@ final class cora {
         $response_query_count = $this->response_query_counts[$index];
         $response_query_time = $this->response_query_times[$index];
 
-        // The data could be an integer, an XML string, an array, etc, but let's
-        // just always json_encode it to keep things simple and standard.
-        if($this->content_type_is_loggable() === true) {
-          $response_data = substr(json_encode($this->response_data[$index]), 0, 16384);
-        }
-        else {
-          $response_data = null;
-        }
-
         $from_cache = $this->from_cache[$index];
 
         $api_log_resource->create(
@@ -1050,7 +1041,6 @@ final class cora {
             'request_arguments'    => preg_replace('/"(password)":".*"/', '"$1":"[removed]"', $request_arguments),
             'response_error_code'  => $response_error_code,
             'response_data'        => null, // Can't store this; uses too much disk.
-            // 'response_data'        => preg_replace('/"(password)":".*"/', '"$1":"[removed]"', $response_data),
             'response_time'        => $response_time,
             'response_query_count' => $response_query_count,
             'response_query_time'  => $response_query_time,
