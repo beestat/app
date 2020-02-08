@@ -170,7 +170,7 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
   var container = $.createElement('div')
     .style({
       'display': 'grid',
-      'grid-template-columns': 'repeat(auto-fill, minmax(120px, 1fr))',
+      'grid-template-columns': 'repeat(auto-fill, minmax(150px, 1fr))',
       'margin': '0 0 16px -16px'
     });
   parent.appendChild(container);
@@ -216,10 +216,6 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
     {
       'name': 'Pressure',
       'value': thermostat.weather.barometric_pressure + 'mb'
-    },
-    {
-      'name': 'Station',
-      'value': thermostat.weather.station
     }
   ];
 
