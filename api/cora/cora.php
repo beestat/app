@@ -712,7 +712,11 @@ final class cora {
 
     // Send data to Sentry for error logging.
     // https://docs.sentry.io/development/sdk-dev/event-payloads/
-    if ($reportable === true && $this->setting->get('environment') === 'live') {
+    if (
+      $reportable === true &&
+      $this->setting->get('sentry_key') !== null &&
+      $this->setting->get('sentry_project_id') !== null
+    ) {
       $data = [
         'event_id' => str_replace('-', '', exec('uuidgen -r')),
         'timestamp' => date('c'),
