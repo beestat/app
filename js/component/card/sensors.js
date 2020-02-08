@@ -25,7 +25,7 @@ beestat.component.card.sensors.prototype.decorate_contents_ = function(parent) {
 
   var sensors = [];
   var internal_sensor;
-  $.values(beestat.cache.sensor).forEach(function(sensor) {
+  beestat.sensor.get_sorted().forEach(function(sensor) {
     if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
       if (sensor.type === 'thermostat') {
         internal_sensor = sensor;
@@ -33,10 +33,6 @@ beestat.component.card.sensors.prototype.decorate_contents_ = function(parent) {
         sensors.push(sensor);
       }
     }
-  });
-
-  sensors.sort(function(a, b) {
-    return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});
   });
 
   /*

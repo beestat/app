@@ -22,7 +22,7 @@ beestat.extend(beestat.component.modal.runtime_thermostat_detail_custom, beestat
  * @param {rocket.Elements} parent
  */
 beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_contents_ = function(parent) {
-  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Runtime Detail chart.'));
+  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Thermostat Detail chart.'));
 
   this.decorate_range_type_(parent);
 
@@ -301,7 +301,7 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_erro
  * @return {string} Title
  */
 beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_title_ = function() {
-  return 'Runtime Detail - Custom Range';
+  return 'Thermostat Detail - Custom Range';
 };
 
 /**

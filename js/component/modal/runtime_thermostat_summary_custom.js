@@ -143,7 +143,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
  * @return {string} Title
  */
 beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_title_ = function() {
-  return 'Runtime Summary - Custom Range';
+  return 'Thermostat Summary - Custom Range';
 };
 
 /**

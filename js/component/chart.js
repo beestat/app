@@ -61,6 +61,7 @@ beestat.component.chart.prototype.export = function() {
  */
 beestat.component.chart.prototype.get_options_legend_ = function() {
   return {
+    'enabled': this.get_options_legend_enabled_(),
     'itemStyle': {
       'color': '#ecf0f1',
       'font-weight': '500'
@@ -71,19 +72,7 @@ beestat.component.chart.prototype.get_options_legend_ = function() {
     'itemHiddenStyle': {
       'color': '#7f8c8d'
     },
-    'labelFormatter': this.get_options_legend_labelFormatter_(),
-
-
-    // 'layout': 'vertical',
-    // 'align': 'right',
-    // 'verticalAlign': 'top'
-
-    // 'maxHeight': 1000, // To prevent the navigation thing
-    // 'floating': true,
-    // 'verticalAlign': 'top',
-    // 'y': 50,
-    // 'borderWidth': 1
-    //
+    'labelFormatter': this.get_options_legend_labelFormatter_()
   };
 };
 
@@ -96,6 +85,15 @@ beestat.component.chart.prototype.get_options_legend_labelFormatter_ = function(
   return function() {
     return beestat.series[this.name].name;
   };
+};
+
+/**
+ * Get the legend enabled options.
+ *
+ * @return {Function} The legend enabled options.
+ */
+beestat.component.chart.prototype.get_options_legend_enabled_ = function() {
+  return true;
 };
 
 /**
@@ -172,12 +170,9 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     'style': {
       'fontFamily': 'Montserrat'
     },
-    'spacing': [
-      beestat.style.size.gutter,
-      0,
-      0,
-      0
-    ],
+    'spacing': this.get_options_chart_spacing_(),
+    // For consistent left spacing on charts with no y-axis values
+    'marginLeft': this.get_options_chart_marginLeft_(),
     'zoomType': this.get_options_chart_zoomType_(),
     'panning': true,
     'panKey': 'ctrl',
@@ -193,6 +188,29 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
 };
 
 /**
+ * Get the left margin for the chart.
+ *
+ * @return {number} The left margin for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_marginLeft_ = function() {
+  return undefined;
+};
+
+/**
+ * Get the spacing for the chart.
+ *
+ * @return {number} The spacing for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_spacing_ = function() {
+  return [
+    (beestat.style.size.gutter / 2),
+    0,
+    0,
+    0
+  ];
+};
+
+/**
  * Get the events list for the chart.
  *
  * @return {number} The events list for the chart.
@@ -200,6 +218,20 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
 beestat.component.chart.prototype.get_options_chart_events_ = function() {
   return null;
 };
+
+/**
+ * Get the spacing for the chart.
+ *
+ * @return {number} The spacing for the chart.
+ */
+// beestat.component.chart.prototype.get_options_chart_spacing_ = function() {
+//   return [
+//     beestat.style.size.gutter,
+//     0,
+//     0,
+//     0
+//   ];
+// };
 
 /**
  * Get the height of the chart.
@@ -337,6 +369,8 @@ beestat.component.chart.prototype.get_options_credits_ = function() {
  * @return {object} The xAxis options.
  */
 beestat.component.chart.prototype.get_options_xAxis_ = function() {
+  var self = this;
+
   return {
     'categories': this.data_.x,
     'lineColor': beestat.style.color.bluegray.light,
@@ -346,6 +380,14 @@ beestat.component.chart.prototype.get_options_xAxis_ = function() {
         'color': beestat.style.color.gray.base
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
+    },
+    'events': {
+      'afterSetExtremes': function() {
+        // Make sure the extremes are set prior to firing the event.
+        // setTimeout(function() {
+          self.dispatchEvent('after_set_extremes');
+        // }, 0)
+      }
     }
   };
 };
@@ -419,26 +461,51 @@ beestat.component.chart.prototype.get_options_tooltip_formatter_ = function() {
 beestat.component.chart.prototype.get_options_tooltip_positioner_ = function() {
   var self = this;
   return function(tooltip_width, tooltip_height, point) {
-    var plot_width = self.chart_.plotWidth;
-
-    var fits_on_left = (point.plotX - tooltip_width) > 0;
-    var fits_on_right = (point.plotX + tooltip_width) < plot_width;
-
-    var x;
-    var y = 60;
-    if (fits_on_left === true) {
-      x = point.plotX - tooltip_width + self.chart_.plotLeft;
-    } else if (fits_on_right === true) {
-      x = point.plotX + self.chart_.plotLeft;
-    } else {
-      x = self.chart_.plotLeft;
-    }
-
     return {
-      'x': x,
-      'y': y
+      'x': self.get_options_tooltip_positioner_x_(tooltip_width, tooltip_height, point),
+      'y': self.get_options_tooltip_positioner_y_(tooltip_width, tooltip_height, point)
     };
   };
+};
+
+/**
+ * Get the tooltip positioner x value.
+ *
+ * @param {number} tooltip_width Tooltip width.
+ * @param {number} tooltip_height Tooltip height.
+ * @param {point} point Highcharts current point.
+ *
+ * @return {number} The tooltip x value.
+ */
+beestat.component.chart.prototype.get_options_tooltip_positioner_x_ = function(tooltip_width, tooltip_height, point) {
+  var plot_width = this.chart_.plotWidth;
+
+  var fits_on_left = (point.plotX - tooltip_width) > 0;
+  var fits_on_right = (point.plotX + tooltip_width) < plot_width;
+
+  var x;
+  if (fits_on_left === true) {
+    x = point.plotX - tooltip_width + this.chart_.plotLeft;
+  } else if (fits_on_right === true) {
+    x = point.plotX + this.chart_.plotLeft;
+  } else {
+    x = this.chart_.plotLeft;
+  }
+
+  return x;
+};
+
+/**
+ * Get the tooltip positioner y value.
+ *
+ * @param {number} tooltip_width Tooltip width.
+ * @param {number} tooltip_height Tooltip height.
+ * @param {point} point Highcharts current point.
+ *
+ * @return {number} The tooltip y value.
+ */
+beestat.component.chart.prototype.get_options_tooltip_positioner_y_ = function(tooltip_width, tooltip_height, point) {
+  return 60;
 };
 
 /**
@@ -505,4 +572,61 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
   });
 
   return tooltip[0].outerHTML;
+};
+
+/**
+ * Get the Highcharts chart object.
+ *
+ * @return {Highcharts} The Highcharts chart object.
+ */
+beestat.component.chart.prototype.get_chart = function() {
+  return this.chart_;
+};
+
+/**
+ * Sync extremes of this chart with extremes of another chart.
+ *
+ * @param {beestat.component.chart} source_chart The source chart.
+ */
+beestat.component.chart.prototype.sync_extremes = function(source_chart) {
+  var self = this;
+
+  source_chart.addEventListener('after_set_extremes', function() {
+    var extremes = source_chart.get_chart().axes[0].getExtremes();
+    self.get_chart().axes[0].setExtremes(
+      extremes.min,
+      extremes.max,
+      undefined,
+      false
+    );
+  });
+};
+
+/**
+ * Sync crosshair of this chart with crosshair of another chart.
+ *
+ * @param {beestat.component.chart} source_chart The source chart.
+ */
+beestat.component.chart.prototype.sync_crosshair = function(source_chart) {
+  var self = this;
+
+  [
+    'mousemove',
+    'touchmove',
+    'touchstart'
+  ].forEach(function(event_type) {
+    source_chart.get_chart().container.addEventListener(
+      event_type,
+      function(e) {
+        var point = self.get_chart().series[0].searchPoint(
+          self.get_chart().pointer.normalize(e),
+          true
+        );
+        if (point !== undefined) {
+          point.onMouseOver();
+          point.series.chart.xAxis[0].drawCrosshair(event, this);
+        }
+      }
+    );
+  });
 };

@@ -87,7 +87,7 @@ beestat.component.card.prototype.decorate_title_ = function(parent) {
     : (beestat.style.size.gutter);
   if (title !== null) {
     parent.appendChild($.createElement('div')
-      .innerHTML(title)
+      .innerText(title)
       .style({
         'font-weight': beestat.style.font_weight.bold,
         'font-size': beestat.style.font_size.large,

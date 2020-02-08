@@ -32,6 +32,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/get_sync_progress.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/user.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/ecobee.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/runtime_thermostat.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/runtime_sensor.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/sensor.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -65,8 +68,10 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/chart/runtime_thermostat_detail.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/chart/runtime_sensor_detail.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/runtime_thermostat_detail_temperature.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/runtime_thermostat_detail_equipment.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/runtime_sensor_detail_temperature.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/runtime_sensor_detail_occupancy.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/header.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/icon.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/layout.js"></script>' . PHP_EOL;

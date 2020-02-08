@@ -26,38 +26,23 @@ beestat.component.header.prototype.decorate_ = function(parent) {
 
   var pages;
 
-  if (beestat.user.has_early_access() === true) {
-    pages = [
-      {
-        'layer': 'dashboard',
-        'text': 'Dashboard',
-        'icon': 'tablet_dashboard'
-      },
-      {
-        'layer': 'sensors',
-        'text': 'Sensors',
-        'icon': 'signal_variant'
-      },
-      {
-        'layer': 'home_comparisons',
-        'text': 'Comparisons',
-        'icon': 'home_group'
-      }
-    ];
-  } else {
-    pages = [
-      {
-        'layer': 'dashboard',
-        'text': 'Dashboard',
-        'icon': 'tablet_dashboard'
-      },
-      {
-        'layer': 'home_comparisons',
-        'text': 'Home Comparisons',
-        'icon': 'home_group'
-      }
-    ];
-  }
+  pages = [
+    {
+      'layer': 'dashboard',
+      'text': 'Dashboard',
+      'icon': 'tablet_dashboard'
+    },
+    {
+      'layer': 'sensors',
+      'text': 'Sensors',
+      'icon': 'signal_variant'
+    },
+    {
+      'layer': 'home_comparisons',
+      'text': 'Comparisons',
+      'icon': 'home_group'
+    }
+  ];
 
   var gutter = beestat.style.size.gutter;
 

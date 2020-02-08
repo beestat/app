@@ -27,6 +27,7 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
       'setting.runtime_sensor_detail_smoothing',
       'setting.runtime_sensor_detail_range_type',
       'setting.runtime_sensor_detail_range_dynamic',
+      'cache.runtime_thermostat',
       'cache.runtime_sensor'
     ],
     change_function
@@ -44,10 +45,52 @@ beestat.extend(beestat.component.card.runtime_sensor_detail, beestat.component.c
 beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
-  var data = this.get_data_();
+  var range = {
+    'type': beestat.setting('runtime_sensor_detail_range_type'),
+    'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),
+    'static_begin': beestat.setting('runtime_sensor_detail_range_static_begin'),
+    'static_end': beestat.setting('runtime_sensor_detail_range_static_end')
+  };
 
-  this.chart_ = new beestat.component.chart.runtime_sensor_detail(data);
-  this.chart_.render(parent);
+  var sensor_data = beestat.runtime_sensor.get_data(this.thermostat_id_, range);
+  var thermostat_data = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
+
+  var data = sensor_data;
+
+  Object.assign(data.series, thermostat_data.series);
+  Object.assign(data.metadata.series, thermostat_data.metadata.series);
+
+  this.charts_ = {
+    'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(data),
+    'occupancy': new beestat.component.chart.runtime_sensor_detail_occupancy(data),
+    'temperature': new beestat.component.chart.runtime_sensor_detail_temperature(data)
+  };
+
+  this.charts_.equipment.render(parent);
+  this.charts_.occupancy.render(parent);
+  this.charts_.temperature.render(parent);
+
+  // Sync extremes and crosshair.
+  Object.values(this.charts_).forEach(function(source_chart) {
+    Object.values(self.charts_).forEach(function(target_chart) {
+      if (source_chart !== target_chart) {
+        target_chart.sync_extremes(source_chart);
+        target_chart.sync_crosshair(source_chart);
+      }
+    });
+  });
+
+  // Keep the series list in sync across charts.
+  this.charts_.temperature.addEventListener('legend_item_click', function() {
+    this.get_chart().series.forEach(function(temperature_series) {
+      var occupancy_key = temperature_series.name.replace('temperature', 'occupancy');
+      self.charts_.occupancy.get_chart().series.forEach(function(occupancy_series) {
+        if (occupancy_series.name === occupancy_key) {
+          occupancy_series.setVisible(temperature_series.visible);
+        }
+      });
+    });
+  });
 
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
@@ -91,8 +134,11 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
    * the database, check every 2 seconds until it does.
    */
   if (this.data_synced_(required_begin, required_end) === true) {
-    if (beestat.cache.runtime_sensor === undefined) {
-      this.show_loading_('Loading Runtime Detail');
+    if (
+      beestat.cache.runtime_sensor === undefined ||
+      beestat.cache.data.runtime_thermostat_last !== 'runtime_sensor_detail'
+    ) {
+      this.show_loading_('Loading Sensor Detail');
 
       var value;
       var operator;
@@ -108,9 +154,28 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
         operator = 'between';
       }
 
+/*      new beestat.api()
+        .add_call(
+          'runtime_thermostat',
+          'read',
+          {
+            'attributes': {
+              'thermostat_id': thermostat.thermostat_id,
+              'timestamp': {
+                'value': value,
+                'operator': operator
+              }
+            }
+          }
+        )
+        .set_callback(function(response) {
+          beestat.cache.set('runtime_thermostat', response);
+        })
+        .send();*/
+
       var api_call = new beestat.api();
-      this.get_sensors_().forEach(function(sensor) {
-        if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
+      beestat.sensor.get_sorted().forEach(function(sensor) {
+        if (sensor.thermostat_id === self.thermostat_id_) {
           api_call.add_call(
             'runtime_sensor',
             'read',
@@ -122,23 +187,45 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
                   'operator': operator
                 }
               }
-            }
+            },
+            'runtime_sensor_' + sensor.sensor_id
           );
         }
       });
 
+      api_call.add_call(
+        'runtime_thermostat',
+        'read',
+        {
+          'attributes': {
+            'thermostat_id': thermostat.thermostat_id,
+            'timestamp': {
+              'value': value,
+              'operator': operator
+            }
+          }
+        },
+        'runtime_thermostat'
+      );
+
       api_call.set_callback(function(response) {
         var runtime_sensors = [];
-        response.forEach(function(r) {
-          runtime_sensors = runtime_sensors.concat(r);
-        });
+        for (var alias in response) {
+          var r = response[alias];
+          if (alias === 'runtime_thermostat') {
+            beestat.cache.set('data.runtime_thermostat_last', 'runtime_sensor_detail');
+            beestat.cache.set('runtime_thermostat', r);
+          } else {
+            runtime_sensors = runtime_sensors.concat(r);
+          }
+        }
         beestat.cache.set('runtime_sensor', runtime_sensors);
       });
 
       api_call.send();
     }
   } else {
-    this.show_loading_('Syncing Runtime Detail');
+    this.show_loading_('Syncing Sensor Detail');
     setTimeout(function() {
       new beestat.api()
         .add_call(
@@ -218,25 +305,25 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
       }
     }));
 
-  // menu.add_menu_item(new beestat.component.menu_item()
-  //   .set_text('Custom')
-  //   .set_icon('calendar_edit')
-  //   .set_callback(function() {
-  //     (new beestat.component.modal.runtime_sensor_detail_custom()).render();
-  //   }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Custom')
+    .set_icon('calendar_edit')
+    .set_callback(function() {
+      (new beestat.component.modal.runtime_sensor_detail_custom()).render();
+    }));
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Download Chart')
     .set_icon('download')
     .set_callback(function() {
-      self.chart_.export();
+      self.charts_.temperature.export();
     }));
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Reset Zoom')
     .set_icon('magnify_minus')
     .set_callback(function() {
-      self.chart_.reset_zoom();
+      self.charts_.temperature.reset_zoom();
     }));
 
   if (beestat.setting('runtime_sensor_detail_smoothing') === true) {
@@ -259,249 +346,8 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://www.notion.so/beestat/891f94a6bdb34895a453b7b91591ec29');
+      window.open('https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29');
     }));
-};
-
-/**
- * Get all of the series data.
- *
- * @return {object} The series data.
- */
-beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function() {
-  var self = this;
-
-  var data = {
-    'x': [],
-    'series': {},
-    'metadata': {
-      'series': {},
-      'chart': {
-        'title': this.get_title_(),
-        'subtitle': this.get_subtitle_(),
-        'y_min': Infinity,
-        'y_max': -Infinity,
-        'sensors': null
-      }
-    }
-  };
-
-  // A couple private helper functions for manipulating the min/max y values.
-  var y_min_max = function(value) {
-    if (value !== null) {
-      data.metadata.chart.y_min = Math.min(data.metadata.chart.y_min, value);
-      data.metadata.chart.y_max = Math.max(data.metadata.chart.y_max, value);
-    }
-  };
-
-
-  var series_codes = [];
-
-  // Get and sort all the sensors.
-  var sensors = this.get_sensors_();
-  data.metadata.sensors = sensors;
-
-  // Set up the series_codes.
-  sensors.forEach(function(sensor) {
-    if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
-      series_codes.push('temperature_' + sensor.sensor_id);
-      series_codes.push('occupancy_' + sensor.sensor_id);
-    }
-  });
-  series_codes.push('dummy');
-
-  // Initialize a bunch of stuff.
-  var sequential = {};
-  series_codes.forEach(function(series_code) {
-    sequential[series_code] = 0;
-
-    data.series[series_code] = [];
-    data.metadata.series[series_code] = {
-      'active': false
-    };
-    if (series_code === 'dummy') {
-      data.metadata.series[series_code].name = null;
-    } else {
-      var sensor_id = series_code.replace(/[^0-9]/g, '');
-      data.metadata.series[series_code].name = beestat.cache.sensor[sensor_id].name;
-    }
-  });
-
-  var begin_m;
-  var end_m;
-  if (beestat.setting('runtime_sensor_detail_range_type') === 'dynamic') {
-    begin_m = moment().subtract(
-      beestat.setting('runtime_sensor_detail_range_dynamic'),
-      'day'
-    );
-    end_m = moment().subtract(1, 'hour');
-  } else {
-    begin_m = moment(
-      beestat.setting('runtime_sensor_detail_range_static_begin') + ' 00:00:00'
-    );
-    end_m = moment(
-      beestat.setting('runtime_sensor_detail_range_static_end') + ' 23:59:59'
-    );
-  }
-
-  // TODO: This needs to be max of begin and when I actually have sensor data
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  begin_m = moment.max(
-    begin_m,
-    moment(thermostat.first_connected)
-  );
-
-  begin_m
-    .minute(Math.ceil(begin_m.minute() / 5) * 5)
-    .second(0)
-    .millisecond(0);
-
-  var runtime_sensors = this.get_runtime_sensor_by_date_();
-
-  // Initialize moving average.
-  var moving = [];
-  var moving_count;
-  if (beestat.setting('runtime_sensor_detail_smoothing') === true) {
-    moving_count = 5;
-  } else {
-    moving_count = 1;
-  }
-  var offset;
-  for (var i = 0; i < moving_count; i++) {
-    offset = (i - Math.floor(moving_count / 2)) * 300000;
-    moving.push(runtime_sensors[begin_m.valueOf() + offset]);
-  }
-
-  // TODO: Garage sensor is not returned in runtime data until halfway
-  // through...so the series data never got added early on so it just gets
-  // slapped on the beginning. It also takes over a previous "j" value and
-  // pushes everything around. Instead of looping over runtime_sensor I need to loop over sensor and grab the values.
-
-  // Loop.
-  var current_m = begin_m;
-  while (
-    // beestat.cache.runtime_sensor.length > 0 &&
-    current_m.isSameOrAfter(end_m) === false
-  ) {
-    data.x.push(current_m.clone());
-
-    // Without this series the chart will jump to the nearest value if there is a chunk of missing data.
-    data.series.dummy.push(1);
-    data.metadata.series.dummy.active = true;
-
-    if (runtime_sensors[current_m.valueOf()] !== undefined) {
-      sensors.forEach(function(sensor, j) {
-        var runtime_sensor = runtime_sensors[current_m.valueOf()][sensor.sensor_id];
-        if (runtime_sensor === undefined) {
-          data.series['temperature_' + sensor.sensor_id].push(null);
-          data.series['occupancy_' + sensor.sensor_id].push(null);
-          return;
-        }
-
-        var temperature_moving = beestat.temperature(
-          self.get_average_(moving, sensor.sensor_id)
-        );
-        data.series['temperature_' + runtime_sensor.sensor_id].push(temperature_moving);
-        y_min_max(temperature_moving);
-        data.metadata.series['temperature_' + runtime_sensor.sensor_id].active = true;
-
-        if (runtime_sensor.occupancy === true) {
-          let swimlane_properties =
-            beestat.component.chart.runtime_sensor_detail.get_swimlane_properties(
-              sensors.length,
-              j
-            );
-
-          sequential['occupancy_' + runtime_sensor.sensor_id]++;
-          data.series['occupancy_' + runtime_sensor.sensor_id].push(swimlane_properties.y);
-        } else {
-          if (sequential['occupancy_' + runtime_sensor.sensor_id] > 0) {
-            let swimlane_properties =
-              beestat.component.chart.runtime_sensor_detail.get_swimlane_properties(
-                sensors.length,
-                j
-              );
-
-            data.series['occupancy_' + runtime_sensor.sensor_id].push(swimlane_properties.y);
-          } else {
-            data.series['occupancy_' + runtime_sensor.sensor_id].push(null);
-          }
-          sequential['occupancy_' + runtime_sensor.sensor_id] = 0;
-        }
-      });
-    } else {
-      sensors.forEach(function(sensor) {
-        if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
-          data.series['temperature_' + sensor.sensor_id].push(null);
-          data.series['occupancy_' + sensor.sensor_id].push(null);
-        }
-      });
-    }
-
-    current_m.add(5, 'minute');
-
-    /**
-     * Remove the first row in the moving average and add the next one. Yes
-     * this could introduce undefined values; that's ok. Those are handled in
-     * the get_average_ function.
-     */
-    moving.shift();
-    moving.push(runtime_sensors[current_m.valueOf() + offset]);
-  }
-
-  return data;
-};
-
-/**
- * Get all the runtime_sensor rows indexed by date.
- *
- * @return {array} The runtime_sensor rows.
- */
-beestat.component.card.runtime_sensor_detail.prototype.get_runtime_sensor_by_date_ = function() {
-  var runtime_sensors = {};
-  if (beestat.cache.runtime_sensor !== undefined) {
-    beestat.cache.runtime_sensor.forEach(function(runtime_sensor) {
-      var timestamp = [moment(runtime_sensor.timestamp).valueOf()];
-      if (runtime_sensors[timestamp] === undefined) {
-        // runtime_sensors[timestamp] = [];
-        runtime_sensors[timestamp] = {};
-      }
-      // runtime_sensors[timestamp].push(runtime_sensor);
-      runtime_sensors[timestamp][runtime_sensor.sensor_id] = runtime_sensor;
-    });
-  }
-  return runtime_sensors;
-};
-
-/**
- * Given an array of runtime_sensors, get the average value of one of the
- * keys. Allows and ignores undefined values in order to keep a more accurate
- * moving average.
- *
- * @param {array} runtime_sensors
- * @param {string} sensor_id The index in the sub-array
- *
- * @return {number} The average.
- */
-beestat.component.card.runtime_sensor_detail.prototype.get_average_ = function(runtime_sensors, sensor_id) {
-  var average = 0;
-  var count = 0;
-  for (var i = 0; i < runtime_sensors.length; i++) {
-    if (
-      runtime_sensors[i] !== undefined &&
-      runtime_sensors[i][sensor_id] !== undefined &&
-      runtime_sensors[i][sensor_id].temperature !== null
-    ) {
-      average += runtime_sensors[i][sensor_id].temperature;
-      count++;
-    }
-  }
-
-  if (count === 0) {
-    return null;
-  }
-
-  return average / count;
 };
 
 /**
@@ -510,7 +356,7 @@ beestat.component.card.runtime_sensor_detail.prototype.get_average_ = function(r
  * @return {string} Title
  */
 beestat.component.card.runtime_sensor_detail.prototype.get_title_ = function() {
-  return 'Runtime Detail';
+  return 'Sensor Detail';
 };
 
 /**
@@ -560,25 +406,4 @@ beestat.component.card.runtime_sensor_detail.prototype.data_synced_ = function(r
     current_sync_begin.isSameOrBefore(required_sync_begin) &&
     current_sync_end.isSameOrAfter(required_sync_end)
   );
-};
-
-/**
- * Get a sorted list of all sensors attached to the current thermostat.
- *
- * @return {array} The sensors.
- */
-beestat.component.card.runtime_sensor_detail.prototype.get_sensors_ = function() {
-  // Get and sort all the sensors.
-  var sensors = [];
-  $.values(beestat.cache.sensor).forEach(function(sensor) {
-    if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
-      sensors.push(sensor);
-    }
-  });
-
-  sensors.sort(function(a, b) {
-    return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});
-  });
-
-  return sensors;
 };

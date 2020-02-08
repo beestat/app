@@ -469,7 +469,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.gap_fill_ = function
  * @return {string} The title.
  */
 beestat.component.card.runtime_thermostat_summary.prototype.get_title_ = function() {
-  return 'Runtime Summary';
+  return 'Thermostat Summary';
 };
 
 /**
