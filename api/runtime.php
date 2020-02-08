@@ -634,7 +634,7 @@ class runtime extends cora\api {
                 in_array($capability['type'], ['temperature', 'occupancy']) === true
               ) {
                 if ($value === null) {
-                  $datas[$sensor['sensor_id']][$capability['type']] = null;
+                  continue 3; // If temperature or occupancy are null, ignore
                 } else {
                   $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
                 }
