@@ -211,6 +211,6 @@ beestat.component.card.my_home.prototype.decorate_top_right_ = function(parent) 
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://www.notion.so/My-Home-cc594772031e41a58ff38e04e66cf0ec');
+      window.open('https://doc.beestat.io/cc594772031e41a58ff38e04e66cf0ec');
     }));
 };

@@ -574,7 +574,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://www.notion.so/Runtime-Summary-3225b739ebbc42d68a18260565fda4f1');
+      window.open('https://doc.beestat.io/3225b739ebbc42d68a18260565fda4f1');
     }));
 };
 

@@ -240,6 +240,6 @@ beestat.component.card.temperature_profiles.prototype.decorate_top_right_ = func
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://www.notion.so/Temperature-Profiles-9c0fba6793dd4bc68f798c1516f0ea25');
+      window.open('https://doc.beestat.io/9c0fba6793dd4bc68f798c1516f0ea25');
     }));
 };

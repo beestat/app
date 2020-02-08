@@ -19,7 +19,7 @@ beestat.component.modal.enjoy_beestat.prototype.decorate_contents_ = function(pa
     parent.appendChild($.createElement('p').innerText('Your Patreon account is connected but you\'re not currently a supporter. If you recently became a supporter it could take up to 24 hours to update.'));
   } else {
     parent.appendChild($.createElement('p').innerHTML('Beestat is completely free to use and does not run ads or sell your data. If you want to help, <strong>consider supporting the project on <a href="https://patreon.com/beestat" target="_blank" class="inverted">Patreon</a></strong>. Among other benefits, it will hide this banner permanently.'));
-    parent.appendChild($.createElement('p').innerHTML('Not into Patreon or can\'t afford to give? <a href="https://www.notion.so/beestat/Support-Beestat-bf7f099eb8de486bad51aa6245c00891" target="_blank" class="inverted">Here are some other ways to help</a>.'));
+    parent.appendChild($.createElement('p').innerHTML('Not into Patreon or can\'t afford to give? <a href="https://doc.beestat.io/bf7f099eb8de486bad51aa6245c00891" target="_blank" class="inverted">Here are some other ways to help</a>.'));
   }
 };
 

@@ -205,7 +205,7 @@ beestat.component.card.score.prototype.decorate_top_right_ = function(parent) {
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://www.notion.so/Comparison-Scores-144d5dafbc6c43f7bc72341120717d8a');
+      window.open('https://doc.beestat.io/144d5dafbc6c43f7bc72341120717d8a');
     }));
 };
 
