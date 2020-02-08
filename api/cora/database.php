@@ -524,7 +524,9 @@ final class database extends \mysqli {
         $row[$float_field] = (float) $row[$float_field];
       }
       foreach($boolean_fields as $boolean_field) {
-        $row[$boolean_field] = (boolean) $row[$boolean_field];
+        if($row[$boolean_field] !== null) {
+          $row[$boolean_field] = (boolean) $row[$boolean_field];
+        }
       }
       foreach($json_fields as $json_field) {
         $row[$json_field] = json_decode($row[$json_field], true);
