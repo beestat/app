@@ -78,6 +78,30 @@ class runtime extends cora\api {
           )
         ) {
           $this->sync_forwards($thermostat_id);
+
+          // Update data_begin one last time. This is updated as sync_backwards
+          // runs, but after that it never gets updated to account for data
+          // removed from the database.
+          $runtime_thermostats = $this->database->read(
+            'runtime_thermostat',
+            [
+              'thermostat_id' => $thermostat_id
+            ],
+            [],
+            'timestamp',
+            1
+          );
+
+          $this->api(
+            'thermostat',
+            'update',
+            [
+              'attributes' => [
+                'thermostat_id' => $thermostat_id,
+                'data_begin' => $runtime_thermostats[0]['timestamp']
+              ]
+            ]
+          );
         } else {
           $this->sync_backwards($thermostat_id);
         }
@@ -139,13 +163,14 @@ class runtime extends cora\api {
      * open transactions first though.
      */
     $this->database->commit_transaction();
+    $do_data_end = ($thermostat['data_end'] === null);
     do {
       $this->database->start_transaction();
 
       $chunk_begin = strtotime('-1 week', $chunk_end);
       $chunk_begin = max($chunk_begin, $sync_begin);
 
-      $this->sync_($thermostat['thermostat_id'], $chunk_begin, $chunk_end);
+      $data_dates = $this->sync_($thermostat['thermostat_id'], $chunk_begin, $chunk_end);
 
       // Update the thermostat with the current sync range
       $this->api(
@@ -165,6 +190,35 @@ class runtime extends cora\api {
           ]
         ]
       );
+
+      // Populate data_begin as we continue to sync backwards.
+      if($data_dates['data_begin'] !== null) {
+        $this->api(
+          'thermostat',
+          'update',
+          [
+            'attributes' => [
+              'thermostat_id' => $thermostat['thermostat_id'],
+              'data_begin' => date('Y-m-d H:i:s', $data_dates['data_begin'])
+            ]
+          ]
+        );
+      }
+
+      // Populate data_begin the first loop iteration only.
+      if ($do_data_end === true && $data_dates['data_end'] !== null) {
+        $this->api(
+          'thermostat',
+          'update',
+          [
+            'attributes' => [
+              'thermostat_id' => $thermostat['thermostat_id'],
+              'data_end' => date('Y-m-d H:i:s', $data_dates['data_end'])
+            ]
+          ]
+        );
+        $do_data_end = false;
+      }
 
       // Populate on the fly.
       $this->api(
@@ -192,9 +246,8 @@ class runtime extends cora\api {
   private function sync_forwards($thermostat_id) {
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
-    // Sync from the last sync time until now. Go a couple hours back in time to
-    // cover that 1 hour delay.
-    $sync_begin = strtotime($thermostat['sync_end'] . ' -2 hours');
+    // Sync from the last data until now.
+    $sync_begin = strtotime($thermostat['data_end']);
     $sync_end = time();
 
     $chunk_begin = $sync_begin;
@@ -209,9 +262,11 @@ class runtime extends cora\api {
       $chunk_end = strtotime('+1 week', $chunk_begin);
       $chunk_end = min($chunk_end, $sync_end);
 
-      $this->sync_($thermostat['thermostat_id'], $chunk_begin, $chunk_end);
+      $data_dates = $this->sync_($thermostat['thermostat_id'], $chunk_begin, $chunk_end);
 
-      // Update the thermostat with the current sync range
+      // Update the thermostat with the current sync range. Property sync_end is
+      // when we last synced data to. Property data_end is timestamp of the last
+      // inserted/updated row.
       $this->api(
         'thermostat',
         'update',
@@ -222,6 +277,18 @@ class runtime extends cora\api {
           ]
         ]
       );
+      if ($data_dates['data_end'] !== null) {
+        $this->api(
+          'thermostat',
+          'update',
+          [
+            'attributes' => [
+              'thermostat_id' => $thermostat['thermostat_id'],
+              'data_end' => date('Y-m-d H:i:s', $data_dates['data_end'])
+            ]
+          ]
+        );
+      }
 
       $chunk_begin = $chunk_end;
 
@@ -245,6 +312,8 @@ class runtime extends cora\api {
    * @param int $thermostat_id
    * @param int $begin
    * @param int $end
+   *
+   * @return string The last updated or inserted timestamp.
    */
   private function sync_($thermostat_id, $begin, $end) {
     $this->user_lock($thermostat_id);
@@ -314,12 +383,25 @@ class runtime extends cora\api {
       ]
     );
 
-
-    $this->sync_runtime_thermostat($thermostat, $response);
+    $return = $this->sync_runtime_thermostat($thermostat, $response);
     $this->sync_runtime_sensor($thermostat, $response);
+
+    return $return;
   }
 
+  /**
+   * Sync thermostat data.
+   *
+   * @param array $thermostat The thermostat.
+   * @param array $response The ecobee API response.
+   *
+   * @return array The first and last timestamps created or updated in this
+   * sync.
+   */
   private function sync_runtime_thermostat($thermostat, $response) {
+    $data_begin = null;
+    $data_end = null;
+
     /**
      * Read any existing rows from the database so we know if this is an
      * insert or an update. Note that even though I have $begin and $end
@@ -498,6 +580,11 @@ class runtime extends cora\api {
       $data['setpoint_cool'] = $columns['zoneCoolTemp'] * 10;
       $data['setpoint_heat'] = $columns['zoneHeatTemp'] * 10;
 
+      if ($data_begin === null) {
+        $data_begin = $timestamp;
+      }
+      $data_end = $timestamp;
+
       // Create or update the database
       if(isset($existing_timestamps[$timestamp]) === true) {
         $data['runtime_thermostat_id'] = $existing_timestamps[$timestamp];
@@ -507,8 +594,19 @@ class runtime extends cora\api {
         $existing_timestamps[$timestamp] = $this->database->create('runtime_thermostat', $data, 'id');
       }
     }
+
+    return [
+      'data_begin' => strtotime($data_begin),
+      'data_end' => strtotime($data_end)
+    ];
   }
 
+  /**
+   * Sync sensor data.
+   *
+   * @param array $thermostat The thermostat.
+   * @param array $response The ecobee API response.
+   */
   private function sync_runtime_sensor($thermostat, $response) {
     /**
      * Read any existing rows from the database so we know if this is an
