@@ -125,7 +125,7 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     data.x.push(current_m.clone());
 
     // Without this series the chart will jump to the nearest value if there is a chunk of missing data.
-    data.series.dummy.push(70);
+    data.series.dummy.push(beestat.temperature(70));
     data.metadata.series.dummy.active = true;
 
     if (runtime_sensors[current_m.valueOf()] !== undefined) {
