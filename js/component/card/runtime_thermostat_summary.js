@@ -235,7 +235,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
             data.series.extreme_outdoor_temperature.push(null);
           }
         } else {
-          var value = bucket !== undefined ? bucket[key] : null;
+          var value = (bucket !== undefined) ? bucket[key] : null;
 
           /*
            * If Gap-fill is on, and it's a Gap-fillable value, and it's not the
@@ -256,7 +256,8 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
 
           data.series[key].push(value);
 
-          data.metadata.series[key].active = data.metadata.series[key].active || (value > 0);
+          var this_active = key.includes('temperature') ? true : (value > 0);
+          data.metadata.series[key].active = data.metadata.series[key].active || this_active;
         }
       }
     }
