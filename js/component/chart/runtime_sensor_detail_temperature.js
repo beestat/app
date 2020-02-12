@@ -38,6 +38,12 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
   };
 };
 
+/**
+ * Get legend values. The series name is used for some other magic so this has
+ * to be overridden.
+ *
+ * @return {function} A function that returns the proper legend name.
+ */
 beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_legend_labelFormatter_ = function() {
   var self = this;
   return function() {
@@ -99,6 +105,25 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
         }
       }
     });
+  });
+
+  // Indoor/Outdoor Temperature
+  [
+    'indoor_temperature',
+    'outdoor_temperature'
+  ].forEach(function(series_code) {
+    if (self.data_.metadata.series[series_code].active === true) {
+      series.push({
+        'name': series_code,
+        'data': self.data_.series[series_code],
+        'color': beestat.series[series_code].color,
+        'yAxis': 0,
+        'type': 'spline',
+        'dashStyle': (series_code === 'indoor_temperature') ? 'Solid' : 'ShortDash',
+        'lineWidth': (series_code === 'indoor_temperature') ? 2 : 1,
+        'visible': false
+      });
+    }
   });
 
   series.push({

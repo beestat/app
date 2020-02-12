@@ -107,6 +107,13 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
        */
       'data': {}
     };
+
+    if (beestat.series[series_code] !== undefined) {
+      data.metadata.series[series_code].name = beestat.series[series_code].name;
+    } else {
+      data.metadata.series[series_code].name = null;
+    }
+
     durations[series_code] = {'seconds': 0};
   });
 
