@@ -313,7 +313,7 @@ class runtime extends cora\api {
    * @param int $begin
    * @param int $end
    *
-   * @return string The last updated or inserted timestamp.
+   * @return array The first and last updated or inserted timestamp.
    */
   private function sync_($thermostat_id, $begin, $end) {
     $this->user_lock($thermostat_id);
@@ -596,8 +596,8 @@ class runtime extends cora\api {
     }
 
     return [
-      'data_begin' => strtotime($data_begin),
-      'data_end' => strtotime($data_end)
+      'data_begin' => (($data_begin === null) ? null : strtotime($data_begin)),
+      'data_end' => (($data_end === null) ? null : strtotime($data_end))
     ];
   }
 
