@@ -53,6 +53,11 @@ class external_api extends cora\api {
    * @return string Result on success, false on failure.
    */
   protected function curl($arguments) {
+    $user = $this->api('user', 'get', $this->session->get_user_id());
+    if ($user['debug'] === true) {
+      $this::$log_mysql = 'all';
+    }
+
     $this->request_timestamp = time();
     $this->request_timestamp_microtime = $this->microtime();
 
@@ -61,7 +66,6 @@ class external_api extends cora\api {
     curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($curl_handle, CURLOPT_TIMEOUT, 60);
     curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
-    // curl_setopt($curl_handle, CURLOPT_HEADER, true);
 
     if(isset($arguments['method']) === true && $arguments['method'] === 'POST') {
       curl_setopt($curl_handle, CURLOPT_POST, true);
