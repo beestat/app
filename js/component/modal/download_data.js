@@ -136,6 +136,12 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
       'button': new beestat.component.button()
     },
     {
+      'label': 'Yesterday',
+      'range_begin': now.clone().subtract(1, 'day'),
+      'range_end': now.clone().subtract(1, 'day'),
+      'button': new beestat.component.button()
+    },
+    {
       'label': 'This Week',
       'range_begin': now.clone().startOf('week'),
       'range_end': now.clone(),
