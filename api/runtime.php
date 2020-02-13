@@ -246,8 +246,12 @@ class runtime extends cora\api {
   private function sync_forwards($thermostat_id) {
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
-    // Sync from the last data until now.
-    $sync_begin = strtotime($thermostat['data_end']);
+    // Sync from the last data until now. You would think going backwards in
+    // time is unnecessary, but there have been some ecobee bugs where their API
+    // returns the wrong data. Frankly, this is easier than trying to be super
+    // precise and then missing data. Three hours should be enough to catch
+    // everything.
+    $sync_begin = strtotime($thermostat['data_end'] . ' -3 hour');
     $sync_end = time();
 
     $chunk_begin = $sync_begin;
