@@ -6,7 +6,7 @@ beestat.component.chart = function() {
   var self = this;
 
   this.addEventListener('render', function() {
-    self.chart_.reflow();
+    self.reflow();
   });
 
   beestat.component.apply(this, arguments);
@@ -102,6 +102,8 @@ beestat.component.chart.prototype.get_options_legend_enabled_ = function() {
  * @return {object} The plotOptions.
  */
 beestat.component.chart.prototype.get_options_plotOptions_ = function() {
+  var self = this;
+
   return {
     'series': {
       'animation': false,
@@ -116,7 +118,15 @@ beestat.component.chart.prototype.get_options_plotOptions_ = function() {
           'opacity': 1
         }
       },
-      'connectNulls': this.get_options_plotOptions_series_connectNulls_()
+      'connectNulls': this.get_options_plotOptions_series_connectNulls_(),
+      'events': {
+        'legendItemClick': function() {
+          // Delay the event dispatch so the series is actually toggled to the correct visibility.
+          setTimeout(function() {
+            self.dispatchEvent('legend_item_click');
+          }, 0);
+        }
+      }
     },
     'column': {
       'pointPadding': 0,
@@ -173,6 +183,7 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     'spacing': this.get_options_chart_spacing_(),
     // For consistent left spacing on charts with no y-axis values
     'marginLeft': this.get_options_chart_marginLeft_(),
+    'marginRight': this.get_options_chart_marginRight_(),
     'zoomType': this.get_options_chart_zoomType_(),
     'panning': true,
     'panKey': 'ctrl',
@@ -193,6 +204,15 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
  * @return {number} The left margin for the chart.
  */
 beestat.component.chart.prototype.get_options_chart_marginLeft_ = function() {
+  return undefined;
+};
+
+/**
+ * Get the right margin for the chart.
+ *
+ * @return {number} The right margin for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_marginRight_ = function() {
   return undefined;
 };
 
@@ -629,4 +649,25 @@ beestat.component.chart.prototype.sync_crosshair = function(source_chart) {
       }
     );
   });
+};
+
+/**
+ * Reflow the chart; useful if the GUI changes and the chart needs resized.
+ *
+ * @link https://api.highcharts.com/class-reference/Highcharts.Chart#reflow
+ */
+beestat.component.chart.prototype.reflow = function() {
+  this.chart_.reflow();
+};
+
+/**
+ * A generic function to update any element of the chart. Elements can be
+ * enabled and disabled, moved, re-styled, re-formatted etc.
+ *
+ * @param {object} options The options to change.
+ *
+ * @link https://api.highcharts.com/class-reference/Highcharts.Chart#update
+ */
+beestat.component.chart.prototype.update = function(options) {
+  this.chart_.update(options);
 };

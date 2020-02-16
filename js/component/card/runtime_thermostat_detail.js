@@ -74,6 +74,41 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
     });
   });
 
+  /*
+   * Keep consistent right margins when a secondary y-axis is toggled on the
+   * temperature chart.
+   */
+  this.charts_.temperature.addEventListener('legend_item_click', function() {
+    var need_equipment_margin_right = false;
+    this.get_chart().series.forEach(function(series) {
+      if (
+        series.yAxis.opposite === true &&
+        series.visible === true
+      ) {
+        need_equipment_margin_right = true;
+      }
+    });
+
+    var options;
+    if (need_equipment_margin_right === true) {
+      options = {
+        'chart': {
+          'marginRight': 45
+        }
+      };
+      self.charts_.equipment.update(options);
+      self.charts_.temperature.update(options);
+    } else {
+      options = {
+        'chart': {
+          'marginRight': 0
+        }
+      };
+      self.charts_.equipment.update(options);
+      self.charts_.temperature.update(options);
+    }
+  });
+
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var required_begin;

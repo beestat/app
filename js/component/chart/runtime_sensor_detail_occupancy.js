@@ -184,5 +184,5 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_le
  * @return {number} The left margin for the chart.
  */
 beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_chart_marginLeft_ = function() {
-  return 40;
+  return 45;
 };

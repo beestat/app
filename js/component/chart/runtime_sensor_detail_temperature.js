@@ -95,15 +95,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       'color': colors[i],
       'yAxis': 0,
       'type': 'spline',
-      'lineWidth': 1,
-      'events': {
-        'legendItemClick': function() {
-          // Delay the event dispatch so the series is actually toggled to the correct visibility.
-          setTimeout(function() {
-            self.dispatchEvent('legend_item_click');
-          }, 0);
-        }
-      }
+      'lineWidth': 1
     });
   });
 
@@ -266,4 +258,13 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
  */
 beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_chart_height_ = function() {
   return 300;
+};
+
+/**
+ * Get the left margin for the chart.
+ *
+ * @return {number} The left margin for the chart.
+ */
+beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_chart_marginLeft_ = function() {
+  return 45;
 };

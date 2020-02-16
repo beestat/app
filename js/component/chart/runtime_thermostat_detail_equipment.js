@@ -127,5 +127,5 @@ beestat.component.chart.runtime_thermostat_detail_equipment.prototype.get_option
  * @return {number} The left margin for the chart.
  */
 beestat.component.chart.runtime_thermostat_detail_equipment.prototype.get_options_chart_marginLeft_ = function() {
-  return 40;
+  return 45;
 };
