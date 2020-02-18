@@ -744,7 +744,7 @@ class runtime extends cora\api {
 
         // Create or update the database
         foreach ($datas as $data) {
-          if(isset($data['temperature']) === true && isset($data['occupancy']) === true) {
+          if(isset($data['temperature']) === true || isset($data['occupancy']) === true) {
             if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
               $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
               $this->database->update('runtime_sensor', $data, 'id');
