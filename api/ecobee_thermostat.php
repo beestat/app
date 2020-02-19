@@ -204,7 +204,6 @@ class ecobee_thermostat extends cora\crud {
 
       $attributes['property'] = $this->get_property($thermostat, $ecobee_thermostat);
       $attributes['filters'] = $this->get_filters($thermostat, $ecobee_thermostat);
-      $attributes['alerts'] = $this->get_alerts($thermostat, $ecobee_thermostat);
       $attributes['weather'] = $this->get_weather($thermostat, $ecobee_thermostat);
       $attributes['time_zone'] = $this->get_time_zone($thermostat, $ecobee_thermostat);
 
@@ -224,6 +223,12 @@ class ecobee_thermostat extends cora\crud {
           'detected' => $detected_system_type
         ];
       }
+
+      $attributes['alerts'] = $this->get_alerts(
+        $thermostat,
+        $ecobee_thermostat,
+        $attributes['system_type']
+      );
 
       $thermostat_group = $this->get_thermostat_group(
         $thermostat,
@@ -513,7 +518,7 @@ class ecobee_thermostat extends cora\crud {
    *
    * @return array
    */
-  private function get_alerts($thermostat, $ecobee_thermostat) {
+  private function get_alerts($thermostat, $ecobee_thermostat, $system_type) {
     // Get a list of all ecobee thermostat alerts
     $new_alerts = [];
     foreach($ecobee_thermostat['alerts'] as $ecobee_thermostat_alert) {
@@ -532,8 +537,34 @@ class ecobee_thermostat extends cora\crud {
       $new_alerts[$alert['guid']] = $alert;
     }
 
+    // Has heat or cool
+    if($system_type['reported']['heat'] !== null) {
+      $system_type_heat = $system_type['reported']['heat'];
+    } else {
+      $system_type_heat = $system_type['detected']['heat'];
+    }
+    if($system_type['reported']['heat_auxiliary'] !== null) {
+      $system_type_heat_auxiliary = $system_type['reported']['heat_auxiliary'];
+    } else {
+      $system_type_heat_auxiliary = $system_type['detected']['heat_auxiliary'];
+    }
+    $has_heat = (
+      $system_type_heat !== 'none' ||
+      $system_type_heat_auxiliary !== 'none'
+    );
+
+    if($system_type['reported']['cool'] !== null) {
+      $system_type_cool = $system_type['reported']['cool'];
+    } else {
+      $system_type_cool = $system_type['detected']['cool'];
+    }
+    $has_cool = ($system_type_cool !== 'none');
+
     // Cool Differential Temperature
-    if($ecobee_thermostat['settings']['stage1CoolingDifferentialTemp'] / 10 === 0.5) {
+    if(
+      $has_cool === true &&
+      $ecobee_thermostat['settings']['stage1CoolingDifferentialTemp'] / 10 === 0.5
+    ) {
       $alert = [
         'timestamp' => date('Y-m-d H:i:s'),
         'text' => 'Cool Differential Temperature is set to 0.5°F; we recommend at least 1.0°F',
@@ -548,7 +579,10 @@ class ecobee_thermostat extends cora\crud {
     }
 
     // Heat Differential Temperature
-    if($ecobee_thermostat['settings']['stage1HeatingDifferentialTemp'] / 10 === 0.5) {
+    if(
+      $has_heat === true &&
+      $ecobee_thermostat['settings']['stage1HeatingDifferentialTemp'] / 10 === 0.5
+    ) {
       $alert = [
         'timestamp' => date('Y-m-d H:i:s'),
         'text' => 'Heat Differential Temperature is set to 0.5°F; we recommend at least 1.0°F',
