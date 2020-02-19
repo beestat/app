@@ -143,6 +143,7 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
         data.series['temperature_' + runtime_sensor.sensor_id].push(temperature_moving);
         y_min_max(temperature_moving);
         data.metadata.series['temperature_' + runtime_sensor.sensor_id].active = true;
+        data.metadata.series['temperature_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = temperature_moving;
 
         if (runtime_sensor.occupancy === true) {
           let swimlane_properties =

@@ -67,10 +67,8 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
   // Sync extremes and crosshair.
   Object.values(this.charts_).forEach(function(source_chart) {
     Object.values(self.charts_).forEach(function(target_chart) {
-      if (source_chart !== target_chart) {
-        target_chart.sync_extremes(source_chart);
-        target_chart.sync_crosshair(source_chart);
-      }
+      target_chart.sync_extremes(source_chart);
+      target_chart.sync_crosshair(source_chart);
     });
   });
 

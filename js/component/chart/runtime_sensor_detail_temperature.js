@@ -161,64 +161,76 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
   var self = this;
 
   return function() {
+    var points = [];
+    var x = this.x;
+
     var sections = [];
     var group = [];
 
-    // Get all the point values and index them by series_code for reference.
-    var values = {};
-    this.points.forEach(function(point) {
-      values[point.series.name] = point.y;
-
-      var occupancy_key = point.series.name.replace('temperature', 'occupancy');
-      if (self.data_.metadata.series[occupancy_key] !== undefined) {
-        values[occupancy_key] =
-          self.data_.metadata.series[occupancy_key].data[point.x.valueOf()];
+    var visible_series = [];
+    self.get_chart().series.forEach(function(series) {
+      if (series.visible === true) {
+        visible_series.push(series.name);
       }
     });
 
-    /**
-     * Get a couple of other properties and index them by series_code for
-     * reference. This dives up to the chart itself because the tooltip shows
-     * all series unless explicitly disabled and those aren't always in the
-     * points array.
-     */
-    var colors = {};
-    var visible = {};
-    self.chart_.series.forEach(function(series) {
-      colors[series.name] = series.color;
-      visible[series.name] = series.visible;
-    });
-
-    for (var series_code in self.data_.series) {
-      var label;
-      var value;
-      var color;
-
-      if (visible[series_code] === true) {
-        label = self.data_.metadata.series[series_code].name;
-        color = colors[series_code];
-        if (values[series_code] === undefined) {
-          value = '-';
-        } else {
-          value = beestat.temperature({
-            'temperature': values[series_code],
-            'convert': false,
-            'units': true
-          });
-        }
-
-        var occupancy_key = series_code.replace('temperature', 'occupancy');
-        if (values[occupancy_key] !== undefined && values[occupancy_key] !== null) {
-          value += ' ●';
-        }
-
-        group.push({
-          'label': label,
-          'value': value,
-          'color': color
+    // Add points which can be toggled.
+    [
+      'indoor_temperature',
+      'outdoor_temperature'
+    ].forEach(function(series_code) {
+      if (
+        self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined &&
+        visible_series.includes(series_code) === true
+      ) {
+        points.push({
+          'series_code': series_code,
+          'value': self.data_.metadata.series[series_code].data[x.valueOf()],
+          'color': beestat.series[series_code].color
         });
       }
-    }
+    });
+
+    var occupancy = {};
+    self.get_chart().series.forEach(function(series) {
+      if (series.name.substring(0, 12) === 'temperature_') {
+        points.push({
+          'series_code': series.name,
+          'value': self.data_.metadata.series[series.name].data[x.valueOf()],
+          'color': series.color
+        });
+        var occupancy_key = series.name.replace('temperature', 'occupancy');
+        occupancy[occupancy_key] =
+          (self.data_.metadata.series[occupancy_key].data[x.valueOf()] !== undefined)
+      }
+    });
+
+    points.forEach(function(point) {
+      var label;
+      var value;
+
+      label = self.data_.metadata.series[point.series_code].name;
+      if (point.value === undefined) {
+        value = '-';
+      } else {
+        value = beestat.temperature({
+          'temperature': point.value,
+          'convert': false,
+          'units': true
+        });
+      }
+
+      var occupancy_key = point.series_code.replace('temperature', 'occupancy');
+      if (occupancy[occupancy_key] === true) {
+        value += ' ●';
+      }
+
+      group.push({
+        'label': label,
+        'value': value,
+        'color': point.color
+      });
+    });
 
     if (group.length === 0) {
       group.push({

@@ -305,3 +305,21 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
     );
   };
 };
+
+/**
+ * Remove the crosshair width so it is one series wide.
+ *
+ * @return {object} The crosshair width.
+ */
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_crosshair_width_ = function() {
+  return undefined;
+};
+
+/**
+ * Get the crosshair snap.
+ *
+ * @return {object} The crosshair snap.
+ */
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_crosshair_snap_ = function() {
+  return true;
+};

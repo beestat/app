@@ -73,10 +73,8 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
   // Sync extremes and crosshair.
   Object.values(this.charts_).forEach(function(source_chart) {
     Object.values(self.charts_).forEach(function(target_chart) {
-      if (source_chart !== target_chart) {
-        target_chart.sync_extremes(source_chart);
-        target_chart.sync_crosshair(source_chart);
-      }
+      target_chart.sync_extremes(source_chart);
+      target_chart.sync_crosshair(source_chart);
     });
   });
 
@@ -153,25 +151,6 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
         ];
         operator = 'between';
       }
-
-/*      new beestat.api()
-        .add_call(
-          'runtime_thermostat',
-          'read',
-          {
-            'attributes': {
-              'thermostat_id': thermostat.thermostat_id,
-              'timestamp': {
-                'value': value,
-                'operator': operator
-              }
-            }
-          }
-        )
-        .set_callback(function(response) {
-          beestat.cache.set('runtime_thermostat', response);
-        })
-        .send();*/
 
       var api_call = new beestat.api();
       beestat.sensor.get_sorted().forEach(function(sensor) {

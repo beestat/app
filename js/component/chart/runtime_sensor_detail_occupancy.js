@@ -96,10 +96,6 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_yA
       // Keeps the chart from ending on a multiple of whatever the tick interval gets set to.
       'endOnTick': false,
 
-      // 'min': 0,
-      // 'minRange': 100,
-      // 'ceiling': 100
-
       'reversed': true,
       'gridLineWidth': 0,
       'title': {'text': null},
@@ -147,11 +143,6 @@ beestat.component.chart.runtime_sensor_detail_occupancy.get_swimlane_properties 
 
   // Make the lines slightly less tall to create space between them.
   line_width -= spacing;
-
-  // Center within the swimlane area.
-  // var occupied_space = (line_width * count) + (spacing * count);
-  // var empty_space = height - occupied_space;
-  // y += (empty_space / 2);
 
   return {
     'line_width': line_width,

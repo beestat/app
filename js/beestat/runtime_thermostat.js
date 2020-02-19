@@ -226,6 +226,9 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
           runtime_thermostat.setpoint_heat
         );
         data.series.setpoint_heat.push(setpoint_heat);
+        data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_heat;
+        y_min_max(outdoor_temperature_moving);
+
         y_min_max(setpoint_heat);
 
         data.metadata.series.setpoint_heat.active = true;
@@ -242,6 +245,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
           runtime_thermostat.setpoint_cool
         );
         data.series.setpoint_cool.push(setpoint_cool);
+        data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_cool;
         y_min_max(setpoint_cool);
 
         data.metadata.series.setpoint_cool.active = true;

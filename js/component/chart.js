@@ -240,20 +240,6 @@ beestat.component.chart.prototype.get_options_chart_events_ = function() {
 };
 
 /**
- * Get the spacing for the chart.
- *
- * @return {number} The spacing for the chart.
- */
-// beestat.component.chart.prototype.get_options_chart_spacing_ = function() {
-//   return [
-//     beestat.style.size.gutter,
-//     0,
-//     0,
-//     0
-//   ];
-// };
-
-/**
  * Get the height of the chart.
  *
  * @return {number} The height of the chart.
@@ -401,15 +387,36 @@ beestat.component.chart.prototype.get_options_xAxis_ = function() {
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
     },
+    'crosshair': {
+      'width': this.get_options_xAxis_crosshair_width_(),
+      'zIndex': 100,
+      'color': 'rgba(255, 255, 255, 0.2)',
+      'snap': this.get_options_xAxis_crosshair_snap_()
+    },
     'events': {
       'afterSetExtremes': function() {
-        // Make sure the extremes are set prior to firing the event.
-        // setTimeout(function() {
-          self.dispatchEvent('after_set_extremes');
-        // }, 0)
+        self.dispatchEvent('after_set_extremes');
       }
     }
   };
+};
+
+/**
+ * Get the crosshair width.
+ *
+ * @return {object} The crosshair width.
+ */
+beestat.component.chart.prototype.get_options_xAxis_crosshair_width_ = function() {
+  return 2;
+};
+
+/**
+ * Get the crosshair snap.
+ *
+ * @return {object} The crosshair snap.
+ */
+beestat.component.chart.prototype.get_options_xAxis_crosshair_snap_ = function() {
+  return false;
 };
 
 /**
@@ -452,13 +459,7 @@ beestat.component.chart.prototype.get_options_tooltip_ = function() {
     'shadow': false,
     'backgroundColor': null,
     'followPointer': true,
-    'crosshairs': {
-      'width': 1,
-      'zIndex': 100,
-      'color': beestat.style.color.gray.light,
-      'dashStyle': 'shortDot',
-      'snap': false
-    },
+    'hideDelay': 1,
     'positioner': this.get_options_tooltip_positioner_(),
     'formatter': this.get_options_tooltip_formatter_()
   };
@@ -639,15 +640,21 @@ beestat.component.chart.prototype.sync_crosshair = function(source_chart) {
       event_type,
       function(e) {
         var point = self.get_chart().series[0].searchPoint(
-          self.get_chart().pointer.normalize(e),
+          source_chart.get_chart().pointer.normalize(e),
           true
         );
         if (point !== undefined) {
-          point.onMouseOver();
-          point.series.chart.xAxis[0].drawCrosshair(event, this);
+          self.get_chart().tooltip.refresh([point]);
+          self.get_chart().xAxis[0].drawCrosshair(e);
         }
       }
     );
+  });
+
+  // When I leave the source chart, hide the crosshair and tooltip in this chart.
+  source_chart.get_chart().container.addEventListener('mouseout', function() {
+    self.get_chart().xAxis[0].hideCrosshair();
+    self.get_chart().tooltip.hide(1);
   });
 };
 

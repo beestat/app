@@ -182,7 +182,8 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
   var self = this;
 
   return function() {
-    var self2 = this;
+    var points = [];
+    var x = this.x;
 
     var sections = [];
     var groups = {
@@ -191,7 +192,34 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'equipment': []
     };
 
-    // Add a bunch of fake points so they appear in the tooltip.
+    var visible_series = [];
+    self.get_chart().series.forEach(function(series) {
+      if (series.visible === true) {
+        visible_series.push(series.name);
+      }
+    });
+
+    // Add points which can be toggled.
+    [
+      'indoor_temperature',
+      'outdoor_temperature',
+      'setpoint_heat',
+      'setpoint_cool',
+      'indoor_humidity',
+      'outdoor_humidity'
+    ].forEach(function(series_code) {
+      if (
+        self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined &&
+        visible_series.includes(series_code) === true
+      ) {
+        points.push({
+          'series_code': series_code,
+          'value': self.data_.metadata.series[series_code].data[x.valueOf()]
+        });
+      }
+    });
+
+    // Add points which are, more or less, always present.
     [
       'compressor_heat_1',
       'compressor_heat_2',
@@ -216,21 +244,12 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'calendar_event_other',
       'calendar_event_custom'
     ].forEach(function(series_code) {
-      if (self.data_.metadata.series[series_code].data[self2.x.valueOf()] !== undefined) {
-        self2.points.push({
-          'series': {
-            'name': series_code,
-            'color': beestat.series[series_code].color
-          },
-          'x': self2.x,
-          'y': self.data_.metadata.series[series_code].data[self2.x.valueOf()]
+      if (self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined) {
+        points.push({
+          'series_code': series_code,
+          'value': self.data_.metadata.series[series_code].data[x.valueOf()]
         });
       }
-    });
-
-    var values = {};
-    this.points.forEach(function(point) {
-      values[point.series.name] = point.y;
     });
 
     // HVAC Mode
@@ -268,72 +287,56 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       });
     }
 
-    this.points.forEach(function(point) {
+    points.forEach(function(point) {
       var label;
       var value;
       var color;
       var group;
 
       if (
-        point.series.name.includes('temperature') === true ||
-        point.series.name.includes('setpoint') === true
+        point.series_code.includes('temperature') === true ||
+        point.series_code.includes('setpoint') === true
       ) {
         group = 'data';
-        label = beestat.series[point.series.name].name;
-        color = point.series.color;
-
-        if (
-          point.series.name === 'indoor_temperature' ||
-          point.series.name === 'outdoor_temperature'
-        ) {
-          value = self.data_.metadata.series[point.series.name].data[point.x.valueOf()];
-        } else {
-          value = values[point.series.name];
-        }
+        label = beestat.series[point.series_code].name;
+        color = beestat.series[point.series_code].color;
+        value = self.data_.metadata.series[point.series_code].data[x.valueOf()];
 
         value = beestat.temperature({
           'temperature': value,
           'convert': false,
           'units': true
         });
-      } else if (point.series.name.includes('humidity') === true) {
+      } else if (point.series_code.includes('humidity') === true) {
         group = 'data';
-        label = beestat.series[point.series.name].name;
-        color = point.series.color;
-
-        if (
-          point.series.name === 'indoor_humidity' ||
-          point.series.name === 'outdoor_humidity'
-        ) {
-          value = self.data_.metadata.series[point.series.name].data[point.x.valueOf()];
-        } else {
-          value = values[point.series.name];
-        }
+        label = beestat.series[point.series_code].name;
+        color = beestat.series[point.series_code].color;
+        value = self.data_.metadata.series[point.series_code].data[x.valueOf()];
 
         value = Math.round(value) + '%';
       } else if (
-        point.series.name === 'fan' ||
-        point.series.name === 'compressor_heat_1' ||
-        point.series.name === 'auxiliary_heat_1' ||
-        point.series.name === 'compressor_cool_1' ||
-        point.series.name === 'dehumidifier' ||
-        point.series.name === 'economizer' ||
-        point.series.name === 'humidifier' ||
-        point.series.name === 'ventilator'
+        point.series_code === 'fan' ||
+        point.series_code === 'compressor_heat_1' ||
+        point.series_code === 'auxiliary_heat_1' ||
+        point.series_code === 'compressor_cool_1' ||
+        point.series_code === 'dehumidifier' ||
+        point.series_code === 'economizer' ||
+        point.series_code === 'humidifier' ||
+        point.series_code === 'ventilator'
       ) {
         group = 'equipment';
-        label = beestat.series[point.series.name].name;
-        color = point.series.color;
+        label = beestat.series[point.series_code].name;
+        color = beestat.series[point.series_code].color;
         value = beestat.time(
-          self.data_.metadata.series[point.series.name].durations[point.x.valueOf()]
+          self.data_.metadata.series[point.series_code].durations[x.valueOf()]
         );
       } else if (
-        point.series.name.includes('calendar_event')
+        point.series_code.includes('calendar_event')
       ) {
         group = 'mode';
         label = 'Comfort Profile';
-        color = point.series.color;
-        value = self.data_.metadata.series.calendar_event_name[point.x.valueOf()];
+        color = beestat.series[point.series_code].color;
+        value = self.data_.metadata.series.calendar_event_name[x.valueOf()];
       } else {
         return;
       }
@@ -346,39 +349,39 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
 
       // Show stage 2 duration on stage 1, if applicable.
       if (
-        point.series.name === 'compressor_heat_1' &&
-        self.data_.metadata.series.compressor_heat_2.durations[point.x.valueOf()].seconds > 0
+        point.series_code === 'compressor_heat_1' &&
+        self.data_.metadata.series.compressor_heat_2.durations[x.valueOf()].seconds > 0
       ) {
         groups.equipment.push({
           'label': beestat.series.compressor_heat_2.name,
           'value': beestat.time(
-            self.data_.metadata.series.compressor_heat_2.durations[point.x.valueOf()]
+            self.data_.metadata.series.compressor_heat_2.durations[x.valueOf()]
           ),
           'color': beestat.series.compressor_heat_2.color
         });
       }
 
       if (
-        point.series.name === 'auxiliary_heat_1' &&
-        self.data_.metadata.series.auxiliary_heat_2.durations[point.x.valueOf()].seconds > 0
+        point.series_code === 'auxiliary_heat_1' &&
+        self.data_.metadata.series.auxiliary_heat_2.durations[x.valueOf()].seconds > 0
       ) {
         groups.equipment.push({
           'label': beestat.series.auxiliary_heat_2.name,
           'value': beestat.time(
-            self.data_.metadata.series.auxiliary_heat_2.durations[point.x.valueOf()]
+            self.data_.metadata.series.auxiliary_heat_2.durations[x.valueOf()]
           ),
           'color': beestat.series.auxiliary_heat_2.color
         });
       }
 
       if (
-        point.series.name === 'compressor_cool_1' &&
-        self.data_.metadata.series.compressor_cool_2.durations[point.x.valueOf()].seconds > 0
+        point.series_code === 'compressor_cool_1' &&
+        self.data_.metadata.series.compressor_cool_2.durations[x.valueOf()].seconds > 0
       ) {
         groups.equipment.push({
           'label': beestat.series.compressor_cool_2.name,
           'value': beestat.time(
-            self.data_.metadata.series.compressor_cool_2.durations[point.x.valueOf()]
+            self.data_.metadata.series.compressor_cool_2.durations[x.valueOf()]
           ),
           'color': beestat.series.compressor_cool_2.color
         });
