@@ -140,6 +140,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
     {
       'gridLineColor': beestat.style.color.bluegray.light,
       'gridLineDashStyle': 'longdash',
+      'allowDecimals': false,
       'title': {'text': null},
       'labels': {
         'style': {'color': beestat.style.color.gray.base},
