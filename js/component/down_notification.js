@@ -27,7 +27,7 @@ beestat.component.down_notification.prototype.decorate_ = function(parent) {
   });
 
   var last_update = moment.utc(beestat.user.get().sync_status.thermostat).local()
-    .format('h:m a');
+    .format('h:mm a');
   div.appendChild($.createElement('p').innerText('Ecobee seems to be down. Your data will update as soon as possible. Last update was at ' + last_update + '.'));
 
   parent.appendChild(div);
