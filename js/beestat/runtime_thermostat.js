@@ -152,12 +152,8 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
 
   // Initialize moving average.
   var moving = [];
-  var moving_count;
-  if (beestat.setting('runtime_thermostat_detail_smoothing') === true) {
-    moving_count = 10;
-  } else {
-    moving_count = 1;
-  }
+  var moving_count = 15;
+
   var offset;
   for (var i = 0; i < moving_count; i++) {
     offset = (i - Math.floor(moving_count / 2)) * 300000;
@@ -181,29 +177,8 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
 
     if (runtime_thermostat !== undefined) {
       /**
-       * Things that use the moving average.
+       * Outdoor temp/humidity (moving average).
        */
-      var indoor_humidity_moving = beestat.runtime_thermostat.get_average_(moving, 'indoor_humidity');
-      data.series.indoor_humidity.push(indoor_humidity_moving);
-      data.metadata.series.indoor_humidity.data[current_m.valueOf()] =
-        runtime_thermostat.indoor_humidity;
-      data.metadata.series.indoor_humidity.active = true;
-
-      var outdoor_humidity_moving = beestat.runtime_thermostat.get_average_(moving, 'outdoor_humidity');
-      data.series.outdoor_humidity.push(outdoor_humidity_moving);
-      data.metadata.series.outdoor_humidity.data[current_m.valueOf()] =
-        runtime_thermostat.outdoor_humidity;
-      data.metadata.series.outdoor_humidity.active = true;
-
-      var indoor_temperature_moving = beestat.temperature(
-        beestat.runtime_thermostat.get_average_(moving, 'indoor_temperature')
-      );
-      data.series.indoor_temperature.push(indoor_temperature_moving);
-      data.metadata.series.indoor_temperature.data[current_m.valueOf()] =
-        beestat.temperature(runtime_thermostat.indoor_temperature);
-      y_min_max(indoor_temperature_moving);
-      data.metadata.series.indoor_temperature.active = true;
-
       var outdoor_temperature_moving = beestat.temperature(
         beestat.runtime_thermostat.get_average_(moving, 'outdoor_temperature')
       );
@@ -212,6 +187,32 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
         beestat.temperature(runtime_thermostat.outdoor_temperature);
       y_min_max(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.active = true;
+
+      var outdoor_humidity_moving = beestat.runtime_thermostat.get_average_(
+        moving,
+        'outdoor_humidity'
+      );
+      data.series.outdoor_humidity.push(outdoor_humidity_moving);
+      data.metadata.series.outdoor_humidity.data[current_m.valueOf()] =
+        runtime_thermostat.outdoor_humidity;
+      data.metadata.series.outdoor_humidity.active = true;
+
+      /**
+       * Indoor temp/humidity.
+       */
+      data.series.indoor_humidity.push(runtime_thermostat.indoor_humidity);
+      data.metadata.series.indoor_humidity.data[current_m.valueOf()] =
+        runtime_thermostat.indoor_humidity;
+      data.metadata.series.indoor_humidity.active = true;
+
+      var indoor_temperature = beestat.temperature(
+        runtime_thermostat.indoor_temperature
+      );
+      data.series.indoor_temperature.push(indoor_temperature);
+      data.metadata.series.indoor_temperature.data[current_m.valueOf()] =
+        indoor_temperature;
+      y_min_max(indoor_temperature);
+      data.metadata.series.indoor_temperature.active = true;
 
       /**
        * Add setpoints, but only when relevant. For example: Only show the

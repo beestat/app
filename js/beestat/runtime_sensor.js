@@ -23,14 +23,6 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     }
   };
 
-  // A couple private helper functions for manipulating the min/max y values.
-  var y_min_max = function(value) {
-    if (value !== null) {
-      data.metadata.chart.y_min = Math.min(data.metadata.chart.y_min, value);
-      data.metadata.chart.y_max = Math.max(data.metadata.chart.y_max, value);
-    }
-  };
-
   // Duration objects. These are passed by reference into the metadata.
   var durations = {};
 
@@ -102,20 +94,6 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
 
   var runtime_sensors = beestat.runtime_sensor.get_runtime_sensors_by_date_();
 
-  // Initialize moving average.
-  var moving = [];
-  var moving_count;
-  if (beestat.setting('runtime_sensor_detail_smoothing') === true) {
-    moving_count = 5;
-  } else {
-    moving_count = 1;
-  }
-  var offset;
-  for (var i = 0; i < moving_count; i++) {
-    offset = (i - Math.floor(moving_count / 2)) * 300000;
-    moving.push(runtime_sensors[begin_m.valueOf() + offset]);
-  }
-
   // Loop.
   var current_m = begin_m;
   while (
@@ -137,13 +115,10 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
           return;
         }
 
-        var temperature_moving = beestat.temperature(
-          beestat.runtime_sensor.get_average_(moving, sensor.sensor_id)
-        );
-        data.series['temperature_' + runtime_sensor.sensor_id].push(temperature_moving);
-        y_min_max(temperature_moving);
+        var temperature = beestat.temperature(runtime_sensor.temperature);
+        data.series['temperature_' + runtime_sensor.sensor_id].push(temperature);
         data.metadata.series['temperature_' + runtime_sensor.sensor_id].active = true;
-        data.metadata.series['temperature_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = temperature_moving;
+        data.metadata.series['temperature_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = temperature;
 
         if (runtime_sensor.occupancy === true) {
           let swimlane_properties =
@@ -181,14 +156,6 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     }
 
     current_m.add(5, 'minute');
-
-    /**
-     * Remove the first row in the moving average and add the next one. Yes
-     * this could introduce undefined values; that's ok. Those are handled in
-     * the get_average_ function.
-     */
-    moving.shift();
-    moving.push(runtime_sensors[current_m.valueOf() + offset]);
   }
 
   return data;
@@ -211,35 +178,4 @@ beestat.runtime_sensor.get_runtime_sensors_by_date_ = function() {
     });
   }
   return runtime_sensors;
-};
-
-/**
- * Given an array of runtime_sensors, get the average value of one of the
- * keys. Allows and ignores undefined values in order to keep a more accurate
- * moving average.
- *
- * @param {array} runtime_sensors
- * @param {string} sensor_id The index in the sub-array
- *
- * @return {number} The average.
- */
-beestat.runtime_sensor.get_average_ = function(runtime_sensors, sensor_id) {
-  var average = 0;
-  var count = 0;
-  for (var i = 0; i < runtime_sensors.length; i++) {
-    if (
-      runtime_sensors[i] !== undefined &&
-      runtime_sensors[i][sensor_id] !== undefined &&
-      runtime_sensors[i][sensor_id].temperature !== null
-    ) {
-      average += runtime_sensors[i][sensor_id].temperature;
-      count++;
-    }
-  }
-
-  if (count === 0) {
-    return null;
-  }
-
-  return average / count;
 };

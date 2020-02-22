@@ -24,7 +24,6 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.runtime_sensor_detail_smoothing',
       'setting.runtime_sensor_detail_range_type',
       'setting.runtime_sensor_detail_range_dynamic',
       'cache.runtime_thermostat',
@@ -304,22 +303,6 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_callback(function() {
       self.charts_.temperature.reset_zoom();
     }));
-
-  if (beestat.setting('runtime_sensor_detail_smoothing') === true) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Disable Smothing')
-      .set_icon('chart_line')
-      .set_callback(function() {
-        beestat.setting('runtime_sensor_detail_smoothing', false);
-      }));
-  } else {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Enable Smoothing')
-      .set_icon('chart_bell_curve')
-      .set_callback(function() {
-        beestat.setting('runtime_sensor_detail_smoothing', true);
-      }));
-  }
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')

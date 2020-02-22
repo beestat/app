@@ -12,7 +12,6 @@ beestat.setting = function(key, opt_value, opt_callback) {
   var user = beestat.user.get();
 
   var defaults = {
-    'runtime_thermostat_detail_smoothing': true,
     'runtime_thermostat_detail_range_type': 'dynamic',
     'runtime_thermostat_detail_range_static_begin': moment()
       .subtract(3, 'day')
@@ -20,7 +19,6 @@ beestat.setting = function(key, opt_value, opt_callback) {
     'runtime_thermostat_detail_range_static_end': moment().format('MM/DD/YYYY'),
     'runtime_thermostat_detail_range_dynamic': 3,
 
-    'runtime_sensor_detail_smoothing': true,
     'runtime_sensor_detail_range_type': 'dynamic',
     'runtime_sensor_detail_range_static_begin': moment()
       .subtract(3, 'day')
