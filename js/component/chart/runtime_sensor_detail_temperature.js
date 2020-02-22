@@ -165,7 +165,10 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
     var x = this.x;
 
     var sections = [];
-    var group = [];
+    var groups = {
+      'mode': [],
+      'data': []
+    };
 
     var visible_series = [];
     self.get_chart().series.forEach(function(series) {
@@ -182,6 +185,31 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       if (
         self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined &&
         visible_series.includes(series_code) === true
+      ) {
+        points.push({
+          'series_code': series_code,
+          'value': self.data_.metadata.series[series_code].data[x.valueOf()],
+          'color': beestat.series[series_code].color
+        });
+      }
+    });
+
+    // Add some other stuff.
+    [
+      'calendar_event_smartrecovery',
+      'calendar_event_home',
+      'calendar_event_away',
+      'calendar_event_sleep',
+      'calendar_event_smarthome',
+      'calendar_event_smartaway',
+      'calendar_event_hold',
+      'calendar_event_vacation',
+      'calendar_event_quicksave',
+      'calendar_event_other',
+      'calendar_event_custom'
+    ].forEach(function(series_code) {
+      if (
+        self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined
       ) {
         points.push({
           'series_code': series_code,
@@ -208,39 +236,56 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
     points.forEach(function(point) {
       var label;
       var value;
+      var group;
+      var color;
 
-      label = self.data_.metadata.series[point.series_code].name;
-      if (point.value === undefined) {
-        value = '-';
+      if (
+        point.series_code.includes('calendar_event')
+      ) {
+        group = 'mode';
+        label = 'Comfort Profile';
+        color = beestat.series[point.series_code].color;
+        value = self.data_.metadata.series.calendar_event_name[x.valueOf()];
       } else {
-        value = beestat.temperature({
-          'temperature': point.value,
-          'convert': false,
-          'units': true
-        });
+        group = 'data';
+        label = self.data_.metadata.series[point.series_code].name;
+        color = point.color;
+        if (point.value === undefined) {
+          value = '-';
+        } else {
+          value = beestat.temperature({
+            'temperature': point.value,
+            'convert': false,
+            'units': true
+          });
+        }
+
+        var occupancy_key = point.series_code.replace('temperature', 'occupancy');
+        if (occupancy[occupancy_key] === true) {
+          value += ' ●';
+        }
       }
 
-      var occupancy_key = point.series_code.replace('temperature', 'occupancy');
-      if (occupancy[occupancy_key] === true) {
-        value += ' ●';
-      }
-
-      group.push({
+      groups[group].push({
         'label': label,
         'value': value,
-        'color': point.color
+        'color': color
       });
     });
 
-    if (group.length === 0) {
-      group.push({
+    if (
+      groups.mode.length === 0 &&
+      groups.data.length === 0
+    ) {
+      groups.mode.push({
         'label': 'No data',
         'value': '',
         'color': beestat.style.color.gray.base
       });
     }
 
-    sections.push(group);
+    sections.push(groups.mode);
+    sections.push(groups.data);
 
     var title = this.x.format('ddd, MMM D @ h:mma');
 
