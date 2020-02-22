@@ -277,7 +277,9 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
           case 'sleep':
           case 'away':
             this_calendar_event = 'calendar_event_' + runtime_thermostat.climate.toLowerCase();
-            this_calendar_event_name = runtime_thermostat.climate;
+            this_calendar_event_name =
+              runtime_thermostat.climate.charAt(0).toUpperCase() +
+              runtime_thermostat.climate.slice(1);
             break;
           default:
             this_calendar_event = 'calendar_event_custom';
