@@ -227,32 +227,32 @@ beestat.series.extreme_outdoor_temperature = {
 
 beestat.series.calendar_event_home = {
   'name': 'Home',
-  'color': beestat.style.color.green.dark
+  'color': beestat.style.color.green.base
 };
 
 beestat.series.calendar_event_smarthome = {
   'name': 'Smart Home',
-  'color': beestat.style.color.green.dark
+  'color': beestat.style.color.yellow.base
 };
 
 beestat.series.calendar_event_smartrecovery = {
   'name': 'Smart Recovery',
-  'color': beestat.style.color.green.dark
+  'color': beestat.style.color.yellow.base
 };
 
 beestat.series.calendar_event_away = {
   'name': 'Away',
-  'color': beestat.style.color.gray.dark
+  'color': beestat.style.color.gray.base
 };
 
 beestat.series.calendar_event_smartaway = {
   'name': 'Smart Away',
-  'color': beestat.style.color.gray.dark
+  'color': beestat.style.color.yellow.base
 };
 
 beestat.series.calendar_event_vacation = {
   'name': 'Vacation',
-  'color': beestat.style.color.gray.dark
+  'color': beestat.style.color.blue.base
 };
 
 beestat.series.calendar_event_sleep = {
