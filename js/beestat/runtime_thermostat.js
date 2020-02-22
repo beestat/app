@@ -15,18 +15,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
     'series': {},
     'metadata': {
       'series': {},
-      'chart': {
-        'y_min': Infinity,
-        'y_max': -Infinity
-      }
-    }
-  };
-
-  // A couple private helper functions for manipulating the min/max y values.
-  var y_min_max = function(value) {
-    if (value !== null) {
-      data.metadata.chart.y_min = Math.min(data.metadata.chart.y_min, value);
-      data.metadata.chart.y_max = Math.max(data.metadata.chart.y_max, value);
+      'chart': {}
     }
   };
 
@@ -185,7 +174,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
       data.series.outdoor_temperature.push(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.data[current_m.valueOf()] =
         beestat.temperature(runtime_thermostat.outdoor_temperature);
-      y_min_max(outdoor_temperature_moving);
       data.metadata.series.outdoor_temperature.active = true;
 
       var outdoor_humidity_moving = beestat.runtime_thermostat.get_average_(
@@ -211,7 +199,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
       data.series.indoor_temperature.push(indoor_temperature);
       data.metadata.series.indoor_temperature.data[current_m.valueOf()] =
         indoor_temperature;
-      y_min_max(indoor_temperature);
       data.metadata.series.indoor_temperature.active = true;
 
       /**
@@ -228,9 +215,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
         );
         data.series.setpoint_heat.push(setpoint_heat);
         data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_heat;
-        y_min_max(outdoor_temperature_moving);
-
-        y_min_max(setpoint_heat);
 
         data.metadata.series.setpoint_heat.active = true;
 
@@ -247,7 +231,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
         );
         data.series.setpoint_cool.push(setpoint_cool);
         data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_cool;
-        y_min_max(setpoint_cool);
 
         data.metadata.series.setpoint_cool.active = true;
 

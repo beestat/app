@@ -121,35 +121,19 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
  * @return {Array} The y-axis options.
  */
 beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_options_yAxis_ = function() {
-  /**
-   * Highcharts doesn't seem to respect axis behavior well so just overriding
-   * it completely here.
-   */
-
-  var y_min = Math.floor((this.data_.metadata.chart.y_min) / 10) * 10;
-  var y_max = Math.ceil((this.data_.metadata.chart.y_max) / 10) * 10;
-  var tick_positions = [];
-  var tick_interval = (beestat.setting('temperature_unit') === '°F') ? 10 : 5;
-  var current_tick_position =
-    Math.floor(y_min / tick_interval) * tick_interval;
-  while (current_tick_position <= y_max) {
-    tick_positions.push(current_tick_position);
-    current_tick_position += tick_interval;
-  }
-
   return [
     // Temperature
     {
       'gridLineColor': beestat.style.color.bluegray.light,
       'gridLineDashStyle': 'longdash',
+      'allowDecimals': false,
       'title': {'text': null},
       'labels': {
         'style': {'color': beestat.style.color.gray.base},
         'formatter': function() {
           return this.value + beestat.setting('temperature_unit');
         }
-      },
-      'tickPositions': tick_positions
+      }
     },
 
     // Humidity

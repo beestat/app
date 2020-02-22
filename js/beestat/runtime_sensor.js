@@ -16,8 +16,6 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     'metadata': {
       'series': {},
       'chart': {
-        'y_min': Infinity,
-        'y_max': -Infinity,
         'sensors': null
       }
     }
