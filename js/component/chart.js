@@ -387,17 +387,26 @@ beestat.component.chart.prototype.get_options_xAxis_ = function() {
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
     },
-    'crosshair': {
-      'width': this.get_options_xAxis_crosshair_width_(),
-      'zIndex': 100,
-      'color': 'rgba(255, 255, 255, 0.2)',
-      'snap': this.get_options_xAxis_crosshair_snap_()
-    },
+    'crosshair': this.get_options_xAxis_crosshair_(),
     'events': {
       'afterSetExtremes': function() {
         self.dispatchEvent('after_set_extremes');
       }
     }
+  };
+};
+
+/**
+ * Get the crosshair.
+ *
+ * @return {object} The crosshair.
+ */
+beestat.component.chart.prototype.get_options_xAxis_crosshair_ = function() {
+  return {
+    'width': this.get_options_xAxis_crosshair_width_(),
+    'zIndex': 100,
+    'color': 'rgba(255, 255, 255, 0.2)',
+    'snap': this.get_options_xAxis_crosshair_snap_()
   };
 };
 

@@ -244,6 +244,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_ = func
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
     },
+    'crosshair': this.get_options_xAxis_crosshair_(),
     'plotLines': [
       {
         'color': beestat.series.outdoor_temperature.color,
