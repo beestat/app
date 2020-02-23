@@ -94,10 +94,7 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
 
   // Loop.
   var current_m = begin_m;
-  while (
-    // beestat.cache.runtime_sensor.length > 0 &&
-    current_m.isSameOrAfter(end_m) === false
-  ) {
+  while (current_m.isSameOrAfter(end_m) === false) {
     data.x.push(current_m.clone());
 
     // Without this series the chart will jump to the nearest value if there is a chunk of missing data.

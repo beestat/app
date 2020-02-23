@@ -57,6 +57,21 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_se
     beestat.style.color.lightblue.dark
   ];
 
+  /**
+   * This chart does not need the entire dummy series, but it does need the
+   * first series to have *some* non-null data or Highcharts does not find a
+   * valid point to reference when trying to sync the crosshair between
+   * series. The easiest way to fix that seems to be throwing a mostly-empty
+   * series up top.
+   */
+  series.push({
+    'name': '',
+    'data': [0],
+    'yAxis': 0,
+    'type': 'line',
+    'lineWidth': 0
+  });
+
   // Sensors
   this.data_.metadata.sensors.forEach(function(sensor, i) {
     series.push({
@@ -69,14 +84,6 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_se
       'linecap': 'square',
       'className': 'crisp_edges'
     });
-  });
-
-  series.push({
-    'name': '',
-    'data': self.data_.series.dummy,
-    'yAxis': 0,
-    'type': 'line',
-    'lineWidth': 0
   });
 
   return series;
