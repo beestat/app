@@ -230,7 +230,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
           runtime_thermostat.setpoint_cool
         );
         data.series.setpoint_cool.push(setpoint_cool);
-        data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_cool;
+        data.metadata.series.setpoint_cool.data[current_m.valueOf()] = setpoint_cool;
 
         data.metadata.series.setpoint_cool.active = true;
 
