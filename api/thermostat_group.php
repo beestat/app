@@ -14,6 +14,8 @@ class thermostat_group extends cora\crud {
       'read_id',
       'generate_temperature_profiles',
       'generate_temperature_profile',
+      'generate_profiles',
+      'generate_profile',
       'get_scores',
       'update_system_types'
     ],
@@ -23,8 +25,250 @@ class thermostat_group extends cora\crud {
   public static $cache = [
     'generate_temperature_profile' => 604800, // 7 Days
     'generate_temperature_profiles' => 604800, // 7 Days
+    'generate_profile' => 604800, // 7 Days
+    'generate_profiles' => 604800, // 7 Days
     'get_scores' => 604800 // 7 Days
   ];
+
+  /**
+   * Generate the group temperature profile.
+   *
+   * @param int $thermostat_group_id
+   *
+   * @return array
+   */
+  public function generate_profile($thermostat_group_id) {
+    // Get all thermostats in this group.
+    $thermostats = $this->api(
+      'thermostat',
+      'read',
+      [
+        'attributes' => [
+          'thermostat_group_id' => $thermostat_group_id,
+          'inactive' => 0
+        ]
+      ]
+    );
+
+    // Generate a temperature profile for each thermostat in this group.
+    $profiles = [];
+    foreach($thermostats as $thermostat) {
+      $profile = $this->api('profile', 'generate', $thermostat['thermostat_id']);
+
+      $this->api(
+        'thermostat',
+        'update',
+        [
+          'attributes' => [
+            'thermostat_id' => $thermostat['thermostat_id'],
+            'profile' => $profile
+          ]
+        ]
+      );
+
+      $profiles[] = $profile;
+    }
+
+    // Get all of the individual deltas for averaging.
+    $group_profile = [
+      'setpoint' => [
+        'heat' => [
+          'average' => null,
+          'minimum' => null,
+          'maximum' => null
+        ],
+        'cool' => [
+          'average' => null,
+          'minimum' => null,
+          'maximum' => null
+        ]
+      ],
+      'metadata' => [
+        'generated_at' => date('c'),
+        'duration' => null,
+        'setpoint' => [
+          'heat' => [
+            'samples' => null
+          ],
+          'cool' => [
+            'samples' => null
+          ]
+        ],
+        'temperature' => []
+      ]
+    ];
+
+    $metadata_duration = [];
+
+    // Setpoint heat min/max/average.
+    $metadata_setpoint_heat_samples = [];
+    // $setpoint_heat_minimum = [];
+    // $setpoint_heat_maximum = [];
+    $setpoint_heat = [];
+
+    // Setpoint cool min/max/average.
+    $metadata_setpoint_cool_samples = [];
+    // $setpoint_cool_minimum = [];
+    // $setpoint_cool_maximum = [];
+    $setpoint_cool = [];
+
+    // Temperature profiles.
+    $temperature = [];
+    $metadata_temperature = [];
+
+    foreach($profiles as $profile) {
+      // Group profile duration is the minimum of all individual profile
+      // durations.
+      if($profile['metadata']['duration'] !== null) {
+        $metadata_duration[] = $profile['metadata']['duration'];
+      }
+
+      // Setpoint heat min/max/average.
+      // if($profile['setpoint']['heat']['minimum'] !== null) {
+        // $setpoint_heat_minimum[] = $profile['setpoint']['heat']['minimum'];
+      // }
+      // if($profile['setpoint']['heat']['maximum'] !== null) {
+        // $setpoint_heat_maximum[] = $profile['setpoint']['heat']['maximum'];
+      // }
+      if($profile['setpoint']['heat'] !== null) {
+        $setpoint_heat[] = [
+          'value' => $profile['setpoint']['heat'],
+          'samples' => $profile['metadata']['setpoint']['heat']['samples']
+        ];
+        $metadata_setpoint_heat_samples[] = $profile['metadata']['setpoint']['heat']['samples'];
+      }
+
+      // Setpoint cool min/max/average.
+      // if($profile['setpoint']['cool']['minimum'] !== null) {
+      //   $setpoint_cool_minimum[] = $profile['setpoint']['cool']['minimum'];
+      // }
+      // if($profile['setpoint']['cool']['maximum'] !== null) {
+      //   $setpoint_cool_maximum[] = $profile['setpoint']['cool']['maximum'];
+      // }
+      if($profile['setpoint']['cool'] !== null) {
+        $setpoint_cool[] = [
+          'value' => $profile['setpoint']['cool'],
+          'samples' => $profile['metadata']['setpoint']['cool']['samples']
+        ];
+        $metadata_setpoint_cool_samples[] = $profile['metadata']['setpoint']['cool']['samples'];
+      }
+
+      // Temperature profiles.
+      foreach($profile['temperature'] as $type => $data) {
+        if($data !== null) {
+          foreach($data['deltas'] as $outdoor_temperature => $delta) {
+            $temperature[$type]['deltas'][$outdoor_temperature][] = [
+              'value' => $delta,
+              'samples' => $profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples']
+            ];
+            $metadata_temperature[$type]['deltas'][$outdoor_temperature]['samples'][] =
+              $profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'];
+          }
+        }
+      }
+    }
+
+    // echo '<pre>';
+    // print_r($metadata_temperature);
+    // die();
+
+    $group_profile['metadata']['duration'] = min($metadata_duration);
+
+    // Setpoint heat min/max/average.
+    $group_profile['metadata']['setpoint']['heat']['samples'] = array_sum($metadata_setpoint_heat_samples);
+    if($group_profile['metadata']['setpoint']['heat']['samples'] > 0) {
+      // $group_profile['setpoint']['heat']['minimum'] = min($setpoint_heat_minimum);
+      // $group_profile['setpoint']['heat']['maximum'] = max($setpoint_heat_maximum);
+      $group_profile['setpoint']['heat'] = 0;
+      foreach($setpoint_heat as $data) {
+        $group_profile['setpoint']['heat'] +=
+          ($data['value'] * $data['samples'] / $group_profile['metadata']['setpoint']['heat']['samples']);
+      }
+    }
+
+    // Setpoint cool min/max/average.
+    $group_profile['metadata']['setpoint']['cool']['samples'] = array_sum($metadata_setpoint_cool_samples);
+    if($group_profile['metadata']['setpoint']['cool']['samples'] > 0) {
+      // $group_profile['setpoint']['cool']['minimum'] = min($setpoint_cool_minimum);
+      // $group_profile['setpoint']['cool']['maximum'] = max($setpoint_cool_maximum);
+      $group_profile['setpoint']['cool'] = 0;
+      foreach($setpoint_cool as $data) {
+        $group_profile['setpoint']['cool'] +=
+          ($data['value'] * $data['samples'] / $group_profile['metadata']['setpoint']['cool']['samples']);
+      }
+    }
+
+    // echo '<pre>';
+    // print_r($temperature);
+    // die();
+
+    // Temperature profiles.
+    // TODO need to store the total number of samples per outdoor temperature
+    // TODO: get rid of min/max on setpoints and just use average. Then it's the same as temps
+    foreach($temperature as $type => $data) {
+      foreach($data['deltas'] as $outdoor_temperature => $delta) {
+        $group_profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'] =
+          array_sum($metadata_temperature[$type]['deltas'][$outdoor_temperature]['samples']);
+        if($group_profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'] > 0) {
+          $group_profile['temperature'][$type]['deltas'][$outdoor_temperature] = 0;
+          foreach($temperature[$type]['deltas'][$outdoor_temperature] as $data) {
+            $group_profile['temperature'][$type]['deltas'][$outdoor_temperature] +=
+              ($data['value'] * $data['samples'] / $group_profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples']);
+          }
+        }
+      }
+      ksort($group_profile['temperature'][$type]['deltas']);
+
+      $group_profile['temperature'][$type]['linear_trendline'] = $this->api(
+        'profile',
+        'get_linear_trendline',
+        ['data' => $group_profile['temperature'][$type]['deltas']]
+      );
+
+    }
+
+    // echo '<pre>';
+    // print_r($group_profile);
+    // die();
+
+    $this->update(
+      [
+        'thermostat_group_id' => $thermostat_group_id,
+        'profile' => $group_profile
+      ]
+    );
+
+    // Force these to actually return, but set them to null if there's no data.
+    foreach(['heat', 'cool', 'resist'] as $type) {
+      if(isset($group_profile['temperature'][$type]) === false) {
+        $group_profile['temperature'][$type] = null;
+      }
+    }
+
+    return $group_profile;
+  }
+
+  /**
+   * Generate temperature profiles for all thermostat_groups. This pretty much
+   * only exists for the cron job.
+   */
+  public function generate_profiles() {
+    // Get all thermostat_groups.
+    $thermostat_groups = $this->read();
+    foreach($thermostat_groups as $thermostat_group) {
+      $this->generate_profile(
+        $thermostat_group['thermostat_group_id'],
+        null,
+        null
+      );
+    }
+
+    $this->api(
+      'user',
+      'update_sync_status',
+      ['key' => 'thermostat_group.generate_profiles']
+    );
+  }
 
   /**
    * Generate the group temperature profile.

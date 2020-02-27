@@ -49,5 +49,14 @@ function array_median($array) {
   return $median;
 }
 
+// Useful function
+function array_average($array) {
+  if (count($array) === 0) {
+    return null;
+  }
+
+  return array_sum($array) / count($array);
+}
+
 // Go!
 $cora->process_request($_REQUEST);
