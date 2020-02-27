@@ -98,18 +98,25 @@ class thermostat_group extends cora\crud {
       ]
     ];
 
+    if (count($profiles) === 0) {
+      $this->update(
+        [
+          'thermostat_group_id' => $thermostat_group_id,
+          'profile' => $group_profile
+        ]
+      );
+
+      return $group_profile;
+    }
+
     $metadata_duration = [];
 
     // Setpoint heat min/max/average.
     $metadata_setpoint_heat_samples = [];
-    // $setpoint_heat_minimum = [];
-    // $setpoint_heat_maximum = [];
     $setpoint_heat = [];
 
     // Setpoint cool min/max/average.
     $metadata_setpoint_cool_samples = [];
-    // $setpoint_cool_minimum = [];
-    // $setpoint_cool_maximum = [];
     $setpoint_cool = [];
 
     // Temperature profiles.
@@ -123,13 +130,6 @@ class thermostat_group extends cora\crud {
         $metadata_duration[] = $profile['metadata']['duration'];
       }
 
-      // Setpoint heat min/max/average.
-      // if($profile['setpoint']['heat']['minimum'] !== null) {
-        // $setpoint_heat_minimum[] = $profile['setpoint']['heat']['minimum'];
-      // }
-      // if($profile['setpoint']['heat']['maximum'] !== null) {
-        // $setpoint_heat_maximum[] = $profile['setpoint']['heat']['maximum'];
-      // }
       if($profile['setpoint']['heat'] !== null) {
         $setpoint_heat[] = [
           'value' => $profile['setpoint']['heat'],
@@ -138,13 +138,6 @@ class thermostat_group extends cora\crud {
         $metadata_setpoint_heat_samples[] = $profile['metadata']['setpoint']['heat']['samples'];
       }
 
-      // Setpoint cool min/max/average.
-      // if($profile['setpoint']['cool']['minimum'] !== null) {
-      //   $setpoint_cool_minimum[] = $profile['setpoint']['cool']['minimum'];
-      // }
-      // if($profile['setpoint']['cool']['maximum'] !== null) {
-      //   $setpoint_cool_maximum[] = $profile['setpoint']['cool']['maximum'];
-      // }
       if($profile['setpoint']['cool'] !== null) {
         $setpoint_cool[] = [
           'value' => $profile['setpoint']['cool'],
@@ -169,7 +162,7 @@ class thermostat_group extends cora\crud {
     }
 
     // echo '<pre>';
-    // print_r($metadata_temperature);
+    // print_r($profiles);
     // die();
 
     $group_profile['metadata']['duration'] = min($metadata_duration);
@@ -177,8 +170,6 @@ class thermostat_group extends cora\crud {
     // Setpoint heat min/max/average.
     $group_profile['metadata']['setpoint']['heat']['samples'] = array_sum($metadata_setpoint_heat_samples);
     if($group_profile['metadata']['setpoint']['heat']['samples'] > 0) {
-      // $group_profile['setpoint']['heat']['minimum'] = min($setpoint_heat_minimum);
-      // $group_profile['setpoint']['heat']['maximum'] = max($setpoint_heat_maximum);
       $group_profile['setpoint']['heat'] = 0;
       foreach($setpoint_heat as $data) {
         $group_profile['setpoint']['heat'] +=
@@ -189,8 +180,6 @@ class thermostat_group extends cora\crud {
     // Setpoint cool min/max/average.
     $group_profile['metadata']['setpoint']['cool']['samples'] = array_sum($metadata_setpoint_cool_samples);
     if($group_profile['metadata']['setpoint']['cool']['samples'] > 0) {
-      // $group_profile['setpoint']['cool']['minimum'] = min($setpoint_cool_minimum);
-      // $group_profile['setpoint']['cool']['maximum'] = max($setpoint_cool_maximum);
       $group_profile['setpoint']['cool'] = 0;
       foreach($setpoint_cool as $data) {
         $group_profile['setpoint']['cool'] +=
@@ -203,8 +192,6 @@ class thermostat_group extends cora\crud {
     // die();
 
     // Temperature profiles.
-    // TODO need to store the total number of samples per outdoor temperature
-    // TODO: get rid of min/max on setpoints and just use average. Then it's the same as temps
     foreach($temperature as $type => $data) {
       foreach($data['deltas'] as $outdoor_temperature => $delta) {
         $group_profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'] =
