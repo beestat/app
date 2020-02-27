@@ -72,16 +72,8 @@ class thermostat_group extends cora\crud {
     // Get all of the individual deltas for averaging.
     $group_profile = [
       'setpoint' => [
-        'heat' => [
-          'average' => null,
-          'minimum' => null,
-          'maximum' => null
-        ],
-        'cool' => [
-          'average' => null,
-          'minimum' => null,
-          'maximum' => null
-        ]
+        'heat' => null,
+        'cool' => null
       ],
       'metadata' => [
         'generated_at' => date('c'),
