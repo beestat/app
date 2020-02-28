@@ -27,7 +27,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/time.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/setting.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/poll.js"></script>' . PHP_EOL;
-  echo '<script src="/js/beestat/home_comparisons.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/comparisons.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/highcharts.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/get_sync_progress.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/user.js"></script>' . PHP_EOL;
@@ -40,7 +40,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/load.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/dashboard.js"></script>' . PHP_EOL;
-  echo '<script src="/js/layer/home_comparisons.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/comparisons.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/sensors.js"></script>' . PHP_EOL;
 
   // Component
@@ -51,7 +51,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/alerts.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/comparison_settings.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/comparison_issue.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/early_access.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/demo.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/footer.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/my_home.js"></script>' . PHP_EOL;
@@ -65,9 +65,12 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/sensors.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/system.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/temperature_profiles.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/temperature_profiles_new.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/metrics.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/temperature_profiles_new.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_detail_temperature.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_detail_equipment.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_sensor_detail_temperature.js"></script>' . PHP_EOL;
@@ -98,6 +101,10 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/button.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric/setpoint_heat.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric/setpoint_cool.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric/runtime_per_heating_degree_day.js"></script>' . PHP_EOL;
 }
 else {
   echo '<script src="/js/beestat.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;

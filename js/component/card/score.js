@@ -20,7 +20,7 @@ beestat.component.card.score = function() {
 
   beestat.component.card.apply(this, arguments);
 
-  this.layer_.register_loader(beestat.home_comparisons.get_comparison_scores);
+  this.layer_.register_loader(beestat.comparisons.get_comparison_scores);
 };
 beestat.extend(beestat.component.card.score, beestat.component.card);
 

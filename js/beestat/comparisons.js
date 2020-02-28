@@ -1,4 +1,4 @@
-beestat.home_comparisons = {};
+beestat.comparisons = {};
 
 /**
  * Fire off an API call to get the comparison scores using the currently
@@ -14,7 +14,7 @@ beestat.home_comparisons = {};
  * @param {Function} callback Optional callback to fire when the API call
  * completes.
  */
-beestat.home_comparisons.get_comparison_scores = function(callback) {
+beestat.comparisons.get_comparison_scores = function(callback) {
   var types = [
     'heat',
     'cool',
@@ -29,15 +29,26 @@ beestat.home_comparisons.get_comparison_scores = function(callback) {
       'get_scores',
       {
         'type': type,
-        'attributes': beestat.home_comparisons.get_comparison_attributes(type)
+        'attributes': beestat.comparisons.get_comparison_attributes(type)
       },
-      type
+      'score_' + type
     );
   });
 
+  api.add_call(
+    'thermostat_group',
+    'get_metrics',
+    {
+      'attributes': beestat.comparisons.get_comparison_attributes('resist') // todo
+    },
+    'metrics'
+  );
+
   api.set_callback(function(data) {
+    beestat.cache.set('data.metrics', data.metrics);
+
     types.forEach(function(type) {
-      beestat.cache.set('data.comparison_scores_' + type, data[type]);
+      beestat.cache.set('data.comparison_scores_' + type, data['score_' + type]);
     });
 
     if (callback !== undefined) {
@@ -56,7 +67,7 @@ beestat.home_comparisons.get_comparison_scores = function(callback) {
  *
  * @return {Object} The comparison attributes.
  */
-beestat.home_comparisons.get_comparison_attributes = function(type) {
+beestat.comparisons.get_comparison_attributes = function(type) {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
   var thermostat_group =
     beestat.cache.thermostat_group[thermostat.thermostat_group_id];

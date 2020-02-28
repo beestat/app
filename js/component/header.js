@@ -38,7 +38,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       'icon': 'signal_variant'
     },
     {
-      'layer': 'home_comparisons',
+      'layer': 'comparisons',
       'text': 'Comparisons',
       'icon': 'home_group'
     }

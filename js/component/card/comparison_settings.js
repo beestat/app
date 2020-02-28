@@ -51,24 +51,24 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
    * If the data is available, then get the data if we don't already have it
    * loaded. If the data is not available, poll until it becomes available.
    */
-  if (thermostat_group.temperature_profile === null) {
+  if (thermostat_group.profile === null) {
     // This will show the loading screen.
     self.data_available_();
 
     var poll_interval = 10000;
 
     beestat.add_poll_interval(poll_interval);
-    beestat.dispatcher.addEventListener('poll.home_comparisons_load', function() {
+    beestat.dispatcher.addEventListener('poll.comparisons_load', function() {
       if (self.data_available_() === true) {
         beestat.remove_poll_interval(poll_interval);
-        beestat.dispatcher.removeEventListener('poll.home_comparisons_load');
+        beestat.dispatcher.removeEventListener('poll.comparisons_load');
 
         new beestat.api()
           .add_call(
             'thermostat_group',
-            'generate_temperature_profiles',
+            'generate_profiles',
             {},
-            'generate_temperature_profiles'
+            'generate_profiles'
           )
           .add_call(
             'thermostat_group',
@@ -78,7 +78,7 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
           )
           .set_callback(function(response) {
             beestat.cache.set('thermostat_group', response.thermostat_group);
-            (new beestat.layer.home_comparisons()).render();
+            (new beestat.layer.comparisons()).render();
           })
           .send();
       }
@@ -127,7 +127,7 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
           // Open up the loading window.
           self.show_loading_('Calculating Score for ' + region + ' region');
 
-          beestat.home_comparisons.get_comparison_scores(function() {
+          beestat.comparisons.get_comparison_scores(function() {
             // Rerender to get rid of the loader.
             self.rerender();
           });
@@ -200,7 +200,7 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
           // Open up the loading window.
           self.show_loading_('Calculating Score for ' + property_type.text);
 
-          beestat.home_comparisons.get_comparison_scores(function() {
+          beestat.comparisons.get_comparison_scores(function() {
             // Rerender to get rid of the loader.
             self.rerender();
           });

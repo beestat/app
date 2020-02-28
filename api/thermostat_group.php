@@ -29,7 +29,7 @@ class thermostat_group extends cora\crud {
     'generate_profile' => 604800, // 7 Days
     'generate_profiles' => 604800, // 7 Days
     'get_scores' => 604800, // 7 Days
-    'get_metrics' => 604800 // 7 Days
+    // 'get_metrics' => 604800 // 7 Days
   ];
 
   /**
@@ -565,7 +565,8 @@ class thermostat_group extends cora\crud {
 
     $metric_codes = [
       'setpoint_heat',
-      'setpoint_cool'
+      'setpoint_cool',
+      'runtime_per_heating_degree_day'
     ];
 
     $metrics = [];
@@ -636,6 +637,25 @@ class thermostat_group extends cora\crud {
             $metrics['setpoint_cool']['histogram'][$setpoint_cool]++;
             $metrics['setpoint_cool']['values'][] = $setpoint_cool;
           }
+
+          // runtime_per_heating_degree_day
+          if(
+            isset($other_thermostat_group['profile']) === true &&
+            isset($other_thermostat_group['profile']['runtime']) == true &&
+            $other_thermostat_group['profile']['runtime']['heat_1'] !== null &&
+            isset($other_thermostat_group['profile']['degree_days']) === true &&
+            $other_thermostat_group['profile']['degree_days']['heat'] !== null
+          ) {
+            $runtime_per_heating_degree_day = round(
+              $other_thermostat_group['profile']['runtime']['heat_1'] / $other_thermostat_group['profile']['degree_days']['heat'],
+              1
+            );
+            if(isset($metrics['runtime_per_heating_degree_day']['histogram'][(string)$runtime_per_heating_degree_day]) === false) {
+              $metrics['runtime_per_heating_degree_day']['histogram'][(string)$runtime_per_heating_degree_day] = 0;
+            }
+            $metrics['runtime_per_heating_degree_day']['histogram'][(string)$runtime_per_heating_degree_day]++;
+            $metrics['runtime_per_heating_degree_day']['values'][] = $runtime_per_heating_degree_day;
+          }
         }
       }
 
@@ -655,6 +675,13 @@ class thermostat_group extends cora\crud {
     ), 2);
     $metrics['setpoint_cool']['median'] = array_median($metrics['setpoint_cool']['values']);
     unset($metrics['setpoint_cool']['values']);
+
+    // runtime_per_heating_degree_day
+    $metrics['runtime_per_heating_degree_day']['standard_deviation'] = round($this->standard_deviation(
+      $metrics['runtime_per_heating_degree_day']['values']
+    ), 2);
+    $metrics['runtime_per_heating_degree_day']['median'] = array_median($metrics['runtime_per_heating_degree_day']['values']);
+    unset($metrics['runtime_per_heating_degree_day']['values']);
 
     return $metrics;
   }

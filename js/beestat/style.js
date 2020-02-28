@@ -298,3 +298,34 @@ beestat.series.indoor_resist_delta = {
   'color': beestat.style.color.gray.dark
 };
 beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;
+
+// Temperature Profiles New
+beestat.series.indoor_heat_1_delta = {
+  'name': 'Indoor Heat 1 Δ',
+  'color': beestat.series.compressor_heat_1.color
+};
+beestat.series.indoor_heat_1_delta_raw = beestat.series.indoor_heat_1_delta;
+
+beestat.series.indoor_heat_2_delta = {
+  'name': 'Indoor Heat 2 Δ',
+  'color': beestat.series.compressor_heat_2.color
+};
+beestat.series.indoor_heat_2_delta_raw = beestat.series.indoor_heat_2_delta;
+
+beestat.series.indoor_cool_1_delta = {
+  'name': 'Indoor Cool 1 Δ',
+  'color': beestat.series.compressor_cool_1.color
+};
+beestat.series.indoor_cool_1_delta_raw = beestat.series.indoor_cool_1_delta;
+
+beestat.series.indoor_cool_2_delta = {
+  'name': 'Indoor Cool 2 Δ',
+  'color': beestat.series.compressor_cool_2.color
+};
+beestat.series.indoor_cool_2_delta_raw = beestat.series.indoor_cool_2_delta;
+
+beestat.series.indoor_resist_delta = {
+  'name': 'Indoor Δ',
+  'color': beestat.style.color.gray.dark
+};
+beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;
