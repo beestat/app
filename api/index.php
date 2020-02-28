@@ -50,7 +50,7 @@ function array_median($array) {
 }
 
 // Useful function
-function array_average($array) {
+function array_mean($array) {
   if (count($array) === 0) {
     return null;
   }

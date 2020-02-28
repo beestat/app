@@ -17,6 +17,7 @@ class thermostat_group extends cora\crud {
       'generate_profiles',
       'generate_profile',
       'get_scores',
+      'get_metrics',
       'update_system_types'
     ],
     'public' => []
@@ -27,7 +28,8 @@ class thermostat_group extends cora\crud {
     'generate_temperature_profiles' => 604800, // 7 Days
     'generate_profile' => 604800, // 7 Days
     'generate_profiles' => 604800, // 7 Days
-    'get_scores' => 604800 // 7 Days
+    'get_scores' => 604800, // 7 Days
+    'get_metrics' => 604800 // 7 Days
   ];
 
   /**
@@ -74,6 +76,18 @@ class thermostat_group extends cora\crud {
       'setpoint' => [
         'heat' => null,
         'cool' => null
+      ],
+      'degree_days' => [
+        'heat' => null,
+        'cool' => null
+      ],
+      'runtime' => [
+        'heat_1' => 0,
+        'heat_2' => 0,
+        'auxiliary_heat_1' => 0,
+        'auxiliary_heat_2' => 0,
+        'cool_1' => 0,
+        'cool_2' => 0
       ],
       'metadata' => [
         'generated_at' => date('c'),
@@ -151,6 +165,22 @@ class thermostat_group extends cora\crud {
           }
         }
       }
+
+      // Degree days.
+      if($profile['degree_days']['heat'] !== null) {
+        $group_profile['degree_days']['heat'] += $profile['degree_days']['heat'];
+      }
+      if($profile['degree_days']['cool'] !== null) {
+        $group_profile['degree_days']['cool'] += $profile['degree_days']['cool'];
+      }
+
+      // Runtime
+      $group_profile['runtime']['heat_1'] += $profile['runtime']['heat_1'];
+      $group_profile['runtime']['heat_2'] += $profile['runtime']['heat_2'];
+      $group_profile['runtime']['auxiliary_heat_1'] += $profile['runtime']['auxiliary_heat_1'];
+      $group_profile['runtime']['auxiliary_heat_2'] += $profile['runtime']['auxiliary_heat_2'];
+      $group_profile['runtime']['cool_1'] += $profile['runtime']['cool_1'];
+      $group_profile['runtime']['cool_2'] += $profile['runtime']['cool_2'];
     }
 
     // echo '<pre>';
@@ -495,6 +525,151 @@ class thermostat_group extends cora\crud {
     sort($scores);
 
     return $scores;
+  }
+
+  /**
+   * Compare this thermostat_group to all other matching ones.
+   *
+   * @param array $attributes The attributes to compare to.
+   *
+   * @return array
+   */
+  public function get_metrics($type, $attributes) {
+    // All or none are required.
+    if(
+      (
+        isset($attributes['address_latitude']) === true ||
+        isset($attributes['address_longitude']) === true ||
+        isset($attributes['address_radius']) === true
+      ) &&
+      (
+        isset($attributes['address_latitude']) === false ||
+        isset($attributes['address_longitude']) === false ||
+        isset($attributes['address_radius']) === false
+      )
+    ) {
+      throw new Exception('If one of address_latitude, address_longitude, or address_radius are set, then all are required.');
+    }
+
+    // Pull these values out so they don't get queried; this comparison is done
+    // in PHP.
+    if(isset($attributes['address_radius']) === true) {
+      $address_latitude = $attributes['address_latitude'];
+      $address_longitude = $attributes['address_longitude'];
+      $address_radius = $attributes['address_radius'];
+
+      unset($attributes['address_latitude']);
+      unset($attributes['address_longitude']);
+      unset($attributes['address_radius']);
+    }
+
+    $metric_codes = [
+      'setpoint_heat',
+      'setpoint_cool'
+    ];
+
+    $metrics = [];
+    foreach($metric_codes as $metric_code) {
+      $metrics[$metric_code] = [
+        'values' => [],
+        'histogram' => [],
+        'standard_deviation' => null,
+        'median' => null
+      ];
+    }
+
+    $limit_start = 0;
+    $limit_count = 1000;
+
+    /**
+     * Selecting lots of rows can eventually run PHP out of memory, so chunk
+     * this up into several queries to avoid that.
+     */
+    do {
+      // Get all matching thermostat groups.
+      $other_thermostat_groups = $this->database->read(
+        'thermostat_group',
+        $attributes,
+        [], // columns
+        [], // order_by
+        [$limit_start, $limit_count] // limit
+      );
+
+      // Get all the scores from the other thermostat groups
+      foreach($other_thermostat_groups as $other_thermostat_group) {
+        // Only use profiles with at least a year of data
+        // Only use profiles generated in the past year
+        //
+        if(
+          $other_thermostat_group['profile']['metadata']['duration'] >= 365 &&
+          strtotime($other_thermostat_group['profile']['metadata']['generated_at']) > strtotime('-1 year')
+        ) {
+          // Skip thermostat_groups that are too far away.
+          if(
+            isset($address_radius) === true &&
+            $this->haversine_great_circle_distance(
+              $address_latitude,
+              $address_longitude,
+              $other_thermostat_group['address_latitude'],
+              $other_thermostat_group['address_longitude']
+            ) > $address_radius
+          ) {
+            continue;
+          }
+
+          // setpoint_heat
+          if($other_thermostat_group['profile']['setpoint']['heat'] !== null) {
+            $setpoint_heat = round($other_thermostat_group['profile']['setpoint']['heat']);
+            if(isset($metrics['setpoint_heat']['histogram'][$setpoint_heat]) === false) {
+              $metrics['setpoint_heat']['histogram'][$setpoint_heat] = 0;
+            }
+            $metrics['setpoint_heat']['histogram'][$setpoint_heat]++;
+            $metrics['setpoint_heat']['values'][] = $setpoint_heat;
+          }
+
+          // setpoint_cool
+          if($other_thermostat_group['profile']['setpoint']['cool'] !== null) {
+            $setpoint_cool = round($other_thermostat_group['profile']['setpoint']['cool']);
+            if(isset($metrics['setpoint_cool']['histogram'][$setpoint_cool]) === false) {
+              $metrics['setpoint_cool']['histogram'][$setpoint_cool] = 0;
+            }
+            $metrics['setpoint_cool']['histogram'][$setpoint_cool]++;
+            $metrics['setpoint_cool']['values'][] = $setpoint_cool;
+          }
+        }
+      }
+
+      $limit_start += $limit_count;
+    } while (count($other_thermostat_groups) === $limit_count);
+
+    // setpoint_heat
+    $metrics['setpoint_heat']['standard_deviation'] = round($this->standard_deviation(
+      $metrics['setpoint_heat']['values']
+    ), 2);
+    $metrics['setpoint_heat']['median'] = array_median($metrics['setpoint_heat']['values']);
+    unset($metrics['setpoint_heat']['values']);
+
+    // setpoint_cool
+    $metrics['setpoint_cool']['standard_deviation'] = round($this->standard_deviation(
+      $metrics['setpoint_cool']['values']
+    ), 2);
+    $metrics['setpoint_cool']['median'] = array_median($metrics['setpoint_cool']['values']);
+    unset($metrics['setpoint_cool']['values']);
+
+    return $metrics;
+  }
+
+  private function standard_deviation($array) {
+    $count = count($array);
+
+    $mean = array_mean($array);
+
+    $variance = 0;
+    foreach($array as $i) {
+      $variance += pow(($i - $mean), 2);
+    }
+
+    return sqrt($variance / $count);
   }
 
   /**

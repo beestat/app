@@ -177,6 +177,16 @@ class profile extends cora\api {
       'heat' => [],
       'cool' => []
     ];
+    $runtime_seconds = [
+      'heat_1' => 0,
+      'heat_2' => 0,
+      'auxiliary_heat_1' => 0,
+      'auxiliary_heat_2' => 0,
+      'cool_1' => 0,
+      'cool_2' => 0
+    ];
+    $degree_days_baseline = 65;
+    $degree_days = [];
     $begin_runtime = [];
 
     while($current_timestamp <= $end_timestamp) {
@@ -213,22 +223,26 @@ class profile extends cora\api {
         // consistently represented instead of having to do this logic
         // throughout the generator.
         $runtime = [];
+        $degree_days_date = date('Y-m-d', $current_timestamp);
+        $degree_days_temperatures = [];
         while($row = $result->fetch_assoc()) {
           $timestamp = strtotime($row['timestamp']);
           $hour = date('G', $timestamp);
+          $date = date('Y-m-d', $timestamp);
 
-          if (
-            $ignore_solar_heating === true &&
-            $hour > 6 &&
-            $hour < 22
-          ) {
-            continue;
+          // Degree days
+          if($date !== $degree_days_date) {
+            $degree_days[] = (array_mean($degree_days_temperatures) / 10) - $degree_days_baseline;
+            $degree_days_date = $date;
+            $degree_days_temperatures = [];
           }
+          $degree_days_temperatures[] = $row['outdoor_temperature'];
 
           if($first_timestamp === null) {
             $first_timestamp = $row['timestamp'];
           }
 
+          // Normalizing heating and cooling a bit.
           if(
             $thermostat['system_type']['detected']['heat'] === 'compressor' ||
             $thermostat['system_type']['detected']['heat'] === 'geothermal'
@@ -253,6 +267,21 @@ class profile extends cora\api {
           } else {
             $row['cool_1'] = 0;
             $row['cool_2'] = 0;
+          }
+
+          $runtime_seconds['heat_1'] += $row['heat_1'];
+          $runtime_seconds['heat_2'] += $row['heat_2'];
+          $runtime_seconds['auxiliary_heat_1'] += $row['auxiliary_heat_1'];
+          $runtime_seconds['auxiliary_heat_2'] += $row['auxiliary_heat_2'];
+          $runtime_seconds['cool_1'] += $row['cool_1'];
+          $runtime_seconds['cool_2'] += $row['cool_2'];
+
+          if (
+            $ignore_solar_heating === true &&
+            $hour > 6 &&
+            $hour < 22
+          ) {
+            continue;
           }
 
           if (isset($runtime[$timestamp]) === false) {
@@ -630,8 +659,6 @@ class profile extends cora\api {
       $current_timestamp += $five_minutes;
     }
 
-    // print_r($samples);
-
     // Process the samples
     $deltas_raw = [];
     foreach($samples as $sample) {
@@ -669,6 +696,18 @@ class profile extends cora\api {
       'setpoint' => [
         'heat' => null,
         'cool' => null
+      ],
+      'degree_days' => [
+        'heat' => null,
+        'cool' => null
+      ],
+      'runtime' => [
+        'heat_1' => round($runtime_seconds['heat_1'] / 3600),
+        'heat_2' => round($runtime_seconds['heat_2'] / 3600),
+        'auxiliary_heat_1' => round($runtime_seconds['auxiliary_heat_1'] / 3600),
+        'auxiliary_heat_2' => round($runtime_seconds['auxiliary_heat_2'] / 3600),
+        'cool_1' => round($runtime_seconds['cool_1'] / 3600),
+        'cool_2' => round($runtime_seconds['cool_2'] / 3600),
       ],
       'metadata' => [
         'generated_at' => date('c'),
@@ -730,10 +769,26 @@ class profile extends cora\api {
 
     foreach(['heat', 'cool'] as $type) {
       if(count($setpoints[$type]) > 0) {
-        $profile['setpoint'][$type] = round(array_average($setpoints[$type])) / 10;
+        $profile['setpoint'][$type] = round(array_mean($setpoints[$type])) / 10;
         $profile['metadata']['setpoint'][$type]['samples'] = count($setpoints[$type]);
       }
     }
+
+    // Heating and cooling degree days.
+    foreach($degree_days as $degree_day) {
+      if($degree_day < 0) {
+        $profile['degree_days']['cool'] += ($degree_day * -1);
+      } else {
+        $profile['degree_days']['heat'] += ($degree_day);
+      }
+    }
+    if ($profile['degree_days']['cool'] !== null) {
+      $profile['degree_days']['cool'] = round($profile['degree_days']['cool']);
+    }
+    if ($profile['degree_days']['heat'] !== null) {
+      $profile['degree_days']['heat'] = round($profile['degree_days']['heat']);
+    }
+
 
     return $profile;
   }
