@@ -126,12 +126,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
     );
   }
 
-  var thermostat = beestat.cache.thermostat[thermostat_id];
-  begin_m = moment.max(
-    begin_m,
-    moment(thermostat.first_connected)
-  );
-
   begin_m
     .minute(Math.ceil(begin_m.minute() / 5) * 5)
     .second(0)
