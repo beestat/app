@@ -78,13 +78,6 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     );
   }
 
-  // TODO: This needs to be max of begin and when I actually have sensor data
-  var thermostat = beestat.cache.thermostat[thermostat_id];
-  begin_m = moment.max(
-    begin_m,
-    moment(thermostat.first_connected)
-  );
-
   begin_m
     .minute(Math.ceil(begin_m.minute() / 5) * 5)
     .second(0)

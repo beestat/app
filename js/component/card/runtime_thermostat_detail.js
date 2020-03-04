@@ -27,7 +27,8 @@ beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
     [
       'setting.runtime_thermostat_detail_range_type',
       'setting.runtime_thermostat_detail_range_dynamic',
-      'cache.runtime_thermostat'
+      'cache.runtime_thermostat',
+      'cache.thermostat'
     ],
     change_function
   );
@@ -35,32 +36,6 @@ beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
   beestat.component.card.apply(this, arguments);
 };
 beestat.extend(beestat.component.card.runtime_thermostat_detail, beestat.component.card);
-
-/**
- * Get data. This doesn't directly or indirectly make any API calls, but it
- * caches the data so it doesn't have to loop over everything more than once.
- *
- * @param {boolean} force Force get the data?
- *
- * @return {object} The data.
- */
-beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(force) {
-  if (this.data_ === undefined || force === true) {
-    var range = {
-      'type': beestat.setting('runtime_thermostat_detail_range_type'),
-      'dynamic': beestat.setting('runtime_thermostat_detail_range_dynamic'),
-      'static_begin': beestat.setting('runtime_thermostat_detail_range_static_begin'),
-      'static_end': beestat.setting('runtime_thermostat_detail_range_static_end')
-    };
-
-    this.data_ = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
-
-    this.data_.metadata.chart.title = this.get_title_();
-    this.data_.metadata.chart.subtitle = this.get_subtitle_();
-  }
-
-  return this.data_;
-};
 
 /**
  * Decorate
@@ -174,12 +149,12 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
    * cache is empty, then query the data. If the needed data does not exist in
    * the database, check every 2 seconds until it does.
    */
-  if (this.data_synced_(required_begin, required_end) === true) {
+  if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
     if (
       beestat.cache.runtime_thermostat === undefined ||
       beestat.cache.data.runtime_thermostat_last !== 'runtime_thermostat_detail'
     ) {
-      this.show_loading_('Loading Thermostat Detail');
+      this.show_loading_('Loading');
 
       var value;
       var operator;
@@ -232,7 +207,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
       container.appendChild(no_data);
     }
   } else {
-    this.show_loading_('Syncing Thermostat Detail');
+    this.show_loading_('Syncing');
     setTimeout(function() {
       new beestat.api()
         .add_call(
@@ -247,7 +222,6 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
         )
         .set_callback(function(response) {
           beestat.cache.set('thermostat', response);
-          self.rerender();
         })
         .send();
     }, 2000);
@@ -344,6 +318,51 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
 };
 
 /**
+ * Whether or not there is data to display on the chart.
+ *
+ * @return {boolean} Whether or not there is data to display on the chart.
+ */
+beestat.component.card.runtime_thermostat_detail.prototype.has_data_ = function() {
+  var data = this.get_data_();
+  for (var series_code in data.metadata.series) {
+    if (
+      series_code !== 'dummy' &&
+      data.metadata.series[series_code].active === true
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Get data. This doesn't directly or indirectly make any API calls, but it
+ * caches the data so it doesn't have to loop over everything more than once.
+ *
+ * @param {boolean} force Force get the data?
+ *
+ * @return {object} The data.
+ */
+beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(force) {
+  if (this.data_ === undefined || force === true) {
+    var range = {
+      'type': beestat.setting('runtime_thermostat_detail_range_type'),
+      'dynamic': beestat.setting('runtime_thermostat_detail_range_dynamic'),
+      'static_begin': beestat.setting('runtime_thermostat_detail_range_static_begin'),
+      'static_end': beestat.setting('runtime_thermostat_detail_range_static_end')
+    };
+
+    this.data_ = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
+
+    this.data_.metadata.chart.title = this.get_title_();
+    this.data_.metadata.chart.subtitle = this.get_subtitle_();
+  }
+
+  return this.data_;
+};
+
+/**
  * Get the title of the card.
  *
  * @return {string} Title
@@ -373,49 +392,4 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_subtitle_ = funct
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;
-};
-
-/**
- * Determine whether or not the data to render the desired date range has been
- * synced.
- *
- * @param {moment} required_sync_begin
- * @param {moment} required_sync_end
- *
- * @return {boolean} Whether or not the data is synced.
- */
-beestat.component.card.runtime_thermostat_detail.prototype.data_synced_ = function(required_sync_begin, required_sync_end) {
-  // Demo can just grab whatever data is there.
-  if (window.is_demo === true) {
-    return true;
-  }
-
-  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
-
-  var current_sync_begin = moment.utc(thermostat.sync_begin);
-  var current_sync_end = moment.utc(thermostat.sync_end);
-
-  return (
-    current_sync_begin.isSameOrBefore(required_sync_begin) &&
-    current_sync_end.isSameOrAfter(required_sync_end)
-  );
-};
-
-/**
- * Whether or not there is data to display on the chart.
- *
- * @return {boolean} Whether or not there is data to display on the chart.
- */
-beestat.component.card.runtime_thermostat_detail.prototype.has_data_ = function() {
-  var data = this.get_data_();
-  for (var series_code in data.metadata.series) {
-    if (
-      series_code !== 'dummy' &&
-      data.metadata.series[series_code].active === true
-    ) {
-      return true;
-    }
-  }
-
-  return false;
 };

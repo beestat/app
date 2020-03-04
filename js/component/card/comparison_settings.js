@@ -278,7 +278,7 @@ beestat.component.card.comparison_settings.prototype.decorate_top_right_ = funct
  * @return {boolean} Whether or not all of the data has been loaded.
  */
 beestat.component.card.comparison_settings.prototype.data_available_ = function() {
-  var sync_progress = beestat.get_sync_progress(beestat.setting('thermostat_id'));
+  var sync_progress = beestat.thermostat.get_sync_progress(beestat.setting('thermostat_id'));
 
   if (sync_progress >= 95) {
     this.show_loading_('Calculating Scores');

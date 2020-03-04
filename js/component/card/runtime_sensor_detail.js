@@ -19,6 +19,7 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
    * for when rerendering.
    */
   var change_function = beestat.debounce(function() {
+    self.get_data_(true);
     self.rerender();
   }, 10);
 
@@ -44,30 +45,29 @@ beestat.extend(beestat.component.card.runtime_sensor_detail, beestat.component.c
 beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
-  var range = {
-    'type': beestat.setting('runtime_sensor_detail_range_type'),
-    'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),
-    'static_begin': beestat.setting('runtime_sensor_detail_range_static_begin'),
-    'static_end': beestat.setting('runtime_sensor_detail_range_static_end')
-  };
-
-  var sensor_data = beestat.runtime_sensor.get_data(this.thermostat_id_, range);
-  var thermostat_data = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
-
-  var data = sensor_data;
-
-  Object.assign(data.series, thermostat_data.series);
-  Object.assign(data.metadata.series, thermostat_data.metadata.series);
-
   this.charts_ = {
-    'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(data),
-    'occupancy': new beestat.component.chart.runtime_sensor_detail_occupancy(data),
-    'temperature': new beestat.component.chart.runtime_sensor_detail_temperature(data)
+    'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(
+      this.get_data_()
+    ),
+    'occupancy': new beestat.component.chart.runtime_sensor_detail_occupancy(
+      this.get_data_()
+    ),
+    'temperature': new beestat.component.chart.runtime_sensor_detail_temperature(
+      this.get_data_()
+    )
   };
 
-  this.charts_.equipment.render(parent);
-  this.charts_.occupancy.render(parent);
-  this.charts_.temperature.render(parent);
+  var container = $.createElement('div').style({
+    'position': 'relative'
+  });
+  parent.appendChild(container);
+
+  var chart_container = $.createElement('div');
+  container.appendChild(chart_container);
+
+  this.charts_.equipment.render(chart_container);
+  this.charts_.occupancy.render(chart_container);
+  this.charts_.temperature.render(chart_container);
 
   // Sync extremes and crosshair.
   Object.values(this.charts_).forEach(function(source_chart) {
@@ -130,12 +130,12 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
    * cache is empty, then query the data. If the needed data does not exist in
    * the database, check every 2 seconds until it does.
    */
-  if (this.data_synced_(required_begin, required_end) === true) {
+  if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
     if (
       beestat.cache.runtime_sensor === undefined ||
       beestat.cache.data.runtime_thermostat_last !== 'runtime_sensor_detail'
     ) {
-      this.show_loading_('Loading Sensor Detail');
+      this.show_loading_('Loading');
 
       var value;
       var operator;
@@ -201,9 +201,25 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
       });
 
       api_call.send();
+    } else if (this.has_data_() === false) {
+      chart_container.style('filter', 'blur(3px)');
+      var no_data = $.createElement('div');
+      no_data.style({
+        'position': 'absolute',
+        'top': 0,
+        'left': 0,
+        'width': '100%',
+        'height': '100%',
+        'display': 'flex',
+        'flex-direction': 'column',
+        'justify-content': 'center',
+        'text-align': 'center'
+      });
+      no_data.innerText('No data to display');
+      container.appendChild(no_data);
     }
   } else {
-    this.show_loading_('Syncing Sensor Detail');
+    this.show_loading_('Syncing');
     setTimeout(function() {
       new beestat.api()
         .add_call(
@@ -313,6 +329,58 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
 };
 
 /**
+ * Whether or not there is data to display on the chart.
+ *
+ * @return {boolean} Whether or not there is data to display on the chart.
+ */
+beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
+  var data = this.get_data_();
+  for (var series_code in data.metadata.series) {
+    if (
+      series_code !== 'dummy' &&
+      data.metadata.series[series_code].active === true
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Get data. This doesn't directly or indirectly make any API calls, but it
+ * caches the data so it doesn't have to loop over everything more than once.
+ *
+ * @param {boolean} force Force get the data?
+ *
+ * @return {object} The data.
+ */
+beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(force) {
+  if (this.data_ === undefined || force === true) {
+
+    var range = {
+      'type': beestat.setting('runtime_sensor_detail_range_type'),
+      'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),
+      'static_begin': beestat.setting('runtime_sensor_detail_range_static_begin'),
+      'static_end': beestat.setting('runtime_sensor_detail_range_static_end')
+    };
+
+    var sensor_data = beestat.runtime_sensor.get_data(this.thermostat_id_, range);
+    var thermostat_data = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
+
+    this.data_ = sensor_data;
+
+    Object.assign(this.data_.series, thermostat_data.series);
+    Object.assign(this.data_.metadata.series, thermostat_data.metadata.series);
+
+    this.data_.metadata.chart.title = this.get_title_();
+    this.data_.metadata.chart.subtitle = this.get_subtitle_();
+  }
+
+  return this.data_;
+};
+
+/**
  * Get the title of the card.
  *
  * @return {string} Title
@@ -342,30 +410,4 @@ beestat.component.card.runtime_sensor_detail.prototype.get_subtitle_ = function(
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;
-};
-
-/**
- * Determine whether or not the data to render the desired date range has been
- * synced.
- *
- * @param {moment} required_sync_begin
- * @param {moment} required_sync_end
- *
- * @return {boolean} Whether or not the data is synced.
- */
-beestat.component.card.runtime_sensor_detail.prototype.data_synced_ = function(required_sync_begin, required_sync_end) {
-  // Demo can just grab whatever data is there.
-  if (window.is_demo === true) {
-    return true;
-  }
-
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-
-  var current_sync_begin = moment.utc(thermostat.sync_begin);
-  var current_sync_end = moment.utc(thermostat.sync_end);
-
-  return (
-    current_sync_begin.isSameOrBefore(required_sync_begin) &&
-    current_sync_end.isSameOrAfter(required_sync_end)
-  );
 };

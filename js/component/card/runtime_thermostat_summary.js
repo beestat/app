@@ -14,7 +14,7 @@ beestat.component.card.runtime_thermostat_summary = function(thermostat_id) {
    * long the sync will take to complete.
    */
   this.sync_begin_m_ = moment();
-  this.sync_begin_progress_ = beestat.get_sync_progress(thermostat_id);
+  this.sync_begin_progress_ = beestat.thermostat.get_sync_progress(thermostat_id);
 
   /*
    * When a setting is changed clear all of the data. Then rerender which will
@@ -49,13 +49,37 @@ beestat.extend(beestat.component.card.runtime_thermostat_summary, beestat.compon
  * @param {rocket.Elements} parent
  */
 beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ = function(parent) {
+  var container = $.createElement('div').style({
+    'position': 'relative'
+  });
+  parent.appendChild(container);
+
+  var chart_container = $.createElement('div');
+  container.appendChild(chart_container);
+
   var data = this.get_data_();
   this.chart_ = new beestat.component.chart.runtime_thermostat_summary(data);
-  this.chart_.render(parent);
+  this.chart_.render(chart_container);
 
-  var sync_progress = beestat.get_sync_progress(this.thermostat_id_);
+  var sync_progress = beestat.thermostat.get_sync_progress(this.thermostat_id_);
 
-  if (sync_progress < 100) {
+  if (sync_progress === null) {
+    chart_container.style('filter', 'blur(3px)');
+    var no_data = $.createElement('div');
+    no_data.style({
+      'position': 'absolute',
+      'top': 0,
+      'left': 0,
+      'width': '100%',
+      'height': '100%',
+      'display': 'flex',
+      'flex-direction': 'column',
+      'justify-content': 'center',
+      'text-align': 'center'
+    });
+    no_data.innerText('No data to display');
+    container.appendChild(no_data);
+  } else if (sync_progress < 100) {
     var time_taken = moment.duration(moment().diff(this.sync_begin_m_));
     var percent_taken = sync_progress - this.sync_begin_progress_;
     var percent_per_second = percent_taken / time_taken.asSeconds();
@@ -73,7 +97,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ =
       }
     }
 
-    this.show_loading_('Syncing Thermostat Summary (' + sync_progress + '%)<br/>' + string_remain + ' remaining');
+    this.show_loading_('Syncing (' + sync_progress + '%)<br/>' + string_remain + ' remaining');
     setTimeout(function() {
       var api = new beestat.api();
       api.add_call(
