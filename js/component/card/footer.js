@@ -27,8 +27,9 @@ beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
 
   footer_links.appendChild(
     $.createElement('a')
-      .setAttribute('href', 'mailto:contact@beestat.io')
-      .innerHTML('Contact')
+      .setAttribute('href', 'https://community.beestat.io/')
+      .setAttribute('target', '_blank')
+      .innerHTML('Feedback')
   );
   footer_links.appendChild($.createElement('span').innerHTML(' • '));
 
@@ -50,8 +51,8 @@ beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
 
   footer_links.appendChild(
     $.createElement('a')
-      .setAttribute('href', 'https://github.com/beestat/app/issues/')
-      .setAttribute('target', '_blank')
-      .innerHTML('Report Issue')
+      .setAttribute('href', 'mailto:contact@beestat.io')
+      .innerHTML('Contact')
   );
+
 };
