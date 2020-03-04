@@ -507,92 +507,94 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
 
   var menu = (new beestat.component.menu()).render(parent);
 
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Past 3 Months')
-    .set_icon('calendar_range')
-    .set_callback(function() {
-      if (
-        beestat.setting('runtime_thermostat_summary_time_count') !== 3 ||
-        beestat.setting('runtime_thermostat_summary_time_period') !== 'month' ||
-        beestat.setting('runtime_thermostat_summary_group_by') !== 'day'
-      ) {
-        beestat.setting({
-          'runtime_thermostat_summary_time_count': 3,
-          'runtime_thermostat_summary_time_period': 'month',
-          'runtime_thermostat_summary_group_by': 'day'
-        });
-      }
-    }));
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Past 12 Months')
-    .set_icon('calendar_range')
-    .set_callback(function() {
-      if (
-        beestat.setting('runtime_thermostat_summary_time_count') !== 12 ||
-        beestat.setting('runtime_thermostat_summary_time_period') !== 'month' ||
-        beestat.setting('runtime_thermostat_summary_group_by') !== 'week'
-      ) {
-        beestat.setting({
-          'runtime_thermostat_summary_time_count': 12,
-          'runtime_thermostat_summary_time_period': 'month',
-          'runtime_thermostat_summary_group_by': 'week'
-        });
-      }
-    }));
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('All Time')
-    .set_icon('calendar_range')
-    .set_callback(function() {
-      if (
-        beestat.setting('runtime_thermostat_summary_time_count') !== 0 ||
-        beestat.setting('runtime_thermostat_summary_time_period') !== 'all' ||
-        beestat.setting('runtime_thermostat_summary_group_by') !== 'month'
-      ) {
-        beestat.setting({
-          'runtime_thermostat_summary_time_count': 0,
-          'runtime_thermostat_summary_time_period': 'all',
-          'runtime_thermostat_summary_group_by': 'month'
-        });
-      }
-    }));
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Custom')
-    .set_icon('calendar_edit')
-    .set_callback(function() {
-      (new beestat.component.modal.runtime_thermostat_summary_custom()).render();
-    }));
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Download Chart')
-    .set_icon('download')
-    .set_callback(function() {
-      self.chart_.export();
-    }));
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Reset Zoom')
-    .set_icon('magnify_minus')
-    .set_callback(function() {
-      self.chart_.reset_zoom();
-    }));
-
-  if (beestat.setting('runtime_thermostat_summary_gap_fill') === true) {
+  if (beestat.thermostat.get_sync_progress(this.thermostat_id_) !== null) {
     menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Disable Gap-Fill')
-      .set_icon('basket_unfill')
+      .set_text('Past 3 Months')
+      .set_icon('calendar_range')
       .set_callback(function() {
-        beestat.setting('runtime_thermostat_summary_gap_fill', false);
+        if (
+          beestat.setting('runtime_thermostat_summary_time_count') !== 3 ||
+          beestat.setting('runtime_thermostat_summary_time_period') !== 'month' ||
+          beestat.setting('runtime_thermostat_summary_group_by') !== 'day'
+        ) {
+          beestat.setting({
+            'runtime_thermostat_summary_time_count': 3,
+            'runtime_thermostat_summary_time_period': 'month',
+            'runtime_thermostat_summary_group_by': 'day'
+          });
+        }
       }));
-  } else {
+
     menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Enable Gap-Fill')
-      .set_icon('basket_fill')
+      .set_text('Past 12 Months')
+      .set_icon('calendar_range')
       .set_callback(function() {
-        beestat.setting('runtime_thermostat_summary_gap_fill', true);
+        if (
+          beestat.setting('runtime_thermostat_summary_time_count') !== 12 ||
+          beestat.setting('runtime_thermostat_summary_time_period') !== 'month' ||
+          beestat.setting('runtime_thermostat_summary_group_by') !== 'week'
+        ) {
+          beestat.setting({
+            'runtime_thermostat_summary_time_count': 12,
+            'runtime_thermostat_summary_time_period': 'month',
+            'runtime_thermostat_summary_group_by': 'week'
+          });
+        }
       }));
+
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('All Time')
+      .set_icon('calendar_range')
+      .set_callback(function() {
+        if (
+          beestat.setting('runtime_thermostat_summary_time_count') !== 0 ||
+          beestat.setting('runtime_thermostat_summary_time_period') !== 'all' ||
+          beestat.setting('runtime_thermostat_summary_group_by') !== 'month'
+        ) {
+          beestat.setting({
+            'runtime_thermostat_summary_time_count': 0,
+            'runtime_thermostat_summary_time_period': 'all',
+            'runtime_thermostat_summary_group_by': 'month'
+          });
+        }
+      }));
+
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Custom')
+      .set_icon('calendar_edit')
+      .set_callback(function() {
+        (new beestat.component.modal.runtime_thermostat_summary_custom()).render();
+      }));
+
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Download Chart')
+      .set_icon('download')
+      .set_callback(function() {
+        self.chart_.export();
+      }));
+
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Reset Zoom')
+      .set_icon('magnify_minus')
+      .set_callback(function() {
+        self.chart_.reset_zoom();
+      }));
+
+    if (beestat.setting('runtime_thermostat_summary_gap_fill') === true) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Disable Gap-Fill')
+        .set_icon('basket_unfill')
+        .set_callback(function() {
+          beestat.setting('runtime_thermostat_summary_gap_fill', false);
+        }));
+    } else {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Enable Gap-Fill')
+        .set_icon('basket_fill')
+        .set_callback(function() {
+          beestat.setting('runtime_thermostat_summary_gap_fill', true);
+        }));
+    }
   }
 
   menu.add_menu_item(new beestat.component.menu_item()
