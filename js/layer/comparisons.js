@@ -46,7 +46,7 @@ beestat.layer.comparisons.prototype.decorate_ = function(parent) {
   ]);
 
   // Scores and graph
-  if (thermostat_group.profile !== null) {
+  if (thermostat_group.temperature_profile !== null) {
     cards.push([
       {
         'card': new beestat.component.card.score.heat(),
@@ -68,7 +68,9 @@ beestat.layer.comparisons.prototype.decorate_ = function(parent) {
         'size': 12
       }
     ]);
+  }
 
+  if (thermostat_group.profile !== null) {
     if (beestat.user.has_early_access() === true) {
       cards.push([
         {
