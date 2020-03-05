@@ -143,25 +143,27 @@ beestat.component.modal.prototype.decorate_ = function() {
  * Close the currently open modal.
  */
 beestat.component.modal.prototype.dispose = function() {
-  var self = this;
+  if (this.rendered_ === true) {
+    var self = this;
 
-  this.modal_.style('transform', 'translateX(-50%) scale(0)');
-  this.mask_.style('background', 'rgba(0, 0, 0, 0)');
-  $('body').firstElementChild()
-    .style('filter', '');
+    this.modal_.style('transform', 'translateX(-50%) scale(0)');
+    this.mask_.style('background', 'rgba(0, 0, 0, 0)');
+    $('body').firstElementChild()
+      .style('filter', '');
 
-  setTimeout(function() {
-    self.modal_.parentNode().removeChild(self.modal_);
-    self.mask_.parentNode().removeChild(self.mask_);
+    setTimeout(function() {
+      self.modal_.parentNode().removeChild(self.modal_);
+      self.mask_.parentNode().removeChild(self.mask_);
 
-    delete self.mask_;
-    delete self.modal_;
-  }, 200);
+      delete self.mask_;
+      delete self.modal_;
+    }, 200);
 
-  $(window).removeEventListener('keydown.modal');
-  $(window).removeEventListener('click.modal');
+    $(window).removeEventListener('keydown.modal');
+    $(window).removeEventListener('click.modal');
 
-  this.rendered_ = false;
+    this.rendered_ = false;
+  }
 };
 
 /**
