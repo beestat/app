@@ -35,17 +35,21 @@ beestat.comparisons.get_comparison_scores = function(callback) {
     );
   });
 
-  api.add_call(
-    'thermostat_group',
-    'get_metrics',
-    {
-      'attributes': beestat.comparisons.get_comparison_attributes('resist') // todo
-    },
-    'metrics'
-  );
+  if (beestat.user.has_early_access() === true) {
+    api.add_call(
+      'thermostat_group',
+      'get_metrics',
+      {
+        'attributes': beestat.comparisons.get_comparison_attributes('resist') // todo
+      },
+      'metrics'
+    );
+  }
 
   api.set_callback(function(data) {
-    beestat.cache.set('data.metrics', data.metrics);
+    if (beestat.user.has_early_access() === true) {
+      beestat.cache.set('data.metrics', data.metrics);
+    }
 
     types.forEach(function(type) {
       beestat.cache.set('data.comparison_scores_' + type, data['score_' + type]);
