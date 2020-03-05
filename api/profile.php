@@ -678,7 +678,6 @@ class profile extends cora\api {
         }
 
         $deltas_raw[$sample['type']][$sample['outdoor_temperature']]['deltas_per_hour'][] = $sample['delta_per_hour'];
-
       }
     }
 
@@ -748,7 +747,7 @@ class profile extends cora\api {
           isset($deltas[$type][$outdoor_temperature]) === false &&
           count($data['deltas_per_hour']) >= $required_samples
         ) {
-          $deltas[$type][$outdoor_temperature] = round(array_median($data['deltas_per_hour']), 2);
+          $deltas[$type][$outdoor_temperature] = round(array_median($data['deltas_per_hour']) / 10, 2);
           $profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'] = count($data['deltas_per_hour']);
         }
       }
