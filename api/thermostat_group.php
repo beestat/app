@@ -580,7 +580,7 @@ class thermostat_group extends cora\crud {
     }
 
     $limit_start = 0;
-    $limit_count = 1000;
+    $limit_count = 100;
 
     /**
      * Selecting lots of rows can eventually run PHP out of memory, so chunk
