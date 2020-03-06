@@ -9,6 +9,7 @@ echo '<script>window.is_demo = ' . ($setting->is_demo() === true ? 'true' : 'fal
 
 if($setting->get('environment') === 'dev' || $setting->get('environment') === 'dev_live') {
   // External libraries
+  echo '<script src="/js/lib/sentry/sentry.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/rocket/rocket.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/moment/moment.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/highcharts/highcharts.js"></script>' . PHP_EOL;

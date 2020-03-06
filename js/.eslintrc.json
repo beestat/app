@@ -8,9 +8,8 @@
     "$": true,
     "beestat": true,
     "moment": true,
-    "Rollbar": true,
     "Highcharts": true,
-    "ga": true
+    "Sentry": true
   },
   "extends": "eslint:all",
   "rules": {

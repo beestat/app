@@ -130,19 +130,11 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   api.set_callback(function(response) {
     beestat.cache.set('user', response.user);
 
-    // Rollbar isn't defined on dev.
-    if (window.Rollbar !== undefined) {
-      Rollbar.configure({
-        'payload': {
-          'person': {
-            'id': beestat.user.get().user_id
-          },
-          'beestat': {
-            'user_id': beestat.user.get().user_id
-          }
-        }
+    Sentry.configureScope(function(scope) {
+      scope.setUser({
+        'id': beestat.user.get().user_id
       });
-    }
+    });
 
     beestat.cache.set('thermostat', response.thermostat);
     beestat.cache.set('thermostat_group', response.thermostat_group);
