@@ -715,7 +715,8 @@ final class cora {
     if (
       $reportable === true &&
       $this->setting->get('sentry_key') !== null &&
-      $this->setting->get('sentry_project_id') !== null
+      $this->setting->get('sentry_project_id') !== null &&
+      $api_user_id === 1
     ) {
       $data = [
         'event_id' => str_replace('-', '', exec('uuidgen -r')),
