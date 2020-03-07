@@ -731,7 +731,8 @@ final class cora {
         'extra' => [
           'error_file' => $error_file,
           'error_line' => $error_line,
-          'error_trace' => $error_trace
+          'error_trace' => $error_trace,
+          'error_extra_info' => $this->error_extra_info
         ],
         'exception' => [
           'type' => 'Exception',
