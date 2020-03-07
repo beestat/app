@@ -45,7 +45,5 @@ Hi! This is a passion project of mine and I'm thrilled to be able to share it wi
 
 
 <p align="center">
-  <a href="https://www.patreon.com/beestat" target="_blank"><img src="https://img.shields.io/badge/Support%20beestat-83+-lightgrey.svg?style=social&logo=patreon" /></a>
-  <a href="https://twitter.com/beestat_io" target="_blank"><img src="https://img.shields.io/twitter/follow/beestat_io.svg?style=social" /></a>
-  <a href="https://reddit.com/r/beestat" target="_blank"><img src="https://img.shields.io/reddit/subreddit-subscribers/beestat.svg?style=social" /></a>
+  <a href="https://www.patreon.com/beestat" target="_blank"><img src="https://img.shields.io/badge/Support%20beestat-220+-lightgrey.svg?style=social&logo=patreon" /></a>
 </p>
