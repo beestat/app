@@ -3,15 +3,6 @@
 namespace cora;
 
 /**
- * This exception is thrown by database->query if the query failed due to a
- * duplicate entry in the database.
- *
- * @author Jon Ziebell
- */
-final class DuplicateEntryException extends \Exception {
-};
-
-/**
  * This is a MySQLi database wrapper. It provides access to some basic
  * functions like select, insert, and update. Those functions automatically
  * escape table names, column names, and parameters for you using a number of
@@ -61,25 +52,18 @@ final class database extends \mysqli {
   private $transaction_started = false;
 
   /**
-   * The total number of queries executed.
+   * The executed queries.
    *
    * @var int
    */
-  private $query_count = 0;
+  private $queries = [];
 
   /**
-   * The total time all queries have taken to execute.
+   * The request object.
    *
-   * @var float
+   * @var request
    */
-  private $query_time = 0;
-
-  /**
-   * The cora object.
-   *
-   * @var cora
-   */
-  private $cora;
+  private $request;
 
   /**
    * The setting object.
@@ -100,7 +84,7 @@ final class database extends \mysqli {
    * @throws \Exception If failing to connect to the database.
    */
   public function __construct() {
-    $this->cora = cora::get_instance();
+    $this->request = request::get_instance();
     $this->setting = setting::get_instance();
 
     parent::__construct(
@@ -113,26 +97,30 @@ final class database extends \mysqli {
     // does not have a native type for decimals so that gets left behind.
     parent::options(MYSQLI_OPT_INT_AND_FLOAT_NATIVE, true);
 
+    // $this->connect_error = 'this is broken';
     if($this->connect_error !== null) {
-      $this->cora->set_error_extra_info(
+      throw new exception(
+        'Could not connect to database.',
+        1200,
+        true,
         [
           'database_error' => $this->connect_error
         ]
       );
-      throw new \Exception('Could not connect to database.', 1200);
     }
 
     $database_name = $this->setting->get('database_name');
     if($database_name !== null) {
       $success = $this->select_db($database_name);
       if($success === false) {
-
-        $this->cora->set_error_extra_info(
+        throw new exception(
+          'Could not select database.',
+          1208,
+          true,
           [
             'database_error' => $this->error
           ]
         );
-        throw new \Exception('Could not select database.', 1208);
       }
     }
   }
@@ -188,7 +176,7 @@ final class database extends \mysqli {
     if($this->transaction_started === false) {
       $result = $this->query('start transaction');
       if($result === false) {
-        throw new \Exception('Failed to start database transaction.', 1201);
+        throw new exception('Failed to start database transaction.', 1201);
       }
       $this->transaction_started = true;
     }
@@ -204,7 +192,7 @@ final class database extends \mysqli {
       $this->transaction_started = false;
       $result = $this->query('commit');
       if($result === false) {
-        throw new \Exception('Failed to commit database transaction.', 1202);
+        throw new exception('Failed to commit database transaction.', 1202);
       }
     }
   }
@@ -220,7 +208,7 @@ final class database extends \mysqli {
       $this->transaction_started = false;
       $result = $this->query('rollback');
       if($result === false) {
-        throw new \Exception('Failed to rollback database transaction.', 1203);
+        throw new exception('Failed to rollback database transaction.', 1203);
       }
     }
   }
@@ -279,12 +267,14 @@ final class database extends \mysqli {
       return '`' . $identifier . '`';
     }
     else {
-      $this->cora->set_error_extra_info(
+      throw new exception(
+        'Query identifier is invalid.',
+        1204,
+        true,
         [
           'identifier' => $identifier
         ]
       );
-      throw new \Exception('Query identifier is invalid.', 1204);
     }
   }
 
@@ -309,7 +299,7 @@ final class database extends \mysqli {
     else if(is_array($value) === true) {
       if(isset($value['operator']) === true) {
         if(in_array($value['operator'], ['>', '<', '=', '>=', '<=', 'between']) === false) {
-          throw new \Exception('Invalid operator', 1213);
+          throw new exception('Invalid operator', 1213);
         }
         if($value['operator'] === 'between') {
           return $this->escape_identifier($column) . ' between ' . $this->escape($value['value'][0]) . ' and ' . $this->escape($value['value'][1]);
@@ -378,28 +368,23 @@ final class database extends \mysqli {
     $result = parent::query($query);
     $stop = microtime(true);
 
-    if($result === false) {
-      $database_error = $this->error;
-      $this->rollback_transaction();
+    $this->queries[] = [
+      'query' => $query,
+      'time' => (($stop - $start) * 1000)
+    ];
 
-      $this->cora->set_error_extra_info(
+    if($result === false) {
+      $this->rollback_transaction();
+      throw new exception(
+        'Database query failed.',
+        1206,
+        true,
         [
-          'database_error' => $database_error,
+          'database_error' => $this->error,
           'query' => $query
         ]
       );
-
-      if(stripos($database_error, 'duplicate entry') !== false) {
-        throw new DuplicateEntryException('Duplicate database entry.', 1205);
-      }
-      else {
-        throw new \Exception('Database query failed.', 1206);
-      }
     }
-
-    // Don't log info about transactions...they're a wash
-    $this->query_count++;
-    $this->query_time += ($stop - $start);
 
     return $result;
   }
@@ -541,7 +526,7 @@ final class database extends \mysqli {
       ) {
         foreach($resource::$converged as $column => $column_properties) {
           if(isset($row[$column]) === true) {
-            throw new \Exception('Column `' . $column . '` exists; cannot be overwritten by converged column.', 1212);
+            throw new exception('Column `' . $column . '` exists; cannot be overwritten by converged column.', 1212);
           }
           $row[$column] = (isset($row['converged'][$column]) === true) ? $row['converged'][$column] : null;
         }
@@ -641,7 +626,7 @@ final class database extends \mysqli {
 
     // Check for errors
     if(isset($attributes[$table . '_id']) === false) {
-      throw new \Exception('ID is required for update.', 1214);
+      throw new exception('ID is required for update.', 1214);
     }
 
     // Extract the ID.
@@ -650,7 +635,7 @@ final class database extends \mysqli {
 
     // Check for errors
     if(count($attributes) === 0) {
-      throw new \Exception('Updates require at least one attribute.', 1207);
+      throw new exception('Updates require at least one attribute.', 1207);
     }
 
     // Converge the diverged attributes.
@@ -775,7 +760,7 @@ final class database extends \mysqli {
    * @return int The query count.
    */
   public function get_query_count() {
-    return $this->query_count;
+    return count($this->queries);
   }
 
   /**
@@ -784,7 +769,20 @@ final class database extends \mysqli {
    * @return float The total execution time.
    */
   public function get_query_time() {
-    return $this->query_time;
+    $query_time = 0;
+    foreach ($this->queries as $query) {
+      $query_time += $query['time'];
+    }
+    return $query_time;
+  }
+
+  /**
+   * Gets the time taken to execute all of the queries.
+   *
+   * @return float The total execution time.
+   */
+  public function get_queries() {
+    return $this->queries;
   }
 
   /**
@@ -878,10 +876,10 @@ final class database extends \mysqli {
       ');
     $row = $result->fetch_assoc();
     if($row['lock'] === 0) {
-      throw new \Exception('Lock not established by this thread.', 1210);
+      throw new exception('Lock not established by this thread.', 1210);
     }
     else if($row['lock'] === null) {
-      throw new \Exception('Lock does not exist.', 1211);
+      throw new exception('Lock does not exist.', 1211);
     }
   }
 

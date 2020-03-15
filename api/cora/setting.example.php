@@ -154,16 +154,6 @@ final class setting {
     'database_name' => '',
 
     /**
-     * Influx database connection information. This is where most logging is
-     * sent to.
-     */
-    'influx_database_host' => '',
-    'influx_database_port' => 8086,
-    'influx_database_name' => '',
-    'influx_database_username' => '',
-    'influx_database_password' => '',
-
-    /**
      * Key and project id obtained from the Sentry DSN. See sentry.io.
      */
     'sentry_key' => '',

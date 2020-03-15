@@ -10,18 +10,11 @@ namespace cora;
 final class session {
 
   /**
-   * The session_key for this session.
+   * The current session.
    *
-   * @var string
+   * @var array
    */
-  private $session_key = null;
-
-  /**
-   * The user_id for this session.
-   *
-   * @var int
-   */
-  private $user_id = null;
+  private $session;
 
   /**
    * The singleton.
@@ -91,7 +84,7 @@ final class session {
     $database = database::get_instance();
     $session_key = $this->generate_session_key();
 
-    $database->create(
+    $this->session = $database->create(
       'cora\session',
       [
         'session_key' => $session_key,
@@ -125,9 +118,6 @@ final class session {
         $this->set_cookie($key, $value, $expire, false);
       }
     }
-
-    $this->session_key = $session_key;
-    $this->user_id = $user_id;
 
     return $session_key;
   }
@@ -182,7 +172,7 @@ final class session {
         return false;
       }
 
-      $database->update(
+      $this->session = $database->update(
         'cora\session',
         [
           'session_id' => $session['session_id'],
@@ -191,8 +181,7 @@ final class session {
         ]
       );
 
-      $this->session_key = $session['session_key'];
-      $this->user_id = $session['user_id'];
+      return true;
     }
     else {
       $this->delete_cookie('session_key');
@@ -220,16 +209,15 @@ final class session {
   public function delete($session_key = null) {
     $database = database::get_instance();
     if($session_key === null) {
-      $session_key = $this->session_key;
+      $session_key = $this->session['session_key'];
     }
 
     $sessions = $database->read('cora\session', ['session_key' => $session_key]);
     if(count($sessions) === 1) {
       $database->delete('cora\session', $sessions[0]['session_id']);
       // Remove these if the current session got logged out.
-      if($session_key === $this->session_key) {
-        $this->session_key = null;
-        $this->user_id = null;
+      if($session_key === $this->session['session_key']) {
+        $this->session = null;
       }
       return true;
     }
@@ -244,11 +232,16 @@ final class session {
    * @return int The current user_id.
    */
   public function get_user_id() {
-    return $this->user_id;
+    return $this->session['user_id'];
   }
 
-  public function delete_user_id() {
-    $this->user_id = null;
+  /**
+   * Get the session.
+   *
+   * @return array The session.
+   */
+  public function get() {
+    return $this->session;
   }
 
   /**
@@ -309,4 +302,12 @@ final class session {
     $this->set_cookie($name, '', time() - 86400);
   }
 
+  /**
+   * Check if the session is valid.
+   *
+   * @return bool Whether or not the session is valid.
+   */
+  public function is_valid() {
+    return $this->session !== null;
+  }
 }

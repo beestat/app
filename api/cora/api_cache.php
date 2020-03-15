@@ -42,15 +42,6 @@ class api_cache extends crud {
       $attributes['key'] = $key;
       $attributes['expires_at'] = date('Y-m-d H:i:s', time() + $duration);
       $attributes['response_data'] = $response_data;
-      $attributes['request_resource'] = $api_call['resource'];
-      $attributes['request_method'] = $api_call['method'];
-
-      if(isset($api_call['arguments']) === true) {
-        $attributes['request_arguments'] = $api_call['arguments'];
-      }
-      else {
-        $attributes['request_arguments'] = null;
-      }
 
       return $this->create($attributes);
     }
@@ -95,11 +86,11 @@ class api_cache extends crud {
    */
   private function generate_key($api_call) {
     return sha1(
-      'resource=' . $api_call['resource'] .
-      'method=' . $api_call['method'] .
+      'resource=' . $api_call->get_resource() .
+      'method=' . $api_call->get_method() .
       'arguments=' . (
-        isset($api_call['arguments']) === true ?
-          json_encode($api_call['arguments']) : ''
+        $api_call->get_arguments() !== null ?
+          json_encode($api_call->get_arguments()) : ''
       ) .
       'user_id=' . (
         $this->session->get_user_id() !== null ?

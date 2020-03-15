@@ -15,7 +15,6 @@ class patreon extends external_api {
     'public' => []
   ];
 
-  protected static $log_influx = true;
   protected static $log_mysql = 'all';
 
   protected static $cache = false;

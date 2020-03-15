@@ -168,7 +168,7 @@ beestat.api.prototype.load_ = function(response_text) {
   if (
     response.data &&
     (
-      response.data.error_code === 1004  || // Session is expired.
+      response.data.error_code === 1505  || // Session is expired.
       response.data.error_code === 10000 || // Could not get first token.
       response.data.error_code === 10001 || // Could not refresh ecobee token; no token found.
       response.data.error_code === 10002 || // Could not refresh ecobee token; ecobee returned no token.
@@ -186,7 +186,7 @@ beestat.api.prototype.load_ = function(response_text) {
     return;
   }
 
-  // Cach responses
+  // Cache responses
   var cached_until_header = this.xhr_.getResponseHeader('beestat-cached-until');
 
   if (this.is_batch_() === true) {
@@ -244,7 +244,7 @@ beestat.api.prototype.is_batch_ = function() {
  */
 beestat.api.prototype.cache_ = function(api_call, data, until) {
   var server_date = moment(this.xhr_.getResponseHeader('date'));
-  var duration = moment.duration(moment(until).diff(server_date));
+  var duration = moment.duration(moment.utc(until).diff(server_date));
 
   beestat.api.cache[this.get_key_(api_call)] = {
     'data': data,

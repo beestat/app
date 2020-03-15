@@ -7,7 +7,6 @@
  */
 class mailchimp extends external_api {
 
-  protected static $log_influx = true;
   protected static $log_mysql = 'all';
 
   protected static $cache = false;

@@ -38,11 +38,11 @@ abstract class api {
   protected $setting;
 
   /**
-   * Cora object.
+   * Request object.
    *
-   * @var cora
+   * @var request
    */
-  protected $cora;
+  protected $request;
 
   /**
    * Construct and set the variables. The namespace is stripped from the
@@ -57,7 +57,7 @@ abstract class api {
     $class_parts = explode('\\', $this->resource);
     $this->table = end($class_parts);
     $this->database = database::get_instance();
-    $this->cora = cora::get_instance();
+    $this->request = request::get_instance();
     $this->setting = setting::get_instance();
     $this->session = session::get_instance();
   }

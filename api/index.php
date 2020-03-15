@@ -28,13 +28,16 @@ spl_autoload_register(function($class) {
   include str_replace('\\', '/', $class) . '.php';
 });
 
-// Construct cora and set up error handlers.
-$cora = cora\cora::get_instance();
-set_error_handler([$cora, 'error_handler']);
-set_exception_handler([$cora, 'exception_handler']);
+// Construct request and set up error handlers.
+$request = cora\request::get_instance();
+set_error_handler([$request, 'error_handler']);
+set_exception_handler([$request, 'exception_handler']);
 
 // The shutdown handler will output the response.
-register_shutdown_function([$cora, 'shutdown_handler']);
+register_shutdown_function([$request, 'shutdown_handler']);
+
+// Go!
+$request->process($_REQUEST);
 
 // Useful function
 function array_median($array) {
@@ -57,6 +60,3 @@ function array_mean($array) {
 
   return array_sum($array) / count($array);
 }
-
-// Go!
-$cora->process_request($_REQUEST);

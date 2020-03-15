@@ -10,12 +10,6 @@
 class external_api extends cora\api {
 
   /**
-   * Whether or not to log the API call to Influx. This will only log the
-   * event and basic timing information; no detail.
-   */
-  protected static $log_influx = true;
-
-  /**
    * Whether or not to log the API call to MySQL. This will log the entire
    * request and response in full detail. Valid values are "error", "all", and
    * false.
@@ -23,10 +17,9 @@ class external_api extends cora\api {
   protected static $log_mysql = 'error';
 
   /**
-   * Default retention policy when inserting data. Autogen is the default
-   * infinite one; also available is 30d.
+   * Whether or not to include the request and response in non-errored logs.
    */
-  protected static $influx_retention_policy = 'autogen';
+  protected static $log_mysql_verbose = true;
 
   /**
    * Whether or not to cache API calls. This will store a hash of the request
@@ -59,7 +52,6 @@ class external_api extends cora\api {
     }
 
     $this->request_timestamp = time();
-    $this->request_timestamp_microtime = $this->microtime();
 
     $curl_handle = curl_init();
     curl_setopt($curl_handle, CURLOPT_URL, $arguments['url']);
@@ -79,7 +71,7 @@ class external_api extends cora\api {
       curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $arguments['post_fields']);
     }
 
-    if($this::$log_influx !== false || $this::$log_mysql !== false) {
+    if($this::$log_mysql !== false) {
       curl_setopt($curl_handle, CURLINFO_HEADER_OUT, true);
     }
 
@@ -98,34 +90,28 @@ class external_api extends cora\api {
 
     if($cache_entry === null) {
       $curl_response = curl_exec($curl_handle);
+
       $this->curl_info = curl_getinfo($curl_handle);
 
       if($curl_response === false || curl_errno($curl_handle) !== 0) {
-        $this->cora->set_error_extra_info([
-          'curl_error' => curl_error($curl_handle)
-        ]);
-
         // Error logging
-        if($this::$log_influx === true) {
-          $this->log_influx(
-            $this->resource . '_api_log',
-            true
-          );
-        }
         if($this::$log_mysql === 'all' || $this::$log_mysql === 'error') {
-          $this->log_mysql($curl_response);
+          $this->log_mysql($curl_response, true);
         }
 
-        throw new cora\exception('Could not connect to ' . $this->resource . '.', 10600, false);
+        throw new cora\exception(
+          'Could not connect to external API.',
+          10600,
+          false,
+          [
+            'resource' => $this->resource,
+            'curl_error' => curl_error($curl_handle)
+          ]
+        );
+
       }
 
       // General (success) logging
-      if($this::$log_influx === true) {
-        $this->log_influx(
-          $this->resource . '_api_log',
-          false
-        );
-      }
       if($this::$log_mysql === 'all') {
         $this->log_mysql($curl_response);
       }
@@ -219,62 +205,26 @@ class external_api extends cora\api {
   }
 
   /**
-   * Log to InfluxDB/Grafana.
-   *
-   * @param array $measurement Which measurement to log as.
-   * @param boolean $exception Whether or not this was an exception (failure
-   * to connect, etc).
-   */
-  private function log_influx($measurement, $exception) {
-    $this->api(
-      'logger',
-      'log_influx',
-      [
-        'measurement' => $measurement,
-        'tags' => [
-          'user_id' => $this->session->get_user_id(),
-          'api_user_id' => $this->cora->get_api_user()['api_user_id'],
-          'exception' => $exception === true ? '1' : '0'
-        ],
-        'fields' => [
-          'http_code' => (int) $this->curl_info['http_code'],
-          'connect_time' => round($this->curl_info['connect_time'], 4)
-        ],
-        'timestamp' => $this->request_timestamp_microtime,
-        'retention_policy' => $this::$influx_retention_policy
-      ]
-    );
-  }
-
-  /**
    * Log to MySQL with the complete details.
    *
    * @param array $curl_response The response of the cURL request.
+   * @param boolean $force_verbose Whether or not to force verbose logging.
    */
-  protected function log_mysql($curl_response) {
+  protected function log_mysql($curl_response, $force_verbose = false) {
+    $attributes = [
+      'api_user_id' => $this->request->get_api_user()['api_user_id'],
+      'request_timestamp' => date('Y-m-d H:i:s', $this->request_timestamp)
+    ];
+
+    if($this::$log_mysql_verbose === true || $force_verbose === true) {
+      $attributes['request'] = $this->curl_info;
+      $attributes['response'] = $curl_response;
+    }
+
     $this->api(
       ($this->resource . '_api_log'),
       'create',
-      [
-        'attributes' => [
-          'api_user_id' => $this->cora->get_api_user()['api_user_id'],
-          'request_timestamp' => date('Y-m-d H:i:s', $this->request_timestamp),
-          'request' => $this->curl_info,
-          'response' => $curl_response,
-        ]
-      ]
+      ['attributes' => $attributes]
     );
-  }
-
-  /**
-   * Get microtime for influx.
-   *
-   * @link https://github.com/influxdata/influxdb-php
-   *
-   * @return string
-   */
-  private function microtime() {
-    list($usec, $sec) = explode(' ', microtime());
-    return sprintf('%d%06d', $sec, $usec * 1000000);
   }
 }

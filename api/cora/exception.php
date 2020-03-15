@@ -14,12 +14,17 @@ namespace cora;
  * @author Jon Ziebell
  */
 final class exception extends \Exception {
-  public function __construct($message, $code, $reportable = true) {
+  public function __construct($message, $code, $reportable = true, $extra = null) {
     $this->reportable = $reportable;
+    $this->extra = $extra;
     return parent::__construct($message, $code, null);
   }
 
   public function getReportable() {
     return $this->reportable;
+  }
+
+  public function getExtraInfo() {
+    return $this->extra;
   }
 }

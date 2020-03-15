@@ -15,10 +15,8 @@ class ecobee extends external_api {
     ]
   ];
 
-  protected static $log_influx = true;
-  protected static $log_mysql = 'error';
-
-  protected static $influx_retention_policy = '30d';
+  protected static $log_mysql = 'all';
+  protected static $log_mysql_verbose = false;
 
   protected static $cache = false;
   protected static $cache_for = null;
@@ -215,7 +213,7 @@ class ecobee extends external_api {
     if ($response === null) {
       // If this hasn't already been logged, log the error.
       if($this::$log_mysql !== 'all') {
-        $this->log_mysql($curl_response);
+        $this->log_mysql($curl_response, true);
       }
       throw new Exception('Invalid JSON');
     }
@@ -239,7 +237,7 @@ class ecobee extends external_api {
     else if (isset($response['status']) === true && $response['status']['code'] === 16) {
       // Token has been deauthorized by user. You must re-request authorization.
       if($this::$log_mysql !== 'all') {
-        $this->log_mysql($curl_response);
+        $this->log_mysql($curl_response, true);
       }
       $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
       $this->api('user', 'log_out', ['all' => true]);
@@ -248,7 +246,7 @@ class ecobee extends external_api {
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
       // Any other error
       if($this::$log_mysql !== 'all') {
-        $this->log_mysql($curl_response);
+        $this->log_mysql($curl_response, true);
       }
       throw new Exception($response['status']['message']);
     }
