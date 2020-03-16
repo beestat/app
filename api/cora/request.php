@@ -224,7 +224,7 @@ final class request {
       return false;
     }
 
-    $api_log_resource = new api_log2();
+    $api_log_resource = new api_log();
     $requests_this_minute = $api_log_resource->get_number_requests_since(
       $_SERVER['REMOTE_ADDR'],
       (time() - 60)
@@ -287,7 +287,7 @@ final class request {
     $database = database::get_instance();
     $session = session::get_instance();
     $setting = setting::get_instance();
-    $api_log_resource = new api_log2();
+    $api_log_resource = new api_log();
 
     // If exception.
     if(isset($this->response['data']['error_code']) === true) {
