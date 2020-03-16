@@ -571,7 +571,7 @@ final class request {
     // a new shutdown handler and no output will be sent to the client. I just
     // have to handle all problems manually.
     try {
-      $this->total_time = round((microtime(true) - $this->begin_timestamp) * 1000);
+      $this->total_time = round((microtime(true) - $this->begin_timestamp));
 
       // Fix the current working directory. See documentation on this class
       // variable for details.

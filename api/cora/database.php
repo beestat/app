@@ -370,7 +370,7 @@ final class database extends \mysqli {
 
     $this->queries[] = [
       'query' => $query,
-      'time' => (($stop - $start) * 1000)
+      'time' => ($stop - $start)
     ];
 
     if($result === false) {
