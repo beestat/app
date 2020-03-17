@@ -42,7 +42,7 @@ class patreon extends external_api {
 
     echo '<html><head><title></title></head><body><script type="text/javascript">window.close();</script></body></html><!--';
 
-    $this->cora->set_headers([
+    $this->request->set_headers([
       'Content-Type' => 'text/html'
     ], true);
 

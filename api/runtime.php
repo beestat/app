@@ -983,7 +983,7 @@ class runtime extends cora\api {
     } while ($chunk_end < $download_end);
     fclose($output);
 
-    $this->cora->set_headers([
+    $this->request->set_headers([
       'Content-Type' => 'text/csv',
       'Content-Length' => $bytes,
       'Content-Disposition' => 'attachment; filename="Beestat Export - ' . $ecobee_thermostat['identifier'] . '.csv"',
