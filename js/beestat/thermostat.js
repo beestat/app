@@ -49,8 +49,8 @@ beestat.thermostat.data_synced = function(thermostat_id, required_sync_begin, re
 
   var thermostat = beestat.cache.thermostat[thermostat_id];
 
-  var current_sync_begin = moment(thermostat.sync_begin);
-  var current_sync_end = moment(thermostat.sync_end);
+  var current_sync_begin = moment.utc(thermostat.sync_begin);
+  var current_sync_end = moment.utc(thermostat.sync_end);
 
   return (
     current_sync_begin.isSameOrBefore(required_sync_begin) === true &&
