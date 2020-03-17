@@ -432,7 +432,7 @@ final class request {
 
     $this->error_detail['file'] = $error_file;
     $this->error_detail['line'] = $error_line;
-    $this->error_detail['trace'] = debug_backtrace(false);
+    $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     try {
       $database = database::get_instance();
       $this->error_detail['queries'] = $database->get_queries();
@@ -589,7 +589,7 @@ final class request {
 
         $this->error_detail['file'] = $error['file'];
         $this->error_detail['line'] = $error['line'];
-        $this->error_detail['trace'] = debug_backtrace(false);
+        $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         try {
           $database = database::get_instance();
           $this->error_detail['queries'] = $database->get_queries();
