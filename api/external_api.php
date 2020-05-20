@@ -75,13 +75,8 @@ class external_api extends cora\api {
       curl_setopt($curl_handle, CURLINFO_HEADER_OUT, true);
     }
 
-    $should_cache = (
-      $this::$cache === true &&
-      $this::should_cache($arguments) === true
-    );
-
     // Check the cache
-    if ($should_cache === true) {
+    if ($this::$cache === true) {
       $cache_key = $this->generate_cache_key($arguments);
       $cache_entry = $this->get_cache_entry($cache_key);
     } else {
@@ -116,7 +111,10 @@ class external_api extends cora\api {
         $this->log_mysql($curl_response);
       }
 
-      if($should_cache === true) {
+      if(
+        $this::$cache === true &&
+        $this::should_cache($arguments, $curl_response, $this->curl_info) === true
+      ) {
         $this->create_update_cache_entry($cache_key, $curl_response);
       }
 

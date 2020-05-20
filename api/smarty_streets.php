@@ -58,11 +58,8 @@ class smarty_streets extends external_api {
     ]);
 
     $response = json_decode($curl_response, true);
-    if ($response === null) {
-      throw new Exception('Invalid JSON');
-    }
 
-    if (count($response) === 0) {
+    if ($response === null || count($response) === 0) {
       return null;
     } else {
       // Smarty doesn't return this but I want it.
@@ -85,14 +82,19 @@ class smarty_streets extends external_api {
   }
 
   /**
-   * Determine whether or not a request should be cached. For this, just cache
-   * everything.
+   * Determine whether or not a request should be cached. For this, cache
+   * valid JSON responses with status code 200.
    *
    * @param array $arguments
+   * @param string $curl_response
+   * @param array $curl_info
    *
    * @return boolean
    */
-  protected function should_cache($arguments) {
-    return true;
+  protected function should_cache($arguments, $curl_response, $curl_info) {
+    return (
+      $curl_info['http_code'] === 200 &&
+      json_decode($curl_response, true) !== null
+    );
   }
 }
