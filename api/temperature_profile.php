@@ -129,10 +129,7 @@ class temperature_profile extends cora\api {
     );
 
     // Get all of the relevant data
-    $thermostat_ids = [];
-    foreach($group_thermostats as $thermostat) {
-      $thermostat_ids[] = $thermostat['thermostat_id'];
-    }
+    $thermostat_ids = array_column($group_thermostats, 'thermostat_id');
 
     /**
      * Get the largest possible chunk size given the number of thermostats I
