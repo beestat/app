@@ -37,7 +37,7 @@ class patreon_token extends cora\crud {
       isset($response['access_token']) === false ||
       isset($response['refresh_token']) === false
     ) {
-      throw new Exception('Could not get first token', 10100);
+      throw new cora\exception('Could not get first Patreon token.', 10100);
     }
 
     $new_patreon_token = [
@@ -82,7 +82,7 @@ class patreon_token extends cora\crud {
       ]
     );
     if(count($patreon_tokens) === 0) {
-      throw new Exception('Could not refresh patreon token; no token found.', 10101);
+      throw new cora\exception('Could not refresh Patreon token; no token found.', 10101);
     }
     $patreon_token = $patreon_tokens[0];
 
@@ -105,7 +105,7 @@ class patreon_token extends cora\crud {
     ) {
       $this->delete($patreon_token['patreon_token_id']);
       $database->release_lock($lock_name);
-      throw new Exception('Could not refresh patreon token; patreon returned no token.', 10102);
+      throw new cora\exception('Could not refresh Patreon token; Patreon returned no token.', 10102);
     }
 
     $database->update(

@@ -37,7 +37,7 @@ class ecobee_token extends cora\crud {
       isset($response['access_token']) === false ||
       isset($response['refresh_token']) === false
     ) {
-      throw new Exception('Could not get first token.', 10000);
+      throw new cora\exception('Could not get first ecobee token.', 10000);
     }
 
     return [
@@ -73,7 +73,7 @@ class ecobee_token extends cora\crud {
       ]
     );
     if(count($ecobee_tokens) === 0) {
-      throw new Exception('Could not refresh ecobee token; no token found.', 10001);
+      throw new cora\exception('Could not refresh ecobee token; no token found.', 10001);
     }
     $ecobee_token = $ecobee_tokens[0];
 
@@ -97,7 +97,7 @@ class ecobee_token extends cora\crud {
       $this->delete($ecobee_token['ecobee_token_id']);
       $this->api('user', 'log_out', ['all' => true]);
       $database->release_lock($lock_name);
-      throw new Exception('Could not refresh ecobee token; ecobee returned no token.', 10002);
+      throw new cora\exception('Could not refresh ecobee token; ecobee returned no token.', 10002);
     }
 
     $ecobee_token = $database->update(
