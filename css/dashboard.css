@@ -369,6 +369,7 @@ a.inverted:active {
 .icon.numeric_7_box:before { content: "\F3B6"; }
 .icon.patreon:before { content: "\F881"; }
 .icon.pound:before { content: "\F423"; }
+.icon.refresh:before { content: "\F450"; }
 .icon.snowflake:before { content: "\F716"; }
 .icon.swap_horizontal:before { content: "\F4E1"; }
 .icon.signal_variant:before { content: "\F60A"; }
