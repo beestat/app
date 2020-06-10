@@ -16,7 +16,7 @@ class ecobee extends external_api {
   ];
 
   protected static $log_mysql = 'all';
-  protected static $log_mysql_verbose = true;
+  protected static $log_mysql_verbose = false;
 
   protected static $cache = false;
   protected static $cache_for = null;
