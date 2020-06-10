@@ -250,6 +250,14 @@ class ecobee extends external_api {
       }
       throw new Exception($response['status']['message']);
     }
+    else if (isset($response['error']) === true) {
+      // Authorization errors are a bit different
+      // https://www.ecobee.com/home/developer/api/documentation/v1/auth/auth-req-resp.shtml
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response, true);
+      }
+      throw new Exception(isset($response['error_description']) === true ? $response['error_description'] : $response['error']);
+    }
     else {
       return $response;
     }
