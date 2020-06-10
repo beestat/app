@@ -852,6 +852,18 @@ class runtime extends cora\api {
       $thermostat['ecobee_thermostat_id']
     );
 
+    // Get the sensors currently attached to this thermostat.
+    $sensors = $this->api(
+      'sensor',
+      'read_id',
+      [
+        'attributes' => [
+          'thermostat_id' => $thermostat_id
+        ]
+      ]
+    );
+    $sensor_ids = array_column($sensors, 'sensor_id');
+
     // Allow for inverted arguments.
     if (strtotime($download_end) < strtotime($download_begin)) {
       $temp = $download_begin;
@@ -895,6 +907,42 @@ class runtime extends cora\api {
         [],
         'timestamp' // order by
       );
+
+      // Get all of the sensor data and store it in an array indexed by timestamp.
+      $runtime_sensors_by_timestamp = [];
+      foreach($sensors as $sensor_id => $sensor) {
+        $runtime_sensors = $this->database->read(
+          'runtime_sensor',
+          [
+            'sensor_id' => $sensor_ids,
+            'timestamp' => [
+              'value' => [date('Y-m-d H:i:s', $chunk_begin), date('Y-m-d H:i:s', $chunk_end)],
+              'operator' => 'between'
+            ]
+          ],
+          [],
+          'timestamp' // order by
+        );
+
+        foreach($runtime_sensors as $runtime_sensor) {
+          if($runtime_sensor['temperature'] !== null) {
+            $runtime_sensor['temperature'] /= 10;
+            if(
+              isset($thermostat['setting']['temperature_unit']) === true &&
+              $thermostat['setting']['temperature_unit'] === '°C'
+            ) {
+              $runtime_sensor['temperature'] =
+                round(($runtime_sensor['temperature'] - 32) * (5 / 9), 1);
+            }
+          }
+
+          $strtotime = strtotime($runtime_sensor['timestamp']);
+          $runtime_sensors_by_timestamp[$strtotime][$runtime_sensor['sensor_id']] = [
+            'temperature' => $runtime_sensor['temperature'],
+            'occupancy' => $runtime_sensor['occupancy']
+          ];
+        }
+      }
 
       // Get the appropriate runtime_thermostat_texts.
       $runtime_thermostat_text_ids = array_unique(array_merge(
