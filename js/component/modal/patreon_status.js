@@ -2,6 +2,15 @@
  * Patreon Status.
  */
 beestat.component.modal.patreon_status = function() {
+  var self = this;
+
+  beestat.dispatcher.addEventListener(
+    'cache.user',
+    function() {
+      self.rerender();
+    }
+  );
+
   beestat.component.modal.apply(this, arguments);
 };
 beestat.extend(beestat.component.modal.patreon_status, beestat.component.modal);
@@ -71,34 +80,69 @@ beestat.component.modal.patreon_status.prototype.decorate_status_ = function(par
     });
   parent.appendChild(container);
 
-  var status;
+  let patron_status;
   switch (user.patreon_status.patron_status) {
   case 'active_patron':
-    status = 'Active Patron';
+    patron_status = 'Active Patron';
     break;
   case 'declined_patron':
-    status = 'Declined Patron';
+    patron_status = 'Declined Patron';
     break;
   case 'former_patron':
-    status = 'Former Patron';
+    patron_status = 'Former Patron';
+    break;
+  case 'not_patron':
+    patron_status = 'Not Patron';
     break;
   default:
-    status = 'Unknown';
+    patron_status = 'Unknown';
     break;
   }
 
-  var last_charged;
-  if (user.patreon_status.last_charge_date === null) {
+  let last_charged;
+  switch (user.patreon_status.last_charge_date) {
+  case undefined:
+    last_charged = 'Unknown';
+    break;
+  case null:
     last_charged = 'Never';
-  } else {
+    break;
+  default:
     last_charged = moment.utc(user.patreon_status.last_charge_date).local()
       .format('MMM Do, YYYY');
+    break;
+  }
+
+  let current_pledge;
+  switch (user.patreon_status.will_pay_amount_cents) {
+  case undefined:
+    current_pledge = 'Unknown';
+    break;
+  case null:
+    current_pledge = formatter.format(0);
+    break;
+  default:
+    current_pledge = formatter.format(user.patreon_status.will_pay_amount_cents / 100);
+    break;
+  }
+
+  let lifetime_support;
+  switch (user.patreon_status.lifetime_support_cents) {
+  case undefined:
+    lifetime_support = 'Unknown';
+    break;
+  case null:
+    lifetime_support = formatter.format(0);
+    break;
+  default:
+    lifetime_support = formatter.format(user.patreon_status.lifetime_support_cents / 100);
+    break;
   }
 
   var fields = [
     {
       'name': 'Status',
-      'value': status
+      'value': patron_status
     },
     {
       'name': 'Last Charged',
@@ -106,11 +150,11 @@ beestat.component.modal.patreon_status.prototype.decorate_status_ = function(par
     },
     {
       'name': 'Current Pledge',
-      'value': formatter.format(user.patreon_status.will_pay_amount_cents / 100)
+      'value': current_pledge
     },
     {
       'name': 'Lifetime Support',
-      'value': formatter.format(user.patreon_status.lifetime_support_cents / 100)
+      'value': lifetime_support
     }
   ];
 
@@ -126,11 +170,67 @@ beestat.component.modal.patreon_status.prototype.decorate_status_ = function(par
         'font-weight': beestat.style.font_weight.bold,
         'margin-bottom': (beestat.style.size.gutter / 4)
       })
-      .innerHTML(field.name));
-    div.appendChild($.createElement('div').innerHTML(field.value));
+      .innerText(field.name));
+    div.appendChild($.createElement('div').innerText(field.value));
   });
+
+  if (beestat.user.patreon_is_connected() === true) {
+    const last_update = moment.utc(beestat.user.get().sync_status.patreon)
+      .local()
+      .fromNow();
+
+    parent.appendChild(
+      $.createElement('div')
+        .innerText('Patreon status is automatically updated every 24 hours. Your last update was ' + last_update + '.')
+    );
+  }
 };
 
+/**
+ * Get the modal title.
+ *
+ * @return {string} The modal title.
+ */
 beestat.component.modal.patreon_status.prototype.get_title_ = function() {
   return 'Patreon Status';
+};
+
+/**
+ * Get the buttons on the modal.
+ *
+ * @return {[beestat.component.button]} The buttons.
+ */
+beestat.component.modal.patreon_status.prototype.get_buttons_ = function() {
+  if (beestat.user.patreon_is_connected() === true) {
+    var refresh = new beestat.component.button()
+      .set_text('Refresh Status')
+      .set_icon('refresh')
+      .set_background_color(beestat.style.color.green.base)
+      .set_background_hover_color(beestat.style.color.green.light)
+      .set_text_color('#fff')
+      .addEventListener('click', function() {
+        this
+          .set_background_color(beestat.style.color.gray.base)
+          .set_background_hover_color()
+          .removeEventListener('click');
+
+        new beestat.api()
+          .add_call(
+            'user',
+            'sync_patreon_status',
+            {},
+            'sync_patreon_status'
+          )
+          .add_call('user', 'read_id', {}, 'user')
+          .set_callback(function(response) {
+            // Update the cache.
+            beestat.cache.set('user', response.user);
+          })
+          .send();
+      });
+
+    return [refresh];
+  }
+
+  return [];
 };
