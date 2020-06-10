@@ -921,6 +921,16 @@ class runtime extends cora\api {
         $headers[array_search('event_runtime_thermostat_text_id', $headers)] = 'event';
         $headers[array_search('climate_runtime_thermostat_text_id', $headers)] = 'climate';
 
+        // Make the column names friendlier.
+        foreach($headers as $i => $header) {
+          $headers[$i] = ucwords(str_replace('_', ' ', $headers[$i]));
+        }
+
+        foreach($sensors as $sensor) {
+          $headers[] = $sensor['name'] . ' - Temperature';
+          $headers[] = $sensor['name'] . ' - Occupancy';
+        }
+
         $bytes += fputcsv($output, $headers);
         $needs_header = false;
       }
@@ -972,10 +982,23 @@ class runtime extends cora\api {
             [$local_datetime],
             $runtime_thermostats_by_timestamp[$current_timestamp]
           );
+
+          foreach($sensors as $sensor) {
+            if(
+              isset($runtime_sensors_by_timestamp[$current_timestamp]) === true &&
+              isset($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]) === true
+            )
+            {
+              $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['temperature'];
+              $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'];
+            }
+          }
+
         } else {
           $csv_row = [$local_datetime];
         }
         $bytes += fputcsv($output, $csv_row);
+
         $current_timestamp += 300;
       }
 
