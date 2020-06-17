@@ -498,6 +498,15 @@ class runtime extends cora\api {
         continue;
       }
 
+      /**
+       * See #280.
+       */
+      if(
+        $columns['auxHeat2'] > $columns['auxHeat1']
+      ) {
+        continue;
+      }
+
       // Date and time are first two columns of the returned data. It is
       // returned in thermostat time, so convert it to UTC first.
       $timestamp = $this->get_utc_datetime(
