@@ -429,6 +429,9 @@ class thermostat_group extends cora\crud {
    * @return array
    */
   public function get_scores($type, $attributes) {
+    // See #281
+    set_time_limit(30);
+
     // All or none are required.
     if(
       (
