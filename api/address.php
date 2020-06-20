@@ -19,7 +19,7 @@ class address extends cora\crud {
 
   /**
    * Search for an address based on an address string. This will make an API
-   * call to Smarty Streets using that address string (after first checking
+   * call to SmartyStreets using that address string (after first checking
    * the cache to see if we've done it before), then it will either create the
    * address row for this user or return the existing one if it already
    * exists.
@@ -30,20 +30,48 @@ class address extends cora\crud {
    * 2. 123 Sesame Street (query smarty, return existing row)
    * 3. 123 Sesame Street (query smarty (cached), return existing row)
    *
-   * @param string $address_string Freeform address string
+   * @param string $address Address components (line_1, locality,
+   * administrative_area, postal_code)
    * @param string $country ISO 3 country code
    *
    * @return array The address row.
    */
-  public function search($address_string, $country) {
-    $normalized = $this->api(
-      'smarty_streets',
-      'smarty_streets_api',
-      [
-        'street' => $address_string,
-        'country' => $country
-      ]
-    );
+  public function search($address, $country) {
+    /**
+     * If any of these fields are missing, set normalized to an empty array
+     * and skip the SmartyStreets lookup. Also, line_1 must have a number and
+     * text.
+     */
+    foreach(['line_1', 'locality', 'administrative_area', 'postal_code'] as $key) {
+      if(
+        isset($address[$key]) === false ||
+        trim($address[$key]) === '' ||
+        $address[$key] === null
+      ) {
+        $normalized = [];
+        break;
+      }
+    }
+
+    if(
+      isset($address['line_1']) === true &&
+      preg_match('/\d+ [0-9]*[a-z]+/i', trim(preg_replace('/[^a-z0-9 ]/i', ' ', $address['line_1']))) !== 1
+    ) {
+      $normalized = [];
+    }
+
+    // If normalized wasn't overrridden, check with SmartyStreets.
+    if(isset($normalized) === false) {
+      $address_string = $address['line_1'] . ', ' . $address['locality'] . ', ' . $address['administrative_area'] . ', ' . $address['postal_code'];
+      $normalized = $this->api(
+        'smarty_streets',
+        'smarty_streets_api',
+        [
+          'street' => $address_string,
+          'country' => $country
+        ]
+      );
+    }
 
     $key = $this->generate_key($normalized);
     $existing_address = $this->get([

@@ -299,19 +299,19 @@ class ecobee_thermostat extends cora\crud {
    * @return array
    */
   private function get_address($thermostat, $ecobee_thermostat) {
-    $address_parts = [];
+    $address = [];
 
     if(isset($ecobee_thermostat['location']['streetAddress']) === true) {
-      $address_parts[] = $ecobee_thermostat['location']['streetAddress'];
+      $address['line_1'] = $ecobee_thermostat['location']['streetAddress'];
     }
     if(isset($ecobee_thermostat['location']['city']) === true) {
-      $address_parts[] = $ecobee_thermostat['location']['city'];
+      $address['locality'] = $ecobee_thermostat['location']['city'];
     }
     if(isset($ecobee_thermostat['location']['provinceState']) === true) {
-      $address_parts[] = $ecobee_thermostat['location']['provinceState'];
+      $address['administrative_area'] = $ecobee_thermostat['location']['provinceState'];
     }
     if(isset($ecobee_thermostat['location']['postalCode']) === true) {
-      $address_parts[] = $ecobee_thermostat['location']['postalCode'];
+      $address['postal_code'] = $ecobee_thermostat['location']['postalCode'];
     }
 
     if(
@@ -334,7 +334,7 @@ class ecobee_thermostat extends cora\crud {
       'address',
       'search',
       [
-        'address_string' => implode(', ', $address_parts),
+        'address' => $address,
         'country' => $country
       ]
     );
