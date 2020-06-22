@@ -164,21 +164,32 @@ beestat.api.prototype.load_ = function(response_text) {
     return;
   }
 
+  // Special handling for these error codes.
+  const error_codes = {
+    'log_out': [
+      1505,  // Session is expired.
+      10000, // Could not get first token.
+      10001, // Could not refresh ecobee token; no token found.
+      10002, // Could not refresh ecobee token; ecobee returned no token.
+      10500, // Ecobee access was revoked by user.
+      10501  // No ecobee access for this user.
+    ],
+    'ignore': [
+      10601  // Failed to subscribe.
+    ]
+  };
+
   // Error handling
   if (
     response.data &&
-    (
-      response.data.error_code === 1505  || // Session is expired.
-      response.data.error_code === 10000 || // Could not get first token.
-      response.data.error_code === 10001 || // Could not refresh ecobee token; no token found.
-      response.data.error_code === 10002 || // Could not refresh ecobee token; ecobee returned no token.
-      response.data.error_code === 10500 || // Ecobee access was revoked by user.
-      response.data.error_code === 10501    // No ecobee access for this user.
-    )
+    error_codes.log_out.includes(response.data.error_code) === true
   ) {
     window.location.href = '/';
     return;
-  } else if (response.success !== true) {
+  } else if (
+    response.success !== true &&
+    error_codes.ignore.includes(response.data.error_code) === false
+  ) {
     beestat.error(
       'API call failed: ' + response.data.error_message,
       JSON.stringify(response, null, 2)

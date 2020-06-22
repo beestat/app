@@ -111,19 +111,26 @@ final class setting {
     'beestat_root_uri' => '',
 
     /**
-     * Your Mailchimp API Key; provided to you when you create a Mailchimp
-     * developer account.
+     * Your Mailgun API Key.
      *
-     * Example: hcU74TJgGS5k7vuw3NSzkRMSWNPkv8Af-us18
+     * Example: 4b34e48e768fa45c4a6ac65dd4cf1da9-7e28d3c3-61713777
      */
-    'mailchimp_api_key' => '',
+    'mailgun_api_key' => '',
 
     /**
-     * ID of the mailing list to send emails to.
+     * API base URL including the sending domain. Make sure to include the
+     * trailing slash.
      *
-     * Example: uw3NSzkRMS
+     * Example: https://api.mailgun.net/v3/
      */
-    'mailchimp_list_id' => '',
+    'mailgun_base_url' => '',
+
+    /**
+     * The specific newsletter to subscribe users to.
+     *
+     * Example: newsletter@app.beestat.io
+     */
+    'mailgun_newsletter' => '',
 
     /**
      * Auth ID for Smarty Streets address verification.

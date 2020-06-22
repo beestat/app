@@ -1,7 +1,7 @@
 <?php
 
 /**
- * All external APIs (ecobee, SmartyStreets, Patreon, MailChimp) extend this
+ * All external APIs (ecobee, SmartyStreets, Patreon, Mailgun) extend this
  * class. This provides a generic cURL function with a couple basic arguments,
  * and also logging.
  *
@@ -88,7 +88,10 @@ class external_api extends cora\api {
 
       $this->curl_info = curl_getinfo($curl_handle);
 
-      if($curl_response === false || curl_errno($curl_handle) !== 0) {
+      if(
+        $curl_response === false ||
+        curl_errno($curl_handle) !== 0
+      ) {
         // Error logging
         if($this::$log_mysql === 'all' || $this::$log_mysql === 'error') {
           $this->log_mysql($curl_response, true);
@@ -103,7 +106,6 @@ class external_api extends cora\api {
             'curl_error' => curl_error($curl_handle)
           ]
         );
-
       }
 
       // General (success) logging

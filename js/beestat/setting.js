@@ -34,7 +34,9 @@ beestat.setting = function(key, opt_value, opt_callback) {
     'comparison_region': 'global',
     'comparison_property_type': 'similar',
 
-    'temperature_unit': '°F'
+    'temperature_unit': '°F',
+
+    'first_run': true
   };
 
   if (user.settings === null) {

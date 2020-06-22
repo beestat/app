@@ -21,38 +21,39 @@ beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
   footer_links.appendChild(
     $.createElement('a')
       .setAttribute('href', 'https://doc.beestat.io/')
-      .innerHTML('Help')
+      .innerText('Help')
   );
-  footer_links.appendChild($.createElement('span').innerHTML(' • '));
+  footer_links.appendChild($.createElement('span').innerText(' • '));
 
   footer_links.appendChild(
     $.createElement('a')
       .setAttribute('href', 'https://community.beestat.io/')
       .setAttribute('target', '_blank')
-      .innerHTML('Feedback')
+      .innerText('Feedback')
   );
-  footer_links.appendChild($.createElement('span').innerHTML(' • '));
+  footer_links.appendChild($.createElement('span').innerText(' • '));
 
   footer_links.appendChild(
     $.createElement('a')
       .setAttribute('href', 'https://beestat.io/privacy/')
       .setAttribute('target', '_blank')
-      .innerHTML('Privacy')
+      .innerText('Privacy')
   );
-  footer_links.appendChild($.createElement('span').innerHTML(' • '));
+  footer_links.appendChild($.createElement('span').innerText(' • '));
 
   footer_links.appendChild(
     $.createElement('a')
-      .setAttribute('href', 'http://eepurl.com/dum59r')
-      .setAttribute('target', '_blank')
-      .innerHTML('Mailing List')
+      .innerText('Newsletter')
+      .addEventListener('click', function() {
+        (new beestat.component.modal.newsletter()).render();
+      })
   );
-  footer_links.appendChild($.createElement('span').innerHTML(' • '));
+  footer_links.appendChild($.createElement('span').innerText(' • '));
 
   footer_links.appendChild(
     $.createElement('a')
       .setAttribute('href', 'mailto:contact@beestat.io')
-      .innerHTML('Contact')
+      .innerText('Contact')
   );
 
 };

@@ -225,7 +225,14 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       }
     }
 
-    if (
+    /*
+     * Show the first run modal or the announcements modal if there are unread
+     * important announcements.
+     */
+    if (beestat.setting('first_run') === true) {
+      beestat.setting('first_run', false);
+      (new beestat.component.modal.newsletter()).render();
+    } else if (
       last_read_announcement_id === undefined ||
       (
         most_recent_important_announcement_id !== undefined &&
@@ -234,7 +241,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     ) {
       (new beestat.component.modal.announcements()).render();
     }
-
   });
 
   api.send();

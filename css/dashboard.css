@@ -345,6 +345,7 @@ a.inverted:active {
 .icon.code_tags:before { content: "\F174"; }
 .icon.dots_vertical:before { content: "\F1D9"; }
 .icon.download:before { content: "\F1DA"; }
+.icon.email:before { content: "\F1EE"; }
 .icon.exit_to_app:before { content: "\F206"; }
 .icon.eye:before { content: "\F208"; }
 .icon.eye_off:before { content: "\F209"; }

@@ -99,6 +99,7 @@ class ecobee_thermostat extends cora\crud {
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];
+    $email_addresses = [];
     foreach($response['thermostatList'] as $api_thermostat) {
       $ecobee_thermostat = $this->get(
         [
@@ -168,6 +169,12 @@ class ecobee_thermostat extends cora\crud {
           'inactive' => 0
         ]
       );
+
+      foreach($api_thermostat['notificationSettings']['emailAddresses'] as $email_address) {
+        if(preg_match('/.+@.+\..+/', $email_address) === 1) {
+          $email_addresses[] = trim(strtolower($email_address));
+        }
+      }
 
       // Grab a bunch of attributes from the ecobee_thermostat and attach them
       // to the thermostat.
@@ -258,6 +265,19 @@ class ecobee_thermostat extends cora\crud {
           'thermostat_group_id' => $thermostat_group['thermostat_group_id']
         ]
       );
+    }
+
+    // Update the email_address on the user.
+    if(count($email_addresses) > 0) {
+      $email_address_counts = array_count_values($email_addresses);
+      arsort($email_address_counts);
+      $email_address = array_keys(array_slice($email_address_counts, 0, 1, true))[0];
+      $this->api('user', 'update', [
+        'attributes' => [
+          'user_id' => $this->session->get_user_id(),
+          'email_address' => $email_address
+        ]
+      ]);
     }
 
     // Inactivate any ecobee_thermostats that were no longer returned.

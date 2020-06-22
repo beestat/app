@@ -60,13 +60,9 @@ class ecobee extends external_api {
       );
 
       $identifiers = [];
-      $email_addresses = [];
       foreach($response['thermostatList'] as $thermostat) {
         $runtime = $thermostat['runtime'];
         $identifiers[] = $thermostat['identifier'];
-
-        $notification_settings = $thermostat['notificationSettings'];
-        $email_addresses = array_merge($email_addresses, $notification_settings['emailAddresses']);
       }
 
       // Look to see if any of the returned thermostats exist. This does not use
@@ -119,22 +115,6 @@ class ecobee extends external_api {
       else {
         $this->api('user', 'create_anonymous_user');
         $this->api('ecobee_token', 'create', ['attributes' => $ecobee_token]);
-
-        if(count($email_addresses) > 0) {
-          try {
-            $this->api(
-              'mailchimp',
-              'subscribe',
-              [
-                'email_address' => $email_addresses[0]
-              ]
-            );
-          } catch(Exception $e) {
-            // Ignore failed subscribe exceptions since it's not critical to the
-            // success of this. Everything is logged regardless.
-          }
-        }
-
       }
 
       // Redirect to the proper location.

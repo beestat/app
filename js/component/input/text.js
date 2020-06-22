@@ -63,7 +63,7 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
     parent.appendChild(icon_container);
 
     this.input_.style({
-      'padding-left': '24px'
+      'padding-left': '28px'
     });
 
     (new beestat.component.icon(this.icon_).set_size(16)
