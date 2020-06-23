@@ -251,54 +251,53 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
 
   var menu = (new beestat.component.menu()).render(parent);
 
-  if (this.has_data_() === true) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Past 1 Day')
-      .set_icon('numeric_1_box')
-      .set_callback(function() {
-        if (
-          beestat.setting('runtime_sensor_detail_range_dynamic') !== 1 ||
-          beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
-        ) {
-          beestat.cache.delete('runtime_sensor');
-          beestat.setting({
-            'runtime_sensor_detail_range_dynamic': 1,
-            'runtime_sensor_detail_range_type': 'dynamic'
-          });
-        }
-      }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Past 1 Day')
+    .set_icon('numeric_1_box')
+    .set_callback(function() {
+      if (
+        beestat.setting('runtime_sensor_detail_range_dynamic') !== 1 ||
+        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+      ) {
+        beestat.cache.delete('runtime_sensor');
+        beestat.setting({
+          'runtime_sensor_detail_range_dynamic': 1,
+          'runtime_sensor_detail_range_type': 'dynamic'
+        });
+      }
+    }));
 
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Past 3 Days')
-      .set_icon('numeric_3_box')
-      .set_callback(function() {
-        if (
-          beestat.setting('runtime_sensor_detail_range_dynamic') !== 3 ||
-          beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
-        ) {
-          beestat.cache.delete('runtime_sensor');
-          beestat.setting({
-            'runtime_sensor_detail_range_dynamic': 3,
-            'runtime_sensor_detail_range_type': 'dynamic'
-          });
-        }
-      }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Past 3 Days')
+    .set_icon('numeric_3_box')
+    .set_callback(function() {
+      if (
+        beestat.setting('runtime_sensor_detail_range_dynamic') !== 3 ||
+        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+      ) {
+        beestat.cache.delete('runtime_sensor');
+        beestat.setting({
+          'runtime_sensor_detail_range_dynamic': 3,
+          'runtime_sensor_detail_range_type': 'dynamic'
+        });
+      }
+    }));
 
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Past 7 Days')
-      .set_icon('numeric_7_box')
-      .set_callback(function() {
-        if (
-          beestat.setting('runtime_sensor_detail_range_dynamic') !== 7 ||
-          beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
-        ) {
-          beestat.cache.delete('runtime_sensor');
-          beestat.setting({
-            'runtime_sensor_detail_range_dynamic': 7,
-            'runtime_sensor_detail_range_type': 'dynamic'
-          });
-        }
-      }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Past 7 Days')
+    .set_icon('numeric_7_box')
+    .set_callback(function() {
+      if (
+        beestat.setting('runtime_sensor_detail_range_dynamic') !== 7 ||
+        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+      ) {
+        beestat.cache.delete('runtime_sensor');
+        beestat.setting({
+          'runtime_sensor_detail_range_dynamic': 7,
+          'runtime_sensor_detail_range_type': 'dynamic'
+        });
+      }
+    }));
 
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Custom')
@@ -307,6 +306,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
         (new beestat.component.modal.runtime_sensor_detail_custom()).render();
       }));
 
+  if (this.has_data_() === true) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Download Chart')
       .set_icon('download')
