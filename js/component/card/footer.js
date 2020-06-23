@@ -21,6 +21,7 @@ beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
   footer_links.appendChild(
     $.createElement('a')
       .setAttribute('href', 'https://doc.beestat.io/')
+      .setAttribute('target', '_blank')
       .innerText('Help')
   );
   footer_links.appendChild($.createElement('span').innerText(' • '));
