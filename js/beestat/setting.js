@@ -30,6 +30,7 @@ beestat.setting = function(key, opt_value, opt_callback) {
     'runtime_thermostat_summary_time_period': 'all',
     'runtime_thermostat_summary_group_by': 'month',
     'runtime_thermostat_summary_gap_fill': true,
+    'runtime_thermostat_summary_smart_scale': true,
 
     'comparison_region': 'global',
     'comparison_property_type': 'similar',

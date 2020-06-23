@@ -154,7 +154,7 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ 
     {
       'alignTicks': false,
       'min': 0,
-      'softMax': y_max_hours,
+      'softMax': (beestat.setting('runtime_thermostat_summary_smart_scale') === true) ? y_max_hours : undefined,
       'tickInterval': tick_interval,
       'reversedStacks': false,
       'gridLineColor': beestat.style.color.bluegray.light,

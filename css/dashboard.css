@@ -401,6 +401,8 @@ a.inverted:active {
 .icon.weather_hazy:before { content: "\FF4D"; }
 .icon.weather_tornado:before { content: "\FF55"; }
 .icon.cloud_question:before { content: "\FA38"; }
+.icon.network_strength_4:before { content: "\F8F9"; }
+.icon.network_strength_off:before { content: "\F8FB"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }

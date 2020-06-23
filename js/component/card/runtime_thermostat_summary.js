@@ -34,6 +34,7 @@ beestat.component.card.runtime_thermostat_summary = function(thermostat_id) {
       'setting.runtime_thermostat_summary_time_period',
       'setting.runtime_thermostat_summary_group_by',
       'setting.runtime_thermostat_summary_gap_fill',
+      'setting.runtime_thermostat_summary_smart_scale',
       'cache.runtime_thermostat_summary'
     ],
     change_function
@@ -262,8 +263,8 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
           var value = (bucket !== undefined) ? bucket[key] : null;
 
           /*
-           * If Gap-fill is on, and it's a Gap-fillable value, and it's not the
-           * last bucket, gap-fill it.
+           * If Gap Fill is on, and it's a gap fillable value, and it's not the
+           * last bucket, gap fill it.
            */
           if (
             beestat.setting('runtime_thermostat_summary_gap_fill') === true &&
@@ -435,7 +436,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_combined
         }, 0);
 
         /*
-         * This is a really good spot for Gap-fill to happen but it doesn't work
+         * This is a really good spot for Gap Fill to happen but it doesn't work
          * here because there's no order to the buckets so I can't ignore the
          * last bucket.
          */
@@ -453,12 +454,12 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_combined
 /**
  * Try to account for missing data based on how much is missing from the series.
  *
- * @param {number} value The sum to gap-fill.
+ * @param {number} value The sum to gap fill.
  * @param {number} count The number of values in the sum.
  * @param {string} group_by How the data is grouped.
  * @param {string} bucket_key Which group this is in.
  *
- * @return {number} The gap-filled sum.
+ * @return {number} The gap filled sum.
  */
 beestat.component.card.runtime_thermostat_summary.prototype.gap_fill_ = function(value, count, group_by, bucket_key) {
   var adjustment_factor;
@@ -582,17 +583,33 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
 
     if (beestat.setting('runtime_thermostat_summary_gap_fill') === true) {
       menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Disable Gap-Fill')
+        .set_text('Disable Gap Fill')
         .set_icon('basket_unfill')
         .set_callback(function() {
           beestat.setting('runtime_thermostat_summary_gap_fill', false);
         }));
     } else {
       menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Enable Gap-Fill')
+        .set_text('Enable Gap Fill')
         .set_icon('basket_fill')
         .set_callback(function() {
           beestat.setting('runtime_thermostat_summary_gap_fill', true);
+        }));
+    }
+
+    if (beestat.setting('runtime_thermostat_summary_smart_scale') === true) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Disable Smart Scale')
+        .set_icon('network_strength_off')
+        .set_callback(function() {
+          beestat.setting('runtime_thermostat_summary_smart_scale', false);
+        }));
+    } else {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Enable Smart Scale')
+        .set_icon('network_strength_4')
+        .set_callback(function() {
+          beestat.setting('runtime_thermostat_summary_smart_scale', true);
         }));
     }
   }
@@ -628,6 +645,14 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_subtitle_ = func
   string += ', ' +
     ' grouped by ' +
     beestat.setting('runtime_thermostat_summary_group_by');
+
+  const gap_fill_string =
+    beestat.setting('runtime_thermostat_summary_gap_fill') === true ? 'On' : 'Off';
+
+  const smart_scale_string =
+    beestat.setting('runtime_thermostat_summary_smart_scale') === true ? 'On' : 'Off';
+
+  string += ' (Gap Fill: ' + gap_fill_string + ', Smart Scale: ' + smart_scale_string + ')';
 
   return string;
 };
