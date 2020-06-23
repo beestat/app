@@ -506,8 +506,7 @@ final class request {
       $reportable === true &&
       $setting->get('sentry_key') !== null &&
       $setting->get('sentry_project_id') !== null &&
-      $api_user_id === 1 &&
-      false // Temporarily disabling; over rate limit anyways
+      $api_user_id === 1
     ) {
       $data = [
         'event_id' => str_replace('-', '', exec('uuidgen -r')),
