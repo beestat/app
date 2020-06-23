@@ -131,30 +131,32 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_series_
 beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ = function() {
   var y_max_hours;
   var tick_interval;
-  switch (beestat.setting('runtime_thermostat_summary_group_by')) {
-  case 'year':
-    y_max_hours = 8760;
-    tick_interval = 2190;
-    break;
-  case 'month':
-    y_max_hours = 672;
-    tick_interval = 168;
-    break;
-  case 'week':
-    y_max_hours = 168;
-    tick_interval = 24;
-    break;
-  case 'day':
-    y_max_hours = 24;
-    tick_interval = 6;
-    break;
+  if (beestat.setting('runtime_thermostat_summary_smart_scale') === true) {
+    switch (beestat.setting('runtime_thermostat_summary_group_by')) {
+    case 'year':
+      y_max_hours = 8760;
+      tick_interval = 2190;
+      break;
+    case 'month':
+      y_max_hours = 672;
+      tick_interval = 168;
+      break;
+    case 'week':
+      y_max_hours = 168;
+      tick_interval = 24;
+      break;
+    case 'day':
+      y_max_hours = 24;
+      tick_interval = 6;
+      break;
+    }
   }
 
   return [
     {
       'alignTicks': false,
       'min': 0,
-      'softMax': (beestat.setting('runtime_thermostat_summary_smart_scale') === true) ? y_max_hours : undefined,
+      'softMax': y_max_hours,
       'tickInterval': tick_interval,
       'reversedStacks': false,
       'gridLineColor': beestat.style.color.bluegray.light,
