@@ -20,6 +20,7 @@
     "default-case": "off",
     "dot-location": ["error", "property"],
     "func-names": ["error", "never"],
+    "function-call-argument-newline": "off",
     "function-paren-newline": "off",
     "guard-for-in": "off",
     "id-length": "off",
