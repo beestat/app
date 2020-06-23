@@ -424,19 +424,24 @@ final class request {
    * @return string The JSON response with the error details.
    */
   public function error_handler($error_code, $error_message, $error_file, $error_line) {
+    $this->error_detail['file'] = $error_file;
+    $this->error_detail['line'] = $error_line;
+    $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+    $this->error_detail['extra'] = null;
+
     $this->set_error_response(
       $error_message,
       $error_code,
       true
     );
 
-    $this->error_detail['file'] = $error_file;
-    $this->error_detail['line'] = $error_line;
-    $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     try {
       $database = database::get_instance();
       $this->error_detail['queries'] = $database->get_queries();
     } catch(Exception $e) {}
+
+    // Since we've caught the error, anything left here can be cleared.
+    error_clear_last();
 
     die(); // Do not continue execution; shutdown handler will now run.
   }
@@ -448,20 +453,24 @@ final class request {
    * @param Exception $e The exception.
    */
   public function exception_handler($e) {
+    $this->error_detail['file'] = $e->getFile();
+    $this->error_detail['line'] = $e->getLine();
+    $this->error_detail['trace'] = $e->getTrace();
+    $this->error_detail['extra'] = (method_exists($e, 'getExtraInfo') === true ? $e->getExtraInfo() : null);
+
     $this->set_error_response(
       $e->getMessage(),
       $e->getCode(),
       (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
     );
 
-    $this->error_detail['file'] = $e->getFile();
-    $this->error_detail['line'] = $e->getLine();
-    $this->error_detail['trace'] = $e->getTrace();
-    $this->error_detail['extra'] = (method_exists($e, 'getExtraInfo') === true ? $e->getExtraInfo() : null);
     try {
       $database = database::get_instance();
       $this->error_detail['queries'] = $database->get_queries();
     } catch(Exception $e) {}
+
+    // Since we've caught the error, anything left here can be cleared.
+    error_clear_last();
 
     die(); // Do not continue execution; shutdown handler will now run.
   }
@@ -580,15 +589,18 @@ final class request {
       // will catch fatal errors that I can't.
       $error = error_get_last();
       if($error !== null) {
+
+        $this->error_detail['file'] = $error['file'];
+        $this->error_detail['line'] = $error['line'];
+        $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $this->error_detail['extra'] = null;
+
         $this->set_error_response(
           $error['message'],
           $error['type'],
           true
         );
 
-        $this->error_detail['file'] = $error['file'];
-        $this->error_detail['line'] = $error['line'];
-        $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         try {
           $database = database::get_instance();
           $this->error_detail['queries'] = $database->get_queries();
@@ -634,16 +646,17 @@ final class request {
       }
     }
     catch(\Exception $e) {
+      $this->error_detail['file'] = $e->getFile();
+      $this->error_detail['line'] = $e->getLine();
+      $this->error_detail['trace'] = $e->getTrace();
+      $this->error_detail['extra'] = (method_exists($e, 'getExtraInfo') === true ? $e->getExtraInfo() : null);
+
       $this->set_error_response(
         $e->getMessage(),
         $e->getCode(),
         (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
       );
 
-      $this->error_detail['file'] = $e->getFile();
-      $this->error_detail['line'] = $e->getLine();
-      $this->error_detail['trace'] = $e->getTrace();
-      $this->error_detail['extra'] = (method_exists($e, 'getExtraInfo') === true ? $e->getExtraInfo() : null);
       try {
         $database = database::get_instance();
         $this->error_detail['queries'] = $database->get_queries();
