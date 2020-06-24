@@ -63,6 +63,7 @@ class mailgun extends external_api {
   public function subscribe($email_address) {
     $method = 'POST';
 
+    $email_address = trim(strtolower($email_address));
     $endpoint = 'lists/' . $this->setting->get('mailgun_newsletter') . '/members';
 
     $data = [
@@ -75,9 +76,7 @@ class mailgun extends external_api {
 
     if (
       isset($response['member']) &&
-      isset($response['member']['address']) &&
       isset($response['member']['subscribed']) &&
-      $response['member']['address'] === $email_address &&
       $response['member']['subscribed'] === true
     ) {
       return $response['member'];
@@ -98,6 +97,7 @@ class mailgun extends external_api {
   public function unsubscribe($email_address) {
     $method = 'POST';
 
+    $email_address = trim(strtolower($email_address));
     $endpoint = 'lists/' . $this->setting->get('mailgun_newsletter') . '/members';
 
     $data = [
@@ -110,9 +110,7 @@ class mailgun extends external_api {
 
     if (
       isset($response['member']) &&
-      isset($response['member']['address']) &&
       isset($response['member']['subscribed']) &&
-      $response['member']['address'] === $email_address &&
       $response['member']['subscribed'] === false
     ) {
       return $response['member'];
