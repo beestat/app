@@ -374,13 +374,15 @@ final class database extends \mysqli {
     ];
 
     if($result === false) {
+      $error = $this->error;
       $this->rollback_transaction();
+
       throw new exception(
         'Database query failed.',
         1206,
         true,
         [
-          'database_error' => $this->error,
+          'database_error' => $error,
           'query' => $query
         ]
       );
