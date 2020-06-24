@@ -569,7 +569,13 @@ class thermostat_group extends cora\crud {
     $metric_codes = [
       'setpoint_heat',
       'setpoint_cool',
-      'runtime_per_heating_degree_day'
+      // 'runtime_per_heating_degree_day',
+      'runtime_percentage_heat_1',
+      'runtime_percentage_heat_2',
+      'runtime_percentage_auxiliary_heat_1',
+      'runtime_percentage_auxiliary_heat_2',
+      'runtime_percentage_cool_1',
+      'runtime_percentage_cool_2'
     ];
 
     $metrics = [];
@@ -641,8 +647,10 @@ class thermostat_group extends cora\crud {
             $metrics['setpoint_cool']['values'][] = $setpoint_cool;
           }
 
+
           // runtime_per_heating_degree_day
-          if(
+          // todo division by 0 error here. Also remove this?
+/*          if(
             isset($other_thermostat_group['profile']) === true &&
             isset($other_thermostat_group['profile']['runtime']) == true &&
             $other_thermostat_group['profile']['runtime']['heat_1'] !== null &&
@@ -658,7 +666,27 @@ class thermostat_group extends cora\crud {
             }
             $metrics['runtime_per_heating_degree_day']['histogram'][(string)$runtime_per_heating_degree_day]++;
             $metrics['runtime_per_heating_degree_day']['values'][] = $runtime_per_heating_degree_day;
-          }
+          }*/
+
+
+
+
+          // runtime_percentage_heat_1
+/*          $total_runtime_heat =
+            $other_thermostat_group['profile']['runtime']['heat_1'] +
+            $other_thermostat_group['profile']['runtime']['heat_2'] +
+            $other_thermostat_group['profile']['runtime']['auxiliary_heat_1'] +
+            $other_thermostat_group['profile']['runtime']['auxiliary_heat_2'];
+
+          if($total_runtime_heat > 0) {
+            $runtime_percentage_heat_1 = $other_thermostat_group['profile']['runtime']['heat_1'] / $total_runtime_heat * 100;
+
+            if(isset($metrics['runtime_percentage_heat_1']['histogram'][$runtime_percentage_heat_1]) === false) {
+              $metrics['runtime_percentage_heat_1']['histogram'][$runtime_percentage_heat_1] = 0;
+            }
+            $metrics['runtime_percentage_heat_1']['histogram'][$runtime_percentage_heat_1]++;
+            $metrics['runtime_percentage_heat_1']['values'][] = $runtime_percentage_heat_1;
+          }*/
         }
       }
 
@@ -680,11 +708,18 @@ class thermostat_group extends cora\crud {
     unset($metrics['setpoint_cool']['values']);
 
     // runtime_per_heating_degree_day
-    $metrics['runtime_per_heating_degree_day']['standard_deviation'] = round($this->standard_deviation(
-      $metrics['runtime_per_heating_degree_day']['values']
-    ), 2);
-    $metrics['runtime_per_heating_degree_day']['median'] = array_median($metrics['runtime_per_heating_degree_day']['values']);
-    unset($metrics['runtime_per_heating_degree_day']['values']);
+    // $metrics['runtime_per_heating_degree_day']['standard_deviation'] = round($this->standard_deviation(
+    //   $metrics['runtime_per_heating_degree_day']['values']
+    // ), 2);
+    // $metrics['runtime_per_heating_degree_day']['median'] = array_median($metrics['runtime_per_heating_degree_day']['values']);
+    // unset($metrics['runtime_per_heating_degree_day']['values']);
+
+    // runtime_percentage_heat_1
+    // $metrics['runtime_percentage_heat_1']['standard_deviation'] = round($this->standard_deviation(
+    //   $metrics['runtime_percentage_heat_1']['values']
+    // ), 2);
+    // $metrics['runtime_percentage_heat_1']['median'] = array_median($metrics['runtime_percentage_heat_1']['values']);
+    // unset($metrics['runtime_percentage_heat_1']['values']);
 
     return $metrics;
   }
