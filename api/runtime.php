@@ -92,16 +92,22 @@ class runtime extends cora\api {
             1
           );
 
-          $this->api(
-            'thermostat',
-            'update',
-            [
-              'attributes' => [
-                'thermostat_id' => $thermostat_id,
-                'data_begin' => $runtime_thermostats[0]['timestamp']
+          // Don't attempt this update if nothing was returned. This can happen
+          // if data is returned from ecobee for the first time period but none
+          // of it was valid.
+          if(count($runtime_thermostats) === 1) {
+            $this->api(
+              'thermostat',
+              'update',
+              [
+                'attributes' => [
+                  'thermostat_id' => $thermostat_id,
+                  'data_begin' => $runtime_thermostats[0]['timestamp']
+                ]
               ]
-            ]
-          );
+            );
+          }
+
         } else {
           $this->sync_backwards($thermostat_id);
         }
