@@ -121,10 +121,10 @@ class ecobee extends external_api {
       header('Location: ' . $this->setting->get('beestat_root_uri'));
     }
     else if(isset($error) === true) {
-      throw new Exception($error_description);
+      throw new cora\exception($error_description, 10506, false);
     }
     else {
-      throw new Exception('Unhandled error');
+      throw new cora\exception('Unhandled error', 10507, false);
     }
   }
 
@@ -195,7 +195,14 @@ class ecobee extends external_api {
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response, true);
       }
-      throw new Exception('Invalid JSON');
+      throw new cora\exception(
+        'Ecobee returned invalid JSON.',
+        10502,
+        true,
+        [
+          'curl_response' => $curl_response
+        ]
+      );
     }
 
     // If the token was expired, refresh it and try again. Trying again sets
@@ -211,7 +218,7 @@ class ecobee extends external_api {
         if($this::$log_mysql !== 'all') {
           $this->log_mysql($curl_response);
         }
-        throw new Exception($response['status']['message']);
+        throw new cora\exception($response['status']['message'], 10503);
       }
     }
     else if (isset($response['status']) === true && $response['status']['code'] === 16) {
@@ -228,7 +235,7 @@ class ecobee extends external_api {
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response, true);
       }
-      throw new Exception($response['status']['message']);
+      throw new cora\exception($response['status']['message'], 10504);
     }
     else if (isset($response['error']) === true) {
       // Authorization errors are a bit different
@@ -236,7 +243,7 @@ class ecobee extends external_api {
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response, true);
       }
-      throw new Exception(isset($response['error_description']) === true ? $response['error_description'] : $response['error']);
+      throw new cora\exception(isset($response['error_description']) === true ? $response['error_description'] : $response['error'], 10505);
     }
     else {
       return $response;
