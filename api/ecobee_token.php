@@ -72,6 +72,7 @@ class ecobee_token extends cora\crud {
         'deleted' => false
       ]
     );
+
     if(count($ecobee_tokens) === 0) {
       throw new cora\exception('Could not refresh ecobee token; no token found.', 10001);
     }
@@ -84,6 +85,7 @@ class ecobee_token extends cora\crud {
         'method' => 'POST',
         'endpoint' => 'token',
         'arguments' => [
+          'ecobee_type' => 'jwt',
           'grant_type' => 'refresh_token',
           'refresh_token' => $ecobee_token['refresh_token']
         ]
