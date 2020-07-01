@@ -2,15 +2,6 @@
  * Card
  */
 beestat.component.card = function() {
-
-  /**
-   * For now just load up all the cards this way. In the future will probably
-   * need to allow arrays of certain cards for custom dashboards.
-   */
-  // beestat.cards[
-  //   this.get_class_name_recursive_(beestat.component.card).join('.')
-  // ] = this;
-
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.card, beestat.component);

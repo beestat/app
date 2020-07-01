@@ -3,8 +3,6 @@
  */
 var beestat = {};
 
-beestat.cards = {};
-
 beestat.ecobee_thermostat_models = {
   'apolloEms': 'apolloEms',
   'apolloSmart': 'ecobee4',
