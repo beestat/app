@@ -596,8 +596,17 @@ class runtime extends cora\api {
         $columns['zoneClimate']
       )['runtime_thermostat_text_id'];
 
-      $data['setpoint_cool'] = $columns['zoneCoolTemp'] * 10;
-      $data['setpoint_heat'] = $columns['zoneHeatTemp'] * 10;
+      if (isset($columns['zoneCoolTemp']) === true) {
+        $data['setpoint_cool'] = $columns['zoneCoolTemp'] * 10;
+      } else {
+        $data['setpoint_cool'] = null;
+      }
+
+      if (isset($columns['zoneHeatTemp']) === true) {
+        $data['setpoint_heat'] = $columns['zoneHeatTemp'] * 10;
+      } else {
+        $data['setpoint_heat'] = null;
+      }
 
       if ($data_begin === null) {
         $data_begin = $timestamp;
