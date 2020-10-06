@@ -915,6 +915,7 @@ class runtime extends cora\api {
 
     $output = fopen('php://output', 'w');
     $needs_header = true;
+    $first_row_out = false;
     do {
       $chunk_end = strtotime('+1 week', $chunk_begin);
       $chunk_end = min($chunk_end, $download_end);
@@ -983,7 +984,8 @@ class runtime extends cora\api {
         ]
       );
 
-
+      // If a header is needed and there is data available to figure out what
+      // the header columns should actually be...
       if ($needs_header === true && count($runtime_thermostats) > 0) {
         $headers = array_keys($runtime_thermostats[0]);
 
@@ -1050,6 +1052,7 @@ class runtime extends cora\api {
         );
 
         if(isset($runtime_thermostats_by_timestamp[$current_timestamp]) === true) {
+          $first_row_out = true;
           $csv_row = array_merge(
             [$local_datetime],
             $runtime_thermostats_by_timestamp[$current_timestamp]
@@ -1065,11 +1068,15 @@ class runtime extends cora\api {
               $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'];
             }
           }
-
         } else {
           $csv_row = [$local_datetime];
         }
-        $bytes += fputcsv($output, $csv_row);
+
+        // Don't write any output unless the first row of data exists. This
+        // allows blank rows but not before data actually exists. See #301.
+        if($first_row_out === true) {
+          $bytes += fputcsv($output, $csv_row);
+        }
 
         $current_timestamp += 300;
       }
