@@ -36,7 +36,52 @@ class runtime_thermostat_summary extends cora\crud {
    * @return array
    */
   public function read($attributes = [], $columns = []) {
-    $runtime_thermostat_summaries = parent::read($attributes, $columns);
+    $thermostats = $this->api('thermostat', 'read_id');
+
+    if(isset($attributes['thermostat_id']) === true) {
+      $thermostat_ids = [$attributes['thermostat_id']];
+    } else {
+      $thermostat_ids = array_keys($thermostats);
+    }
+
+    $runtime_thermostat_summaries = [];
+    foreach($thermostat_ids as $thermostat_id) {
+      $thermostat = $thermostats[$thermostat_id];
+      $attributes['thermostat_id'] = $thermostat_id;
+
+      // Get a base time for relative calculations
+      $local_time_zone = new DateTimeZone($thermostat['time_zone']);
+      $utc_time_zone = new DateTimeZone('UTC');
+      $date_time = new DateTime(date('Y-m-d H:i:s'), $utc_time_zone);
+      $date_time->setTimezone($local_time_zone);
+
+      if($date_time->getOffset() < 0) {
+        $base = strtotime($date_time->getOffset() . ' seconds');
+      } else {
+        $base = strtotime('+' . $date_time->getOffset() . ' seconds');
+      }
+
+      // If a date was given, apply the base time adjustment to correct for time
+      // zones.
+      if(isset($attributes['date']) === true) {
+        if(is_array($attributes['date']) === true) {
+          $attributes['date']['value'] = date(
+            'Y-m-d',
+            strtotime($attributes['date']['value'], $base)
+          );
+        } else {
+          $attributes['date'] = date(
+            'Y-m-d',
+            strtotime($attributes['date'], $base)
+          );
+        }
+      }
+
+      $runtime_thermostat_summaries = array_merge(
+        $runtime_thermostat_summaries,
+        parent::read($attributes, $columns)
+      );
+    }
 
     foreach($runtime_thermostat_summaries as &$runtime_thermostat_summary) {
       $runtime_thermostat_summary['avg_outdoor_temperature'] /= 10;
