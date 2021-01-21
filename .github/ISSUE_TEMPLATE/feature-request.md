@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for this project
+about: Please submit all feature requests at community.beestat.io
 title: ''
 labels: Idea
 assignees: ''
