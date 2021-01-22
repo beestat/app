@@ -30,17 +30,18 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
 
   (new beestat.component.title('System')).render(parent);
 
-  var heat = thermostat_group.system_type_heat !== null
-    ? thermostat_group.system_type_heat
-    : 'unknown';
-
-  var heat_auxiliary = thermostat_group.system_type_heat_auxiliary !== null
-    ? thermostat_group.system_type_heat_auxiliary
-    : 'unknown';
-
-  var cool = thermostat_group.system_type_cool !== null
-    ? thermostat_group.system_type_cool
-    : 'unknown';
+  const heat = beestat.thermostat.get_system_type(
+    thermostat.thermostat_id,
+    'heat'
+  );
+  const heat_auxiliary = beestat.thermostat.get_system_type(
+    thermostat.thermostat_id,
+    'heat_auxiliary'
+  );
+  const cool = beestat.thermostat.get_system_type(
+    thermostat.thermostat_id,
+    'cool'
+  );
 
   var button_group = new beestat.component.button_group();
   button_group.add_button(new beestat.component.button()

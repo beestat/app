@@ -170,10 +170,10 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.setting('temperature_unit', thermostat.temperature_unit);
 
     // Rename series if only one stage is available.
-    if (ecobee_thermostat.settings.coolStages === 1) {
+    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'cool') === 1) {
       beestat.series.sum_compressor_cool_1.name = 'Cool';
     }
-    if (ecobee_thermostat.settings.heatStages === 1) {
+    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'heat') === 1) {
       beestat.series.sum_compressor_heat_1.name = 'Heat';
     }
 

@@ -56,7 +56,10 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
   for (let key in options) {
     (new beestat.component.title(titles[key])).render(parent);
 
-    let current_type = thermostat_group['system_type_' + key];
+    let current_type = beestat.thermostat.get_system_type(
+      thermostat.thermostat_id,
+      key
+    );
 
     let button_group = new beestat.component.button_group();
     options[key].forEach(function(system_type) {
