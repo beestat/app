@@ -42,6 +42,11 @@ $request->process($_REQUEST);
 // Useful function
 function array_median($array) {
   $count = count($array);
+
+  if($count === 0) {
+    return null;
+  }
+
   $middle = floor($count / 2);
   sort($array, SORT_NUMERIC);
   $median = $array[$middle]; // assume an odd # of items
@@ -54,9 +59,11 @@ function array_median($array) {
 
 // Useful function
 function array_mean($array) {
-  if (count($array) === 0) {
+  $count = count($array);
+
+  if($count === 0) {
     return null;
   }
 
-  return array_sum($array) / count($array);
+  return array_sum($array) / $count;
 }
