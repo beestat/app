@@ -69,10 +69,9 @@ class user extends cora\crud {
    * Updates a user. If the password is changed then it is re-hashed with
    * bcrypt and a new salt is generated.
    *
-   * @param int $id
    * @param array $attributes
    *
-   * @return int
+   * @return array
    */
   public function update($attributes) {
     if(isset($attributes['password']) === true) {
