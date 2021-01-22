@@ -108,38 +108,6 @@ beestat.component.modal.prototype.decorate_ = function() {
 /**
  * Close the currently open modal.
  */
-/*
- * beestat.component.modal.close = function() {
- *   beestat.component.modal.open_modal.style('transform', 'translateX(-50%) scale(0)');
- *   beestat.component.modal.open_mask.style('background', 'rgba(0, 0, 0, 0)');
- *   $('body').firstElementChild().style('filter', '');
- */
-
-/*
- *   setTimeout(function() {
- *     beestat.component.modal.open_modal.parentNode().removeChild(
- *       beestat.component.modal.open_modal
- *     );
- *     beestat.component.modal.open_mask.parentNode().removeChild(
- *       beestat.component.modal.open_mask
- *     );
- */
-
-/*
- *     delete beestat.component.modal.open_mask;
- *     delete beestat.component.modal.open_modal;
- *   }, 200);
- */
-
-/*
- *   $(window).removeEventListener('keydown.modal');
- *   $(window).removeEventListener('click.modal');
- * };
- */
-
-/**
- * Close the currently open modal.
- */
 beestat.component.modal.prototype.dispose = function() {
   if (this.rendered_ === true) {
     var self = this;
