@@ -19,6 +19,8 @@
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <!-- Chrome, Firefox OS and Opera -->
     <meta name="theme-color" content="#222222">
+    <!-- Icon for pinning on iOS -->
+    <link rel="apple-touch-icon" href="/favicon_apple.png">
     <?php
       require_once 'api/cora/setting.php';
       $setting = cora\setting::get_instance();
