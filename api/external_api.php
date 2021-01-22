@@ -49,6 +49,7 @@ class external_api extends cora\api {
     $user = $this->api('user', 'get', $this->session->get_user_id());
     if ($user['debug'] === true) {
       $this::$log_mysql = 'all';
+      $this::$log_mysql_verbose = true;
     }
 
     $this->request_timestamp = time();
