@@ -6,8 +6,6 @@ beestat.component.down_notification = function() {
 };
 beestat.extend(beestat.component.down_notification, beestat.component);
 
-beestat.component.down_notification.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate a floating banner at the bottom of the page.
  *

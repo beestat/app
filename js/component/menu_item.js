@@ -7,8 +7,6 @@ beestat.component.menu_item = function() {
 };
 beestat.extend(beestat.component.menu_item, beestat.component);
 
-beestat.component.menu_item.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

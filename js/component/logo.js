@@ -6,8 +6,6 @@ beestat.component.logo = function() {
 };
 beestat.extend(beestat.component.logo, beestat.component);
 
-beestat.component.logo.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

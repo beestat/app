@@ -4,8 +4,6 @@ beestat.component.icon = function(icon_name) {
 };
 beestat.extend(beestat.component.icon, beestat.component);
 
-beestat.component.icon.prototype.rerender_on_breakpoint_ = false;
-
 beestat.component.icon.prototype.decorate_ = function(parent) {
   var self = this;
 

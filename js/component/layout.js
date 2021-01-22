@@ -9,8 +9,6 @@ beestat.component.layout = function(rows) {
 };
 beestat.extend(beestat.component.layout, beestat.component);
 
-beestat.component.layout.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate. Not much thinking to be done here; all the grid layout stuff is
  * built in CSS.

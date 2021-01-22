@@ -9,8 +9,6 @@ beestat.component.title = function(title) {
 };
 beestat.extend(beestat.component.title, beestat.component);
 
-beestat.component.title.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

@@ -6,8 +6,6 @@ beestat.component.metric = function() {
 };
 beestat.extend(beestat.component.metric, beestat.component);
 
-beestat.component.metric.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

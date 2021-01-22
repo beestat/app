@@ -6,8 +6,6 @@ beestat.component.button = function() {
 };
 beestat.extend(beestat.component.button, beestat.component);
 
-beestat.component.button.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

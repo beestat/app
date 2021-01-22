@@ -6,8 +6,6 @@ beestat.component.card = function() {
 };
 beestat.extend(beestat.component.card, beestat.component);
 
-beestat.component.card.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * [get_class_name_recursive_ description]
  *

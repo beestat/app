@@ -7,8 +7,6 @@ beestat.component.alert = function(alert) {
 };
 beestat.extend(beestat.component.alert, beestat.component);
 
-beestat.component.alert.prototype.rerender_on_breakpoint_ = false;
-
 beestat.component.alert.prototype.decorate_ = function(parent) {
   this.decorate_main_(parent);
   this.decorate_detail_(parent);

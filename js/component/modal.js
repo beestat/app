@@ -6,8 +6,6 @@ beestat.component.modal = function() {
 };
 beestat.extend(beestat.component.modal, beestat.component);
 
-beestat.component.modal.prototype.rerender_on_breakpoint_ = false;
-
 beestat.component.modal.prototype.decorate_ = function() {
   var self = this;
 

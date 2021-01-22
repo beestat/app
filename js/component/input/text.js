@@ -24,8 +24,6 @@ beestat.component.input.text = function() {
 };
 beestat.extend(beestat.component.input.text, beestat.component.input);
 
-beestat.component.input.text.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate
  *

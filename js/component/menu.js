@@ -6,8 +6,6 @@ beestat.component.menu = function() {
 };
 beestat.extend(beestat.component.menu, beestat.component);
 
-beestat.component.menu.prototype.rerender_on_breakpoint_ = false;
-
 beestat.component.menu.prototype.decorate_ = function(parent) {
   var self = this;
 

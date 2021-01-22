@@ -13,8 +13,6 @@ beestat.component.chart = function() {
 };
 beestat.extend(beestat.component.chart, beestat.component);
 
-beestat.component.chart.prototype.rerender_on_breakpoint_ = false;
-
 /**
  * Decorate. Calls all the option getters and renders the chart.
  *

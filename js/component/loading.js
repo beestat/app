@@ -9,8 +9,6 @@ beestat.component.loading = function(text) {
 };
 beestat.extend(beestat.component.loading, beestat.component);
 
-beestat.component.loading.prototype.rerender_on_breakpoint_ = false;
-
 beestat.component.loading.prototype.decorate_ = function(parent) {
   if (this.text_ !== undefined) {
     this.text_block_ = $.createElement('div')
