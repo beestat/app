@@ -39,7 +39,7 @@ beestat.component.prototype.render = function(parent) {
     }
 
     // The element should now exist on the DOM.
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.dispatchEvent('render');
     }, 0);
 
@@ -67,7 +67,7 @@ beestat.component.prototype.rerender = function() {
     this.component_container_ = new_container;
 
     var self = this;
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.dispatchEvent('render');
     }, 0);
   }

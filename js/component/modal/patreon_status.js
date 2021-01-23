@@ -50,7 +50,7 @@ beestat.component.modal.patreon_status.prototype.decorate_wait_ = function(paren
     self.rerender();
   });
 
-  setTimeout(function() {
+  window.setTimeout(function() {
     api.send();
   }, 5000);
 };

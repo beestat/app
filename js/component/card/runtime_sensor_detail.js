@@ -220,7 +220,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
     }
   } else {
     this.show_loading_('Syncing');
-    setTimeout(function() {
+    window.setTimeout(function() {
       new beestat.api()
         .add_call(
           'thermostat',

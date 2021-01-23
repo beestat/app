@@ -74,7 +74,7 @@ beestat.component.modal.prototype.decorate_ = function() {
    * Fade in the mask
    * Overpop the modal
    */
-  setTimeout(function() {
+  window.setTimeout(function() {
     $('body').firstElementChild()
       .style('filter', 'blur(3px)');
     mask.style('background', 'rgba(0, 0, 0, 0.5)');
@@ -82,7 +82,7 @@ beestat.component.modal.prototype.decorate_ = function() {
   }, 0);
 
   // Pop the modal back to normal size
-  setTimeout(function() {
+  window.setTimeout(function() {
     modal.style('transform', 'translateX(-50%) scale(1)');
   }, 200);
 
@@ -117,7 +117,7 @@ beestat.component.modal.prototype.dispose = function() {
     $('body').firstElementChild()
       .style('filter', '');
 
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.modal_.parentNode().removeChild(self.modal_);
       self.mask_.parentNode().removeChild(self.mask_);
 

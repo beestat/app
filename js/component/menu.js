@@ -47,7 +47,7 @@ beestat.component.menu.prototype.dispose = function() {
     container.style('transform', 'scale(0)');
 
     delete beestat.component.menu.open_menu;
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.menu_items_.forEach(function(menu_item) {
         menu_item.dispose();
       });
@@ -94,7 +94,7 @@ beestat.component.menu.prototype.open_ = function() {
   });
 
   // Transition the element in after it's been placed on the page.
-  setTimeout(function() {
+  window.setTimeout(function() {
     container.style('transform', 'scale(1)');
 
     /*

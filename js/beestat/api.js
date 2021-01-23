@@ -75,7 +75,7 @@ beestat.api.prototype.send = function(opt_api_call) {
          * problems.
          */
         if (this.callback_ !== undefined) {
-          setTimeout(function() {
+          window.setTimeout(function() {
             self.callback_(self.cached_batch_api_calls_);
           }, 0);
         }
@@ -94,7 +94,7 @@ beestat.api.prototype.send = function(opt_api_call) {
            * callback, the rerender can happen during a render which causes
            * problems.
            */
-          setTimeout(function() {
+          window.setTimeout(function() {
             self.callback_(cached.data);
           }, 0);
         }

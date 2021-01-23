@@ -99,7 +99,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ =
     }
 
     this.show_loading_('Syncing (' + sync_progress + '%)<br/>' + string_remain + ' remaining');
-    setTimeout(function() {
+    window.setTimeout(function() {
       var api = new beestat.api();
       api.add_call(
         'runtime_thermostat_summary',

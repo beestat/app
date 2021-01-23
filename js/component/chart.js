@@ -120,7 +120,7 @@ beestat.component.chart.prototype.get_options_plotOptions_ = function() {
       'events': {
         'legendItemClick': function() {
           // Delay the event dispatch so the series is actually toggled to the correct visibility.
-          setTimeout(function() {
+          window.setTimeout(function() {
             self.dispatchEvent('legend_item_click');
           }, 0);
         }

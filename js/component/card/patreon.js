@@ -20,7 +20,7 @@ beestat.component.card.patreon.prototype.decorate_contents_ = function(parent) {
 
   // Don't render anything if the user is an active Patron.
   if (beestat.component.card.patreon.should_show() === false) {
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.dispose();
     }, 0);
     return;

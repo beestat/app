@@ -357,7 +357,7 @@ beestat.component.alert.prototype.show = function() {
       'padding-bottom': (beestat.style.size.gutter / 2)
     });
 
-    setTimeout(function() {
+    window.setTimeout(function() {
       self.alert_main_.style('height', 'auto');
     }, 200);
   }
@@ -398,7 +398,7 @@ beestat.component.alert.prototype.hide = function() {
   this.height_ = this.alert_main_.getBoundingClientRect().height;
   this.alert_main_.style('height', this.height_);
 
-  setTimeout(function() {
+  window.setTimeout(function() {
     self.alert_main_.style({
       'height': '0',
       'padding-top': '0',
