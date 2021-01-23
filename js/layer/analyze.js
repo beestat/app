@@ -1,12 +1,14 @@
 /**
- * Sensors layer.
+ * Analyze layer.
  */
-beestat.layer.sensors = function() {
+beestat.layer.analyze = function() {
   beestat.layer.apply(this, arguments);
 };
-beestat.extend(beestat.layer.sensors, beestat.layer);
+beestat.extend(beestat.layer.analyze, beestat.layer);
 
-beestat.layer.sensors.prototype.decorate_ = function(parent) {
+beestat.layer.analyze.prototype.decorate_ = function(parent) {
+  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+
   /*
    * Set the overflow on the body so the scrollbar is always present so
    * highcharts graphs render properly.
@@ -17,7 +19,7 @@ beestat.layer.sensors.prototype.decorate_ = function(parent) {
     'padding': '0 ' + beestat.style.size.gutter + 'px'
   });
 
-  (new beestat.component.header('sensors')).render(parent);
+  (new beestat.component.header('analyze')).render(parent);
 
   // All the cards
   var cards = [];
@@ -33,15 +35,17 @@ beestat.layer.sensors.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.sensors(),
+      'card': new beestat.component.card.runtime_thermostat_summary(
+        thermostat.thermostat_id
+      ),
       'size': 12
     }
   ]);
 
   cards.push([
     {
-      'card': new beestat.component.card.runtime_sensor_detail(
-        beestat.setting('thermostat_id')
+      'card': new beestat.component.card.temperature_profiles(
+        thermostat.thermostat_id
       ),
       'size': 12
     }

@@ -206,7 +206,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     // Enable polling for live updates
     beestat.enable_poll();
 
-    (new beestat.layer.dashboard()).render();
+    (new beestat.layer.detail()).render();
 
     beestat.ecobee.notify_if_down();
 

@@ -28,19 +28,19 @@ beestat.component.header.prototype.decorate_ = function(parent) {
 
   pages = [
     {
-      'layer': 'dashboard',
-      'text': 'Dashboard',
-      'icon': 'tablet_dashboard'
+      'layer': 'detail',
+      'text': 'Detail',
+      'icon': 'eye_circle'
     },
     {
-      'layer': 'sensors',
-      'text': 'Sensors',
-      'icon': 'signal_variant'
+      'layer': 'analyze',
+      'text': 'Analyze',
+      'icon': 'home_search'
     },
     {
-      'layer': 'comparisons',
-      'text': 'Comparisons',
-      'icon': 'home_group'
+      'layer': 'compare',
+      'text': 'Compare',
+      'icon': 'earth'
     }
   ];
 
