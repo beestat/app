@@ -146,6 +146,28 @@ beestat.api.prototype.set_callback = function(callback) {
 };
 
 /**
+ * Get the API calls for this instance.
+ *
+ * @return {array} The API calls.
+ */
+beestat.api.prototype.get_api_calls = function() {
+  return this.api_calls_;
+};
+
+/**
+ * Force the current API call to send and return as a batch, even if there's
+ * only one. This makes handling responses easier when dynamically generating
+ * API calls.
+ *
+ * @return {beestat.api} This.
+ */
+beestat.api.prototype.force_batch = function() {
+  this.force_batch_ = true;
+
+  return this;
+};
+
+/**
  * Fires after an XHR request returns.
  *
  * @param {string} response_text Whatever the XHR request returned.
@@ -243,7 +265,7 @@ beestat.api.prototype.load_ = function(response_text) {
  * @return {boolean} Whether or not this is a batch API call.
  */
 beestat.api.prototype.is_batch_ = function() {
-  return this.api_calls_.length > 1;
+  return this.force_batch_ === true || this.api_calls_.length > 1;
 };
 
 /**
