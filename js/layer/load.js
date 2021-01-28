@@ -67,13 +67,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   );
 
   api.add_call(
-    'thermostat_group',
-    'read_id',
-    {},
-    'thermostat_group'
-  );
-
-  api.add_call(
     'sensor',
     'read_id',
     {
@@ -137,7 +130,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     });
 
     beestat.cache.set('thermostat', response.thermostat);
-    beestat.cache.set('thermostat_group', response.thermostat_group);
     beestat.cache.set('sensor', response.sensor);
 
     beestat.cache.set('ecobee_thermostat', response.ecobee_thermostat);

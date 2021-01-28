@@ -59,7 +59,7 @@ beestat.component.modal.prototype.decorate_ = function() {
     },
     {
       '(max-width: 900px)': {
-        'max-height': 'calc(100vh - ' + (beestat.style.size.gutter * 2) + 'px)',
+        'max-height': 'calc(100vh - ' + (beestat.style.size.gutter * 2) + 'px)'
       }
     }
   );

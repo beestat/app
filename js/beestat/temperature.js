@@ -13,7 +13,6 @@
  *
  * @return {string} The formatted temperature.
  */
-// beestat.temperature = function(temperature, convert, round, include_units) {
 beestat.temperature = function(args) {
   // Allow passing a single argument of temperature for convenience.
   if (typeof args !== 'object' || args === null) {

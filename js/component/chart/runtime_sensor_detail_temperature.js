@@ -229,7 +229,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
         });
         var occupancy_key = series.name.replace('temperature', 'occupancy');
         occupancy[occupancy_key] =
-          (self.data_.metadata.series[occupancy_key].data[x.valueOf()] !== undefined)
+          (self.data_.metadata.series[occupancy_key].data[x.valueOf()] !== undefined);
       }
     });
 

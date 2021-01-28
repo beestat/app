@@ -110,14 +110,3 @@ beestat.requestor.callback = function(response, api) {
     beestat.requestor.timeout_ = window.setTimeout(beestat.requestor.send, 3000);
   }
 };
-
-/*
-
-
-beestat.requestor.request([{'resource': 'thermostat','method': 'read_id','arguments': {'attributes': {'thermostat_id': 1}}}]);
-beestat.requestor.request([{'resource': 'thermostat','method': 'read_id','arguments': {'attributes': {'thermostat_id': 1}}}]);
-beestat.requestor.request([{'resource': 'sensor','method': 'read_id','arguments': {'attributes': {'sensor_id': 1}}}]);
-beestat.requestor.request([{'resource': 'sensor','method': 'read_id','arguments': {'attributes': {'sensor_id': 2}}}]);
-
-
- */

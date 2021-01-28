@@ -1,8 +1,16 @@
--- MySQL dump 10.13  Distrib 8.0.18, for Linux (x86_64)
+-- mysqldump -u root -p --opt beestat -d --single-transaction | sed 's/ AUTO_INCREMENT=[0-9]*//g' > beestat.sql
+
+
+
+
+
+
+
+-- MySQL dump 10.13  Distrib 8.0.20, for Linux (x86_64)
 --
 -- Host: localhost    Database: beestat
 -- ------------------------------------------------------
--- Server version	8.0.18
+-- Server version 8.0.20
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,8 +31,8 @@ DROP TABLE IF EXISTS `address`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `address` (
-  `address_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
+  `address_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `normalized` json DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +51,7 @@ DROP TABLE IF EXISTS `announcement`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `announcement` (
-  `announcement_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `announcement_id` int unsigned NOT NULL AUTO_INCREMENT,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `important` tinyint(1) NOT NULL DEFAULT '0',
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -62,14 +70,11 @@ DROP TABLE IF EXISTS `api_cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `api_cache` (
-  `api_cache_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
+  `api_cache_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `expires_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `request_resource` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `request_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `request_arguments` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `response_data` json DEFAULT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`api_cache_id`),
@@ -86,26 +91,30 @@ DROP TABLE IF EXISTS `api_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `api_log` (
-  `api_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `request_ip` int(10) unsigned NOT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `request_api_user_id` int(10) unsigned DEFAULT NULL,
-  `request_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `request_resource` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `request_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `request_arguments` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
-  `response_error_code` int(10) unsigned DEFAULT NULL,
-  `response_data` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
-  `response_time` decimal(10,4) unsigned DEFAULT NULL,
-  `response_query_count` int(10) unsigned DEFAULT NULL,
-  `response_query_time` decimal(10,4) unsigned DEFAULT NULL,
-  `from_cache` tinyint(1) unsigned DEFAULT '0',
-  PRIMARY KEY (`api_log_id`),
+  `api_log_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
+  `ip_address` int unsigned NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `request` json DEFAULT NULL,
+  `response` json DEFAULT NULL,
+  `error_code` int unsigned DEFAULT NULL,
+  `error_detail` json DEFAULT NULL,
+  `total_time` decimal(10,4) unsigned DEFAULT NULL,
+  `query_count` int unsigned DEFAULT NULL,
+  `query_time` decimal(10,4) unsigned DEFAULT NULL,
+  PRIMARY KEY (`api_log_id`,`timestamp`),
   KEY `user_id` (`user_id`),
-  KEY `request_ip_request_timestamp` (`request_ip`,`request_timestamp`),
-  KEY `request_timestamp` (`request_timestamp`),
-  KEY `request_api_user_id_request_timestamp` (`request_api_user_id`,`request_timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `request_ip_request_timestamp` (`ip_address`,`timestamp`),
+  KEY `request_timestamp` (`timestamp`),
+  KEY `request_api_user_id_request_timestamp` (`api_user_id`,`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=COMPRESSED
+/*!50100 PARTITION BY RANGE (unix_timestamp(`timestamp`))
+(PARTITION 2020_10 VALUES LESS THAN (1604188800) ENGINE = InnoDB,
+ PARTITION 2020_11 VALUES LESS THAN (1606780800) ENGINE = InnoDB,
+ PARTITION 2020_12 VALUES LESS THAN (1609459200) ENGINE = InnoDB,
+ PARTITION 2021_01 VALUES LESS THAN (1612137600) ENGINE = InnoDB,
+ PARTITION 2021_02 VALUES LESS THAN (1614556800) ENGINE = InnoDB) */;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -116,7 +125,7 @@ DROP TABLE IF EXISTS `api_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `api_user` (
-  `api_user_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `api_user_id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `api_key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `session_key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -136,7 +145,7 @@ DROP TABLE IF EXISTS `ecobee_api_cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ecobee_api_cache` (
-  `ecobee_api_cache_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `ecobee_api_cache_id` int unsigned NOT NULL AUTO_INCREMENT,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `response` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
@@ -154,16 +163,17 @@ DROP TABLE IF EXISTS `ecobee_api_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ecobee_api_log` (
-  `ecobee_api_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `api_user_id` int(10) unsigned DEFAULT NULL,
+  `ecobee_api_log_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
   `request_timestamp` timestamp NULL DEFAULT NULL,
   `request` json DEFAULT NULL,
-  `response` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
+  `response` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ecobee_api_log_id`),
   KEY `user_id` (`user_id`),
-  KEY `api_user_id` (`api_user_id`)
+  KEY `api_user_id` (`api_user_id`),
+  KEY `request_timestamp` (`request_timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -175,10 +185,10 @@ DROP TABLE IF EXISTS `ecobee_sensor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ecobee_sensor` (
-  `ecobee_sensor_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `ecobee_sensor_id` int unsigned NOT NULL AUTO_INCREMENT,
   `identifier` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `user_id` int(10) unsigned NOT NULL,
-  `ecobee_thermostat_id` int(10) unsigned NOT NULL,
+  `user_id` int unsigned NOT NULL,
+  `ecobee_thermostat_id` int unsigned NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `type` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `code` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -202,10 +212,10 @@ DROP TABLE IF EXISTS `ecobee_thermostat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ecobee_thermostat` (
-  `ecobee_thermostat_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `identifier` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `guid` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `user_id` int(10) unsigned NOT NULL,
+  `ecobee_thermostat_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `identifier` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `guid` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
+  `user_id` int unsigned NOT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `connected` tinyint(1) DEFAULT NULL,
   `thermostat_revision` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -253,10 +263,10 @@ DROP TABLE IF EXISTS `ecobee_token`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ecobee_token` (
-  `ecobee_token_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `access_token` char(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `refresh_token` char(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `ecobee_token_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `access_token` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `refresh_token` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ecobee_token_id`),
@@ -266,41 +276,42 @@ CREATE TABLE `ecobee_token` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `mailchimp_api_cache`
+-- Table structure for table `mailgun_api_cache`
 --
 
-DROP TABLE IF EXISTS `mailchimp_api_cache`;
+DROP TABLE IF EXISTS `mailgun_api_cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `mailchimp_api_cache` (
-  `ecobee_api_cache_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+CREATE TABLE `mailgun_api_cache` (
+  `mailgun_api_cache_id` int unsigned NOT NULL AUTO_INCREMENT,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `response` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`ecobee_api_cache_id`),
+  PRIMARY KEY (`mailgun_api_cache_id`),
   KEY `user_id_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `mailchimp_api_log`
+-- Table structure for table `mailgun_api_log`
 --
 
-DROP TABLE IF EXISTS `mailchimp_api_log`;
+DROP TABLE IF EXISTS `mailgun_api_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `mailchimp_api_log` (
-  `mailchimp_api_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `api_user_id` int(10) unsigned DEFAULT NULL,
+CREATE TABLE `mailgun_api_log` (
+  `mailgun_api_log_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
   `request_timestamp` timestamp NULL DEFAULT NULL,
   `request` json DEFAULT NULL,
   `response` text COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`mailchimp_api_log_id`),
+  PRIMARY KEY (`mailgun_api_log_id`),
   KEY `user_id` (`user_id`),
-  KEY `api_user_id` (`api_user_id`)
+  KEY `api_user_id` (`api_user_id`),
+  KEY `request_timestamp` (`request_timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -312,12 +323,12 @@ DROP TABLE IF EXISTS `patreon_api_cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `patreon_api_cache` (
-  `ecobee_api_cache_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `patreon_api_cache_id` int unsigned NOT NULL AUTO_INCREMENT,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `response` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`ecobee_api_cache_id`),
+  PRIMARY KEY (`patreon_api_cache_id`),
   KEY `user_id_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -330,16 +341,17 @@ DROP TABLE IF EXISTS `patreon_api_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `patreon_api_log` (
-  `patreon_api_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `api_user_id` int(10) unsigned DEFAULT NULL,
+  `patreon_api_log_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
   `request_timestamp` timestamp NULL DEFAULT NULL,
   `request` json DEFAULT NULL,
   `response` text COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`patreon_api_log_id`),
   KEY `user_id` (`user_id`),
-  KEY `api_user_id` (`api_user_id`)
+  KEY `api_user_id` (`api_user_id`),
+  KEY `request_timestamp` (`request_timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -351,8 +363,8 @@ DROP TABLE IF EXISTS `patreon_token`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `patreon_token` (
-  `patreon_token_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
+  `patreon_token_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
   `access_token` char(43) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `refresh_token` char(43) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -364,6 +376,30 @@ CREATE TABLE `patreon_token` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `runtime_sensor`
+--
+
+DROP TABLE IF EXISTS `runtime_sensor`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `runtime_sensor` (
+  `runtime_sensor_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `sensor_id` int unsigned NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `temperature` smallint DEFAULT NULL,
+  `occupancy` tinyint unsigned DEFAULT NULL,
+  PRIMARY KEY (`runtime_sensor_id`,`timestamp`),
+  UNIQUE KEY `thermostat_id_timestamp` (`sensor_id`,`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=COMPRESSED
+/*!50100 PARTITION BY RANGE (unix_timestamp(`timestamp`))
+(PARTITION 2020_10 VALUES LESS THAN (1604188800) ENGINE = InnoDB,
+ PARTITION 2020_11 VALUES LESS THAN (1606780800) ENGINE = InnoDB,
+ PARTITION 2020_12 VALUES LESS THAN (1609459200) ENGINE = InnoDB,
+ PARTITION 2021_01 VALUES LESS THAN (1612137600) ENGINE = InnoDB,
+ PARTITION 2021_02 VALUES LESS THAN (1614556800) ENGINE = InnoDB) */;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `runtime_thermostat`
 --
 
@@ -371,45 +407,44 @@ DROP TABLE IF EXISTS `runtime_thermostat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `runtime_thermostat` (
-  `runtime_thermostat_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `thermostat_id` int(10) unsigned NOT NULL,
+  `runtime_thermostat_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `thermostat_id` int unsigned NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `compressor_1` smallint(5) unsigned DEFAULT NULL,
-  `compressor_2` smallint(5) unsigned DEFAULT NULL,
+  `compressor_1` smallint unsigned DEFAULT NULL,
+  `compressor_2` smallint unsigned DEFAULT NULL,
   `compressor_mode` enum('heat','cool','off') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `auxiliary_heat_1` smallint(5) unsigned DEFAULT NULL,
-  `auxiliary_heat_2` smallint(5) unsigned DEFAULT NULL,
-  `fan` smallint(5) unsigned DEFAULT NULL,
-  `accessory` smallint(5) unsigned DEFAULT NULL,
+  `auxiliary_heat_1` smallint unsigned DEFAULT NULL,
+  `auxiliary_heat_2` smallint unsigned DEFAULT NULL,
+  `fan` smallint unsigned DEFAULT NULL,
+  `accessory` smallint unsigned DEFAULT NULL,
   `accessory_type` enum('humidifier','dehumidifier','ventilator','economizer','off') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `system_mode` enum('auto','auxiliary_heat','cool','heat','off') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `indoor_temperature` smallint(6) DEFAULT NULL,
-  `indoor_humidity` tinyint(3) unsigned DEFAULT NULL,
-  `outdoor_temperature` smallint(6) DEFAULT NULL,
-  `outdoor_humidity` tinyint(3) unsigned DEFAULT NULL,
-  `event_runtime_thermostat_text_id` smallint(5) unsigned DEFAULT NULL,
-  `climate_runtime_thermostat_text_id` smallint(5) unsigned DEFAULT NULL,
-  `setpoint_cool` smallint(5) unsigned DEFAULT NULL,
-  `setpoint_heat` smallint(5) unsigned DEFAULT NULL,
+  `indoor_temperature` smallint DEFAULT NULL,
+  `indoor_humidity` tinyint unsigned DEFAULT NULL,
+  `outdoor_temperature` smallint DEFAULT NULL,
+  `outdoor_humidity` tinyint unsigned DEFAULT NULL,
+  `event_runtime_thermostat_text_id` smallint unsigned DEFAULT NULL,
+  `climate_runtime_thermostat_text_id` smallint unsigned DEFAULT NULL,
+  `setpoint_cool` smallint unsigned DEFAULT NULL,
+  `setpoint_heat` smallint unsigned DEFAULT NULL,
   PRIMARY KEY (`runtime_thermostat_id`,`timestamp`),
   UNIQUE KEY `thermostat_id_timestamp` (`thermostat_id`,`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=COMPRESSED
 /*!50100 PARTITION BY RANGE (unix_timestamp(`timestamp`))
-(PARTITION 2018_10 VALUES LESS THAN (1541030400) ENGINE = InnoDB,
- PARTITION 2018_11 VALUES LESS THAN (1543622400) ENGINE = InnoDB,
- PARTITION 2018_12 VALUES LESS THAN (1546300800) ENGINE = InnoDB,
- PARTITION 2019_01 VALUES LESS THAN (1548979200) ENGINE = InnoDB,
- PARTITION 2019_02 VALUES LESS THAN (1551398400) ENGINE = InnoDB,
- PARTITION 2019_03 VALUES LESS THAN (1554076800) ENGINE = InnoDB,
- PARTITION 2019_04 VALUES LESS THAN (1556668800) ENGINE = InnoDB,
- PARTITION 2019_05 VALUES LESS THAN (1559347200) ENGINE = InnoDB,
- PARTITION 2019_06 VALUES LESS THAN (1561939200) ENGINE = InnoDB,
- PARTITION 2019_07 VALUES LESS THAN (1564617600) ENGINE = InnoDB,
- PARTITION 2019_08 VALUES LESS THAN (1567296000) ENGINE = InnoDB,
- PARTITION 2019_09 VALUES LESS THAN (1569888000) ENGINE = InnoDB,
- PARTITION 2019_10 VALUES LESS THAN (1572566400) ENGINE = InnoDB,
- PARTITION 2019_11 VALUES LESS THAN (1575158400) ENGINE = InnoDB,
- PARTITION 2019_12 VALUES LESS THAN (1577836800) ENGINE = InnoDB) */;
+(PARTITION 2020_01 VALUES LESS THAN (1580515200) ENGINE = InnoDB,
+ PARTITION 2020_02 VALUES LESS THAN (1583020800) ENGINE = InnoDB,
+ PARTITION 2020_03 VALUES LESS THAN (1585699200) ENGINE = InnoDB,
+ PARTITION 2020_04 VALUES LESS THAN (1588291200) ENGINE = InnoDB,
+ PARTITION 2020_05 VALUES LESS THAN (1590969600) ENGINE = InnoDB,
+ PARTITION 2020_06 VALUES LESS THAN (1593561600) ENGINE = InnoDB,
+ PARTITION 2020_07 VALUES LESS THAN (1596240000) ENGINE = InnoDB,
+ PARTITION 2020_08 VALUES LESS THAN (1598918400) ENGINE = InnoDB,
+ PARTITION 2020_09 VALUES LESS THAN (1601510400) ENGINE = InnoDB,
+ PARTITION 2020_10 VALUES LESS THAN (1604188800) ENGINE = InnoDB,
+ PARTITION 2020_11 VALUES LESS THAN (1606780800) ENGINE = InnoDB,
+ PARTITION 2020_12 VALUES LESS THAN (1609459200) ENGINE = InnoDB,
+ PARTITION 2021_01 VALUES LESS THAN (1612137600) ENGINE = InnoDB,
+ PARTITION 2021_02 VALUES LESS THAN (1614556800) ENGINE = InnoDB) */;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -420,28 +455,28 @@ DROP TABLE IF EXISTS `runtime_thermostat_summary`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `runtime_thermostat_summary` (
-  `runtime_thermostat_summary_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `thermostat_id` int(10) unsigned NOT NULL,
+  `runtime_thermostat_summary_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `thermostat_id` int unsigned NOT NULL,
   `date` date NOT NULL,
-  `count` smallint(5) unsigned NOT NULL,
-  `sum_compressor_cool_1` mediumint(8) unsigned NOT NULL,
-  `sum_compressor_cool_2` mediumint(8) unsigned NOT NULL,
-  `sum_compressor_heat_1` mediumint(8) unsigned NOT NULL,
-  `sum_compressor_heat_2` mediumint(8) unsigned NOT NULL,
-  `sum_auxiliary_heat_1` mediumint(8) unsigned NOT NULL,
-  `sum_auxiliary_heat_2` mediumint(8) unsigned NOT NULL,
-  `sum_fan` mediumint(8) unsigned NOT NULL,
-  `sum_humidifier` mediumint(8) unsigned NOT NULL,
-  `sum_dehumidifier` mediumint(8) unsigned NOT NULL,
-  `sum_ventilator` mediumint(8) unsigned NOT NULL,
-  `sum_economizer` mediumint(8) unsigned NOT NULL,
-  `avg_outdoor_temperature` smallint(6) NOT NULL,
-  `avg_outdoor_humidity` tinyint(3) unsigned NOT NULL,
-  `min_outdoor_temperature` smallint(6) NOT NULL,
-  `max_outdoor_temperature` smallint(6) NOT NULL,
-  `avg_indoor_temperature` smallint(6) NOT NULL,
-  `avg_indoor_humidity` tinyint(3) unsigned NOT NULL,
+  `count` smallint unsigned NOT NULL,
+  `sum_compressor_cool_1` mediumint unsigned NOT NULL,
+  `sum_compressor_cool_2` mediumint unsigned NOT NULL,
+  `sum_compressor_heat_1` mediumint unsigned NOT NULL,
+  `sum_compressor_heat_2` mediumint unsigned NOT NULL,
+  `sum_auxiliary_heat_1` mediumint unsigned NOT NULL,
+  `sum_auxiliary_heat_2` mediumint unsigned NOT NULL,
+  `sum_fan` mediumint unsigned NOT NULL,
+  `sum_humidifier` mediumint unsigned NOT NULL,
+  `sum_dehumidifier` mediumint unsigned NOT NULL,
+  `sum_ventilator` mediumint unsigned NOT NULL,
+  `sum_economizer` mediumint unsigned NOT NULL,
+  `avg_outdoor_temperature` smallint NOT NULL,
+  `avg_outdoor_humidity` tinyint unsigned NOT NULL,
+  `min_outdoor_temperature` smallint NOT NULL,
+  `max_outdoor_temperature` smallint NOT NULL,
+  `avg_indoor_temperature` smallint NOT NULL,
+  `avg_indoor_humidity` tinyint unsigned NOT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`runtime_thermostat_summary_id`),
   UNIQUE KEY `thermostat_id_date` (`thermostat_id`,`date`),
@@ -459,7 +494,7 @@ DROP TABLE IF EXISTS `runtime_thermostat_text`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `runtime_thermostat_text` (
-  `runtime_thermostat_text_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `runtime_thermostat_text_id` smallint unsigned NOT NULL AUTO_INCREMENT,
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`runtime_thermostat_text_id`),
@@ -475,16 +510,18 @@ DROP TABLE IF EXISTS `sensor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sensor` (
-  `sensor_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `thermostat_id` int(10) unsigned NOT NULL,
-  `ecobee_sensor_id` int(10) unsigned DEFAULT NULL,
+  `sensor_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `thermostat_id` int unsigned NOT NULL,
+  `ecobee_sensor_id` int unsigned DEFAULT NULL,
+  `identifier` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `type` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `in_use` tinyint(1) DEFAULT NULL,
   `temperature` decimal(4,1) DEFAULT NULL,
-  `humidity` int(10) unsigned DEFAULT NULL,
+  `humidity` int unsigned DEFAULT NULL,
   `occupancy` tinyint(1) DEFAULT NULL,
+  `capability` json DEFAULT NULL,
   `inactive` tinyint(1) NOT NULL DEFAULT '0',
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`sensor_id`),
@@ -505,16 +542,16 @@ DROP TABLE IF EXISTS `session`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `session` (
-  `session_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `session_id` int unsigned NOT NULL AUTO_INCREMENT,
   `session_key` char(128) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `api_user_id` int(10) unsigned DEFAULT NULL,
-  `timeout` int(10) unsigned DEFAULT NULL,
-  `life` int(10) unsigned DEFAULT NULL,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
+  `timeout` int unsigned DEFAULT NULL,
+  `life` int unsigned DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `created_by` int(10) unsigned NOT NULL,
+  `created_by` int unsigned NOT NULL,
   `last_used_at` timestamp NULL DEFAULT NULL,
-  `last_used_by` int(10) unsigned NOT NULL,
+  `last_used_by` int unsigned NOT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`session_id`),
   UNIQUE KEY `key` (`session_key`),
@@ -533,7 +570,7 @@ DROP TABLE IF EXISTS `smarty_streets_api_cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `smarty_streets_api_cache` (
-  `smarty_streets_api_cache_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `smarty_streets_api_cache_id` int unsigned NOT NULL AUTO_INCREMENT,
   `key` char(40) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `response` longtext CHARACTER SET utf8 COLLATE utf8_unicode_ci,
@@ -551,16 +588,17 @@ DROP TABLE IF EXISTS `smarty_streets_api_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `smarty_streets_api_log` (
-  `smarty_streets_api_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `api_user_id` int(10) unsigned DEFAULT NULL,
+  `smarty_streets_api_log_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned DEFAULT NULL,
+  `api_user_id` int unsigned DEFAULT NULL,
   `request_timestamp` timestamp NULL DEFAULT NULL,
   `request` json DEFAULT NULL,
   `response` text COLLATE utf8_unicode_ci,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`smarty_streets_api_log_id`),
   KEY `user_id` (`user_id`),
-  KEY `api_user_id` (`api_user_id`)
+  KEY `api_user_id` (`api_user_id`),
+  KEY `request_timestamp` (`request_timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -572,34 +610,55 @@ DROP TABLE IF EXISTS `thermostat`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `thermostat` (
-  `thermostat_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `ecobee_thermostat_id` int(10) unsigned DEFAULT NULL,
-  `thermostat_group_id` int(10) unsigned DEFAULT NULL,
-  `address_id` int(10) unsigned DEFAULT NULL,
+  `thermostat_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `ecobee_thermostat_id` int unsigned DEFAULT NULL,
+  `thermostat_group_id` int unsigned DEFAULT NULL,
+  `address_id` int unsigned DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
   `temperature` decimal(4,1) DEFAULT NULL,
   `temperature_unit` enum('°F','°C') DEFAULT NULL,
-  `humidity` int(10) unsigned DEFAULT NULL,
+  `humidity` int unsigned DEFAULT NULL,
   `alerts` json DEFAULT NULL,
   `first_connected` timestamp NULL DEFAULT NULL,
   `sync_begin` timestamp NULL DEFAULT NULL,
   `sync_end` timestamp NULL DEFAULT NULL,
+  `data_begin` timestamp NULL DEFAULT NULL,
+  `data_end` timestamp NULL DEFAULT NULL,
   `time_zone` varchar(255) DEFAULT NULL,
   `filters` json DEFAULT NULL,
   `temperature_profile` json DEFAULT NULL,
+  `profile` json DEFAULT NULL,
   `property` json DEFAULT NULL,
   `system_type` json DEFAULT NULL,
+  `system_type2` json DEFAULT NULL,
   `weather` json DEFAULT NULL,
-  `fan_fixed` timestamp NULL DEFAULT NULL,
-  `fan_fixed2` timestamp NULL DEFAULT NULL,
+  `settings` json DEFAULT NULL,
+  `program` json DEFAULT NULL,
+  `system_type_heat` enum('geothermal','compressor','boiler','gas','oil','electric','none') DEFAULT NULL,
+  `system_type_heat_stages` int unsigned DEFAULT NULL,
+  `system_type_heat_auxiliary` enum('electric','gas','oil','none') DEFAULT NULL,
+  `system_type_heat_auxiliary_stages` int unsigned DEFAULT NULL,
+  `system_type_cool` enum('geothermal','compressor','none') DEFAULT NULL,
+  `system_type_cool_stages` int unsigned DEFAULT NULL,
+  `property_age` int unsigned DEFAULT NULL,
+  `property_square_feet` int unsigned DEFAULT NULL,
+  `property_stories` int unsigned DEFAULT NULL,
+  `property_structure_type` enum('detached','apartment','condominium','loft','multiplex','townhouse','semi-detached') DEFAULT NULL,
+  `address_latitude` decimal(8,6) DEFAULT NULL,
+  `address_longitude` decimal(9,6) DEFAULT NULL,
   `inactive` tinyint(1) NOT NULL DEFAULT '0',
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`thermostat_id`),
   KEY `ecobee_thermostat_id` (`ecobee_thermostat_id`),
   KEY `user_id` (`user_id`),
   KEY `thermostat_group_id` (`thermostat_group_id`),
-  KEY `address_id` (`address_id`)
+  KEY `address_id` (`address_id`),
+  KEY `comparison` (`system_type_heat`,`system_type_cool`,`system_type_heat_stages`,`system_type_cool_stages`,`property_structure_type`,`address_latitude`,`address_longitude`),
+  CONSTRAINT `thermostat_ibfk_1` FOREIGN KEY (`ecobee_thermostat_id`) REFERENCES `ecobee_thermostat` (`ecobee_thermostat_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `thermostat_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `thermostat_ibfk_3` FOREIGN KEY (`thermostat_group_id`) REFERENCES `thermostat_group` (`thermostat_group_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `thermostat_ibfk_4` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -611,19 +670,20 @@ DROP TABLE IF EXISTS `thermostat_group`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `thermostat_group` (
-  `thermostat_group_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `address_id` int(10) unsigned NOT NULL,
+  `thermostat_group_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `address_id` int unsigned NOT NULL,
   `system_type_heat` enum('geothermal','compressor','boiler','gas','oil','electric','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `system_type_heat_auxiliary` enum('electric','gas','oil','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `system_type_cool` enum('geothermal','compressor','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `property_age` int(10) unsigned DEFAULT NULL,
-  `property_square_feet` int(10) unsigned DEFAULT NULL,
-  `property_stories` int(10) unsigned DEFAULT NULL,
+  `property_age` int unsigned DEFAULT NULL,
+  `property_square_feet` int unsigned DEFAULT NULL,
+  `property_stories` int unsigned DEFAULT NULL,
   `property_structure_type` enum('detached','apartment','condominium','loft','multiplex','townhouse','semi-detached') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `address_latitude` decimal(10,8) DEFAULT NULL,
   `address_longitude` decimal(11,8) DEFAULT NULL,
   `temperature_profile` json DEFAULT NULL,
+  `profile` json DEFAULT NULL,
   `weather` json DEFAULT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`thermostat_group_id`),
@@ -644,13 +704,15 @@ DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
-  `user_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `password` char(60) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   `anonymous` tinyint(1) NOT NULL,
+  `email_address` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `settings` json DEFAULT NULL,
   `patreon_status` json DEFAULT NULL,
   `sync_status` json DEFAULT NULL,
+  `debug` tinyint(1) DEFAULT '0',
   `comment` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
@@ -668,4 +730,4 @@ CREATE TABLE `user` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-12-09 14:00:17
+-- Dump completed on 2021-01-23 19:10:19

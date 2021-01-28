@@ -6,10 +6,14 @@ beestat.runtime_thermostat = {};
  *
  * @param {number} thermostat_id The thermostat_id to get data for.
  * @param {object} range Range settings.
+ * @param {string} key The key to pull the data from inside
+ * beestat.cache.data. This exists because runtime_thermostat data exists in
+ * two spots: one for the Thermostat Detail chart, and once for the Sensor
+ * Detail chart.
  *
  * @return {object} The data.
  */
-beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
+beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
   var data = {
     'x': [],
     'series': {},
@@ -131,7 +135,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
     .second(0)
     .millisecond(0);
 
-  var runtime_thermostats = beestat.runtime_thermostat.get_runtime_thermostats_by_date_();
+  var runtime_thermostats = beestat.runtime_thermostat.get_runtime_thermostats_by_date_(key);
 
   // Initialize moving average.
   var moving = [];
@@ -211,7 +215,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
         data.metadata.series.setpoint_heat.data[current_m.valueOf()] = setpoint_heat;
 
         data.metadata.series.setpoint_heat.active = true;
-
       } else {
         data.series.setpoint_heat.push(null);
       }
@@ -227,7 +230,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
         data.metadata.series.setpoint_cool.data[current_m.valueOf()] = setpoint_cool;
 
         data.metadata.series.setpoint_cool.active = true;
-
       } else {
         data.series.setpoint_cool.push(null);
       }
@@ -461,7 +463,6 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range) {
 
             data.metadata.series[series_code_1].data[current_m.valueOf()] =
               equipment_y[series_code_1];
-
           }
         } else {
           data.series[series_code].push(null);
@@ -538,12 +539,17 @@ beestat.runtime_thermostat.get_average_ = function(runtime_thermostats, series_c
 /**
  * Get all the runtime_thermostat rows indexed by date.
  *
+ * @param {string} key The key to pull the data from inside
+ * beestat.cache.data. This exists because runtime_thermostat data exists in
+ * two spots: one for the Thermostat Detail chart, and once for the Sensor
+ * Detail chart.
+ *
  * @return {array} The runtime_thermostat rows.
  */
-beestat.runtime_thermostat.get_runtime_thermostats_by_date_ = function() {
+beestat.runtime_thermostat.get_runtime_thermostats_by_date_ = function(key) {
   var runtime_thermostats = {};
-  if (beestat.cache.runtime_thermostat !== undefined) {
-    beestat.cache.runtime_thermostat.forEach(function(runtime_thermostat) {
+  if (beestat.cache.data[key] !== undefined) {
+    beestat.cache.data[key].forEach(function(runtime_thermostat) {
       runtime_thermostats[moment(runtime_thermostat.timestamp).valueOf()] = runtime_thermostat;
     });
   }

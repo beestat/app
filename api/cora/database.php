@@ -292,7 +292,7 @@ final class database extends \mysqli {
    * @return string The appropriate escaped string. Examples: `foo` is null
    * `foo` in(1,2,3) `foo`='bar'
    */
-  private function column_equals_value_where($column, $value) {
+  public function column_equals_value_where($column, $value) {
     if($value === null) {
       return $this->escape_identifier($column) . ' is null';
     }

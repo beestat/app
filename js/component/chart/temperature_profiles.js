@@ -31,9 +31,9 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
 
   // Trendline data
   series.push({
-    'data': this.data_.series.trendline_heat,
-    'name': 'indoor_heat_delta',
-    'color': beestat.series.compressor_heat_1.color,
+    'data': this.data_.series.trendline_heat_1,
+    'name': 'indoor_heat_1_delta',
+    'color': beestat.series.indoor_heat_1_delta.color,
     'marker': {
       'enabled': false,
       'states': {'hover': {'enabled': false}}
@@ -45,9 +45,37 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
 
   // Trendline data
   series.push({
-    'data': this.data_.series.trendline_cool,
-    'name': 'indoor_cool_delta',
-    'color': beestat.series.compressor_cool_1.color,
+    'data': this.data_.series.trendline_heat_2,
+    'name': 'indoor_heat_2_delta',
+    'color': beestat.series.indoor_heat_2_delta.color,
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'line',
+    'lineWidth': 2,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Trendline data
+  series.push({
+    'data': this.data_.series.trendline_cool_1,
+    'name': 'indoor_cool_1_delta',
+    'color': beestat.series.indoor_cool_1_delta.color,
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'line',
+    'lineWidth': 2,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Trendline data
+  series.push({
+    'data': this.data_.series.trendline_cool_2,
+    'name': 'indoor_cool_2_delta',
+    'color': beestat.series.indoor_cool_2_delta.color,
     'marker': {
       'enabled': false,
       'states': {'hover': {'enabled': false}}
@@ -61,7 +89,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
   series.push({
     'data': this.data_.series.trendline_resist,
     'name': 'indoor_resist_delta',
-    'color': beestat.style.color.gray.dark,
+    'color': beestat.series.indoor_resist_delta.color,
     'marker': {
       'enabled': false,
       'states': {'hover': {'enabled': false}}
@@ -73,9 +101,9 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
 
   // Raw data
   series.push({
-    'data': this.data_.series.raw_heat,
-    'name': 'indoor_heat_delta_raw',
-    'color': beestat.series.compressor_heat_1.color,
+    'data': this.data_.series.raw_heat_1,
+    'name': 'indoor_heat_1_delta_raw',
+    'color': beestat.series.indoor_heat_1_delta_raw.color,
     'dashStyle': 'ShortDot',
     'marker': {
       'enabled': false,
@@ -88,9 +116,39 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
 
   // Raw data
   series.push({
-    'data': this.data_.series.raw_cool,
-    'name': 'indoor_cool_delta_raw',
-    'color': beestat.series.compressor_cool_1.color,
+    'data': this.data_.series.raw_heat_2,
+    'name': 'indoor_heat_2_delta_raw',
+    'color': beestat.series.indoor_heat_2_delta_raw.color,
+    'dashStyle': 'ShortDot',
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'spline',
+    'lineWidth': 1,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Raw data
+  series.push({
+    'data': this.data_.series.raw_cool_1,
+    'name': 'indoor_cool_1_delta_raw',
+    'color': beestat.series.indoor_cool_1_delta_raw.color,
+    'dashStyle': 'ShortDot',
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'spline',
+    'lineWidth': 1,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Raw data
+  series.push({
+    'data': this.data_.series.raw_cool_2,
+    'name': 'indoor_cool_2_delta_raw',
+    'color': beestat.series.indoor_cool_2_delta_raw.color,
     'dashStyle': 'ShortDot',
     'marker': {
       'enabled': false,
@@ -105,7 +163,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
   series.push({
     'data': this.data_.series.raw_resist,
     'name': 'indoor_resist_delta_raw',
-    'color': beestat.style.color.gray.dark,
+    'color': beestat.series.indoor_resist_delta_raw.color,
     'dashStyle': 'ShortDot',
     'marker': {
       'enabled': false,

@@ -87,6 +87,11 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
   );
 };
 
+/**
+ * Decorate the weather
+ *
+ * @param {rocket.Elements} parent Parent
+ */
 beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 

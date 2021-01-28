@@ -1,16 +1,27 @@
 /**
  * Home comparison settings.
+ *
+ * @param {number} thermostat_id The thermostat_id this card is displaying
+ * data for.
  */
-beestat.component.card.comparison_settings = function() {
+beestat.component.card.comparison_settings = function(thermostat_id) {
   var self = this;
 
+  this.thermostat_id_ = thermostat_id;
+
   /*
-   * If the thermostat_group changes that means the property_type could change
-   * and thus need to rerender.
+   * If the thermostat changes that means the property_type could change and
+   * thus need to rerender.
    */
-  beestat.dispatcher.addEventListener('cache.thermostat_group', function() {
-    self.rerender();
-  });
+  beestat.dispatcher.addEventListener(
+    [
+      'cache.thermostat',
+      'cache.data.metrics'
+    ],
+    function() {
+      self.rerender();
+    }
+  );
 
   beestat.component.card.apply(this, arguments);
 };
@@ -22,10 +33,7 @@ beestat.extend(beestat.component.card.comparison_settings, beestat.component.car
  * @param {rocket.Elements} parent
  */
 beestat.component.card.comparison_settings.prototype.decorate_contents_ = function(parent) {
-  var self = this;
-
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[thermostat.thermostat_group_id];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var row;
 
@@ -47,42 +55,57 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
   row.appendChild(column_property);
   this.decorate_property_(column_property);
 
-  /*
-   * If the data is available, then get the data if we don't already have it
-   * loaded. If the data is not available, poll until it becomes available.
-   */
-  if (thermostat_group.profile === null) {
-    // This will show the loading screen.
-    self.data_available_();
+  row = $.createElement('div').addClass('row');
+  parent.appendChild(row);
 
-    var poll_interval = 10000;
+  var column_detail = $.createElement('div').addClass([
+    'column',
+    'column_12'
+  ]);
+  row.appendChild(column_detail);
+  this.decorate_detail_(column_detail);
 
-    beestat.add_poll_interval(poll_interval);
-    beestat.dispatcher.addEventListener('poll.comparisons_load', function() {
-      if (self.data_available_() === true) {
-        beestat.remove_poll_interval(poll_interval);
-        beestat.dispatcher.removeEventListener('poll.comparisons_load');
+  const sync_progress = beestat.thermostat.get_sync_progress(this.thermostat_id_);
 
-        new beestat.api()
-          .add_call(
-            'thermostat_group',
-            'generate_profiles',
-            {},
-            'generate_profiles'
-          )
-          .add_call(
-            'thermostat_group',
-            'read_id',
-            {},
-            'thermostat_group'
-          )
-          .set_callback(function(response) {
-            beestat.cache.set('thermostat_group', response.thermostat_group);
-            (new beestat.layer.comparisons()).render();
-          })
-          .send();
-      }
-    });
+  if (sync_progress === null || sync_progress < 100) {
+    this.show_loading_('Fetching');
+    window.setTimeout(function() {
+      var api = new beestat.api();
+      api.add_call(
+        'thermostat',
+        'read_id',
+        {
+          'attributes': {
+            'inactive': 0
+          }
+        },
+        'thermostat'
+      );
+
+      api.set_callback(function(response) {
+        beestat.cache.set('thermostat', response.thermostat);
+      });
+
+      api.send();
+    }, 10000);
+  } else if (beestat.cache.data.metrics === undefined) {
+    this.show_loading_('Fetching');
+  } else {
+    if (thermostat.profile === null) {
+      new beestat.api()
+        .add_call(
+          'thermostat',
+          'generate_profile',
+          {
+            'thermostat_id': this.thermostat_id_
+          },
+          'thermostat'
+        )
+        .set_callback(function(response) {
+          beestat.cache.set('thermostat', response.thermostat);
+        })
+        .send();
+    }
   }
 };
 
@@ -118,6 +141,9 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
       button
         .set_background_color(beestat.style.color.bluegray.light)
         .addEventListener('click', function() {
+          // Delete from the cache to trigger the metrics loading screen
+          beestat.cache.delete('data.metrics');
+
           // Update the setting
           beestat.setting('comparison_region', region);
 
@@ -125,12 +151,21 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
           self.rerender();
 
           // Open up the loading window.
-          self.show_loading_('Calculating Score for ' + region + ' region');
+          self.show_loading_('Fetching');
 
-          beestat.comparisons.get_comparison_scores(function() {
-            // Rerender to get rid of the loader.
-            self.rerender();
-          });
+          new beestat.api()
+            .add_call(
+              'thermostat',
+              'get_metrics',
+              {
+                'thermostat_id': self.thermostat_id_,
+                'attributes': beestat.comparisons.get_attributes()
+              }
+            )
+            .set_callback(function(response) {
+              beestat.cache.set('data.metrics', response);
+            })
+            .send();
         });
     }
 
@@ -147,10 +182,7 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
 beestat.component.card.comparison_settings.prototype.decorate_property_ = function(parent) {
   var self = this;
 
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
-  ];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   (new beestat.component.title('Property')).render(parent);
 
@@ -160,12 +192,12 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
     'text': 'Very Similar'
   });
 
-  if (thermostat_group.property_structure_type !== null) {
+  if (thermostat.property.structure_type !== null) {
     property_types.push({
       'value': 'same_structure',
       'text': 'Type: ' +
-        thermostat_group.property_structure_type.charAt(0).toUpperCase() +
-        thermostat_group.property_structure_type.slice(1)
+        thermostat.property.structure_type.charAt(0).toUpperCase() +
+        thermostat.property.structure_type.slice(1)
     });
   }
 
@@ -191,6 +223,9 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
       button
         .set_background_color(beestat.style.color.bluegray.light)
         .addEventListener('click', function() {
+          // Delete from the cache to trigger the metrics loading screen
+          beestat.cache.delete('data.metrics');
+
           // Update the setting
           beestat.setting('comparison_property_type', property_type.value);
 
@@ -198,18 +233,76 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
           self.rerender();
 
           // Open up the loading window.
-          self.show_loading_('Calculating Score for ' + property_type.text);
+          self.show_loading_('Fetching');
 
-          beestat.comparisons.get_comparison_scores(function() {
-            // Rerender to get rid of the loader.
-            self.rerender();
-          });
+          new beestat.api()
+            .add_call(
+              'thermostat',
+              'get_metrics',
+              {
+                'thermostat_id': self.thermostat_id_,
+                'attributes': beestat.comparisons.get_attributes()
+              }
+            )
+            .set_callback(function(response) {
+              beestat.cache.set('data.metrics', response);
+            })
+            .send();
         });
     }
 
     button_group.add_button(button);
   });
   button_group.render(parent);
+};
+
+beestat.component.card.comparison_settings.prototype.decorate_detail_ = function(parent) {
+  var strings = [];
+
+  strings.push('Matching system type and stages');
+
+  var comparison_attributes = beestat.comparisons.get_attributes();
+
+  if (comparison_attributes.property_structure_type !== undefined) {
+    strings.push('Property Type: ' + this.get_comparison_string_(comparison_attributes.property_structure_type));
+  } else {
+    strings.push('Any property type');
+  }
+
+  if (comparison_attributes.property_age !== undefined) {
+    strings.push(this.get_comparison_string_(comparison_attributes.property_age, 'years old'));
+  } else {
+    strings.push('Any property age');
+  }
+
+  if (comparison_attributes.property_square_feet !== undefined) {
+    strings.push(this.get_comparison_string_(comparison_attributes.property_square_feet, 'sqft'));
+  } else {
+    strings.push('Any square footage');
+  }
+
+  if (comparison_attributes.property_stories !== undefined) {
+    strings.push(this.get_comparison_string_(comparison_attributes.property_stories, 'stories'));
+  } else {
+    strings.push('Any number of stories');
+  }
+
+  if (comparison_attributes.radius !== undefined) {
+    strings.push('Within ' + comparison_attributes.radius.value + ' miles of your location');
+  } else {
+    strings.push('Any region');
+  }
+
+  (new beestat.component.title('Comparing to homes like...')).render(parent);
+
+  strings.forEach(function(string) {
+    var div = $.createElement('div');
+    div.innerText(string);
+    if (string.match('Any') !== null) {
+      div.style({'color': beestat.style.color.gray.base});
+    }
+    parent.appendChild(div);
+  });
 };
 
 /**
@@ -227,30 +320,18 @@ beestat.component.card.comparison_settings.prototype.get_title_ = function() {
  * @return {string} The subtitle of the card.
  */
 beestat.component.card.comparison_settings.prototype.get_subtitle_ = function() {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
-  ];
-  var address = beestat.cache.address[thermostat_group.address_id];
+  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
+  const address = beestat.cache.address[thermostat.address_id];
 
-  var string = '';
+  let string = 'Thermostat at ';
 
   if (address.normalized !== null && address.normalized.delivery_line_1 !== undefined) {
-    string = address.normalized.delivery_line_1;
+    string += address.normalized.delivery_line_1;
   } else if (address.normalized !== null && address.normalized.address1 !== undefined) {
-    string = address.normalized.address1;
+    string += address.normalized.address1;
   } else {
-    string = 'Unknown Address';
+    string += 'unknown address';
   }
-
-  var count = 0;
-  $.values(beestat.cache.thermostat).forEach(function(t) {
-    if (t.thermostat_group_id === thermostat_group.thermostat_group_id) {
-      count++;
-    }
-  });
-
-  string += ' (' + count + ' Thermostat' + (count > 1 ? 's' : '') + ')';
 
   return string;
 };
@@ -272,21 +353,32 @@ beestat.component.card.comparison_settings.prototype.decorate_top_right_ = funct
 };
 
 /**
- * Determine whether or not all of the data has been loaded so the scores can
- * be generated.
+ * Helper function to display various comparison strings in a human-readable
+ * way.
  *
- * @return {boolean} Whether or not all of the data has been loaded.
+ * @param {mixed} comparison_attribute The attribute
+ * @param {string} suffix If a suffix (ex: "years") should be placed on the
+ * end.
+ *
+ * @return {string} The human-readable string.
  */
-beestat.component.card.comparison_settings.prototype.data_available_ = function() {
-  var sync_progress = beestat.thermostat.get_sync_progress(beestat.setting('thermostat_id'));
-
-  if (sync_progress >= 95) {
-    this.show_loading_('Calculating Scores');
-  } else {
-    this.show_loading_('Syncing Data (' +
-      Math.round(sync_progress) +
-      '%)');
+beestat.component.card.comparison_settings.prototype.get_comparison_string_ = function(comparison_attribute, suffix) {
+  var s = (suffix !== undefined ? (' ' + suffix) : '');
+  if (comparison_attribute.operator !== undefined) {
+    if (comparison_attribute.operator === 'between') {
+      return 'Between ' + comparison_attribute.value[0] + ' and ' + comparison_attribute.value[1] + s;
+    } else if (comparison_attribute.operator === '>=') {
+      return 'At least ' + comparison_attribute.value + s;
+    } else if (comparison_attribute.operator === '<=') {
+      return 'Less than or equal than ' + comparison_attribute.value + s;
+    } else if (comparison_attribute.operator === '>') {
+      return 'Greater than ' + comparison_attribute.value + s;
+    } else if (comparison_attribute.operator === '<') {
+      return 'Less than' + comparison_attribute.value + s;
+    }
+    return comparison_attribute.operator + ' ' + comparison_attribute.value + s;
+  } else if (Array.isArray(comparison_attribute.value) === true) {
+    return 'One of ' + comparison_attribute.value.join(', ') + s;
   }
-
-  return sync_progress === 100;
+  return comparison_attribute + s;
 };

@@ -1,9 +1,15 @@
 /**
  * Home properties.
+ *
+ * @param {number} thermostat_id The thermostat_id this card is displaying
+ * data for.
  */
-beestat.component.card.my_home = function() {
+beestat.component.card.my_home = function(thermostat_id) {
   var self = this;
-  beestat.dispatcher.addEventListener('cache.thermostat_group', function() {
+
+  this.thermostat_id_ = thermostat_id;
+
+  beestat.dispatcher.addEventListener('cache.thermostat', function() {
     self.rerender();
   });
 
@@ -23,10 +29,7 @@ beestat.component.card.my_home.prototype.decorate_contents_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
-  ];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   (new beestat.component.title('System')).render(parent);
 
@@ -72,9 +75,8 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
  * @param {rocket.Elements} parent
  */
 beestat.component.card.my_home.prototype.decorate_region_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[thermostat.thermostat_group_id];
-  var address = beestat.cache.address[thermostat_group.address_id];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
+  var address = beestat.cache.address[thermostat.address_id];
 
   (new beestat.component.title('Region')).render(parent);
 
@@ -123,29 +125,28 @@ beestat.component.card.my_home.prototype.decorate_region_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[thermostat.thermostat_group_id];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   (new beestat.component.title('Property')).render(parent);
 
   var button_group = new beestat.component.button_group();
 
-  if (thermostat_group.property_structure_type !== null) {
+  if (thermostat.property.structure_type !== null) {
     button_group.add_button(new beestat.component.button()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
       .set_icon('home_floor_a')
-      .set_text(thermostat_group.property_structure_type.charAt(0).toUpperCase() +
-        thermostat_group.property_structure_type.slice(1)));
+      .set_text(thermostat.property.structure_type.charAt(0).toUpperCase() +
+        thermostat.property.structure_type.slice(1)));
   }
 
   if (
-    thermostat_group.property_stories !== null &&
+    thermostat.property.stories !== null &&
     (
-      thermostat_group.property_structure_type === 'detached' ||
-      thermostat_group.property_structure_type === 'townhouse' ||
-      thermostat_group.property_structure_type === 'semi-detached'
+      thermostat.property.structure_type === 'detached' ||
+      thermostat.property.structure_type === 'townhouse' ||
+      thermostat.property.structure_type === 'semi-detached'
     )
   ) {
     button_group.add_button(new beestat.component.button()
@@ -153,26 +154,26 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
       .set_icon('layers')
-      .set_text(thermostat_group.property_stories +
-        (thermostat_group.property_stories === 1 ? ' Story' : ' Stories')));
+      .set_text(thermostat.property.stories +
+        (thermostat.property.stories === 1 ? ' Story' : ' Stories')));
   }
 
-  if (thermostat_group.property_square_feet !== null) {
+  if (thermostat.property.square_feet !== null) {
     button_group.add_button(new beestat.component.button()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
       .set_icon('view_quilt')
-      .set_text(Number(thermostat_group.property_square_feet).toLocaleString() + ' sqft'));
+      .set_text(Number(thermostat.property.square_feet).toLocaleString() + ' sqft'));
   }
 
-  if (thermostat_group.property_age !== null) {
+  if (thermostat.property.age !== null) {
     button_group.add_button(new beestat.component.button()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
       .set_icon('clock_outline')
-      .set_text(thermostat_group.property_age + ' Years'));
+      .set_text(thermostat.property.age + ' Years'));
   }
 
   if (button_group.get_buttons().length === 0) {
@@ -202,13 +203,15 @@ beestat.component.card.my_home.prototype.get_title_ = function() {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.my_home.prototype.decorate_top_right_ = function(parent) {
+  var self = this;
+
   var menu = (new beestat.component.menu()).render(parent);
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Change System Type')
     .set_icon('tune')
     .set_callback(function() {
-      (new beestat.component.modal.change_system_type()).render();
+      (new beestat.component.modal.change_system_type(self.thermostat_id_)).render();
     }));
 
   menu.add_menu_item(new beestat.component.menu_item()

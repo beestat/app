@@ -1,11 +1,11 @@
 /**
  * Temperature profiles.
  *
- * @param {number} thermostat_group_id The thermostat_group_id this card is
- * displaying data for.
+ * @param {number} thermostat_id The thermostat_id this card is displaying
+ * data for.
  */
-beestat.component.card.temperature_profiles = function(thermostat_group_id) {
-  this.thermostat_group_id_ = thermostat_group_id;
+beestat.component.card.temperature_profiles = function(thermostat_id) {
+  this.thermostat_id_ = thermostat_id;
 
   beestat.component.card.apply(this, arguments);
 };
@@ -28,9 +28,7 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
  * @return {object} The series data.
  */
 beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
-  var thermostat_group = beestat.cache.thermostat_group[
-    this.thermostat_group_id_
-  ];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var data = {
     'x': [],
@@ -41,7 +39,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
         'title': this.get_title_(),
         'subtitle': this.get_subtitle_(),
         'outdoor_temperature': beestat.temperature({
-          'temperature': (thermostat_group.weather.temperature / 10),
+          'temperature': (thermostat.weather.temperature / 10),
           'round': 0
         })
       }
@@ -49,10 +47,10 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   };
 
   if (
-    thermostat_group.temperature_profile === null
+    thermostat.profile === null
   ) {
     this.chart_.render(parent);
-    this.show_loading_('Calculating');
+    this.show_loading_('Fetching');
   } else {
     // Global x range.
     var x_min = Infinity;
@@ -60,19 +58,19 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
 
     var y_min = Infinity;
     var y_max = -Infinity;
-    for (var type in thermostat_group.temperature_profile) {
+    for (var type in thermostat.profile.temperature) {
       // Cloned because I mutate this data for temperature conversions.
       var profile = beestat.clone(
-        thermostat_group.temperature_profile[type]
+        thermostat.profile.temperature[type]
       );
 
       if (profile !== null) {
         // Convert the data to Celsius if necessary
         var deltas_converted = {};
         for (var key in profile.deltas) {
-          deltas_converted[beestat.temperature({'temperature': (key / 10)})] =
+          deltas_converted[beestat.temperature({'temperature': key})] =
             beestat.temperature({
-              'temperature': (profile.deltas[key] / 10),
+              'temperature': (profile.deltas[key]),
               'delta': true,
               'round': 3
             });
@@ -199,24 +197,29 @@ beestat.component.card.temperature_profiles.prototype.get_title_ = function() {
  * @return {string} The subtitle.
  */
 beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function() {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
-  ];
+  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  /*
-   * All profiles are calculated at the same time, and resist is the most
-   * guaranteed one to have.
-   */
-  if (thermostat_group.temperature_profile.resist !== undefined) {
-    var generated_at_m = moment(
-      thermostat_group.temperature_profile.resist.metadata.generated_at
-    );
+  const generated_at_m = moment(
+    thermostat.profile.metadata.generated_at
+  );
 
-    return 'Generated ' + generated_at_m.format('MMM Do @ h a') + ' (updated weekly)';
+  let duration_text = '';
+
+  // How much data was used to generate this.
+  const duration_weeks = Math.round(thermostat.profile.metadata.duration / 7);
+  duration_text += ' from the past ';
+  if (duration_weeks === 0) {
+    duration_text += ' few days';
+  } else if (duration_weeks === 1) {
+    duration_text += ' week';
+  } else if (duration_weeks >= 52) {
+    duration_text += ' year';
+  } else {
+    duration_text += duration_weeks + ' weeks';
   }
+  duration_text += ' of data.';
 
-  return null;
+  return 'Generated ' + generated_at_m.format('MMM Do @ h a') + ' (updated weekly) ' + duration_text;
 };
 
 /**

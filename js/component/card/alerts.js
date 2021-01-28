@@ -114,7 +114,7 @@ beestat.component.card.alerts.prototype.unpin_ = function() {
 /**
  * Get the title of the card.
  *
- * @return {string}
+ * @return {string} The title.
  */
 beestat.component.card.alerts.prototype.get_title_ = function() {
   return 'Alerts';
@@ -130,7 +130,10 @@ beestat.component.card.alerts.prototype.decorate_top_right_ = function(parent) {
 
   var menu = (new beestat.component.menu()).render(parent);
 
-  var menu_item_show = new beestat.component.menu_item()
+  var menu_item_show;
+  var menu_item_hide;
+
+  menu_item_show = new beestat.component.menu_item()
     .set_text('Show dismissed')
     .set_icon('bell')
     .set_callback(function() {
@@ -144,7 +147,7 @@ beestat.component.card.alerts.prototype.decorate_top_right_ = function(parent) {
     });
   menu.add_menu_item(menu_item_show);
 
-  var menu_item_hide = new beestat.component.menu_item()
+  menu_item_hide = new beestat.component.menu_item()
     .set_text('Hide dismissed')
     .set_icon('bell_off')
     .set_callback(function() {

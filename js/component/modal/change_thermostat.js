@@ -35,13 +35,10 @@ beestat.component.modal.change_thermostat.prototype.decorate_contents_ = functio
 
 beestat.component.modal.change_thermostat.prototype.decorate_thermostat_ = function(parent, thermostat_id) {
   var thermostat = beestat.cache.thermostat[thermostat_id];
-  var ecobee_thermostat = beestat.cache.ecobee_thermostat[
-    thermostat.ecobee_thermostat_id
-  ];
 
   var container_height = 60;
   var gutter = beestat.style.size.gutter / 2;
-  var thermostat_height = container_height - (gutter * 2)
+  var thermostat_height = container_height - (gutter * 2);
 
   var container = $.createElement('div')
     .style({
@@ -52,7 +49,7 @@ beestat.component.modal.change_thermostat.prototype.decorate_thermostat_ = funct
       'user-select': 'none'
     });
 
-  if(thermostat_id == beestat.cache.thermostat[beestat.setting('thermostat_id')].thermostat_id) {
+  if (thermostat_id == beestat.cache.thermostat[beestat.setting('thermostat_id')].thermostat_id) {
     container.style({
       'background': '#4b6584',
       'color': '#fff'

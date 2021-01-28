@@ -123,7 +123,7 @@ beestat.component.card.prototype.decorate_top_right_ = function(parent) {};
 /**
  * Get the title of the card.
  *
- * @return {string}
+ * @return {string} The title.
  */
 beestat.component.card.prototype.get_title_ = function() {
   return null;
@@ -132,7 +132,7 @@ beestat.component.card.prototype.get_title_ = function() {
 /**
  * Get the subtitle of the card.
  *
- * @return {string}
+ * @return {string} The subtitle.
  */
 beestat.component.card.prototype.get_subtitle_ = function() {
   return null;

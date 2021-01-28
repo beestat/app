@@ -162,7 +162,7 @@ beestat.component.card.sensors.prototype.decorate_sensor_ = function(parent, sen
 /**
  * Get the title of the card.
  *
- * @return {string}
+ * @return {string} The title.
  */
 beestat.component.card.sensors.prototype.get_title_ = function() {
   return 'Sensors';

@@ -212,38 +212,41 @@ class ecobee_thermostat extends cora\crud {
       $attributes['property'] = $this->get_property($thermostat, $ecobee_thermostat);
       $attributes['filters'] = $this->get_filters($thermostat, $ecobee_thermostat);
       $attributes['weather'] = $this->get_weather($thermostat, $ecobee_thermostat);
+      $attributes['settings'] = $this->get_settings($thermostat, $ecobee_thermostat);
       $attributes['time_zone'] = $this->get_time_zone($thermostat, $ecobee_thermostat);
+      $attributes['program'] = $this->get_program($thermostat, $ecobee_thermostat);
 
-      $detected_system_type = $this->get_detected_system_type($thermostat, $ecobee_thermostat);
-      if($thermostat['system_type'] === null) {
-        $attributes['system_type'] = [
+      $detected_system_type2 = $this->get_detected_system_type2($thermostat, $ecobee_thermostat);
+      if($thermostat['system_type2'] === null) {
+        $attributes['system_type2'] = [
           'reported' => [
-            'heat' => null,
-            'heat_auxiliary' => null,
-            'cool' => null
+            'heat' => [
+              'equipment' => null,
+              'stages' => null
+            ],
+            'heat_auxiliary' => [
+              'equipment' => null,
+              'stages' => null
+            ],
+            'cool' => [
+              'equipment' => null,
+              'stages' => null
+            ]
           ],
-          'detected' => $detected_system_type
+          'detected' => $detected_system_type2
         ];
       } else {
-        $attributes['system_type'] = [
-          'reported' => $thermostat['system_type']['reported'],
-          'detected' => $detected_system_type
+        $attributes['system_type2'] = [
+          'reported' => $thermostat['system_type2']['reported'],
+          'detected' => $detected_system_type2
         ];
       }
 
       $attributes['alerts'] = $this->get_alerts(
         $thermostat,
         $ecobee_thermostat,
-        $attributes['system_type']
+        $attributes['system_type2']
       );
-
-      $thermostat_group = $this->get_thermostat_group(
-        $thermostat,
-        $ecobee_thermostat,
-        $attributes['property'],
-        $address
-      );
-      $attributes['thermostat_group_id'] = $thermostat_group['thermostat_group_id'];
 
       $this->api(
         'thermostat',
@@ -253,16 +256,6 @@ class ecobee_thermostat extends cora\crud {
             ['thermostat_id' => $thermostat['thermostat_id']],
             $attributes
           )
-        ]
-      );
-
-      // Update the thermostat_group system type and property type columns with
-      // the merged data from all of the thermostats in it.
-      $this->api(
-        'thermostat_group',
-        'sync_attributes',
-        [
-          'thermostat_group_id' => $thermostat_group['thermostat_group_id']
         ]
       );
     }
@@ -426,7 +419,7 @@ class ecobee_thermostat extends cora\crud {
     if(isset($ecobee_thermostat['house_details']['size']) === true) {
       $square_feet = $ecobee_thermostat['house_details']['size'];
       if(ctype_digit((string) $square_feet) === true && $square_feet > 0) {
-        $property['square_feet'] = (int) $square_feet;
+        $property['square_feet'] = round($square_feet / 500) * 500;
       }
     }
 
@@ -559,14 +552,14 @@ class ecobee_thermostat extends cora\crud {
 
     // Has heat or cool
     if($system_type['reported']['heat'] !== null) {
-      $system_type_heat = $system_type['reported']['heat'];
+      $system_type_heat = $system_type['reported']['heat']['equipment'];
     } else {
-      $system_type_heat = $system_type['detected']['heat'];
+      $system_type_heat = $system_type['detected']['heat']['equipment'];
     }
     if($system_type['reported']['heat_auxiliary'] !== null) {
-      $system_type_heat_auxiliary = $system_type['reported']['heat_auxiliary'];
+      $system_type_heat_auxiliary = $system_type['reported']['heat_auxiliary']['equipment'];
     } else {
-      $system_type_heat_auxiliary = $system_type['detected']['heat_auxiliary'];
+      $system_type_heat_auxiliary = $system_type['detected']['heat_auxiliary']['equipment'];
     }
     $has_heat = (
       $system_type_heat !== 'none' ||
@@ -574,9 +567,9 @@ class ecobee_thermostat extends cora\crud {
     );
 
     if($system_type['reported']['cool'] !== null) {
-      $system_type_cool = $system_type['reported']['cool'];
+      $system_type_cool = $system_type['reported']['cool']['equipment'];
     } else {
-      $system_type_cool = $system_type['detected']['cool'];
+      $system_type_cool = $system_type['detected']['cool']['equipment'];
     }
     $has_cool = ($system_type_cool !== 'none');
 
@@ -654,42 +647,6 @@ class ecobee_thermostat extends cora\crud {
   }
 
   /**
-   * Figure out which group this thermostat belongs in based on the address.
-   *
-   * @param array $thermostat
-   * @param array $ecobee_thermostat
-   * @param array $property
-   * @param array $address
-   *
-   * @return array
-   */
-  private function get_thermostat_group($thermostat, $ecobee_thermostat, $property, $address) {
-    $thermostat_group = $this->api(
-      'thermostat_group',
-      'get',
-      [
-        'attributes' => [
-          'address_id' => $address['address_id']
-        ]
-      ]
-    );
-
-    if($thermostat_group === null) {
-      $thermostat_group = $this->api(
-        'thermostat_group',
-        'create',
-        [
-          'attributes' => [
-            'address_id' => $address['address_id']
-          ]
-        ]
-      );
-    }
-
-    return $thermostat_group;
-  }
-
-  /**
    * Try and detect the type of HVAC system.
    *
    * @param array $thermostat
@@ -697,7 +654,7 @@ class ecobee_thermostat extends cora\crud {
    *
    * @return array System type for each of heat, cool, and aux.
    */
-  private function get_detected_system_type($thermostat, $ecobee_thermostat) {
+  private function get_detected_system_type2($thermostat, $ecobee_thermostat) {
     $detected_system_type = [];
 
     $settings = $ecobee_thermostat['settings'];
@@ -716,12 +673,16 @@ class ecobee_thermostat extends cora\crud {
     }
 
     // Heat
+    $detected_system_type['heat'] = [
+      'equipment' => null,
+      'stages' => null
+    ];
     if($settings['heatPumpGroundWater'] === true) {
-      $detected_system_type['heat'] = 'geothermal';
+      $detected_system_type['heat']['equipment'] = 'geothermal';
     } else if($settings['hasHeatPump'] === true) {
-      $detected_system_type['heat'] = 'compressor';
+      $detected_system_type['heat']['equipment'] = 'compressor';
     } else if($settings['hasBoiler'] === true) {
-      $detected_system_type['heat'] = 'boiler';
+      $detected_system_type['heat']['equipment'] = 'boiler';
     } else if(in_array('heat1', $outputs) === true) {
       // This is the fastest way I was able to determine this. The further north
       // you are the less likely you are to use electric heat.
@@ -731,39 +692,67 @@ class ecobee_thermostat extends cora\crud {
           isset($address['normalized']['metadata']['latitude']) === true &&
           $address['normalized']['metadata']['latitude'] > 30
         ) {
-          $detected_system_type['heat'] = 'gas';
+          $detected_system_type['heat']['equipment'] = 'gas';
         } else {
-          $detected_system_type['heat'] = 'electric';
+          $detected_system_type['heat']['equipment'] = 'electric';
         }
       } else {
-        $detected_system_type['heat'] = 'electric';
+        $detected_system_type['heat']['equipment'] = 'electric';
       }
     } else {
-      $detected_system_type['heat'] = 'none';
+      $detected_system_type['heat']['equipment'] = 'none';
     }
+
 
     // Rudimentary aux heat guess. It's pretty good overall but not as good as
     // heat/cool.
+    $detected_system_type['heat_auxiliary'] = [
+      'equipment' => null,
+      'stages' => null
+    ];
     if(
-      $detected_system_type['heat'] === 'gas' ||
-      $detected_system_type['heat'] === 'boiler' ||
-      $detected_system_type['heat'] === 'oil' ||
-      $detected_system_type['heat'] === 'electric'
+      $detected_system_type['heat']['equipment'] === 'gas' ||
+      $detected_system_type['heat']['equipment'] === 'boiler' ||
+      $detected_system_type['heat']['equipment'] === 'oil' ||
+      $detected_system_type['heat']['equipment'] === 'electric'
     ) {
-      $detected_system_type['heat_auxiliary'] = 'none';
-    } else if($detected_system_type['heat'] === 'compressor') {
-      $detected_system_type['heat_auxiliary'] = 'electric';
-    } else {
-      $detected_system_type['heat_auxiliary'] = null;
+      $detected_system_type['heat_auxiliary']['equipment'] = 'none';
+    } else if($detected_system_type['heat']['equipment'] === 'compressor') {
+      $detected_system_type['heat_auxiliary']['equipment'] = 'electric';
     }
 
     // Cool
+    $detected_system_type['cool'] = [
+      'equipment' => null,
+      'stages' => null
+    ];
     if($settings['heatPumpGroundWater'] === true) {
-      $detected_system_type['cool'] = 'geothermal';
+      $detected_system_type['cool']['equipment'] = 'geothermal';
     } else if(in_array('compressor1', $outputs) === true) {
-      $detected_system_type['cool'] = 'compressor';
+      $detected_system_type['cool']['equipment'] = 'compressor';
     } else {
-      $detected_system_type['cool'] = 'none';
+      $detected_system_type['cool']['equipment'] = 'none';
+    }
+
+    /**
+     * Stages. For whatever reason, heat stages seem wrong. They appear to
+     * match the number of "furnace" stages on the ecobee. Attempt to fix this
+     * by assuming that if heat and cool are both a compressor then pick the
+     * max of these two for both.
+     */
+    if(
+      $detected_system_type['heat']['equipment'] === 'compressor' &&
+      $detected_system_type['cool']['equipment'] === 'compressor'
+    ) {
+      $stages = max(
+        $ecobee_thermostat['settings']['coolStages'],
+        $ecobee_thermostat['settings']['heatStages']
+      );
+      $detected_system_type['heat']['stages'] = $stages;
+      $detected_system_type['cool']['stages'] = $stages;
+    } else {
+      $detected_system_type['heat']['stages'] = $ecobee_thermostat['settings']['heatStages'];
+      $detected_system_type['cool']['stages'] = $ecobee_thermostat['settings']['coolStages'];
     }
 
     return $detected_system_type;
@@ -779,7 +768,6 @@ class ecobee_thermostat extends cora\crud {
    */
   private function get_weather($thermostat, $ecobee_thermostat) {
     $weather = [
-      'station' => null,
       'dew_point' => null,
       'barometric_pressure' => null,
       'humidity_relative' => null,
@@ -790,10 +778,6 @@ class ecobee_thermostat extends cora\crud {
       'wind_speed' => null,
       'condition' => null
     ];
-
-    if(isset($ecobee_thermostat['weather']['weatherStation']) === true) {
-      $weather['station'] = $ecobee_thermostat['weather']['weatherStation'];
-    }
 
     if(
       isset($ecobee_thermostat['weather']['forecasts']) === true &&
@@ -909,6 +893,55 @@ class ecobee_thermostat extends cora\crud {
 
     return $weather;
   }
+
+  /**
+   * Get certain settings.
+   *
+   * @param array $thermostat
+   * @param array $ecobee_thermostat
+   *
+   * @return array
+   */
+  private function get_settings($thermostat, $ecobee_thermostat) {
+    $settings = [];
+
+    if(isset($ecobee_thermostat['settings']['stage1CoolingDifferentialTemp']) === true) {
+      $settings['differential_cool'] = ($ecobee_thermostat['settings']['stage1CoolingDifferentialTemp'] / 10);
+    }
+
+    if(isset($ecobee_thermostat['settings']['stage1HeatingDifferentialTemp']) === true) {
+      $settings['differential_heat'] = ($ecobee_thermostat['settings']['stage1HeatingDifferentialTemp'] / 10);
+    }
+
+    return $settings;
+  }
+
+  /**
+   * Get program. This is just a clone of the ecobee_thermostat program with a
+   * slight modification to the temperature values. First, divide by 10 since
+   * this data is returned directly by the API. Second, round. This is weird
+   * to do, but as an example one of my comfort settings said "74" in the
+   * ecobee GUI but "73.5" in the API. After changing it in the GUI the
+   * fractional amount was removed. I assume this is an old ecobee bug but it
+   * affects like 10% of thermostats in my database.
+   *
+   * @param array $thermostat
+   * @param array $ecobee_thermostat
+   *
+   * @return array
+   */
+  private function get_program($thermostat, $ecobee_thermostat) {
+    $program = $ecobee_thermostat['program'];
+    if(isset($program['climates']) === true) {
+      foreach($program['climates'] as &$climate) {
+        $climate['coolTemp'] = round($climate['coolTemp'] / 10);
+        $climate['heatTemp'] = round($climate['heatTemp'] / 10);
+      }
+    }
+
+    return $program;
+  }
+
 
   /**
    * Get the current time zone. It's usually set. If not set use the offset

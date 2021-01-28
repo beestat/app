@@ -1,7 +1,11 @@
 /**
  * Change system type.
+ *
+ * @param {number} thermostat_id The thermostat_id this card is displaying
+ * data for.
  */
-beestat.component.modal.change_system_type = function() {
+beestat.component.modal.change_system_type = function(thermostat_id) {
+  this.thermostat_id_ = thermostat_id;
   beestat.component.modal.apply(this, arguments);
 };
 beestat.extend(beestat.component.modal.change_system_type, beestat.component.modal);
@@ -9,12 +13,9 @@ beestat.extend(beestat.component.modal.change_system_type, beestat.component.mod
 beestat.component.modal.change_system_type.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  var thermostat_group = beestat.cache.thermostat_group[
-    thermostat.thermostat_group_id
-  ];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  parent.appendChild($.createElement('p').innerHTML('What type of HVAC system do you have? This applies to all thermostats in this group. System types that beestat detected are indicated.'));
+  parent.appendChild($.createElement('p').innerHTML('What type of HVAC system do you have? System types that beestat detected are indicated.'));
 
   var options = {
     'heat': [
@@ -108,7 +109,7 @@ beestat.component.modal.change_system_type.prototype.get_title_ = function() {
  * @return {[beestat.component.button]} The buttons.
  */
 beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var self = this;
 
@@ -132,26 +133,42 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
         .set_background_hover_color()
         .removeEventListener('click');
 
+      // Delete from the cache to trigger the metrics loading screen
+      beestat.cache.delete('data.metrics');
+
       new beestat.api()
         .add_call(
-          'thermostat_group',
-          'update_system_types',
+          'thermostat',
+          'set_reported_system_types',
           {
-            'thermostat_group_id': thermostat.thermostat_group_id,
+            'thermostat_id': thermostat.thermostat_id,
             'system_types': self.selected_types_
           },
-          'update_system_types'
+          'set_reported_system_types'
         )
-        .add_call('thermostat', 'read_id', {}, 'thermostat')
-        .add_call('thermostat_group', 'read_id', {}, 'thermostat_group')
+        .add_call(
+          'thermostat',
+          'read_id',
+          {
+            'attributes': {
+              'inactive': 0
+            }
+          },
+          'thermostat'
+        )
+        .add_call(
+          'thermostat',
+          'get_metrics',
+          {
+            'thermostat_id': self.thermostat_id_,
+            'attributes': beestat.comparisons.get_attributes()
+          },
+          'metrics'
+        )
         .set_callback(function(response) {
           // Update the cache.
           beestat.cache.set('thermostat', response.thermostat);
-          beestat.cache.set('thermostat_group', response.thermostat_group);
-
-          // Re-run comparison scores as they are invalid for the new system
-          // type.
-          beestat.comparisons.get_comparison_scores();
+          beestat.cache.set('data.metrics', response.metrics);
 
           // Close the modal.
           self.dispose();

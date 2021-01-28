@@ -27,8 +27,8 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
     [
       'setting.runtime_sensor_detail_range_type',
       'setting.runtime_sensor_detail_range_dynamic',
-      'cache.runtime_thermostat',
-      'cache.runtime_sensor'
+      'cache.data.runtime_thermostat_sensor_detail',
+      'cache.data.runtime_sensor'
     ],
     change_function
   );
@@ -131,11 +131,8 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
    * the database, check every 2 seconds until it does.
    */
   if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
-    if (
-      beestat.cache.runtime_sensor === undefined ||
-      beestat.cache.data.runtime_thermostat_last !== 'runtime_sensor_detail'
-    ) {
-      this.show_loading_('Loading');
+    if (beestat.cache.runtime_sensor === undefined) {
+      this.show_loading_('Fetching');
 
       var value;
       var operator;
@@ -191,8 +188,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
         for (var alias in response) {
           var r = response[alias];
           if (alias === 'runtime_thermostat') {
-            beestat.cache.set('data.runtime_thermostat_last', 'runtime_sensor_detail');
-            beestat.cache.set('runtime_thermostat', r);
+            beestat.cache.set('data.runtime_thermostat_sensor_detail', r);
           } else {
             runtime_sensors = runtime_sensors.concat(r);
           }
@@ -299,12 +295,12 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
       }
     }));
 
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Custom')
-      .set_icon('calendar_edit')
-      .set_callback(function() {
-        (new beestat.component.modal.runtime_sensor_detail_custom()).render();
-      }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Custom')
+    .set_icon('calendar_edit')
+    .set_callback(function() {
+      (new beestat.component.modal.runtime_sensor_detail_custom()).render();
+    }));
 
   if (this.has_data_() === true) {
     menu.add_menu_item(new beestat.component.menu_item()
@@ -359,7 +355,6 @@ beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
  */
 beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(force) {
   if (this.data_ === undefined || force === true) {
-
     var range = {
       'type': beestat.setting('runtime_sensor_detail_range_type'),
       'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),
@@ -368,7 +363,11 @@ beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(forc
     };
 
     var sensor_data = beestat.runtime_sensor.get_data(this.thermostat_id_, range);
-    var thermostat_data = beestat.runtime_thermostat.get_data(this.thermostat_id_, range);
+    var thermostat_data = beestat.runtime_thermostat.get_data(
+      this.thermostat_id_,
+      range,
+      'runtime_thermostat_sensor_detail'
+    );
 
     this.data_ = sensor_data;
 

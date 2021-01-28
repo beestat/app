@@ -14,9 +14,7 @@ class profile extends cora\api {
     'public' => []
   ];
 
-  public static $cache = [
-    'generate' => 604800 // 7 Days
-  ];
+  public static $cache = [];
 
   /**
    * Generate a profile for the specified thermostat.
@@ -118,6 +116,30 @@ class profile extends cora\api {
     // Get some stuff
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
+    if($thermostat['system_type2']['reported']['heat']['equipment'] !== null) {
+      $system_type_heat = $thermostat['system_type2']['reported']['heat']['equipment'];
+    } else {
+      $system_type_heat = $thermostat['system_type2']['detected']['heat']['equipment'];
+    }
+    if($thermostat['system_type2']['reported']['cool']['equipment'] !== null) {
+      $system_type_cool = $thermostat['system_type2']['reported']['cool']['equipment'];
+    } else {
+      $system_type_cool = $thermostat['system_type2']['detected']['cool']['equipment'];
+    }
+
+    if($thermostat['system_type2']['reported']['heat']['stages'] !== null) {
+      $heat_stages = $thermostat['system_type2']['reported']['heat']['stages'];
+    } else {
+      $heat_stages = $thermostat['system_type2']['detected']['heat']['stages'];
+    }
+    if($thermostat['system_type2']['reported']['cool']['stages'] !== null) {
+      $cool_stages = $thermostat['system_type2']['reported']['cool']['stages'];
+    } else {
+      $cool_stages = $thermostat['system_type2']['detected']['cool']['stages'];
+    }
+
+
+
     // Figure out all the starting and ending times. Round begin/end to the
     // nearest 5 minutes to help with the looping later on.
     $end_timestamp = time();
@@ -132,7 +154,7 @@ class profile extends cora\api {
       'read',
       [
         'attributes' => [
-          'thermostat_group_id' => $thermostat['thermostat_group_id'],
+          'address_id' => $thermostat['address_id'],
           'inactive' => 0
         ]
       ]
@@ -185,7 +207,7 @@ class profile extends cora\api {
       'cool_1' => 0,
       'cool_2' => 0
     ];
-    $degree_days_baseline = 65;
+    $degree_days_base_temperature = 65;
     $degree_days = [];
     $begin_runtime = [];
 
@@ -232,7 +254,7 @@ class profile extends cora\api {
 
           // Degree days
           if($date !== $degree_days_date) {
-            $degree_days[] = (array_mean($degree_days_temperatures) / 10) - $degree_days_baseline;
+            $degree_days[] = (array_mean($degree_days_temperatures) / 10) - $degree_days_base_temperature;
             $degree_days_date = $date;
             $degree_days_temperatures = [];
           }
@@ -700,40 +722,40 @@ class profile extends cora\api {
         'heat' => null,
         'cool' => null
       ],
+      'differential' => [
+        'heat' => null,
+        'cool' => null
+      ],
+      'setback' => [
+        'heat' => null,
+        'cool' => null
+      ],
       'runtime' => [
-        'heat_1' => round($runtime_seconds['heat_1'] / 3600),
-        'heat_2' => round($runtime_seconds['heat_2'] / 3600),
-        'auxiliary_heat_1' => round($runtime_seconds['auxiliary_heat_1'] / 3600),
-        'auxiliary_heat_2' => round($runtime_seconds['auxiliary_heat_2'] / 3600),
-        'cool_1' => round($runtime_seconds['cool_1'] / 3600),
-        'cool_2' => round($runtime_seconds['cool_2'] / 3600),
+        'heat_1' => round($runtime_seconds['heat_1'] / 60),
+        'heat_2' => round($runtime_seconds['heat_2'] / 60),
+        'auxiliary_heat_1' => round($runtime_seconds['auxiliary_heat_1'] / 60),
+        'auxiliary_heat_2' => round($runtime_seconds['auxiliary_heat_2'] / 60),
+        'cool_1' => round($runtime_seconds['cool_1'] / 60),
+        'cool_2' => round($runtime_seconds['cool_2'] / 60),
+      ],
+      'runtime_per_degree_day' => [
+        'heat_1' => null,
+        'heat_2' => null,
+        'cool_1' => null,
+        'cool_2' => null
+      ],
+      'balance_point' => [
+        'heat_1' => null,
+        'heat_2' => null,
+        'resist' => null
+      ],
+      'property' => [
+        'age' => null,
+        'square_feet' => null
       ],
       'metadata' => [
         'generated_at' => date('c'),
         'duration' => round((time() - strtotime($first_timestamp)) / 86400),
-        'temperature' => [
-          'heat_1' => [
-            'deltas' => []
-          ],
-          'heat_2' => [
-            'deltas' => []
-          ],
-          'auxiliary_heat_1' => [
-            'deltas' => []
-          ],
-          'auxiliary_heat_2' => [
-            'deltas' => []
-          ],
-          'cool_1' => [
-            'deltas' => []
-          ],
-          'cool_2' => [
-            'deltas' => []
-          ],
-          'resist' => [
-            'deltas' => []
-          ]
-        ]
       ]
     ];
 
@@ -748,7 +770,6 @@ class profile extends cora\api {
           count($data['deltas_per_hour']) >= $required_samples
         ) {
           $deltas[$type][$outdoor_temperature] = round(array_median($data['deltas_per_hour']) / 10, 2);
-          $profile['metadata']['temperature'][$type]['deltas'][$outdoor_temperature]['samples'] = count($data['deltas_per_hour']);
         }
       }
     }
@@ -766,19 +787,28 @@ class profile extends cora\api {
       ];
     }
 
-    foreach(['heat', 'cool'] as $type) {
-      if(count($setpoints[$type]) > 0) {
-        $profile['setpoint'][$type] = round(array_mean($setpoints[$type])) / 10;
-        $profile['metadata']['setpoint'][$type]['samples'] = count($setpoints[$type]);
-      }
+    if(
+      $system_type_cool !== null &&
+      $system_type_cool !== 'none' &&
+      count($setpoints['cool']) > 0
+    ) {
+      $profile['setpoint']['cool'] = round(array_mean($setpoints['cool'])) / 10;
+    }
+
+    if(
+      $system_type_heat !== null &&
+      $system_type_heat !== 'none' &&
+      count($setpoints['heat']) > 0
+    ) {
+      $profile['setpoint']['heat'] = round(array_mean($setpoints['heat'])) / 10;
     }
 
     // Heating and cooling degree days.
     foreach($degree_days as $degree_day) {
       if($degree_day < 0) {
-        $profile['degree_days']['cool'] += ($degree_day * -1);
+        $profile['degree_days']['heat'] += ($degree_day * -1);
       } else {
-        $profile['degree_days']['heat'] += ($degree_day);
+        $profile['degree_days']['cool'] += ($degree_day);
       }
     }
     if ($profile['degree_days']['cool'] !== null) {
@@ -788,6 +818,113 @@ class profile extends cora\api {
       $profile['degree_days']['heat'] = round($profile['degree_days']['heat']);
     }
 
+    // Runtime per degree day
+    if($profile['degree_days']['heat'] !== null) {
+      if(
+        $system_type_heat !== null &&
+        $system_type_heat !== 'none'
+      ) {
+        $profile['runtime_per_degree_day']['heat_1'] = round($profile['runtime']['heat_1'] / $profile['degree_days']['heat'], 2);
+        if($heat_stages === 2) {
+          $profile['runtime_per_degree_day']['heat_2'] = round($profile['runtime']['heat_2'] / $profile['degree_days']['heat'], 2);
+        }
+      }
+    }
+
+    if($profile['degree_days']['cool'] !== null) {
+      if(
+        $system_type_cool !== null &&
+        $system_type_cool !== 'none'
+      ) {
+        $profile['runtime_per_degree_day']['cool_1'] = round($profile['runtime']['cool_1'] / $profile['degree_days']['cool'], 2);
+        if($cool_stages === 2) {
+          $profile['runtime_per_degree_day']['cool_2'] = round($profile['runtime']['cool_2'] / $profile['degree_days']['cool'], 2);
+        }
+      }
+    }
+
+    // Balance point
+    if($system_type_heat === 'compressor') {
+      if(
+        $profile['temperature']['heat_1'] !== null &&
+        $profile['temperature']['heat_1']['linear_trendline'] !== null
+      ) {
+        $linear_trendline = $profile['temperature']['heat_1']['linear_trendline'];
+        if($linear_trendline['slope'] > 0) {
+          $profile['balance_point']['heat_1'] = round((-1 * $linear_trendline['intercept']) / $linear_trendline['slope'], 1);
+        }
+      }
+
+      if(
+        $profile['temperature']['heat_2'] !== null &&
+        $profile['temperature']['heat_2']['linear_trendline'] !== null
+      ) {
+        $linear_trendline = $profile['temperature']['heat_2']['linear_trendline'];
+        if($linear_trendline['slope'] > 0) {
+          $profile['balance_point']['heat_2'] = round((-1 * $linear_trendline['intercept']) / $linear_trendline['slope'], 1);
+        }
+      }
+    }
+
+    if(
+      $profile['temperature']['resist'] !== null &&
+      $profile['temperature']['resist']['linear_trendline'] !== null
+    ) {
+      $linear_trendline = $profile['temperature']['resist']['linear_trendline'];
+      if($linear_trendline['slope'] > 0) {
+        $profile['balance_point']['resist'] = round((-1 * $linear_trendline['intercept']) / $linear_trendline['slope'], 1);
+      }
+    }
+
+    // Differential
+    if(isset($thermostat['settings']['differential_heat']) === true) {
+      $profile['differential']['heat'] = $thermostat['settings']['differential_heat'];
+    }
+
+    if(isset($thermostat['settings']['differential_cool']) === true) {
+      $profile['differential']['cool'] = $thermostat['settings']['differential_cool'];
+    }
+
+    // Setback
+    if(isset($thermostat['program']['climates']) === true) {
+      foreach($thermostat['program']['climates'] as $climate) {
+        if($climate['climateRef'] === 'home') {
+          $temperature_home_cool = $climate['coolTemp'];
+          $temperature_home_heat = $climate['heatTemp'];
+        } else if($climate['climateRef'] === 'away') {
+          $temperature_away_cool = $climate['coolTemp'];
+          $temperature_away_heat = $climate['heatTemp'];
+        }
+      }
+    }
+
+    if(
+      $system_type_cool !== null &&
+      $system_type_cool !== 'none' &&
+      isset($temperature_home_cool) === true &&
+      isset($temperature_away_cool) === true &&
+      $temperature_away_cool >= $temperature_home_cool
+    ) {
+      $profile['setback']['cool'] = $temperature_away_cool - $temperature_home_cool;
+    }
+
+    if(
+      $system_type_heat !== null &&
+      $system_type_heat !== 'none' &&
+      isset($temperature_home_heat) === true &&
+      isset($temperature_away_heat) === true &&
+      $temperature_home_heat >= $temperature_away_heat
+    ) {
+      $profile['setback']['heat'] = $temperature_home_heat - $temperature_away_heat;
+    }
+
+    // Property
+    if(isset($thermostat['property']['age']) === true) {
+      $profile['property']['age'] = $thermostat['property']['age'];
+    }
+    if(isset($thermostat['property']['square_feet']) === true) {
+      $profile['property']['square_feet'] = $thermostat['property']['square_feet'];
+    }
 
     return $profile;
   }

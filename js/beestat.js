@@ -56,7 +56,7 @@ beestat.get_climate = function(climate_ref) {
 /**
  * Get the color a thermostat should be based on what equipment is running.
  *
- * @return {string}
+ * @return {string} The color string.
  */
 beestat.get_thermostat_color = function(thermostat_id) {
   var thermostat = beestat.cache.thermostat[thermostat_id];
@@ -131,7 +131,8 @@ beestat.width = window.innerWidth;
 window.addEventListener('resize', rocket.throttle(100, function() {
   var breakpoints = [
     600,
-    650
+    650,
+    1000
   ];
 
   breakpoints.forEach(function(breakpoint) {
