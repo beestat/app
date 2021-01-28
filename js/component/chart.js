@@ -497,7 +497,9 @@ beestat.component.chart.prototype.get_options_tooltip_positioner_ = function() {
 };
 
 /**
- * Get the tooltip positioner x value.
+ * Get the tooltip positioner x value. This remembers which way you're moving
+ * the mouse and attempts to position the tooltip out of the way of the
+ * direction of movement.
  *
  * @param {number} tooltip_width Tooltip width.
  * @param {number} tooltip_height Tooltip height.
@@ -506,18 +508,41 @@ beestat.component.chart.prototype.get_options_tooltip_positioner_ = function() {
  * @return {number} The tooltip x value.
  */
 beestat.component.chart.prototype.get_options_tooltip_positioner_x_ = function(tooltip_width, tooltip_height, point) {
-  var plot_width = this.chart_.plotWidth;
+  const plot_width = this.chart_.plotWidth;
 
-  var fits_on_left = (point.plotX - tooltip_width) > 0;
-  var fits_on_right = (point.plotX + tooltip_width) < plot_width;
+  const tooltip_x_history_size = 20;
+  if (this.last_tooltip_x_ === undefined) {
+    this.last_tooltip_x_ = [];
+  }
 
-  var x;
-  if (fits_on_left === true) {
-    x = point.plotX - tooltip_width + this.chart_.plotLeft;
-  } else if (fits_on_right === true) {
-    x = point.plotX + this.chart_.plotLeft;
-  } else {
+  this.last_tooltip_x_.push(point.plotX);
+  if (this.last_tooltip_x_.length > tooltip_x_history_size) {
+    this.last_tooltip_x_.shift();
+  }
+
+  const prefer_left = this.last_tooltip_x_[0] <= this.last_tooltip_x_[this.last_tooltip_x_.length - 1];
+
+  const fits_on_left = (point.plotX - tooltip_width) > 0;
+  const fits_on_right = (point.plotX + tooltip_width) < plot_width;
+
+  let x;
+
+  if (fits_on_left === false && fits_on_right === false) {
     x = this.chart_.plotLeft;
+  } else {
+    if (prefer_left === true) {
+      if (fits_on_left === true) {
+        x = point.plotX - tooltip_width + this.chart_.plotLeft;
+      } else {
+        x = point.plotX + this.chart_.plotLeft;
+      }
+    } else {
+      if (fits_on_right === true) {
+        x = point.plotX + this.chart_.plotLeft;
+      } else {
+        x = point.plotX - tooltip_width + this.chart_.plotLeft;
+      }
+    }
   }
 
   return x;
