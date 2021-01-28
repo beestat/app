@@ -13,31 +13,36 @@ beestat.extend(beestat.component.modal.announcements, beestat.component.modal);
  */
 beestat.component.modal.announcements.prototype.decorate_contents_ = function(parent) {
   var announcements = $.values(beestat.cache.announcement).reverse();
-  announcements.forEach(function(announcement) {
-    parent.appendChild($.createElement('div').style({
-      'border-bottom': '1px solid #eee',
-      'margin-left': (beestat.style.size.gutter * -1) + 'px',
-      'margin-right': (beestat.style.size.gutter * -1) + 'px',
-      'margin-top': (beestat.style.size.gutter) + 'px',
-      'margin-bottom': (beestat.style.size.gutter) + 'px'
-    }));
 
-    var icon = new beestat.component.icon(announcement.icon)
-      .set_text(announcement.title +
-        ' • ' +
-        moment.utc(announcement.created_at).fromNow());
+  if (announcements.length === 0) {
+    parent.appendChild($.createElement('p').innerText('No recent announcements! :)'));
+  } else {
+    announcements.forEach(function(announcement) {
+      parent.appendChild($.createElement('div').style({
+        'border-bottom': '1px solid #eee',
+        'margin-left': (beestat.style.size.gutter * -1) + 'px',
+        'margin-right': (beestat.style.size.gutter * -1) + 'px',
+        'margin-top': (beestat.style.size.gutter) + 'px',
+        'margin-bottom': (beestat.style.size.gutter) + 'px'
+      }));
 
-    icon.render(parent);
+      var icon = new beestat.component.icon(announcement.icon)
+        .set_text(announcement.title +
+          ' • ' +
+          moment.utc(announcement.created_at).fromNow());
 
-    beestat.dispatcher.dispatchEvent('view_announcements');
+      icon.render(parent);
 
-    parent.appendChild($.createElement('p').innerHTML(announcement.text));
-  });
+      beestat.dispatcher.dispatchEvent('view_announcements');
 
-  beestat.setting(
-    'last_read_announcement_id',
-    announcements[0].announcement_id
-  );
+      parent.appendChild($.createElement('p').innerHTML(announcement.text));
+    });
+
+    beestat.setting(
+      'last_read_announcement_id',
+      announcements[0].announcement_id
+    );
+  }
 };
 
 /**
