@@ -31,8 +31,6 @@ beestat.component.modal.patreon_status.prototype.decorate_contents_ = function(p
  * @param {rocket.Elements} parent
  */
 beestat.component.modal.patreon_status.prototype.decorate_wait_ = function(parent) {
-  var self = this;
-
   parent.appendChild(
     $.createElement('div')
       .style({
@@ -47,7 +45,6 @@ beestat.component.modal.patreon_status.prototype.decorate_wait_ = function(paren
 
   api.set_callback(function(response) {
     beestat.cache.set('user', response);
-    self.rerender();
   });
 
   window.setTimeout(function() {
