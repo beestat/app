@@ -15,6 +15,7 @@ class thermostat extends cora\crud {
       'restore_alert',
       'set_reported_system_types',
       'generate_profile',
+      'generate_profiles',
       'get_metrics'
     ],
     'public' => []
@@ -214,6 +215,25 @@ class thermostat extends cora\crud {
         'thermostat_id' => $thermostat_id,
         'alerts' => $thermostat['alerts']
       ]
+    );
+  }
+
+  /**
+   * Generate profiles for all thermostats. This pretty much only exists for
+   * the cron job.
+   */
+  public function generate_profiles() {
+    $thermostats = $this->read();
+    foreach($thermostats as $thermostat) {
+      $this->generate_profile(
+        $thermostat['thermostat_id']
+      );
+    }
+
+    $this->api(
+      'user',
+      'update_sync_status',
+      ['key' => 'thermostat.generate_profiles']
     );
   }
 
