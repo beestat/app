@@ -303,8 +303,8 @@ a.inverted:active {
 /* Icons (materialdesignicons.com) */
 @font-face {
   font-family: "Material Design Icons";
-  src: url("../font/material_icon/material_icon.eot?v=3.4.93");
-  src: url("../font/material_icon/material_icon.eot?#iefix&v=3.4.93") format("embedded-opentype"), url("../font/material_icon/material_icon.woff2?v=3.4.93") format("woff2"), url("../font/material_icon/material_icon.woff?v=3.4.93") format("woff"), url("../font/material_icon/material_icon.ttf?v=3.4.93") format("truetype"), url("../font/material_icon/material_icon.svg?v=3.4.93#materialdesigniconsregular") format("svg");
+  src: url("../font/material_icon/material_icon.eot?v=3.4.94");
+  src: url("../font/material_icon/material_icon.eot?#iefix&v=3.4.94") format("embedded-opentype"), url("../font/material_icon/material_icon.woff2?v=3.4.94") format("woff2"), url("../font/material_icon/material_icon.woff?v=3.4.94") format("woff"), url("../font/material_icon/material_icon.ttf?v=3.4.94") format("truetype"), url("../font/material_icon/material_icon.svg?v=3.4.94#materialdesigniconsregular") format("svg");
   font-weight: normal;
   font-style: normal;
 }
