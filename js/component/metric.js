@@ -77,7 +77,8 @@ beestat.component.metric.prototype.decorate_ = function(parent) {
 
   var chart_container = $.createElement('div').style({
     'position': 'relative',
-    'height': '60px'
+    'height': '60px',
+    'user-select': 'none'
   });
   td_chart.appendChild(chart_container);
 
