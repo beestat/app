@@ -162,8 +162,8 @@ class profile extends cora\api {
 
     // Get all of the relevant data
     $thermostat_ids = [];
-    foreach($group_thermostats as $thermostat) {
-      $thermostat_ids[] = $thermostat['thermostat_id'];
+    foreach($group_thermostats as $group_thermostat) {
+      $thermostat_ids[] = $group_thermostat['thermostat_id'];
     }
 
     /**
