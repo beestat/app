@@ -4,7 +4,7 @@
  * @param {number} thermostat_id The thermostat ID.
  */
 beestat.component.metric.balance_point.resist = function(thermostat_id) {
-  this.thermostat_group_id_ = thermostat_id;
+  this.thermostat_id_ = thermostat_id;
 
   beestat.component.metric.balance_point.apply(this, arguments);
 };

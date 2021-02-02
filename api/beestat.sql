@@ -613,7 +613,6 @@ CREATE TABLE `thermostat` (
   `thermostat_id` int unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int unsigned NOT NULL,
   `ecobee_thermostat_id` int unsigned DEFAULT NULL,
-  `thermostat_group_id` int unsigned DEFAULT NULL,
   `address_id` int unsigned DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
   `temperature` decimal(4,1) DEFAULT NULL,
@@ -652,48 +651,12 @@ CREATE TABLE `thermostat` (
   PRIMARY KEY (`thermostat_id`),
   KEY `ecobee_thermostat_id` (`ecobee_thermostat_id`),
   KEY `user_id` (`user_id`),
-  KEY `thermostat_group_id` (`thermostat_group_id`),
   KEY `address_id` (`address_id`),
   KEY `comparison` (`system_type_heat`,`system_type_cool`,`system_type_heat_stages`,`system_type_cool_stages`,`property_structure_type`,`address_latitude`,`address_longitude`),
   CONSTRAINT `thermostat_ibfk_1` FOREIGN KEY (`ecobee_thermostat_id`) REFERENCES `ecobee_thermostat` (`ecobee_thermostat_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `thermostat_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `thermostat_ibfk_3` FOREIGN KEY (`thermostat_group_id`) REFERENCES `thermostat_group` (`thermostat_group_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `thermostat_ibfk_4` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `thermostat_group`
---
-
-DROP TABLE IF EXISTS `thermostat_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `thermostat_group` (
-  `thermostat_group_id` int unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int unsigned NOT NULL,
-  `address_id` int unsigned NOT NULL,
-  `system_type_heat` enum('geothermal','compressor','boiler','gas','oil','electric','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `system_type_heat_auxiliary` enum('electric','gas','oil','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `system_type_cool` enum('geothermal','compressor','none') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `property_age` int unsigned DEFAULT NULL,
-  `property_square_feet` int unsigned DEFAULT NULL,
-  `property_stories` int unsigned DEFAULT NULL,
-  `property_structure_type` enum('detached','apartment','condominium','loft','multiplex','townhouse','semi-detached') CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
-  `address_latitude` decimal(10,8) DEFAULT NULL,
-  `address_longitude` decimal(11,8) DEFAULT NULL,
-  `temperature_profile` json DEFAULT NULL,
-  `profile` json DEFAULT NULL,
-  `weather` json DEFAULT NULL,
-  `deleted` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`thermostat_group_id`),
-  UNIQUE KEY `user_id_address_id` (`user_id`,`address_id`),
-  KEY `address_id` (`address_id`),
-  KEY `system_type_heat` (`system_type_heat`,`property_structure_type`,`property_stories`,`property_square_feet`,`property_age`,`address_latitude`,`address_longitude`),
-  KEY `system_type_cool` (`system_type_cool`,`property_structure_type`,`property_stories`,`property_square_feet`,`property_age`,`address_latitude`,`address_longitude`),
-  CONSTRAINT `thermostat_group_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
-  CONSTRAINT `thermostat_group_ibfk_2` FOREIGN KEY (`address_id`) REFERENCES `address` (`address_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
