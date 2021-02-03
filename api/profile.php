@@ -960,8 +960,8 @@ class profile extends cora\api {
     $intercept = (($sum_y) - ($slope * $sum_x)) / ($n);
 
     return [
-      'slope' => round($slope, 2),
-      'intercept' => round($intercept, 2)
+      'slope' => round($slope, 4),
+      'intercept' => round($intercept, 4)
     ];
   }
 }

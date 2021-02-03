@@ -145,6 +145,9 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
 /**
  * Get a linear trendline from a set of data.
  *
+ * IMPORTANT: This exists in the profile already but it's wrong to use it
+ * directly as it's not right for Celsius.
+ *
  * @param {Object} data The data; at least two points required.
  *
  * @return {Object} The slope and intercept of the trendline.
