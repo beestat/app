@@ -158,6 +158,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       thermostat.ecobee_thermostat_id
     ];
 
+    // Set the document title to include the thermostat name
+    if (thermostat.name !== null && thermostat.name.trim() !== '') {
+      document.title = 'beestat | ' + thermostat.name;
+    } else {
+      document.title = 'beestat';
+    }
+
     // Set the active temperature unit.
     beestat.setting('temperature_unit', thermostat.temperature_unit);
 
