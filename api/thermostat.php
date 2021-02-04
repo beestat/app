@@ -223,7 +223,9 @@ class thermostat extends cora\crud {
    * the cron job.
    */
   public function generate_profiles() {
-    $thermostats = $this->read();
+    $thermostats = $this->read([
+      'inactive' => 0
+    ]);
     foreach($thermostats as $thermostat) {
       $this->generate_profile(
         $thermostat['thermostat_id']
