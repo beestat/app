@@ -243,7 +243,7 @@ class thermostat extends cora\crud {
    * @param int $thermostat_id
    */
   public function generate_profile($thermostat_id) {
-    return $this->update([
+    $this->update([
       'thermostat_id' => $thermostat_id,
       'profile' => $this->api('profile', 'generate', $thermostat_id)
     ]);

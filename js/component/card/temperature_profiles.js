@@ -1,11 +1,27 @@
 /**
- * Temperature profiles.
+ * Temperature Profiles.
  *
  * @param {number} thermostat_id The thermostat_id this card is displaying
  * data for.
  */
 beestat.component.card.temperature_profiles = function(thermostat_id) {
   this.thermostat_id_ = thermostat_id;
+
+  var self = this;
+
+  /*
+   * Debounce so that multiple setting changes don't re-trigger the same
+   * event. This fires on the trailing edge so that all changes are accounted
+   * for when rerendering.
+   */
+  var change_function = beestat.debounce(function() {
+    self.rerender();
+  }, 10);
+
+  beestat.dispatcher.addEventListener(
+    ['cache.thermostat'],
+    change_function
+  );
 
   beestat.component.card.apply(this, arguments);
 };
@@ -49,8 +65,29 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   if (
     thermostat.profile === null
   ) {
-    this.chart_.render(parent);
     this.show_loading_('Fetching');
+    new beestat.api()
+      .add_call(
+        'thermostat',
+        'generate_profile',
+        {
+          'thermostat_id': this.thermostat_id_
+        }
+      )
+      .add_call(
+        'thermostat',
+        'read_id',
+        {
+          'attributes': {
+            'inactive': 0
+          }
+        },
+        'thermostat'
+      )
+      .set_callback(function(response) {
+        beestat.cache.set('thermostat', response.thermostat);
+      })
+      .send();
   } else {
     // Global x range.
     var x_min = Infinity;
@@ -202,6 +239,11 @@ beestat.component.card.temperature_profiles.prototype.get_title_ = function() {
 beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function() {
   const thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
+  // If the profile has not yet been generated.
+  if (thermostat.profile === null) {
+    return null;
+  }
+
   const generated_at_m = moment(
     thermostat.profile.metadata.generated_at
   );
@@ -220,9 +262,9 @@ beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function()
   } else {
     duration_text += duration_weeks + ' weeks';
   }
-  duration_text += ' of data.';
+  duration_text += ' of data';
 
-  return 'Generated ' + generated_at_m.format('MMM Do @ h a') + ' (updated weekly) ' + duration_text;
+  return 'Generated ' + generated_at_m.format('MMM Do @ h a') + duration_text + ' (updated weekly).';
 };
 
 /**

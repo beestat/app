@@ -88,21 +88,44 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
 
       api.send();
     }, 10000);
-  } else if (beestat.cache.data.metrics === undefined) {
-    this.show_loading_('Fetching');
   } else {
     if (thermostat.profile === null) {
+      this.show_loading_('Fetching');
       new beestat.api()
         .add_call(
           'thermostat',
           'generate_profile',
           {
             'thermostat_id': this.thermostat_id_
+          }
+        )
+        .add_call(
+          'thermostat',
+          'read_id',
+          {
+            'attributes': {
+              'inactive': 0
+            }
           },
           'thermostat'
         )
         .set_callback(function(response) {
           beestat.cache.set('thermostat', response.thermostat);
+        })
+        .send();
+    } else if (beestat.cache.data.metrics === undefined) {
+      this.show_loading_('Fetching');
+      new beestat.api()
+        .add_call(
+          'thermostat',
+          'get_metrics',
+          {
+            'thermostat_id': this.thermostat_id_,
+            'attributes': beestat.comparisons.get_attributes()
+          }
+        )
+        .set_callback(function(response) {
+          beestat.cache.set('data.metrics', response);
         })
         .send();
     }

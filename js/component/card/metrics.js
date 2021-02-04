@@ -27,20 +27,6 @@ beestat.component.card.metrics = function(thermostat_id) {
   );
 
   beestat.component.card.apply(this, arguments);
-
-  new beestat.api()
-    .add_call(
-      'thermostat',
-      'get_metrics',
-      {
-        'thermostat_id': this.thermostat_id_,
-        'attributes': beestat.comparisons.get_attributes()
-      }
-    )
-    .set_callback(function(response) {
-      beestat.cache.set('data.metrics', response);
-    })
-    .send();
 };
 beestat.extend(beestat.component.card.metrics, beestat.component.card);
 
@@ -196,6 +182,11 @@ beestat.component.card.metrics.prototype.decorate_top_right_ = function(parent) 
 beestat.component.card.metrics.prototype.get_subtitle_ = function() {
   const thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
+  // If the profile has not yet been generated.
+  if (thermostat.profile === null) {
+    return null;
+  }
+
   const generated_at_m = moment(
     thermostat.profile.metadata.generated_at
   );
@@ -214,7 +205,7 @@ beestat.component.card.metrics.prototype.get_subtitle_ = function() {
   } else {
     duration_text += duration_weeks + ' weeks';
   }
-  duration_text += ' of data.';
+  duration_text += ' of data';
 
-  return 'Generated ' + generated_at_m.format('MMM Do @ h a') + ' (updated weekly) ' + duration_text;
+  return 'Generated ' + generated_at_m.format('MMM Do @ h a') + duration_text + ' (updated weekly).';
 };
