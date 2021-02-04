@@ -111,7 +111,7 @@ class profile extends cora\api {
      * Attempt to ignore the effects of solar heating by only looking at
      * samples when the sun is down.
      */
-    $ignore_solar_heating = true;
+    $ignore_solar_heating = false;
 
     // Get some stuff
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
