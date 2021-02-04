@@ -35,13 +35,6 @@ beestat.layer.compare.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.compare_notification(),
-      'size': 12
-    }
-  ]);
-
-  cards.push([
-    {
       'card': new beestat.component.card.comparison_settings(
         thermostat.thermostat_id
       ),

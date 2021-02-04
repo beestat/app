@@ -52,7 +52,6 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/alerts.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/compare_notification.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/comparison_settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/early_access.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/demo.js"></script>' . PHP_EOL;
