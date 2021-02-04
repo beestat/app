@@ -37,6 +37,11 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     thermostat.thermostat_id,
     'heat'
   );
+  const heat_stages = beestat.thermostat.get_stages(
+    thermostat.thermostat_id,
+    'heat'
+  );
+  const heat_stages_string = heat_stages > 1 ? ' (2 Stage)' : '';
   const heat_auxiliary = beestat.thermostat.get_system_type(
     thermostat.thermostat_id,
     'heat_auxiliary'
@@ -45,6 +50,11 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     thermostat.thermostat_id,
     'cool'
   );
+  const cool_stages = beestat.thermostat.get_stages(
+    thermostat.thermostat_id,
+    'cool'
+  );
+  const cool_stages_string = cool_stages > 1 ? ' (2 Stage)' : '';
 
   var button_group = new beestat.component.button_group();
   button_group.add_button(new beestat.component.button()
@@ -52,7 +62,7 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     .set_background_color(beestat.series.compressor_heat_1.color)
     .set_text_color('#fff')
     .set_icon('fire')
-    .set_text(heat.charAt(0).toUpperCase() + heat.slice(1)));
+    .set_text(heat.charAt(0).toUpperCase() + heat.slice(1) + heat_stages_string));
   button_group.add_button(new beestat.component.button()
     .set_type('pill')
     .set_background_color(beestat.series.auxiliary_heat_1.color)
@@ -64,7 +74,7 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     .set_background_color(beestat.series.compressor_cool_1.color)
     .set_text_color('#fff')
     .set_icon('snowflake')
-    .set_text(cool.charAt(0).toUpperCase() + cool.slice(1)));
+    .set_text(cool.charAt(0).toUpperCase() + cool.slice(1) + cool_stages_string));
 
   button_group.render(parent);
 };
