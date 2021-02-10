@@ -58,8 +58,11 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   var column_logo = $.createElement('div').style({'padding': gutter + 'px 0 0 ' + gutter + 'px'});
   row.appendChild(column_logo);
   if (beestat.width > 600) {
-    column_logo.style({'flex': '0 0 160px'});
-    (new beestat.component.logo()).render(column_logo);
+    column_logo.style({
+      'flex': '0 0 160px',
+      'margin': '8px 0 4px 0'
+    });
+    (new beestat.component.logo(32)).render(column_logo);
   } else {
     column_logo.style({'flex': '0 0 32px'});
     var img = $.createElement('img')
