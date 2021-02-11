@@ -28,7 +28,7 @@ beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
       'setting.runtime_thermostat_detail_range_type',
       'setting.runtime_thermostat_detail_range_dynamic',
       'cache.data.runtime_thermostat_thermostat_detail',
-      'cache.data.thermostat'
+      'cache.thermostat'
     ],
     change_function
   );
