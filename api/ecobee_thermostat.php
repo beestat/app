@@ -242,6 +242,12 @@ class ecobee_thermostat extends cora\crud {
         ];
       }
 
+      $attributes['running_equipment'] = $this->get_running_equipment(
+        $thermostat,
+        $ecobee_thermostat,
+        $attributes['system_type2']
+      );
+
       $attributes['alerts'] = $this->get_alerts(
         $thermostat,
         $ecobee_thermostat,
@@ -528,6 +534,7 @@ class ecobee_thermostat extends cora\crud {
    *
    * @param array $thermostat
    * @param array $ecobee_thermostat
+   * @param array $system_type
    *
    * @return array
    */
@@ -942,6 +949,86 @@ class ecobee_thermostat extends cora\crud {
     return $program;
   }
 
+  /**
+   * Get the currently running equipment. Just looks at the ecobee list and
+   * translates it a bit.
+   *
+   * @param array $thermostat
+   * @param array $ecobee_thermostat
+   * @param array $system_type
+   *
+   * @return array
+   */
+  private function get_running_equipment($thermostat, $ecobee_thermostat, $system_type) {
+    $running_equipment = [];
+
+    foreach($ecobee_thermostat['equipment_status'] as $equipment) {
+      switch($equipment) {
+        case 'heatPump':
+          $running_equipment[] = 'heat_1';
+        break;
+        case 'heatPump2':
+          $running_equipment[] = 'heat_2';
+        break;
+        case 'heatPump3':
+          $running_equipment[] = 'heat_3';
+        break;
+        case 'compCool1':
+          $running_equipment[] = 'cool_1';
+        break;
+        case 'compCool2':
+          $running_equipment[] = 'cool_2';
+        break;
+        case 'auxHeat1':
+          if ($system_type['detected']['heat']['equipment'] === 'compressor') {
+            $running_equipment[] = 'heat_auxiliary_1';
+          } else {
+            $running_equipment[] = 'heat_1';
+          }
+        break;
+        case 'auxHeat2':
+          if ($system_type['detected']['heat']['equipment'] === 'compressor') {
+            $running_equipment[] = 'heat_auxiliary_2';
+          } else {
+            $running_equipment[] = 'heat_2';
+          }
+        break;
+        case 'auxHeat3':
+          if ($system_type['detected']['heat']['equipment'] === 'compressor') {
+            $running_equipment[] = 'heat_auxiliary_3';
+          } else {
+            $running_equipment[] = 'heat_3';
+          }
+        break;
+        case 'fan':
+          $running_equipment[] = 'fan';
+        break;
+        case 'humidifier':
+          $running_equipment[] = 'humidifier';
+        break;
+        case 'dehumidifier':
+          $running_equipment[] = 'dehumidifier';
+        break;
+        case 'ventilator':
+          $running_equipment[] = 'ventilator';
+        break;
+        case 'economizer':
+          $running_equipment[] = 'economizer';
+        break;
+        case 'compHotWater':
+          $running_equipment[] = 'heat_1';
+        break;
+        case 'auxHotWater':
+          $running_equipment[] = 'heat_auxiliary_1';
+        break;
+        default:
+          throw new \Exception('Unknown equipment running.', 10800);
+        break;
+      }
+    }
+
+    return $running_equipment;
+  }
 
   /**
    * Get the current time zone. It's usually set. If not set use the offset
