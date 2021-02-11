@@ -83,7 +83,7 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
       );
 
       api.set_callback(function(response) {
-        beestat.cache.set('thermostat', response.thermostat);
+        beestat.cache.set('thermostat', response);
       });
 
       api.send();
