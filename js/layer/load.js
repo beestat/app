@@ -155,10 +155,6 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       beestat.setting('thermostat_id')
     ];
 
-    var ecobee_thermostat = beestat.cache.ecobee_thermostat[
-      thermostat.ecobee_thermostat_id
-    ];
-
     // Set the document title to include the thermostat name
     if (thermostat.name !== null && thermostat.name.trim() !== '') {
       document.title = 'beestat | ' + thermostat.name;
@@ -178,8 +174,11 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     }
 
     // Fix some other stuff for non-heat-pump.
-    if (ecobee_thermostat.settings.hasHeatPump === false) {
-    // if (beestat.thermostat.get_system_type(thermostat.thermostat_id, 'heat') !== 'compressor') {
+    const sytem_type_heat = beestat.thermostat.get_system_type(thermostat.thermostat_id, 'heat');
+    if (
+      sytem_type_heat !== 'compressor' &&
+      sytem_type_heat !== 'geothermal'
+    ) {
       beestat.series.auxiliary_heat_1.name = beestat.series.sum_compressor_heat_1.name;
       beestat.series.auxiliary_heat_1.color = beestat.series.sum_compressor_heat_1.color;
       beestat.series.sum_auxiliary_heat_2.name = beestat.series.compressor_heat_2.name;
