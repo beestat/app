@@ -529,10 +529,9 @@ class thermostat extends cora\crud {
     foreach($metric_codes as $parent_metric_name => $parent_metric) {
       foreach($parent_metric as $child_metric_name) {
         $data = $this->remove_outliers($metrics[$parent_metric_name][$child_metric_name]['values']);
-        // print_r($data);
         if(count($data['values']) > 0) {
           $metrics[$parent_metric_name][$child_metric_name]['histogram'] = $data['histogram'];
-          $metrics[$parent_metric_name][$child_metric_name]['standard_deviation'] = $this->standard_deviation($data['values']);
+          $metrics[$parent_metric_name][$child_metric_name]['standard_deviation'] = array_standard_deviation($data['values']);
           $metrics[$parent_metric_name][$child_metric_name]['median'] = floatval(array_median($data['values']));
           unset($metrics[$parent_metric_name][$child_metric_name]['values']);
         } else {
@@ -545,30 +544,6 @@ class thermostat extends cora\crud {
   }
 
   /**
-   * Calculate the standard deviation of an array of numbers.
-   *
-   * @param array $array The values.
-   *
-   * @return int The standard deviation.
-   */
-  private function standard_deviation($array) {
-    $count = count($array);
-
-    if ($count === 0) {
-      return null;
-    }
-
-    $mean = array_mean($array);
-
-    $variance = 0;
-    foreach($array as $i) {
-      $variance += pow(($i - $mean), 2);
-    }
-
-    return round(sqrt($variance / $count), 1);
-  }
-
-  /**
    * Remove outliers more than 2 standard deviations away from the mean. This
    * is an effective way to keep the scales meaningul for normal data.
    *
@@ -578,7 +553,7 @@ class thermostat extends cora\crud {
    */
   private function remove_outliers($array) {
     $mean = array_mean($array);
-    $standard_deviation = $this->standard_deviation($array);
+    $standard_deviation = array_standard_deviation($array);
 
     $min = $mean - ($standard_deviation * 2);
     $max = $mean + ($standard_deviation * 2);

@@ -67,3 +67,21 @@ function array_mean($array) {
 
   return array_sum($array) / $count;
 }
+
+// Useful function
+function array_standard_deviation($array) {
+  $count = count($array);
+
+  if ($count === 0) {
+    return null;
+  }
+
+  $mean = array_mean($array);
+
+  $variance = 0;
+  foreach($array as $i) {
+    $variance += pow(($i - $mean), 2);
+  }
+
+  return round(sqrt($variance / $count), 1);
+}
