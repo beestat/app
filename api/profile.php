@@ -11,7 +11,7 @@ class profile extends cora\api {
 
   public static $exposed = [
     'private' => [],
-    'public' => []
+    'public' => ['generate']
   ];
 
   public static $cache = [];
@@ -20,11 +20,18 @@ class profile extends cora\api {
    * Generate a profile for the specified thermostat.
    *
    * @param int $thermostat_id
+   * @param boolean $debug If debug is enabled, running this API call will
+   * download a CSV full of useful debugging info.
    *
    * @return array
    */
-  public function generate($thermostat_id) {
+  public function generate($thermostat_id, $debug = false) {
     set_time_limit(0);
+
+    if($debug === true) {
+      $output = fopen('php://output', 'w');
+      $bytes = 0;
+    }
 
     // Make sure the thermostat_id provided is one of yours since there's no
     // user_id security on the runtime_thermostat table.
@@ -291,6 +298,11 @@ class profile extends cora\api {
             $row['cool_2'] = 0;
           }
 
+          // No longer needed.
+          unset($row['compressor_1']);
+          unset($row['compressor_2']);
+          unset($row['compressor_mode']);
+
           $runtime_seconds['heat_1'] += $row['heat_1'];
           $runtime_seconds['heat_2'] += $row['heat_2'];
           $runtime_seconds['auxiliary_heat_1'] += $row['auxiliary_heat_1'];
@@ -318,6 +330,13 @@ class profile extends cora\api {
         isset($runtime[$current_timestamp][$thermostat_id]) === true // Had data for the requested thermostat
       ) {
         $current_runtime = $runtime[$current_timestamp][$thermostat_id];
+
+        if($debug === true) {
+          $debug_data = [
+            'sample' => null
+          ];
+        }
+
         if($current_runtime['outdoor_temperature'] !== null) {
           // Rounds to the nearest degree (because temperatures are stored in tenths).
           $current_runtime['outdoor_temperature'] = round($current_runtime['outdoor_temperature'] / 10);
@@ -350,8 +369,10 @@ class profile extends cora\api {
         else {
           foreach($runtime[$current_timestamp] as $runtime_thermostat_id => $thermostat_runtime) {
             if(
-              $thermostat_runtime['compressor_1'] !== 0 ||
-              $thermostat_runtime['compressor_2'] !== 0 ||
+              $thermostat_runtime['heat_1'] !== 0 ||
+              $thermostat_runtime['heat_2'] !== 0 ||
+              $thermostat_runtime['cool_1'] !== 0 ||
+              $thermostat_runtime['cool_2'] !== 0 ||
               $thermostat_runtime['auxiliary_heat_1'] !== 0 ||
               $thermostat_runtime['auxiliary_heat_2'] !== 0 ||
               $thermostat_runtime['outdoor_temperature'] === null ||
@@ -619,7 +640,7 @@ class profile extends cora\api {
             $delta = $end_runtime['indoor_temperature'] - $begin_runtime[$sample_type]['indoor_temperature'];
             $duration = strtotime($end_runtime['timestamp']) - strtotime($begin_runtime[$sample_type]['timestamp']);
 
-            if($duration > 0) {
+            if($duration >= $minimum_sample_duration[$sample_type]) {
               $sample = [
                 'type' => $sample_type,
                 'outdoor_temperature' => $begin_runtime[$sample_type]['outdoor_temperature'],
@@ -627,6 +648,17 @@ class profile extends cora\api {
                 'duration' => $duration,
                 'delta_per_hour' => $delta / $duration * 3600,
               ];
+
+              if($debug === true) {
+                $debug_data['sample'] = json_encode(
+                  $sample +
+                  [
+                    'begin' => $begin_runtime[$sample_type]['timestamp'],
+                    'end' => $previous_runtime['timestamp']
+                  ]
+                );
+              }
+
               $samples[] = $sample;
             }
           }
@@ -634,6 +666,14 @@ class profile extends cora\api {
           // If in this block of code a change in runtime was detected, so
           // update $begin_runtime[$sample_type] to the current runtime.
           $begin_runtime[$sample_type] = $current_runtime;
+        }
+
+        if($debug === true && isset($previous_runtime) === true) {
+          $debug_row = array_merge($previous_runtime, $debug_data);
+          if($bytes === 0) {
+            $bytes += fputcsv($output, array_keys($debug_row));
+          }
+          $bytes += fputcsv($output, array_values($debug_row));
         }
 
         $previous_runtime = $current_runtime;
@@ -684,23 +724,16 @@ class profile extends cora\api {
     // Process the samples
     $deltas_raw = [];
     foreach($samples as $sample) {
-      $is_valid_sample = true;
-      if($sample['duration'] < $minimum_sample_duration[$sample['type']]) {
-        $is_valid_sample = false;
+      if(isset($deltas_raw[$sample['type']]) === false) {
+        $deltas_raw[$sample['type']] = [];
+      }
+      if(isset($deltas_raw[$sample['type']][$sample['outdoor_temperature']]) === false) {
+        $deltas_raw[$sample['type']][$sample['outdoor_temperature']] = [
+          'deltas_per_hour' => []
+        ];
       }
 
-      if($is_valid_sample === true) {
-        if(isset($deltas_raw[$sample['type']]) === false) {
-          $deltas_raw[$sample['type']] = [];
-        }
-        if(isset($deltas_raw[$sample['type']][$sample['outdoor_temperature']]) === false) {
-          $deltas_raw[$sample['type']][$sample['outdoor_temperature']] = [
-            'deltas_per_hour' => []
-          ];
-        }
-
-        $deltas_raw[$sample['type']][$sample['outdoor_temperature']]['deltas_per_hour'][] = $sample['delta_per_hour'];
-      }
+      $deltas_raw[$sample['type']][$sample['outdoor_temperature']]['deltas_per_hour'][] = $sample['delta_per_hour'];
     }
 
     // Generate the final profile and save it.
@@ -780,6 +813,8 @@ class profile extends cora\api {
       }
 
       ksort($deltas[$type]);
+
+      $this->remove_outliers($deltas[$type]);
 
       $profile['temperature'][$type] = [
         'deltas' => $deltas[$type],
@@ -926,19 +961,31 @@ class profile extends cora\api {
       $profile['property']['square_feet'] = $thermostat['property']['square_feet'];
     }
 
+    if($debug === true) {
+      fclose($output);
+
+      $this->request->set_headers([
+        'Content-Type' => 'text/csv',
+        'Content-Length' => $bytes,
+        'Content-Disposition' => 'attachment; filename="Debug - ' . $thermostat_id . '.csv"',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+      ], true);
+    }
+
     return $profile;
   }
 
   /**
-   * Get the properties of a linear trendline for a given set of data.
+   * Get the properties of a linear trendline for a given set of deltas.
    *
-   * @param array $data
+   * @param array $deltas
    *
    * @return array [slope, intercept]
    */
-  public function get_linear_trendline($data) {
+  public function get_linear_trendline($deltas) {
     // Requires at least two points.
-    if(count($data) < 2) {
+    if(count($deltas) < 2) {
       return null;
     }
 
@@ -948,7 +995,7 @@ class profile extends cora\api {
     $sum_x_squared = 0;
     $n = 0;
 
-    foreach($data as $x => $y) {
+    foreach($deltas as $x => $y) {
       $sum_x += $x;
       $sum_y += $y;
       $sum_xy += ($x * $y);
@@ -963,5 +1010,40 @@ class profile extends cora\api {
       'slope' => round($slope, 4),
       'intercept' => round($intercept, 4)
     ];
+  }
+
+  /**
+   * Remove outliers from the deltas list by eliminating them if they fall too
+   * far away from the trendline. Too far is simply more than two standard
+   * deviations away from the mean spread.
+   *
+   * Modifies the original array.
+   *
+   * @param array &$deltas The deltas to remove outliers from.
+   */
+  public function remove_outliers(&$deltas) {
+    $linear_trendline = $this->get_linear_trendline($deltas);
+
+    $spreads = [];
+    foreach($deltas as $x => $y) {
+      $trendline_y = ($linear_trendline['slope'] * $x) + $linear_trendline['intercept'];
+      $spreads[] += abs($y - $trendline_y);
+    }
+
+    $mean = array_mean($spreads);
+    $standard_deviation = array_standard_deviation($spreads);
+
+    $min = $mean - ($standard_deviation * 2);
+    $max = $mean + ($standard_deviation * 2);
+
+    $good_deltas = [];
+    foreach($deltas as $x => $y) {
+      $trendline_y = ($linear_trendline['slope'] * $x) + $linear_trendline['intercept'];
+      $spread = abs($y - $trendline_y);
+      if($spread >= $min && $spread <= $max) {
+        $good_deltas[$x] = $y;
+      }
+    }
+    $deltas = $good_deltas;
   }
 }
