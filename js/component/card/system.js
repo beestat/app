@@ -310,13 +310,31 @@ beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
  */
 beestat.component.card.system.prototype.decorate_time_to_temperature_ = function(parent) {
   const thermostat = beestat.cache.thermostat[this.thermostat_id_];
+  const indoor_temperature = thermostat.temperature;
 
   const operating_mode = beestat.thermostat.get_operating_mode(
     thermostat.thermostat_id
   );
 
-  // System off; don't display anything.
-  if (operating_mode === 'off') {
+  // Convert "heat_1" etc to "heat"
+  const simplified_operating_mode = operating_mode.replace(/_\d/, '');
+
+  /**
+   * If the system is off or if we've already reached the setpoint, don't show
+   * this. The HVAC system can still be running due to minimum runtimes or if
+   * the setpoint changes suddenly.
+   */
+  if (
+    operating_mode === 'off' ||
+    (
+      simplified_operating_mode === 'heat' &&
+      indoor_temperature >= thermostat.setpoint_heat
+    ) ||
+    (
+      simplified_operating_mode === 'cool' &&
+      indoor_temperature <= thermostat.setpoint_cool
+    )
+  ) {
     return;
   }
 
@@ -327,9 +345,6 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
     'margin-top': beestat.style.size.gutter
   });
   parent.appendChild(container);
-
-  // Convert "heat_1" etc to "heat"
-  const simplified_operating_mode = operating_mode.replace(/_\d/, '');
 
   let header_text = 'Time to ' + simplified_operating_mode;
   let text;
@@ -353,7 +368,6 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
       // If the degrees would display as 0.0/h, go for "never" as the time.
       text = 'Never';
     } else {
-      const indoor_temperature = thermostat.temperature;
       let degrees_to_go;
       let hours_to_go;
       switch (simplified_operating_mode) {
