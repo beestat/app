@@ -360,12 +360,14 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
       case 'heat':
         degrees_to_go = thermostat.setpoint_heat - indoor_temperature;
         hours_to_go = degrees_to_go / degrees_per_hour;
-        text = beestat.time(hours_to_go * 60 * 60);
+        text = beestat.time(hours_to_go * 60 * 60)
+          .replace(/^0h /, '');
         break;
       case 'cool':
         degrees_to_go = indoor_temperature - thermostat.setpoint_cool;
         hours_to_go = degrees_to_go / degrees_per_hour;
-        text = beestat.time(hours_to_go * 60 * 60);
+        text = beestat.time(hours_to_go * 60 * 60)
+          .replace(/^0h /, '');
         break;
       }
 
