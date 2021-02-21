@@ -49,7 +49,7 @@ class thermostat extends cora\crud {
     $generated_columns = [];
 
     if(isset($attributes['system_type2']) === true) {
-      foreach(['heat', 'heat_auxiliary', 'cool'] as $mode) {
+      foreach(['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool'] as $mode) {
         if($attributes['system_type2']['reported'][$mode]['equipment'] !== null) {
           $generated_columns['system_type_' . $mode] = $attributes['system_type2']['reported'][$mode]['equipment'];
         } else {
@@ -104,7 +104,7 @@ class thermostat extends cora\crud {
     $thermostat = $this->get($thermostat_id);
 
     foreach($system_types as $system_type => $value) {
-      if(in_array($system_type, ['heat', 'heat_auxiliary', 'cool']) === true) {
+      if(in_array($system_type, ['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool']) === true) {
         $thermostat['system_type2']['reported'][$system_type]['equipment'] = $value;
       }
     }

@@ -42,9 +42,9 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     'heat'
   );
   const heat_stages_string = heat_stages > 1 ? ' (2 Stage)' : '';
-  const heat_auxiliary = beestat.thermostat.get_system_type(
+  const auxiliary_heat = beestat.thermostat.get_system_type(
     thermostat.thermostat_id,
-    'heat_auxiliary'
+    'auxiliary_heat'
   );
   const cool = beestat.thermostat.get_system_type(
     thermostat.thermostat_id,
@@ -68,7 +68,7 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
     .set_background_color(beestat.series.auxiliary_heat_1.color)
     .set_text_color('#fff')
     .set_icon('fire')
-    .set_text(heat_auxiliary.charAt(0).toUpperCase() + heat_auxiliary.slice(1)));
+    .set_text(auxiliary_heat.charAt(0).toUpperCase() + auxiliary_heat.slice(1)));
   button_group.add_button(new beestat.component.button()
     .set_type('pill')
     .set_background_color(beestat.series.compressor_cool_1.color)

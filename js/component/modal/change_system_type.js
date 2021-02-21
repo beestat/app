@@ -27,7 +27,7 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
       'oil',
       'none'
     ],
-    'heat_auxiliary': [
+    'auxiliary_heat': [
       'gas',
       'electric',
       'oil',
@@ -42,13 +42,13 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
 
   var titles = {
     'heat': 'Heat',
-    'heat_auxiliary': 'Auxiliary Heat',
+    'auxiliary_heat': 'Auxiliary Heat',
     'cool': 'Cool'
   };
 
   var colors = {
     'heat': beestat.style.color.orange.base,
-    'heat_auxiliary': beestat.style.color.red.dark,
+    'auxiliary_heat': beestat.style.color.red.dark,
     'cool': beestat.style.color.blue.light
   };
 

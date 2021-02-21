@@ -228,6 +228,10 @@ class ecobee_thermostat extends cora\crud {
               'equipment' => null,
               'stages' => null
             ],
+            'auxiliary_heat' => [
+              'equipment' => null,
+              'stages' => null
+            ],
             'cool' => [
               'equipment' => null,
               'stages' => null
@@ -568,9 +572,15 @@ class ecobee_thermostat extends cora\crud {
     } else {
       $system_type_heat_auxiliary = $system_type['detected']['heat_auxiliary']['equipment'];
     }
+    if($system_type['reported']['auxiliary_heat'] !== null) {
+      $system_type_auxiliary_heat = $system_type['reported']['auxiliary_heat']['equipment'];
+    } else {
+      $system_type_auxiliary_heat = $system_type['detected']['auxiliary_heat']['equipment'];
+    }
     $has_heat = (
       $system_type_heat !== 'none' ||
-      $system_type_heat_auxiliary !== 'none'
+      $system_type_heat_auxiliary !== 'none' ||
+      $system_type_auxiliary_heat !== 'none'
     );
 
     if($system_type['reported']['cool'] !== null) {
@@ -726,6 +736,20 @@ class ecobee_thermostat extends cora\crud {
       $detected_system_type['heat_auxiliary']['equipment'] = 'none';
     } else if($detected_system_type['heat']['equipment'] === 'compressor') {
       $detected_system_type['heat_auxiliary']['equipment'] = 'electric';
+    }
+    $detected_system_type['auxiliary_heat'] = [
+      'equipment' => null,
+      'stages' => null
+    ];
+    if(
+      $detected_system_type['heat']['equipment'] === 'gas' ||
+      $detected_system_type['heat']['equipment'] === 'boiler' ||
+      $detected_system_type['heat']['equipment'] === 'oil' ||
+      $detected_system_type['heat']['equipment'] === 'electric'
+    ) {
+      $detected_system_type['auxiliary_heat']['equipment'] = 'none';
+    } else if($detected_system_type['heat']['equipment'] === 'compressor') {
+      $detected_system_type['auxiliary_heat']['equipment'] = 'electric';
     }
 
     // Cool
