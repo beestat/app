@@ -311,14 +311,6 @@ beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
 beestat.component.card.system.prototype.decorate_time_to_temperature_ = function(parent) {
   const thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  const container = $.createElement('div').style({
-    'background': beestat.style.color.bluegray.dark,
-    'padding': beestat.style.size.gutter / 2,
-    'text-align': 'center',
-    'margin-top': beestat.style.size.gutter
-  });
-  parent.appendChild(container);
-
   const operating_mode = beestat.thermostat.get_operating_mode(
     thermostat.thermostat_id
   );
@@ -327,6 +319,14 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
   if (operating_mode === 'off') {
     return;
   }
+
+  const container = $.createElement('div').style({
+    'background': beestat.style.color.bluegray.dark,
+    'padding': beestat.style.size.gutter / 2,
+    'text-align': 'center',
+    'margin-top': beestat.style.size.gutter
+  });
+  parent.appendChild(container);
 
   // Convert "heat_1" etc to "heat"
   const simplified_operating_mode = operating_mode.replace(/_\d/, '');
