@@ -182,10 +182,10 @@ class ecobee_thermostat extends cora\crud {
       $attributes['name'] = $api_thermostat['name'];
       $attributes['inactive'] = 0;
 
-      // There are some instances where ecobee gives invalid temperature values.
+      // Temperature. Ignore values outside possible ranges available.
       if(
-        ($api_thermostat['runtime']['actualTemperature'] / 10) > 999.9 ||
-        ($api_thermostat['runtime']['actualTemperature'] / 10) < -999.9
+        ($api_thermostat['runtime']['actualTemperature'] / 10) > 120 ||
+        ($api_thermostat['runtime']['actualTemperature'] / 10) < -10
       ) {
         $attributes['temperature'] = null;
       } else {
@@ -202,6 +202,26 @@ class ecobee_thermostat extends cora\crud {
         $attributes['humidity'] = null;
       } else {
         $attributes['humidity'] = $api_thermostat['runtime']['actualHumidity'];
+      }
+
+      // Heat setpoint. Ignore values outside possible ranges available.
+      if(
+        ($api_thermostat['runtime']['desiredHeat'] / 10) > 120 ||
+        ($api_thermostat['runtime']['desiredHeat'] / 10) < 45
+      ) {
+        $attributes['setpoint_heat'] = null;
+      } else {
+        $attributes['setpoint_heat'] = ($api_thermostat['runtime']['desiredHeat'] / 10);
+      }
+
+      // Cool setpoint. Ignore values outside possible ranges available.
+      if(
+        ($api_thermostat['runtime']['desiredCool'] / 10) > 120 ||
+        ($api_thermostat['runtime']['desiredCool'] / 10) < -10
+      ) {
+        $attributes['setpoint_cool'] = null;
+      } else {
+        $attributes['setpoint_cool'] = ($api_thermostat['runtime']['desiredCool'] / 10);
       }
 
       $attributes['first_connected'] = $api_thermostat['runtime']['firstConnected'];

@@ -83,7 +83,7 @@ beestat.component.modal.change_thermostat.prototype.decorate_thermostat_ = funct
 
   var left = $.createElement('div')
     .style({
-      'background': beestat.get_thermostat_color(thermostat_id),
+      'background': beestat.thermostat.get_color(thermostat_id),
       'font-weight': beestat.style.font_weight.light,
       'border-radius': '50%',
       'width': thermostat_height,

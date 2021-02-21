@@ -1,9 +1,13 @@
 /**
  * System card. Shows a big picture of your thermostat, it's sensors, and lets
  * you switch between thermostats.
+ *
+ * @param {number} thermostat_id
  */
-beestat.component.card.system = function() {
+beestat.component.card.system = function(thermostat_id) {
   var self = this;
+
+  this.thermostat_id_ = thermostat_id;
 
   var change_function = beestat.debounce(function() {
     self.rerender();
@@ -26,6 +30,10 @@ beestat.component.card.system.prototype.decorate_contents_ = function(parent) {
   this.decorate_weather_(parent);
   this.decorate_equipment_(parent);
   this.decorate_climate_(parent);
+
+  if (beestat.user.has_early_access() === true) {
+    this.decorate_time_to_temperature_(parent);
+  }
 };
 
 /**
@@ -34,7 +42,7 @@ beestat.component.card.system.prototype.decorate_contents_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var temperature = beestat.temperature(thermostat.temperature);
   var temperature_whole = Math.floor(temperature);
@@ -44,7 +52,7 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
     .style({
       'padding': (beestat.style.size.gutter * 3),
       'border-radius': '50%',
-      'background': beestat.get_thermostat_color(beestat.setting('thermostat_id')),
+      'background': beestat.thermostat.get_color(this.thermostat_id_),
       'height': '180px',
       'width': '180px',
       'margin': beestat.style.size.gutter + 'px auto ' + beestat.style.size.gutter + 'px auto',
@@ -93,7 +101,7 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
  * @param {rocket.Elements} parent Parent
  */
 beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var circle = $.createElement('div')
     .style({
@@ -165,66 +173,7 @@ beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-
-  var ecobee_thermostat = beestat.cache.ecobee_thermostat[
-    thermostat.ecobee_thermostat_id
-  ];
-
-  var running_equipment = [];
-
-  if (ecobee_thermostat.equipment_status.indexOf('fan') !== -1) {
-    running_equipment.push('fan');
-  }
-
-  if (ecobee_thermostat.equipment_status.indexOf('ventilator') !== -1) {
-    running_equipment.push('ventilator');
-  }
-  if (ecobee_thermostat.equipment_status.indexOf('humidifier') !== -1) {
-    running_equipment.push('humidifier');
-  }
-  if (ecobee_thermostat.equipment_status.indexOf('dehumidifier') !== -1) {
-    running_equipment.push('dehumidifier');
-  }
-  if (ecobee_thermostat.equipment_status.indexOf('economizer') !== -1) {
-    running_equipment.push('economizer');
-  }
-
-  if (ecobee_thermostat.equipment_status.indexOf('compCool2') !== -1) {
-    running_equipment.push('cool_2');
-  } else if (ecobee_thermostat.equipment_status.indexOf('compCool1') !== -1) {
-    running_equipment.push('cool_1');
-  }
-
-  if (ecobee_thermostat.settings.hasHeatPump === true) {
-    if (ecobee_thermostat.equipment_status.indexOf('heatPump3') !== -1) {
-      running_equipment.push('heat_3');
-    } else if (ecobee_thermostat.equipment_status.indexOf('heatPump2') !== -1) {
-      running_equipment.push('heat_2');
-    } else if (ecobee_thermostat.equipment_status.indexOf('heatPump') !== -1) {
-      running_equipment.push('heat_1');
-    }
-    if (ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1) {
-      running_equipment.push('aux_3');
-    } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1) {
-      running_equipment.push('aux_2');
-    } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1) {
-      running_equipment.push('aux_1');
-    }
-  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1) {
-    running_equipment.push('heat_3');
-  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1) {
-    running_equipment.push('heat_2');
-  } else if (ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1) {
-    running_equipment.push('heat_1');
-  }
-
-  if (ecobee_thermostat.equipment_status.indexOf('compHotWater') !== -1) {
-    running_equipment.push('heat_1');
-  }
-  if (ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1) {
-    running_equipment.push('aux_1');
-  }
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var render_icon = function(icon_parent, icon, color, text) {
     (new beestat.component.icon(icon)
@@ -248,56 +197,69 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
     }
   };
 
-  if (running_equipment.length === 0) {
-    running_equipment.push('nothing');
+  if (thermostat.running_equipment.length === 0) {
+    render_icon(parent, 'cancel', beestat.style.color.gray.base, 'none');
+  } else {
+    thermostat.running_equipment.forEach(function(equipment) {
+      let subscript;
+      switch (equipment) {
+      case 'fan':
+        render_icon(parent, 'fan', beestat.style.color.gray.light);
+        break;
+      case 'cool_1':
+        if (thermostat.system_type2.detected.cool.stages > 1) {
+          subscript = '1';
+        } else {
+          subscript = undefined;
+        }
+        render_icon(parent, 'snowflake', beestat.style.color.blue.light, subscript);
+        break;
+      case 'cool_2':
+        render_icon(parent, 'snowflake', beestat.style.color.blue.light, '2');
+        break;
+      case 'heat_1':
+        if (thermostat.system_type2.detected.heat.stages > 1) {
+          subscript = '1';
+        } else {
+          subscript = undefined;
+        }
+        render_icon(parent, 'fire', beestat.style.color.orange.base, subscript);
+        break;
+      case 'heat_2':
+        render_icon(parent, 'fire', beestat.style.color.orange.base, '2');
+        break;
+      case 'heat_3':
+        render_icon(parent, 'fire', beestat.style.color.orange.base, '3');
+        break;
+      case 'auxiliary_heat_1':
+        if (thermostat.system_type2.detected.auxiliary_heat.stages > 1) {
+          subscript = '1';
+        } else {
+          subscript = undefined;
+        }
+        render_icon(parent, 'fire', beestat.style.color.red.base, subscript);
+        break;
+      case 'auxiliary_heat_2':
+        render_icon(parent, 'fire', beestat.style.color.red.base, '2');
+        break;
+      case 'auxiliary_heat_3':
+        render_icon(parent, 'fire', beestat.style.color.red.base, '3');
+        break;
+      case 'humidifier':
+        render_icon(parent, 'water_percent', beestat.style.color.gray.base, '');
+        break;
+      case 'dehumidifier':
+        render_icon(parent, 'water_off', beestat.style.color.gray.base, '');
+        break;
+      case 'ventilator':
+        render_icon(parent, 'air_purifier', beestat.style.color.gray.base, 'v');
+        break;
+      case 'economizer':
+        render_icon(parent, 'cash', beestat.style.color.gray.base, '');
+        break;
+      }
+    });
   }
-
-  running_equipment.forEach(function(equipment) {
-    switch (equipment) {
-    case 'nothing':
-      render_icon(parent, 'cancel', beestat.style.color.gray.base, 'none');
-      break;
-    case 'fan':
-      render_icon(parent, 'fan', beestat.style.color.gray.light);
-      break;
-    case 'cool_1':
-      render_icon(parent, 'snowflake', beestat.style.color.blue.light, '1');
-      break;
-    case 'cool_2':
-      render_icon(parent, 'snowflake', beestat.style.color.blue.light, '2');
-      break;
-    case 'heat_1':
-      render_icon(parent, 'fire', beestat.style.color.orange.base, '1');
-      break;
-    case 'heat_2':
-      render_icon(parent, 'fire', beestat.style.color.orange.base, '2');
-      break;
-    case 'heat_3':
-      render_icon(parent, 'fire', beestat.style.color.orange.base, '3');
-      break;
-    case 'aux_1':
-      render_icon(parent, 'fire', beestat.style.color.red.base, '1');
-      break;
-    case 'aux_2':
-      render_icon(parent, 'fire', beestat.style.color.red.base, '2');
-      break;
-    case 'aux_3':
-      render_icon(parent, 'fire', beestat.style.color.red.base, '3');
-      break;
-    case 'humidifier':
-      render_icon(parent, 'water_percent', beestat.style.color.gray.base, '');
-      break;
-    case 'dehumidifier':
-      render_icon(parent, 'water_off', beestat.style.color.gray.base, '');
-      break;
-    case 'ventilator':
-      render_icon(parent, 'air_purifier', beestat.style.color.gray.base, 'v');
-      break;
-    case 'economizer':
-      render_icon(parent, 'cash', beestat.style.color.gray.base, '');
-      break;
-    }
-  });
 };
 
 /**
@@ -306,14 +268,10 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  var ecobee_thermostat = beestat.cache.ecobee_thermostat[
-    thermostat.ecobee_thermostat_id
-  ];
-
-  var climate = beestat.get_climate(
-    ecobee_thermostat.program.currentClimateRef
+  var climate = beestat.thermostat.get_current_climate(
+    thermostat.thermostat_id
   );
 
   var climate_container = $.createElement('div')
@@ -345,12 +303,101 @@ beestat.component.card.system.prototype.decorate_climate_ = function(parent) {
 };
 
 /**
+ * Decorate time to heat/cool. This is how long it will take your home to heat
+ * or cool to the desired setpoint.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.card.system.prototype.decorate_time_to_temperature_ = function(parent) {
+  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
+
+  const container = $.createElement('div').style({
+    'background': beestat.style.color.bluegray.dark,
+    'padding': beestat.style.size.gutter / 2,
+    'text-align': 'center',
+    'margin-top': beestat.style.size.gutter
+  });
+  parent.appendChild(container);
+
+  const operating_mode = beestat.thermostat.get_operating_mode(
+    thermostat.thermostat_id
+  );
+
+  // System off; don't display anything.
+  if (operating_mode === 'off') {
+    return;
+  }
+
+  // Convert "heat_1" etc to "heat"
+  const simplified_operating_mode = operating_mode.replace(/_\d/, '');
+
+  let header_text = 'Time to ' + simplified_operating_mode;
+  let text;
+  if (thermostat.profile.temperature[operating_mode] === null) {
+    // If there is no profile data; TTT is unknown.
+    text = 'Unknown';
+  } else {
+    const linear_trendline = thermostat.profile.temperature[operating_mode].linear_trendline;
+    const outdoor_temperature = thermostat.weather.temperature;
+    const degrees_per_hour = (linear_trendline.slope * outdoor_temperature) + linear_trendline.intercept;
+
+    header_text += ' (' +
+      beestat.temperature({
+        'temperature': degrees_per_hour,
+        'delta': true,
+        'units': true
+      }) +
+      ' / h)';
+
+    if (degrees_per_hour < 0.05) {
+      // If the degrees would display as 0.0/h, go for "never" as the time.
+      text = 'Never';
+    } else {
+      const indoor_temperature = thermostat.temperature;
+      let degrees_to_go;
+      let hours_to_go;
+      switch (simplified_operating_mode) {
+      case 'heat':
+        degrees_to_go = thermostat.setpoint_heat - indoor_temperature;
+        hours_to_go = degrees_to_go / degrees_per_hour;
+        text = beestat.time(hours_to_go * 60 * 60);
+        break;
+      case 'cool':
+        degrees_to_go = indoor_temperature - thermostat.setpoint_cool;
+        hours_to_go = degrees_to_go / degrees_per_hour;
+        text = beestat.time(hours_to_go * 60 * 60);
+        break;
+      }
+
+      /**
+       * Show the actual time the temperature will be reached if there are
+       * less than 12 hours to go. Otherwise it's mostly irrelevant.
+       */
+      if (hours_to_go <= 12) {
+        text += ' (' +
+          moment()
+            .add(hours_to_go, 'hour')
+            .format('h:mm a') +
+          ')';
+      }
+    }
+  }
+
+  container.appendChild(
+    $.createElement('div')
+      .style('font-weight', 'bold')
+      .innerText(header_text)
+  );
+  container.appendChild($.createElement('div').innerText(text));
+};
+
+/**
  * Decorate the menu
  *
  * @param {rocket.Elements} parent
  */
 beestat.component.card.system.prototype.decorate_top_right_ = function(parent) {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var menu = (new beestat.component.menu()).render(parent);
 
@@ -384,7 +431,7 @@ beestat.component.card.system.prototype.decorate_top_right_ = function(parent) {
  * @return {string} The title of the card.
  */
 beestat.component.card.system.prototype.get_title_ = function() {
-  var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   return 'System - ' + thermostat.name;
 };
@@ -401,29 +448,29 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
     thermostat.ecobee_thermostat_id
   ];
 
-  var climate = beestat.get_climate(
-    ecobee_thermostat.program.currentClimateRef
+  var climate = beestat.thermostat.get_current_climate(
+    thermostat.thermostat_id
   );
 
   // Is the temperature overridden?
   var override = (
-    ecobee_thermostat.runtime.desiredHeat !== climate.heatTemp ||
-    ecobee_thermostat.runtime.desiredCool !== climate.coolTemp
+    thermostat.setpoint_heat !== climate.heatTemp ||
+    thermostat.setpoint_cool !== climate.coolTemp
   );
 
   // Get the heat/cool values to display.
   var heat;
   if (override === true) {
-    heat = ecobee_thermostat.runtime.desiredHeat / 10;
+    heat = thermostat.setpoint_heat;
   } else {
-    heat = climate.heatTemp / 10;
+    heat = climate.heatTemp;
   }
 
   var cool;
   if (override === true) {
-    cool = ecobee_thermostat.runtime.desiredCool / 10;
+    cool = thermostat.setpoint_cool;
   } else {
-    cool = climate.coolTemp / 10;
+    cool = climate.coolTemp;
   }
 
   // Translate ecobee strings to GUI strings.

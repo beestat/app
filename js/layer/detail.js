@@ -7,6 +7,8 @@ beestat.layer.detail = function() {
 beestat.extend(beestat.layer.detail, beestat.layer);
 
 beestat.layer.detail.prototype.decorate_ = function(parent) {
+  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+
   /*
    * Set the overflow on the body so the scrollbar is always present so
    * highcharts graphs render properly.
@@ -33,7 +35,7 @@ beestat.layer.detail.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.system(),
+      'card': new beestat.component.card.system(thermostat.thermostat_id),
       'size': 4
     },
     {
