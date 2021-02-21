@@ -55,7 +55,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
         'title': this.get_title_(),
         'subtitle': this.get_subtitle_(),
         'outdoor_temperature': beestat.temperature({
-          'temperature': (thermostat.weather.temperature / 10),
+          'temperature': thermostat.weather.temperature,
           'round': 0
         })
       }

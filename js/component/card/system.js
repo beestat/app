@@ -135,7 +135,7 @@ beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
     .innerHTML(beestat.temperature({
       'round': 0,
       'units': false,
-      'temperature': (thermostat.weather.temperature / 10)
+      'temperature': thermostat.weather.temperature
     }));
   temperature_container.appendChild(temperature_whole_container);
 
