@@ -106,48 +106,22 @@ beestat.thermostat.get_stages = function(thermostat_id, mode) {
  * @return {string} The color string.
  */
 beestat.thermostat.get_color = function(thermostat_id) {
-  var thermostat = beestat.cache.thermostat[thermostat_id];
-  var ecobee_thermostat = beestat.cache.ecobee_thermostat[
-    thermostat.ecobee_thermostat_id
-  ];
-
-  if (
-    ecobee_thermostat.equipment_status.indexOf('compCool2') !== -1 ||
-    ecobee_thermostat.equipment_status.indexOf('compCool1') !== -1
-  ) {
-    return beestat.style.color.blue.light;
-  } else if (
-    ecobee_thermostat.settings.hasHeatPump === true &&
-    (
-      ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1 ||
-      ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1 ||
-      ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1 ||
-      ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1
-    )
-  ) {
-    return beestat.style.color.red.base;
-  } else if (
-    (
-      ecobee_thermostat.settings.hasHeatPump === false &&
-      (
-        ecobee_thermostat.equipment_status.indexOf('auxHeat3') !== -1 ||
-        ecobee_thermostat.equipment_status.indexOf('auxHeat2') !== -1 ||
-        ecobee_thermostat.equipment_status.indexOf('auxHeat1') !== -1 ||
-        ecobee_thermostat.equipment_status.indexOf('compHotWater') !== -1 ||
-        ecobee_thermostat.equipment_status.indexOf('auxHotWater') !== -1
-      )
-    ) ||
-    (
-      ecobee_thermostat.settings.hasHeatPump === true &&
-      (
-        ecobee_thermostat.equipment_status.indexOf('heatPump1') !== -1 ||
-        ecobee_thermostat.equipment_status.indexOf('heatPump2') !== -1
-      )
-    )
-  ) {
-    return beestat.style.color.orange.base;
+  switch (beestat.thermostat.get_operating_mode(thermostat_id)) {
+  case 'auxiliary_heat_1':
+    return beestat.series.auxiliary_heat_1.color;
+  case 'auxiliary_heat_2':
+    return beestat.series.auxiliary_heat_1.color;
+  case 'heat_1':
+    return beestat.series.compressor_heat_1.color;
+  case 'heat_2':
+    return beestat.series.compressor_heat_2.color;
+  case 'cool_1':
+    return beestat.series.compressor_cool_1.color;
+  case 'cool_2':
+    return beestat.series.compressor_cool_2.color;
+  default:
+    return beestat.style.color.bluegray.dark;
   }
-  return beestat.style.color.bluegray.dark;
 };
 
 /**
@@ -198,4 +172,6 @@ beestat.thermostat.get_current_climate = function(thermostat_id) {
       return climates[i];
     }
   }
+
+  return null;
 };
