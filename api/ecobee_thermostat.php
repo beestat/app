@@ -264,6 +264,8 @@ class ecobee_thermostat extends cora\crud {
           'reported' => $thermostat['system_type2']['reported'],
           'detected' => $detected_system_type2
         ];
+        // TODO This is temporary.
+        $attributes['system_type2']['reported']['auxiliary_heat'] = $attributes['system_type2']['reported']['heat_auxiliary'];
       }
 
       $attributes['running_equipment'] = $this->get_running_equipment(
