@@ -207,7 +207,7 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
         render_icon(parent, 'fan', beestat.style.color.gray.light);
         break;
       case 'cool_1':
-        if (thermostat.system_type2.detected.cool.stages > 1) {
+        if (thermostat.system_type.detected.cool.stages > 1) {
           subscript = '1';
         } else {
           subscript = undefined;
@@ -218,7 +218,7 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
         render_icon(parent, 'snowflake', beestat.style.color.blue.light, '2');
         break;
       case 'heat_1':
-        if (thermostat.system_type2.detected.heat.stages > 1) {
+        if (thermostat.system_type.detected.heat.stages > 1) {
           subscript = '1';
         } else {
           subscript = undefined;
@@ -232,7 +232,7 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
         render_icon(parent, 'fire', beestat.style.color.orange.base, '3');
         break;
       case 'auxiliary_heat_1':
-        if (thermostat.system_type2.detected.auxiliary_heat.stages > 1) {
+        if (thermostat.system_type.detected.auxiliary_heat.stages > 1) {
           subscript = '1';
         } else {
           subscript = undefined;

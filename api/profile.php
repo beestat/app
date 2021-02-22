@@ -123,26 +123,26 @@ class profile extends cora\api {
     // Get some stuff
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
-    if($thermostat['system_type2']['reported']['heat']['equipment'] !== null) {
-      $system_type_heat = $thermostat['system_type2']['reported']['heat']['equipment'];
+    if($thermostat['system_type']['reported']['heat']['equipment'] !== null) {
+      $system_type_heat = $thermostat['system_type']['reported']['heat']['equipment'];
     } else {
-      $system_type_heat = $thermostat['system_type2']['detected']['heat']['equipment'];
+      $system_type_heat = $thermostat['system_type']['detected']['heat']['equipment'];
     }
-    if($thermostat['system_type2']['reported']['cool']['equipment'] !== null) {
-      $system_type_cool = $thermostat['system_type2']['reported']['cool']['equipment'];
+    if($thermostat['system_type']['reported']['cool']['equipment'] !== null) {
+      $system_type_cool = $thermostat['system_type']['reported']['cool']['equipment'];
     } else {
-      $system_type_cool = $thermostat['system_type2']['detected']['cool']['equipment'];
+      $system_type_cool = $thermostat['system_type']['detected']['cool']['equipment'];
     }
 
-    if($thermostat['system_type2']['reported']['heat']['stages'] !== null) {
-      $heat_stages = $thermostat['system_type2']['reported']['heat']['stages'];
+    if($thermostat['system_type']['reported']['heat']['stages'] !== null) {
+      $heat_stages = $thermostat['system_type']['reported']['heat']['stages'];
     } else {
-      $heat_stages = $thermostat['system_type2']['detected']['heat']['stages'];
+      $heat_stages = $thermostat['system_type']['detected']['heat']['stages'];
     }
-    if($thermostat['system_type2']['reported']['cool']['stages'] !== null) {
-      $cool_stages = $thermostat['system_type2']['reported']['cool']['stages'];
+    if($thermostat['system_type']['reported']['cool']['stages'] !== null) {
+      $cool_stages = $thermostat['system_type']['reported']['cool']['stages'];
     } else {
-      $cool_stages = $thermostat['system_type2']['detected']['cool']['stages'];
+      $cool_stages = $thermostat['system_type']['detected']['cool']['stages'];
     }
 
 
@@ -273,8 +273,8 @@ class profile extends cora\api {
 
           // Normalizing heating and cooling a bit.
           if(
-            $thermostat['system_type2']['detected']['heat']['equipment'] === 'compressor' ||
-            $thermostat['system_type2']['detected']['heat']['equipment'] === 'geothermal'
+            $thermostat['system_type']['detected']['heat']['equipment'] === 'compressor' ||
+            $thermostat['system_type']['detected']['heat']['equipment'] === 'geothermal'
           ) {
             if($row['compressor_mode'] === 'heat') {
               $row['heat_1'] = $row['compressor_1'];

@@ -69,10 +69,10 @@ beestat.thermostat.data_synced = function(thermostat_id, required_sync_begin, re
 beestat.thermostat.get_system_type = function(thermostat_id, mode) {
   const thermostat = beestat.cache.thermostat[thermostat_id];
 
-  if (thermostat.system_type2.reported[mode].equipment !== null) {
-    return thermostat.system_type2.reported[mode].equipment;
-  } else if (thermostat.system_type2.detected[mode].equipment !== null) {
-    return thermostat.system_type2.detected[mode].equipment;
+  if (thermostat.system_type.reported[mode].equipment !== null) {
+    return thermostat.system_type.reported[mode].equipment;
+  } else if (thermostat.system_type.detected[mode].equipment !== null) {
+    return thermostat.system_type.detected[mode].equipment;
   }
 
   return 'unknown';
@@ -89,10 +89,10 @@ beestat.thermostat.get_system_type = function(thermostat_id, mode) {
 beestat.thermostat.get_stages = function(thermostat_id, mode) {
   const thermostat = beestat.cache.thermostat[thermostat_id];
 
-  if (thermostat.system_type2.reported[mode].stages !== null) {
-    return thermostat.system_type2.reported[mode].stages;
-  } else if (thermostat.system_type2.detected[mode].stages !== null) {
-    return thermostat.system_type2.detected[mode].stages;
+  if (thermostat.system_type.reported[mode].stages !== null) {
+    return thermostat.system_type.reported[mode].stages;
+  } else if (thermostat.system_type.detected[mode].stages !== null) {
+    return thermostat.system_type.detected[mode].stages;
   }
 
   return 'unknown';

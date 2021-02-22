@@ -48,17 +48,17 @@ class thermostat extends cora\crud {
   private function get_generated_columns($attributes) {
     $generated_columns = [];
 
-    if(isset($attributes['system_type2']) === true) {
+    if(isset($attributes['system_type']) === true) {
       foreach(['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool'] as $mode) {
-        if($attributes['system_type2']['reported'][$mode]['equipment'] !== null) {
-          $generated_columns['system_type_' . $mode] = $attributes['system_type2']['reported'][$mode]['equipment'];
+        if($attributes['system_type']['reported'][$mode]['equipment'] !== null) {
+          $generated_columns['system_type_' . $mode] = $attributes['system_type']['reported'][$mode]['equipment'];
         } else {
-          $generated_columns['system_type_' . $mode] = $attributes['system_type2']['detected'][$mode]['equipment'];
+          $generated_columns['system_type_' . $mode] = $attributes['system_type']['detected'][$mode]['equipment'];
         }
-        if($attributes['system_type2']['reported'][$mode]['stages'] !== null) {
-          $generated_columns['system_type_' . $mode . '_stages'] = $attributes['system_type2']['reported'][$mode]['stages'];
+        if($attributes['system_type']['reported'][$mode]['stages'] !== null) {
+          $generated_columns['system_type_' . $mode . '_stages'] = $attributes['system_type']['reported'][$mode]['stages'];
         } else {
-          $generated_columns['system_type_' . $mode . '_stages'] = $attributes['system_type2']['detected'][$mode]['stages'];
+          $generated_columns['system_type_' . $mode . '_stages'] = $attributes['system_type']['detected'][$mode]['stages'];
         }
       }
     }
@@ -105,7 +105,7 @@ class thermostat extends cora\crud {
 
     foreach($system_types as $system_type => $value) {
       if(in_array($system_type, ['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool']) === true) {
-        $thermostat['system_type2']['reported'][$system_type]['equipment'] = $value;
+        $thermostat['system_type']['reported'][$system_type]['equipment'] = $value;
       }
     }
 

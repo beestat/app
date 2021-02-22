@@ -236,9 +236,9 @@ class ecobee_thermostat extends cora\crud {
       $attributes['time_zone'] = $this->get_time_zone($thermostat, $ecobee_thermostat);
       $attributes['program'] = $this->get_program($thermostat, $ecobee_thermostat);
 
-      $detected_system_type2 = $this->get_detected_system_type2($thermostat, $ecobee_thermostat);
-      if($thermostat['system_type2'] === null) {
-        $attributes['system_type2'] = [
+      $detected_system_type = $this->get_detected_system_type($thermostat, $ecobee_thermostat);
+      if($thermostat['system_type'] === null) {
+        $attributes['system_type'] = [
           'reported' => [
             'heat' => [
               'equipment' => null,
@@ -257,27 +257,27 @@ class ecobee_thermostat extends cora\crud {
               'stages' => null
             ]
           ],
-          'detected' => $detected_system_type2
+          'detected' => $detected_system_type
         ];
       } else {
-        $attributes['system_type2'] = [
-          'reported' => $thermostat['system_type2']['reported'],
-          'detected' => $detected_system_type2
+        $attributes['system_type'] = [
+          'reported' => $thermostat['system_type']['reported'],
+          'detected' => $detected_system_type
         ];
         // TODO This is temporary.
-        $attributes['system_type2']['reported']['auxiliary_heat'] = $attributes['system_type2']['reported']['heat_auxiliary'];
+        $attributes['system_type']['reported']['auxiliary_heat'] = $attributes['system_type']['reported']['heat_auxiliary'];
       }
 
       $attributes['running_equipment'] = $this->get_running_equipment(
         $thermostat,
         $ecobee_thermostat,
-        $attributes['system_type2']
+        $attributes['system_type']
       );
 
       $attributes['alerts'] = $this->get_alerts(
         $thermostat,
         $ecobee_thermostat,
-        $attributes['system_type2']
+        $attributes['system_type']
       );
 
       $this->api(
@@ -693,7 +693,7 @@ class ecobee_thermostat extends cora\crud {
    *
    * @return array System type for each of heat, cool, and aux.
    */
-  private function get_detected_system_type2($thermostat, $ecobee_thermostat) {
+  private function get_detected_system_type($thermostat, $ecobee_thermostat) {
     $detected_system_type = [];
 
     $settings = $ecobee_thermostat['settings'];
