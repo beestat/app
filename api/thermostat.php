@@ -291,13 +291,30 @@ class thermostat extends cora\crud {
       );
     }
 
-    $keys_custom = [
-      'property_structure_type',
+    $keys_required_in_query = [
       'property_age',
       'property_square_feet',
       'property_stories'
     ];
-    foreach($keys_custom as $key) {
+    foreach($keys_required_in_query as $key) {
+      if(isset($attributes[$key]) === true) {
+        $where[] = $this->database->column_equals_value_where(
+          $key,
+          $attributes[$key]
+        );
+      } else {
+        // Fill these in for query performance.
+        $where[] = $this->database->column_equals_value_where(
+          $key,
+          ['operator' => '>', 'value' => 0]
+        );
+      }
+    }
+
+    $keys_optional_in_query = [
+      'property_structure_type',
+    ];
+    foreach($keys_optional_in_query as $key) {
       if(isset($attributes[$key]) === true) {
         $where[] = $this->database->column_equals_value_where(
           $key,
@@ -378,6 +395,10 @@ class thermostat extends cora\crud {
             $where[] = '`address_longitude` between ' . $between_a[0] . ' and ' . $between_a[1];
           }
       }
+    } else {
+      // Fill these in for query performance.
+      $where[] = '`address_longitude` between -180 and 180';
+      $where[] = '`address_latitude` between -90 and 90';
     }
 
     // Should match their position in the thermostat profile exactly.
