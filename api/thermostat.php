@@ -502,7 +502,6 @@ class thermostat extends cora\crud {
      * this up into several queries to avoid that.
      */
     do {
-      var_dump('before = ' . memory_get_usage());
       $result = $this->database->query('
         select
           thermostat_id,
