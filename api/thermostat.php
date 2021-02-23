@@ -491,17 +491,22 @@ class thermostat extends cora\crud {
       }
     }
 
+    $memory_limit = 16; // mb
+    $memory_per_thermostat = 0.0054; // mb
+
     $limit_start = 0;
-    $limit_count = 250;
+    $limit_count = round($memory_limit / $memory_per_thermostat);
 
     /**
      * Selecting lots of rows can eventually run PHP out of memory, so chunk
      * this up into several queries to avoid that.
      */
     do {
+      var_dump('before = ' . memory_get_usage());
       $result = $this->database->query('
         select
-          *
+          thermostat_id,
+          profile
         from
           thermostat
         where ' .
