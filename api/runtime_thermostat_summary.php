@@ -94,17 +94,17 @@ class runtime_thermostat_summary extends cora\crud {
   }
 
   /**
-   * Populate the runtime_thermostat_summary table.
+   * Populate from the max populated date until now.
    *
    * @param int $thermostat_id
    */
-  public function populate($thermostat_id) {
+  public function populate_forwards($thermostat_id) {
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
     $query = '
       select
-        min(`date`) `min_date`,
         max(`date`) `max_date`
+        #"2021-01-20" `max_date`
       from
         `runtime_thermostat_summary`
       where
@@ -114,80 +114,195 @@ class runtime_thermostat_summary extends cora\crud {
     $result = $this->database->query($query);
     $row = $result->fetch_assoc();
 
-    if($row['min_date'] === null || $row['max_date'] === null) {
-      $start = 'now() - interval 10 year'; // Just grab everything
+    if($row['max_date'] === null) {
+      $populate_begin = strtotime($thermostat['data_begin']); // Just grab everything
     } else {
-      if(strtotime($row['min_date']) > strtotime($thermostat['sync_begin'])) {
-        $start = '"' . date('Y-m-d 00:00:00', strtotime($thermostat['sync_begin'])) . '"';
-      } else {
-        $start = '"' . date('Y-m-d 00:00:00', strtotime($row['max_date'] . ' - 1 day')) . '"';
-      }
+      $populate_begin = strtotime($row['max_date']);
     }
+    $populate_end = time();
 
-    // TODO
-    // Query takes a full second to run for my data which would add some amount of time for the sync...
-    // Going to need to add a stop as well so only adding in relevant data points as the backwards sync runs
-    //
-    // TODO
-    // timezone convert!
+    $populate_begin = date('Y-m-d', $populate_begin);
+    $populate_end = date('Y-m-d', $populate_end);
+
+    return $this->populate($thermostat_id, $populate_begin, $populate_end);
+  }
+
+  /**
+   * Populate from the beginning of time until the min populated date.
+   *
+   * @param int $thermostat_id
+   */
+  public function populate_backwards($thermostat_id) {
+    $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
     $query = '
-      insert into
-        `runtime_thermostat_summary`
       select
-        null `runtime_summary_id`,
-        `thermostat`.`user_id` `user_id`,
-        `thermostat_id` `thermostat_id`,
-        date(convert_tz(`timestamp`, "UTC", "' . $thermostat['time_zone'] . '")) `date`,
-        count(*) `count`,
-        sum(case when `compressor_mode` = "cool" then `compressor_1` else 0 end) `sum_compressor_cool_1`,
-        sum(case when `compressor_mode` = "cool" then `compressor_2` else 0 end) `sum_compressor_cool_2`,
-        sum(case when `compressor_mode` = "heat" then `compressor_1` else 0 end) `sum_compressor_heat_1`,
-        sum(case when `compressor_mode` = "heat" then `compressor_2` else 0 end) `sum_compressor_heat_2`,
-        sum(`auxiliary_heat_1`) `sum_auxiliary_heat_1`,
-        sum(`auxiliary_heat_2`) `sum_auxiliary_heat_2`,
-        sum(`fan`) `sum_fan`,
-        sum(case when `accessory_type` = "humidifier" then `accessory` else 0 end) `sum_humidifier`,
-        sum(case when `accessory_type` = "dehumidifier" then `accessory` else 0 end) `sum_dehumidifier`,
-        sum(case when `accessory_type` = "ventilator" then `accessory` else 0 end) `sum_ventilator`,
-        sum(case when `accessory_type` = "economizer" then `accessory` else 0 end) `sum_economizer`,
-        round(avg(`outdoor_temperature`)) `avg_outdoor_temperature`,
-        round(avg(`outdoor_humidity`)) `avg_outdoor_humidity`,
-        min(`outdoor_temperature`) `min_outdoor_temperature`,
-        max(`outdoor_temperature`) `max_outdoor_temperature`,
-        round(avg(`indoor_temperature`)) `avg_indoor_temperature`,
-        round(avg(`indoor_humidity`)) `avg_indoor_humidity`,
-        0 `deleted`
+        min(`date`) `min_date`
+        #"2020-09-25" `min_date`
       from
-        `runtime_thermostat`
-      join
-        `thermostat` using(`thermostat_id`)
+        `runtime_thermostat_summary`
       where
-            convert_tz(`timestamp`, "UTC", "' . $thermostat['time_zone'] . '") > ' . $start . '
-        and thermostat_id = ' . $thermostat['thermostat_id'] . '
-      group by
-        `thermostat_id`,
-        date(convert_tz(`timestamp`, "UTC", "' . $thermostat['time_zone'] . '"))
-      on duplicate key update
-        `count` = values(`count`),
-        `sum_compressor_cool_1` = values(`sum_compressor_cool_1`),
-        `sum_compressor_cool_2` = values(`sum_compressor_cool_2`),
-        `sum_compressor_heat_1` = values(`sum_compressor_heat_1`),
-        `sum_compressor_heat_2` = values(`sum_compressor_heat_2`),
-        `sum_auxiliary_heat_1` = values(`sum_auxiliary_heat_1`),
-        `sum_auxiliary_heat_2` = values(`sum_auxiliary_heat_2`),
-        `sum_fan` = values(`sum_fan`),
-        `sum_humidifier` = values(`sum_humidifier`),
-        `sum_dehumidifier` = values(`sum_dehumidifier`),
-        `sum_ventilator` = values(`sum_ventilator`),
-        `sum_economizer` = values(`sum_economizer`),
-        `avg_outdoor_temperature` = values(`avg_outdoor_temperature`),
-        `avg_outdoor_humidity` = values(`avg_outdoor_humidity`),
-        `min_outdoor_temperature` = values(`min_outdoor_temperature`),
-        `max_outdoor_temperature` = values(`max_outdoor_temperature`),
-        `avg_indoor_temperature` = values(`avg_indoor_temperature`),
-        `avg_indoor_humidity` = values(`avg_indoor_humidity`)
+            `user_id` = ' . $this->database->escape($this->session->get_user_id()) . '
+        and `thermostat_id` = ' . $this->database->escape($thermostat_id) . '
     ';
-    $this->database->query($query);
+    $result = $this->database->query($query);
+    $row = $result->fetch_assoc();
+
+    if($row['min_date'] === null) {
+      $populate_end = time();
+    } else {
+      // Include
+      $populate_end = strtotime($row['min_date']);
+    }
+    $populate_begin = strtotime($thermostat['data_begin']);
+
+    $populate_begin = date('Y-m-d', $populate_begin);
+    $populate_end = date('Y-m-d', $populate_end);
+
+    return $this->populate($thermostat_id, $populate_begin, $populate_end);
+  }
+
+  /**
+   * Populate the runtime_thermostat_summary table.
+   *
+   * @param int $thermostat_id
+   * @param string $populate_begin Local date to begin populating, inclusive.
+   * @param string $populate_end Local date to end populating, inclusive.
+   */
+  private function populate($thermostat_id, $populate_begin, $populate_end) {
+    $thermostat = $this->api('thermostat', 'get', $thermostat_id);
+
+    // Convert date strings to timestamps to make them easier to work with.
+    $populate_begin = strtotime($populate_begin . ' 00:00:00');
+    $populate_end = strtotime($populate_end . ' 23:59:59');
+
+    $chunk_begin = $populate_begin;
+    $chunk_end = $populate_begin;
+
+    $data = [];
+    do {
+      $chunk_end = strtotime('+1 week', $chunk_begin);
+
+      // MySQL "between" is inclusive so go back 5 minutes to avoid
+      // double-counting rows.
+      $chunk_end = strtotime('-5 minute', $chunk_end);
+
+      // Don't overshoot into data that's already populated
+      $chunk_end = min($chunk_end, $populate_end);
+
+      $chunk_begin_datetime = get_utc_datetime(
+        date('Y-m-d H:i:s', $chunk_begin),
+        $thermostat['time_zone']
+      );
+
+      $chunk_end_datetime = get_utc_datetime(
+        date('Y-m-d H:i:s', $chunk_end),
+        $thermostat['time_zone']
+      );
+
+      $runtime_thermostats = $this->api(
+        'runtime_thermostat',
+        'read',
+        [
+          'attributes' => [
+            'thermostat_id' => $thermostat['thermostat_id'],
+            'timestamp' => [
+              'operator' => 'between',
+              'value' => [$chunk_begin_datetime, $chunk_end_datetime]
+            ]
+          ]
+        ]
+      );
+
+      foreach($runtime_thermostats as $runtime_thermostat) {
+        $date = get_local_datetime(
+          $runtime_thermostat['timestamp'],
+          $thermostat['time_zone'],
+          'Y-m-d'
+        );
+
+        if(isset($data[$date]) === false) {
+          $data[$date] = [
+            'count' => 0,
+            'sum_fan' => 0,
+            'min_outdoor_temperature' => INF,
+            'max_outdoor_temperature' => -INF,
+            'sum_auxiliary_heat_1' => 0,
+            'sum_auxiliary_heat_2' => 0,
+            'sum_compressor_cool_1' => 0,
+            'sum_compressor_cool_2' => 0,
+            'sum_compressor_heat_1' => 0,
+            'sum_compressor_heat_2' => 0,
+            'sum_humidifier' => 0,
+            'sum_dehumidifier' => 0,
+            'sum_ventilator' => 0,
+            'sum_economizer' => 0,
+            'avg_outdoor_temperature' => [],
+            'avg_outdoor_humidity' => [],
+            'avg_indoor_temperature' => [],
+            'avg_indoor_humidity' => []
+          ];
+        }
+
+        $runtime_thermostat['outdoor_temperature'] *= 10;
+        $runtime_thermostat['indoor_temperature'] *= 10;
+
+        $data[$date]['count']++;
+        $data[$date]['sum_fan'] += $runtime_thermostat['fan'];
+        $data[$date]['min_outdoor_temperature'] = min($runtime_thermostat['outdoor_temperature'], $data[$date]['min_outdoor_temperature']);
+        $data[$date]['max_outdoor_temperature'] = max($runtime_thermostat['outdoor_temperature'], $data[$date]['max_outdoor_temperature']);
+        $data[$date]['sum_auxiliary_heat_1'] += $runtime_thermostat['auxiliary_heat_1'];
+        $data[$date]['sum_auxiliary_heat_2'] += $runtime_thermostat['auxiliary_heat_2'];
+
+        if($runtime_thermostat['compressor_mode'] === 'cool') {
+          $data[$date]['sum_compressor_cool_1'] += $runtime_thermostat['compressor_1'];
+          $data[$date]['sum_compressor_cool_2'] += $runtime_thermostat['compressor_2'];
+        } else if($runtime_thermostat['compressor_mode'] === 'heat') {
+          $data[$date]['sum_compressor_heat_1'] += $runtime_thermostat['compressor_1'];
+          $data[$date]['sum_compressor_heat_2'] += $runtime_thermostat['compressor_2'];
+        }
+
+        if($runtime_thermostat['accessory_type'] === 'humidifier') {
+          $data[$date]['sum_humidifier'] += $runtime_thermostat['accessory'];
+        } else if($runtime_thermostat['compressor_mode'] === 'dehumidifier') {
+          $data[$date]['sum_dehumidifier'] += $runtime_thermostat['accessory'];
+        } else if($runtime_thermostat['compressor_mode'] === 'ventilator') {
+          $data[$date]['sum_ventilator'] += $runtime_thermostat['accessory'];
+        } else if($runtime_thermostat['compressor_mode'] === 'economizer') {
+          $data[$date]['sum_economizer'] += $runtime_thermostat['accessory'];
+        }
+
+        $data[$date]['avg_outdoor_temperature'][] = $runtime_thermostat['outdoor_temperature'];
+        $data[$date]['avg_outdoor_humidity'][] = $runtime_thermostat['outdoor_humidity'];
+        $data[$date]['avg_indoor_temperature'][] = $runtime_thermostat['indoor_temperature'];
+        $data[$date]['avg_indoor_humidity'][] = $runtime_thermostat['indoor_humidity'];
+      }
+
+      $chunk_begin = strtotime('+5 minute', $chunk_end);
+    } while ($chunk_end < $populate_end);
+
+    // Write to the database.
+    foreach($data as $date => &$row) {
+      $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
+      $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
+      $row['avg_indoor_temperature'] = round(array_sum($row['avg_indoor_temperature']) / count($row['avg_indoor_temperature']));
+      $row['avg_indoor_humidity'] = round(array_sum($row['avg_indoor_humidity']) / count($row['avg_indoor_humidity']));
+
+      $row['date'] = $date;
+      $row['user_id'] = $thermostat['user_id'];
+      $row['thermostat_id'] = $thermostat['thermostat_id'];
+
+      $existing_runtime_thermostat_summary = $this->get([
+        'thermostat_id' => $thermostat['thermostat_id'],
+        'date' => $date
+      ]);
+
+      if($existing_runtime_thermostat_summary === null) {
+        $this->create($row);
+      } else {
+        $row['runtime_thermostat_summary_id'] = $existing_runtime_thermostat_summary['runtime_thermostat_summary_id'];
+        $this->update($row);
+      }
+    }
   }
 }

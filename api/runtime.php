@@ -229,7 +229,7 @@ class runtime extends cora\api {
       // Populate on the fly.
       $this->api(
         'runtime_thermostat_summary',
-        'populate',
+        'populate_backwards',
         $thermostat_id
       );
 
@@ -308,7 +308,7 @@ class runtime extends cora\api {
     // Populate at the end of a full sync forwards.
     $this->api(
       'runtime_thermostat_summary',
-      'populate',
+      'populate_forwards',
       $thermostat_id
     );
   }
@@ -435,14 +435,14 @@ class runtime extends cora\api {
         'thermostat_id' => $thermostat['thermostat_id'],
         'timestamp' => [
           'value' => [
-            $this->get_utc_datetime(
+            get_utc_datetime(
               date(
                 'Y-m-d H:i:s',
                 strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
               ),
               $thermostat['time_zone']
             ),
-            $this->get_utc_datetime(
+            get_utc_datetime(
               date(
                 'Y-m-d H:i:s',
                 strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
@@ -515,7 +515,7 @@ class runtime extends cora\api {
 
       // Date and time are first two columns of the returned data. It is
       // returned in thermostat time, so convert it to UTC first.
-      $timestamp = $this->get_utc_datetime(
+      $timestamp = get_utc_datetime(
         $columns['date'] . ' ' . $columns['time'],
         $thermostat['time_zone']
       );
@@ -680,14 +680,14 @@ class runtime extends cora\api {
           'sensor_id' => array_column($sensors, 'sensor_id'),
           'timestamp' => [
             'value' => [
-              $this->get_utc_datetime(
+              get_utc_datetime(
                 date(
                   'Y-m-d H:i:s',
                   strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
                 ),
                 $thermostat['time_zone']
               ),
-              $this->get_utc_datetime(
+              get_utc_datetime(
                 date(
                   'Y-m-d H:i:s',
                   strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
@@ -747,7 +747,7 @@ class runtime extends cora\api {
             if (isset($datas[$sensor['sensor_id']]) === false) {
               $datas[$sensor['sensor_id']] = [
                 'sensor_id' => $sensor['sensor_id'],
-                'timestamp' => $this->get_utc_datetime(
+                'timestamp' => get_utc_datetime(
                   $columns['date'] . ' ' . $columns['time'],
                   $thermostat['time_zone']
                 )
@@ -819,40 +819,6 @@ class runtime extends cora\api {
     }
 
     return $return;
-  }
-
-  /**
-   * Convert a local datetime string to a UTC datetime string.
-   *
-   * @param string $local_datetime Local datetime string.
-   * @param string $local_time_zone The local time zone to convert from.
-   *
-   * @return string The UTC datetime string.
-   */
-  private function get_utc_datetime($local_datetime, $local_time_zone, $format = 'Y-m-d H:i:s') {
-    $local_time_zone = new DateTimeZone($local_time_zone);
-    $utc_time_zone = new DateTimeZone('UTC');
-    $date_time = new DateTime($local_datetime, $local_time_zone);
-    $date_time->setTimezone($utc_time_zone);
-
-    return $date_time->format($format);
-  }
-
-  /**
-   * Convert a UTC datetime string to a UTC datetime string.
-   *
-   * @param string $utc_datetime Local datetime string.
-   * @param string $local_time_zone The local time zone to convert from.
-   *
-   * @return string The UTC datetime string.
-   */
-  private function get_local_datetime($utc_datetime, $local_time_zone, $format = 'Y-m-d H:i:s') {
-    $local_time_zone = new DateTimeZone($local_time_zone);
-    $utc_time_zone = new DateTimeZone('UTC');
-    $date_time = new DateTime($utc_datetime, $utc_time_zone);
-    $date_time->setTimezone($local_time_zone);
-
-    return $date_time->format($format);
   }
 
   /**
@@ -1046,7 +1012,7 @@ class runtime extends cora\api {
 
       $current_timestamp = $chunk_begin;
       while($current_timestamp <= $chunk_end) {
-        $local_datetime = $this->get_local_datetime(
+        $local_datetime = get_local_datetime(
           date('Y-m-d H:i:s', $current_timestamp),
           $thermostat['time_zone']
         );

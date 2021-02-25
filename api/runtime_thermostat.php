@@ -79,7 +79,7 @@ class runtime_thermostat extends cora\crud {
         strtotime($attributes['timestamp']['value']) - min(strtotime($thermostat['first_connected']), strtotime($thermostat['sync_begin'])) > $max_range
       )
     ) {
-      throw new \Exception('Max range is 31 days. ' . (time() - strtotime($attributes['timestamp']['value'])), 10205);
+      throw new \Exception('Max range is 31 days.', 10205);
     }
 
     // Accept timestamps in roughly any format; always convert back to something nice and in UTC

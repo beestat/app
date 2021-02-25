@@ -85,3 +85,37 @@ function array_standard_deviation($array) {
 
   return round(sqrt($variance / $count), 1);
 }
+
+/**
+ * Convert a local datetime string to a UTC datetime string.
+ *
+ * @param string $local_datetime Local datetime string.
+ * @param string $local_time_zone The local time zone to convert from.
+ *
+ * @return string The UTC datetime string.
+ */
+function get_utc_datetime($local_datetime, $local_time_zone, $format = 'Y-m-d H:i:s') {
+  $local_time_zone = new DateTimeZone($local_time_zone);
+  $utc_time_zone = new DateTimeZone('UTC');
+  $date_time = new DateTime($local_datetime, $local_time_zone);
+  $date_time->setTimezone($utc_time_zone);
+
+  return $date_time->format($format);
+}
+
+/**
+ * Convert a UTC datetime string to a UTC datetime string.
+ *
+ * @param string $utc_datetime Local datetime string.
+ * @param string $local_time_zone The local time zone to convert from.
+ *
+ * @return string The UTC datetime string.
+ */
+function get_local_datetime($utc_datetime, $local_time_zone, $format = 'Y-m-d H:i:s') {
+  $local_time_zone = new DateTimeZone($local_time_zone);
+  $utc_time_zone = new DateTimeZone('UTC');
+  $date_time = new DateTime($utc_datetime, $utc_time_zone);
+  $date_time->setTimezone($local_time_zone);
+
+  return $date_time->format($format);
+}
