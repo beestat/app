@@ -11,18 +11,6 @@ namespace cora;
 final class api_log extends crud {
 
   /**
-   * Insert an item into the api_log resource. Force the IP to the request IP
-   * and disallow overriding the timestamp.
-   *
-   * @param array $attributes The attributes to insert.
-   *
-   * @return int The ID of the inserted row.
-   */
-  public function create($attributes) {
-    $this->request->queue_create($this->resource, $attributes);
-  }
-
-  /**
    * Get the number of requests since a given timestamp for a given IP
    * address. Handy for rate limiting.
    *
