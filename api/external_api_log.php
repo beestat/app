@@ -8,8 +8,7 @@
 class external_api_log extends cora\crud {
 
   /**
-   * Insert an item into the log table using the transactionless database
-   * connection.
+   * Queue a create to happen at the end of the request.
    *
    * @param array $attributes The attributes to insert.
    *
@@ -17,10 +16,7 @@ class external_api_log extends cora\crud {
    */
   public function create($attributes) {
     $attributes['user_id'] = $this->session->get_user_id();
-
-    // Insert using the transactionless connection.
-    $database = cora\database::get_transactionless_instance();
-    return $database->create($this->resource, $attributes, 'id');
+    $this->request->queue_create($this->resource, $attributes);
   }
 
 }

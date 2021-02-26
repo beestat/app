@@ -100,6 +100,13 @@ final class request {
   private $current_working_directory;
 
   /**
+   * A list of create calls queued up to run at the end of the request.
+   *
+   * @var array
+   */
+  private $queued_creates = [];
+
+  /**
    * Save the request variables for use later on. If unset, they are defaulted
    * to null. Any of these values being null will throw an exception as soon
    * as you try to process the request. The reason that doesn't happen here is
@@ -581,15 +588,21 @@ final class request {
     try {
       $this->total_time = (microtime(true) - $this->begin_timestamp);
 
+      $database = database::get_instance();
+
       // Fix the current working directory. See documentation on this class
       // variable for details.
       chdir($this->current_working_directory);
+
+      // Run any queued creates.
+      foreach($this->queued_creates as $queued_create) {
+        $database->create($queued_create['resource'], $queued_create['attributes'], 'id');
+      }
 
       // If I didn't catch an error/exception with my handlers, look here...this
       // will catch fatal errors that I can't.
       $error = error_get_last();
       if($error !== null) {
-
         $this->error_detail['file'] = $error['file'];
         $this->error_detail['line'] = $error['line'];
         $this->error_detail['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -602,7 +615,6 @@ final class request {
         );
 
         try {
-          $database = database::get_instance();
           $this->error_detail['queries'] = $database->get_queries();
         } catch(Exception $e) {}
       }
@@ -658,7 +670,6 @@ final class request {
       );
 
       try {
-        $database = database::get_instance();
         $this->error_detail['queries'] = $database->get_queries();
       } catch(Exception $e) {}
 
@@ -666,6 +677,21 @@ final class request {
       $this->output_headers();
       die(json_encode($this->response));
     }
+  }
+
+  /**
+   * Queue a database create to happen at the end of the request. Generally to
+   * be used for logging things as these will not be affected by transaction
+   * rollbacks in the event of an exception.
+   *
+   * @param string $resource
+   * @param array $attributes
+   */
+  public function queue_create($resource, $attributes) {
+    $this->queued_creates[] = [
+      'resource' => $resource,
+      'attributes' => $attributes
+    ];
   }
 
 }

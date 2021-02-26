@@ -713,7 +713,9 @@ final class database extends \mysqli {
    * return the newly created row (does a database read). Specifying id will
    * return just the ID of the created row.
    *
-   * @return int The primary key of the inserted row.
+   * @return mixed Either the primary key of the inserted row or the inserted
+   * row. If the row is not needed it's faster to return the ID to avoid
+   * another select.
    */
   public function create($resource, $attributes, $return_mode = 'row') {
     $table = $this->get_table($resource);

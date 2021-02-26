@@ -19,9 +19,7 @@ final class api_log extends crud {
    * @return int The ID of the inserted row.
    */
   public function create($attributes) {
-    // Insert using the transactionless connection.
-    $database = database::get_transactionless_instance();
-    return $database->create($this->resource, $attributes);
+    $this->request->queue_create($this->resource, $attributes);
   }
 
   /**
