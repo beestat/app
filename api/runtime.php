@@ -452,6 +452,10 @@ class runtime extends cora\api {
           ],
           'operator' => 'between'
         ]
+      ],
+      [
+        'runtime_thermostat_id',
+        'timestamp'
       ]
     );
 
