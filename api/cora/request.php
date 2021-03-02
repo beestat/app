@@ -100,11 +100,11 @@ final class request {
   private $current_working_directory;
 
   /**
-   * A list of create calls queued up to run at the end of the request.
+   * A list of database calls to make at the very end of the script.
    *
    * @var array
    */
-  private $queued_creates = [];
+  private $queued_database_actions = [];
 
   /**
    * Save the request variables for use later on. If unset, they are defaulted
@@ -439,6 +439,7 @@ final class request {
     $this->set_error_response(
       $error_message,
       $error_code,
+      true,
       true
     );
 
@@ -468,7 +469,8 @@ final class request {
     $this->set_error_response(
       $e->getMessage(),
       $e->getCode(),
-      (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
+      (method_exists($e, 'getReportable') === true ? $e->getReportable() : true),
+      (method_exists($e, 'getRollback') === true ? $e->getRollback() : true)
     );
 
     try {
@@ -489,23 +491,26 @@ final class request {
    *
    * There are a few places that call this function to set an error response,
    * so this can't just be done in the exception handler alone. If an error
-   * occurs, rollback the current transaction.
+   * occurs, rollback the current transaction unless specified otherwise.
    *
    * @param string $error_message The error message.
    * @param mixed $error_code The supplied error code.
    * @param array $reportable Whether or not the error is reportable.
+   * @param array $rollback Whether or not the error should cause a rollback.
    */
-  public function set_error_response($error_message, $error_code, $reportable) {
+  public function set_error_response($error_message, $error_code, $reportable, $rollback) {
     $setting = setting::get_instance();
     $session = session::get_instance();
 
     // I guess if this fails then things are really bad, but let's at least
     // protect against additional exceptions if the database connection or
     // similar fails.
-    try {
-      $database = database::get_instance();
-      $database->rollback_transaction();
-    } catch(\Exception $e) {}
+    if($rollback === true) {
+      try {
+        $database = database::get_instance();
+        $database->rollback_transaction();
+      } catch(\Exception $e) {}
+    }
 
     $this->response = [
       'success' => false,
@@ -595,8 +600,29 @@ final class request {
       chdir($this->current_working_directory);
 
       // Run any queued creates.
-      foreach($this->queued_creates as $queued_create) {
-        $database->create($queued_create['resource'], $queued_create['attributes'], 'id');
+      foreach($this->queued_database_actions as $queued_database_action) {
+        switch($queued_database_action['method']) {
+          case 'create':
+            $database->create(
+              $queued_database_action['resource'],
+              $queued_database_action['attributes'],
+              'id'
+            );
+          break;
+          case 'update':
+            $database->update(
+              $queued_database_action['resource'],
+              $queued_database_action['attributes'],
+              'id'
+            );
+          break;
+          case 'delete':
+            $database->delete(
+              $queued_database_action['resource'],
+              $queued_database_action['attributes']
+            );
+          break;
+        }
       }
 
       // If I didn't catch an error/exception with my handlers, look here...this
@@ -611,6 +637,7 @@ final class request {
         $this->set_error_response(
           $error['message'],
           $error['type'],
+          true,
           true
         );
 
@@ -666,7 +693,8 @@ final class request {
       $this->set_error_response(
         $e->getMessage(),
         $e->getCode(),
-        (method_exists($e, 'getReportable') === true ? $e->getReportable() : true)
+        (method_exists($e, 'getReportable') === true ? $e->getReportable() : true),
+        (method_exists($e, 'getRollback') === true ? $e->getRollback() : true)
       );
 
       try {
@@ -684,12 +712,15 @@ final class request {
    * be used for logging things as these will not be affected by transaction
    * rollbacks in the event of an exception.
    *
-   * @param string $resource
-   * @param array $attributes
+   * @param string $resource The database table to act on.
+   * @param string $method create|update|delete
+   * @param array $attributes The attributes of the create or update. If
+   * delete just the ID to delete.
    */
-  public function queue_create($resource, $attributes) {
-    $this->queued_creates[] = [
+  public function queue_database_action($resource, $method, $attributes) {
+    $this->queued_database_actions[] = [
       'resource' => $resource,
+      'method' => $method,
       'attributes' => $attributes
     ];
   }

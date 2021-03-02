@@ -105,7 +105,7 @@ class patreon_token extends cora\crud {
     ) {
       $this->delete($patreon_token['patreon_token_id']);
       $database->release_lock($lock_name);
-      throw new cora\exception('Could not refresh Patreon token; Patreon returned no token.', 10102);
+      throw new cora\exception('Could not refresh Patreon token; Patreon returned no token.', 10102, true, null, false);
     }
 
     $database->update(
@@ -122,16 +122,15 @@ class patreon_token extends cora\crud {
   }
 
   /**
-   * Delete an patreon token.
+   * Delete a Patreon token and log the user out. Make sure to delete the
+   * token prior to logging out so the right permissions are present.
    *
    * @param int $id
    *
    * @return int
    */
   public function delete($id) {
-    $database = cora\database::get_transactionless_instance();
-    $return = $database->delete($this->resource, $id);
-    return $return;
+    return parent::delete($id);
   }
 
 }

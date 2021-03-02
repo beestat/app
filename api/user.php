@@ -131,37 +131,13 @@ class user extends cora\crud {
 
   /**
    * Logs out the currently logged in user.
-   *
-   * @return bool True if it was successfully invalidated. Could return false
-   * for a non-existant session key or if it was already logged out. In the
-   * case of multiple sessions, return true if all open sessions were
-   * successfully deleted, false if not.
    */
-  public function log_out($all) {
+  public function log_out() {
     if($this->setting->is_demo() === true) {
       return;
     }
 
-    if($all === true) {
-      // Sometimes I need to log out and then throw an exception. Using the
-      // transactionless instance makes sure that actually works.
-      $database = cora\database::get_transactionless_instance();
-      $sessions = $database->read(
-        'cora\session',
-        [
-          'user_id' => $this->session->get_user_id(),
-          'api_user_id' => null
-        ]
-      );
-      $success = true;
-      foreach($sessions as $session) {
-        $success &= $database->delete('cora\session', $session['session_id']);
-      }
-      return $success;
-    }
-    else {
-      return $this->session->delete();
-    }
+    return $this->session->delete();
   }
 
   /**

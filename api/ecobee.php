@@ -164,7 +164,7 @@ class ecobee extends external_api {
           []
         );
         if(count($ecobee_tokens) !== 1) {
-          $this->api('user', 'log_out', ['all' => true]);
+          $this->api('user', 'log_out');
           throw new cora\exception('No ecobee access for this user.', 10501, false);
         }
         $ecobee_token = $ecobee_tokens[0];
@@ -227,8 +227,7 @@ class ecobee extends external_api {
         $this->log_mysql($curl_response, true);
       }
       $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
-      $this->api('user', 'log_out', ['all' => true]);
-      throw new cora\exception('Ecobee access was revoked by user.', 10500, false);
+      throw new cora\exception('Ecobee access was revoked by user.', 10500, false, null, false);
     }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
       // Any other error
@@ -240,10 +239,16 @@ class ecobee extends external_api {
     else if (isset($response['error']) === true) {
       // Authorization errors are a bit different
       // https://www.ecobee.com/home/developer/api/documentation/v1/auth/auth-req-resp.shtml
+
+      if($response['error'] === 'invalid_grant') {
+        $ecobee_token = $this->api('ecobee_token', 'read')[0];
+        $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
+      }
+
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response, true);
       }
-      throw new cora\exception(isset($response['error_description']) === true ? $response['error_description'] : $response['error'], 10505);
+      throw new cora\exception(isset($response['error_description']) === true ? $response['error_description'] : $response['error'], 10505, true, null, false);
     }
     else {
       return $response;

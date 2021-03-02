@@ -192,11 +192,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
         .set_callback(function() {
           window.location.href = window.location.href.replace('app.', '');
         })
-        .add_call(
-          'user',
-          'log_out',
-          {'all': false}
-        )
+        .add_call('user', 'log_out')
         .send();
     }));
 };

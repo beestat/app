@@ -16,7 +16,7 @@ class external_api_log extends cora\crud {
    */
   public function create($attributes) {
     $attributes['user_id'] = $this->session->get_user_id();
-    $this->request->queue_create($this->resource, $attributes);
+    $this->request->queue_database_action($this->resource, 'create', $attributes);
   }
 
 }
