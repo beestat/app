@@ -244,10 +244,6 @@ class ecobee_thermostat extends cora\crud {
               'equipment' => null,
               'stages' => null
             ],
-            'heat_auxiliary' => [
-              'equipment' => null,
-              'stages' => null
-            ],
             'auxiliary_heat' => [
               'equipment' => null,
               'stages' => null
@@ -264,8 +260,6 @@ class ecobee_thermostat extends cora\crud {
           'reported' => $thermostat['system_type']['reported'],
           'detected' => $detected_system_type
         ];
-        // TODO This is temporary.
-        $attributes['system_type']['reported']['auxiliary_heat'] = $attributes['system_type']['reported']['heat_auxiliary'];
       }
 
       $attributes['running_equipment'] = $this->get_running_equipment(
@@ -589,11 +583,6 @@ class ecobee_thermostat extends cora\crud {
     } else {
       $system_type_heat = $system_type['detected']['heat']['equipment'];
     }
-    if($system_type['reported']['heat_auxiliary'] !== null) {
-      $system_type_heat_auxiliary = $system_type['reported']['heat_auxiliary']['equipment'];
-    } else {
-      $system_type_heat_auxiliary = $system_type['detected']['heat_auxiliary']['equipment'];
-    }
     if($system_type['reported']['auxiliary_heat'] !== null) {
       $system_type_auxiliary_heat = $system_type['reported']['auxiliary_heat']['equipment'];
     } else {
@@ -601,7 +590,6 @@ class ecobee_thermostat extends cora\crud {
     }
     $has_heat = (
       $system_type_heat !== 'none' ||
-      $system_type_heat_auxiliary !== 'none' ||
       $system_type_auxiliary_heat !== 'none'
     );
 
@@ -745,20 +733,6 @@ class ecobee_thermostat extends cora\crud {
 
     // Rudimentary aux heat guess. It's pretty good overall but not as good as
     // heat/cool.
-    $detected_system_type['heat_auxiliary'] = [
-      'equipment' => null,
-      'stages' => null
-    ];
-    if(
-      $detected_system_type['heat']['equipment'] === 'gas' ||
-      $detected_system_type['heat']['equipment'] === 'boiler' ||
-      $detected_system_type['heat']['equipment'] === 'oil' ||
-      $detected_system_type['heat']['equipment'] === 'electric'
-    ) {
-      $detected_system_type['heat_auxiliary']['equipment'] = 'none';
-    } else if($detected_system_type['heat']['equipment'] === 'compressor') {
-      $detected_system_type['heat_auxiliary']['equipment'] = 'electric';
-    }
     $detected_system_type['auxiliary_heat'] = [
       'equipment' => null,
       'stages' => null
@@ -1027,21 +1001,21 @@ class ecobee_thermostat extends cora\crud {
         break;
         case 'auxHeat1':
           if ($system_type['detected']['heat']['equipment'] === 'compressor') {
-            $running_equipment[] = 'heat_auxiliary_1';
+            $running_equipment[] = 'auxiliary_heat_1';
           } else {
             $running_equipment[] = 'heat_1';
           }
         break;
         case 'auxHeat2':
           if ($system_type['detected']['heat']['equipment'] === 'compressor') {
-            $running_equipment[] = 'heat_auxiliary_2';
+            $running_equipment[] = 'auxiliary_heat_2';
           } else {
             $running_equipment[] = 'heat_2';
           }
         break;
         case 'auxHeat3':
           if ($system_type['detected']['heat']['equipment'] === 'compressor') {
-            $running_equipment[] = 'heat_auxiliary_3';
+            $running_equipment[] = 'auxiliary_heat_3';
           } else {
             $running_equipment[] = 'heat_3';
           }
@@ -1065,7 +1039,7 @@ class ecobee_thermostat extends cora\crud {
           $running_equipment[] = 'heat_1';
         break;
         case 'auxHotWater':
-          $running_equipment[] = 'heat_auxiliary_1';
+          $running_equipment[] = 'auxiliary_heat_1';
         break;
         default:
           throw new \Exception('Unknown equipment running.', 10800);

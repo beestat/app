@@ -49,7 +49,7 @@ class thermostat extends cora\crud {
     $generated_columns = [];
 
     if(isset($attributes['system_type']) === true) {
-      foreach(['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool'] as $mode) {
+      foreach(['heat', 'auxiliary_heat', 'cool'] as $mode) {
         if($attributes['system_type']['reported'][$mode]['equipment'] !== null) {
           $generated_columns['system_type_' . $mode] = $attributes['system_type']['reported'][$mode]['equipment'];
         } else {
@@ -104,7 +104,7 @@ class thermostat extends cora\crud {
     $thermostat = $this->get($thermostat_id);
 
     foreach($system_types as $system_type => $value) {
-      if(in_array($system_type, ['heat', 'heat_auxiliary', 'auxiliary_heat', 'cool']) === true) {
+      if(in_array($system_type, ['heat', 'auxiliary_heat', 'cool']) === true) {
         $thermostat['system_type']['reported'][$system_type]['equipment'] = $value;
       }
     }
@@ -127,8 +127,8 @@ class thermostat extends cora\crud {
     foreach($thermostats as &$thermostat) {
       unset($thermostat['system_type_heat']);
       unset($thermostat['system_type_heat_stages']);
-      unset($thermostat['system_type_heat_auxiliary']);
-      unset($thermostat['system_type_heat_auxiliary_stages']);
+      unset($thermostat['system_type_auxiliary_heat']);
+      unset($thermostat['system_type_auxiliary_heat_stages']);
       unset($thermostat['system_type_cool']);
       unset($thermostat['system_type_cool_stages']);
       unset($thermostat['property_age']);
