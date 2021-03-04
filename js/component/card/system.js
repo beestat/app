@@ -317,7 +317,7 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
   );
 
   // Convert "heat_1" etc to "heat"
-  const simplified_operating_mode = operating_mode.replace(/_\d/, '');
+  const simplified_operating_mode = operating_mode.replace(/[_\d]|auxiliary/g, '');
 
   /**
    * If the system is off or if we've already reached the setpoint, don't show
