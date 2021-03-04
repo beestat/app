@@ -348,7 +348,10 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
 
   let header_text = 'Time to ' + simplified_operating_mode;
   let text;
-  if (thermostat.profile.temperature[operating_mode] === null) {
+  if (
+    thermostat.profile === null ||
+    thermostat.profile.temperature[operating_mode] === null
+  ) {
     // If there is no profile data; TTT is unknown.
     text = 'Unknown';
   } else {
