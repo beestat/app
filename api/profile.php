@@ -61,8 +61,8 @@ class profile extends cora\api {
     $minimum_sample_duration = [
       'heat_1' => 300,
       'heat_2' => 300,
-      'auxliary_heat_1' => 300,
-      'auxliary_heat_2' => 300,
+      'auxiliary_heat_1' => 300,
+      'auxiliary_heat_2' => 300,
       'cool_1' => 300,
       'cool_2' => 300,
       'resist' => 1800
@@ -144,8 +144,6 @@ class profile extends cora\api {
     } else {
       $cool_stages = $thermostat['system_type']['detected']['cool']['stages'];
     }
-
-
 
     // Figure out all the starting and ending times. Round begin/end to the
     // nearest 5 minutes to help with the looping later on.
@@ -425,7 +423,6 @@ class profile extends cora\api {
         if(
           $most_off === true &&
           $heat_1_on_for >= $minimum_on_for &&
-          // $current_runtime['heat_2'] === 0 &&
           $current_runtime['auxiliary_heat_1'] === 0 &&
           $current_runtime['auxiliary_heat_2'] === 0 &&
           isset($begin_runtime['heat_1']) === false
@@ -449,12 +446,57 @@ class profile extends cora\api {
         if(
           $most_off === true &&
           $heat_2_on_for >= $minimum_on_for &&
-          // $current_runtime['heat_1'] === 0 &&
           $current_runtime['auxiliary_heat_1'] === 0 &&
           $current_runtime['auxiliary_heat_2'] === 0 &&
           isset($begin_runtime['heat_2']) === false
         ) {
           $begin_runtime['heat_2'] = $current_runtime;
+        }
+
+        /**
+         * AUXILIARY HEAT 1 START
+         */
+
+        // Track how long the heat has been on for.
+        if($current_runtime['auxiliary_heat_1'] > 0) {
+          $auxiliary_heat_1_on_for += $current_runtime['auxiliary_heat_1'];
+        } else {
+          $auxiliary_heat_1_on_for = 0;
+        }
+
+        // Store the begin runtime for auxiliary heat when the auxiliary heat
+        // has been on for this thermostat only for the required minimum and
+        // everything else is off. The exception is normal heat as aux heat
+        // often runs with it.
+        if(
+          $most_off === true &&
+          $auxiliary_heat_1_on_for >= $minimum_on_for &&
+          isset($begin_runtime['auxiliary_heat_1']) === false
+        ) {
+          $begin_runtime['auxiliary_heat_1'] = $current_runtime;
+        }
+
+        /**
+         * AUXILIARY HEAT 2 START
+         */
+
+        // Track how long the heat has been on for.
+       if($current_runtime['auxiliary_heat_2'] > 0) {
+          $auxiliary_heat_2_on_for += $current_runtime['auxiliary_heat_2'];
+        } else {
+          $auxiliary_heat_2_on_for = 0;
+        }
+
+        // Store the begin runtime for auxiliary heat when the auxiliary heat
+        // has been on for this thermostat only for the required minimum and
+        // everything else is off. The exception is normal heat as aux heat
+        // often runs with it.
+        if(
+          $most_off === true &&
+          $auxiliary_heat_2_on_for >= $minimum_on_for &&
+          isset($begin_runtime['auxiliary_heat_2']) === false
+        ) {
+          $begin_runtime['auxiliary_heat_2'] = $current_runtime;
         }
 
         /**
@@ -495,7 +537,6 @@ class profile extends cora\api {
         if(
           $most_off === true &&
           $cool_2_on_for >= $minimum_on_for &&
-          // $current_runtime['cool_1'] === 0 &&
           isset($begin_runtime['cool_2']) === false
         ) {
           $begin_runtime['cool_2'] = $current_runtime;
@@ -521,7 +562,7 @@ class profile extends cora\api {
             )
           ) ||
           (
-            // Heat 1
+            // Heat 2
             // Gather a "heat_2" delta for one of the following reasons.
             // - The outdoor temperature changed
             // - The calendar event changed
@@ -538,7 +579,41 @@ class profile extends cora\api {
             )
           ) ||
           (
-            // Cool
+            // Auxiliary Heat 1
+            // Gather an "auxiliary_heat_1" delta for one of the following reasons.
+            // - The outdoor temperature changed
+            // - The calendar event changed
+            // - The climate changed
+            // - One of the other thermostats in this group turned on
+            ($sample_type = 'auxiliary_heat_1') &&
+            isset($begin_runtime['auxiliary_heat_1']) === true &&
+            isset($previous_runtime) === true &&
+            (
+              $current_runtime['outdoor_temperature'] !== $begin_runtime['auxiliary_heat_1']['outdoor_temperature'] ||
+              $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime['auxiliary_heat_1']['event_runtime_thermostat_text_id'] ||
+              $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime['auxiliary_heat_1']['climate_runtime_thermostat_text_id'] ||
+              $most_off === false
+            )
+          ) ||
+          (
+            // Auxiliary Heat 2
+            // Gather an "auxiliary_heat_2" delta for one of the following reasons.
+            // - The outdoor temperature changed
+            // - The calendar event changed
+            // - The climate changed
+            // - One of the other thermostats in this group turned on
+            ($sample_type = 'auxiliary_heat_2') &&
+            isset($begin_runtime['auxiliary_heat_2']) === true &&
+            isset($previous_runtime) === true &&
+            (
+              $current_runtime['outdoor_temperature'] !== $begin_runtime['auxiliary_heat_2']['outdoor_temperature'] ||
+              $current_runtime['event_runtime_thermostat_text_id'] !== $begin_runtime['auxiliary_heat_2']['event_runtime_thermostat_text_id'] ||
+              $current_runtime['climate_runtime_thermostat_text_id'] !== $begin_runtime['auxiliary_heat_2']['climate_runtime_thermostat_text_id'] ||
+              $most_off === false
+            )
+          ) ||
+          (
+            // Cool 1
             // Gather a "cool_1" delta for one of the following reasons.
             // - The outdoor temperature changed
             // - The calendar event changed
@@ -555,7 +630,7 @@ class profile extends cora\api {
             )
           ) ||
           (
-            // Cool
+            // Cool 2
             // Gather a "cool_2" delta for one of the following reasons.
             // - The outdoor temperature changed
             // - The calendar event changed
@@ -699,6 +774,20 @@ class profile extends cora\api {
         $current_runtime['auxiliary_heat_2'] > 0
       ) {
         unset($begin_runtime['heat_2']);
+      }
+      if(
+        $auxiliary_heat_1_on_for === 0 ||
+        $current_runtime['outdoor_temperature'] === null ||
+        $current_runtime['indoor_temperature'] === null
+      ) {
+        unset($begin_runtime['auxiliary_heat_1']);
+      }
+      if(
+        $auxiliary_heat_2_on_for === 0 ||
+        $current_runtime['outdoor_temperature'] === null ||
+        $current_runtime['indoor_temperature'] === null
+      ) {
+        unset($begin_runtime['auxiliary_heat_2']);
       }
       if(
         $cool_1_on_for === 0 ||
