@@ -594,12 +594,13 @@ final class request {
       $this->total_time = (microtime(true) - $this->begin_timestamp);
 
       $database = database::get_instance();
+      $setting = setting::get_instance();
 
       // Fix the current working directory. See documentation on this class
       // variable for details.
       chdir($this->current_working_directory);
 
-      // Run any queued creates.
+      // Run any queued actions.
       foreach($this->queued_database_actions as $queued_database_action) {
         switch($queued_database_action['method']) {
           case 'create':
@@ -658,7 +659,16 @@ final class request {
         // Override whatever headers might have already been set.
         $this->set_default_headers();
         $this->output_headers();
-        die(json_encode($this->response));
+
+        $response = $this->response;
+        if(
+          empty($this->error_detail) === false &&
+          in_array($setting->get('environment'), ['dev', 'dev_live', 'stage'])
+        ) {
+          $response['data']['error_detail'] = $this->error_detail;
+        }
+
+        die(json_encode($response));
       }
       else {
         // If we got here, no errors have occurred.
@@ -681,7 +691,16 @@ final class request {
 
         // Output the response
         $this->output_headers();
-        die(json_encode($this->response));
+
+        $response = $this->response;
+        if(
+          empty($this->error_detail) === false &&
+          in_array($setting->get('environment'), ['dev', 'dev_live', 'stage'])
+        ) {
+          $response['data']['error_detail'] = $this->error_detail;
+        }
+
+        die(json_encode($response));
       }
     }
     catch(\Exception $e) {
@@ -703,7 +722,16 @@ final class request {
 
       $this->set_default_headers();
       $this->output_headers();
-      die(json_encode($this->response));
+
+      $response = $this->response;
+      if(
+        empty($this->error_detail) === false &&
+        in_array($setting->get('environment'), ['dev', 'dev_live', 'stage'])
+      ) {
+        $response['data']['error_detail'] = $this->error_detail;
+      }
+
+      die(json_encode($response));
     }
   }
 
