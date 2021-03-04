@@ -65,7 +65,7 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
     let button_group = new beestat.component.button_group();
     options[key].forEach(function(system_type) {
       let text = system_type.charAt(0).toUpperCase() + system_type.slice(1);
-      if (thermostat.system_type.detected[key] === system_type) {
+      if (thermostat.system_type.detected[key].equipment === system_type) {
         text += ' [Detected]';
       }
 
