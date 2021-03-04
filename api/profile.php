@@ -943,7 +943,10 @@ class profile extends cora\api {
     }
 
     // Runtime per degree day
-    if($profile['degree_days']['heat'] !== null) {
+    if(
+      $profile['degree_days']['heat'] !== null &&
+      $profile['degree_days']['heat'] > 0
+    ) {
       if(
         $system_type_heat !== null &&
         $system_type_heat !== 'none'
@@ -955,7 +958,10 @@ class profile extends cora\api {
       }
     }
 
-    if($profile['degree_days']['cool'] !== null) {
+    if(
+      $profile['degree_days']['cool'] !== null &&
+      $profile['degree_days']['cool'] > 0
+    ) {
       if(
         $system_type_cool !== null &&
         $system_type_cool !== 'none'
