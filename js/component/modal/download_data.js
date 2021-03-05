@@ -148,9 +148,29 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
       'button': new beestat.component.button()
     },
     {
+      'label': 'Last Week',
+      'range_begin': now.clone()
+        .subtract(1, 'week')
+        .startOf('week'),
+      'range_end': now.clone()
+        .subtract(1, 'week')
+        .endOf('week'),
+      'button': new beestat.component.button()
+    },
+    {
       'label': 'This Month',
       'range_begin': now.clone().startOf('month'),
       'range_end': now.clone(),
+      'button': new beestat.component.button()
+    },
+    {
+      'label': 'Last Month',
+      'range_begin': now.clone()
+        .subtract(1, 'month')
+        .startOf('month'),
+      'range_end': now.clone()
+        .subtract(1, 'month')
+        .endOf('month'),
       'button': new beestat.component.button()
     },
     {
