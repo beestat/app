@@ -165,12 +165,21 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     // Set the active temperature unit.
     beestat.setting('temperature_unit', thermostat.temperature_unit);
 
-    // Rename series if only one stage is available.
-    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'cool') === 1) {
-      beestat.series.sum_compressor_cool_1.name = 'Cool';
+    // Rename series if there are multiple stages.
+    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'heat') > 1) {
+      beestat.series.compressor_heat_1.name = 'Heat 1';
+      beestat.series.sum_compressor_heat_1.name = 'Heat 1';
+      beestat.series.indoor_heat_1_delta.name = 'Heat 1 Δ';
     }
-    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'heat') === 1) {
-      beestat.series.sum_compressor_heat_1.name = 'Heat';
+    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'auxiliary_heat') > 1) {
+      beestat.series.auxiliary_heat_1.name = 'Aux Heat 1';
+      beestat.series.sum_auxiliary_heat_1.name = 'Aux Heat 1';
+      beestat.series.indoor_auxiliary_heat_1_delta.name = 'Aux Heat 1 Δ';
+    }
+    if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'cool') > 1) {
+      beestat.series.compressor_cool_1.name = 'Cool 1';
+      beestat.series.sum_compressor_cool_1.name = 'Cool 1';
+      beestat.series.indoor_cool_1_delta.name = 'Cool 1 Δ';
     }
 
     // Fix some other stuff for non-heat-pump.

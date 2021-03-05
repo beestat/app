@@ -120,7 +120,7 @@ beestat.style.hex_to_rgb = function(hex) {
 beestat.series = {};
 
 beestat.series.compressor_heat_1 = {
-  'name': 'Heat 1',
+  'name': 'Heat',
   'color': beestat.style.color.orange.light
 };
 
@@ -140,7 +140,7 @@ beestat.series.auxiliary_heat_2 = {
 };
 
 beestat.series.compressor_cool_1 = {
-  'name': 'Cool 1',
+  'name': 'Cool',
   'color': beestat.style.color.lightblue.light
 };
 
@@ -220,6 +220,7 @@ beestat.series.avg_indoor_temperature = beestat.series.indoor_temperature;
 beestat.series.avg_outdoor_temperature = beestat.series.outdoor_temperature;
 beestat.series.avg_indoor_humidity = beestat.series.indoor_humidity;
 beestat.series.avg_outdoor_humidity = beestat.series.outdoor_humidity;
+
 beestat.series.extreme_outdoor_temperature = {
   'name': 'Outdoor Temp Extremes',
   'color': beestat.style.color.gray.dark
@@ -280,52 +281,45 @@ beestat.series.calendar_event_custom = {
   'color': beestat.style.color.bluegreen.base
 };
 
-// Temperature Profiles
-beestat.series.indoor_heat_delta = {
-  'name': 'Indoor Heat Δ',
-  'color': beestat.series.compressor_heat_1.color
-};
-beestat.series.indoor_heat_delta_raw = beestat.series.indoor_heat_delta;
-
-beestat.series.indoor_cool_delta = {
-  'name': 'Indoor Cool Δ',
-  'color': beestat.series.compressor_cool_1.color
-};
-beestat.series.indoor_cool_delta_raw = beestat.series.indoor_cool_delta;
-
-beestat.series.indoor_resist_delta = {
-  'name': 'Indoor Δ',
-  'color': beestat.style.color.gray.dark
-};
-beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;
-
 // Temperature Profiles New
 beestat.series.indoor_heat_1_delta = {
-  'name': 'Indoor Heat 1 Δ',
+  'name': 'Heat Δ',
   'color': beestat.series.compressor_heat_1.color
 };
 beestat.series.indoor_heat_1_delta_raw = beestat.series.indoor_heat_1_delta;
 
 beestat.series.indoor_heat_2_delta = {
-  'name': 'Indoor Heat 2 Δ',
+  'name': 'Heat 2 Δ',
   'color': beestat.series.compressor_heat_2.color
 };
 beestat.series.indoor_heat_2_delta_raw = beestat.series.indoor_heat_2_delta;
 
+beestat.series.indoor_auxiliary_heat_1_delta = {
+  'name': 'Aux Heat Δ',
+  'color': beestat.series.auxiliary_heat_1.color
+};
+beestat.series.indoor_auxiliary_heat_1_delta_raw = beestat.series.indoor_auxiliary_heat_1_delta;
+
+beestat.series.indoor_auxiliary_heat_2_delta = {
+  'name': 'Aux Heat 2 Δ',
+  'color': beestat.series.auxiliary_heat_2.color
+};
+beestat.series.indoor_auxiliary_heat_2_delta_raw = beestat.series.indoor_auxiliary_heat_2_delta;
+
 beestat.series.indoor_cool_1_delta = {
-  'name': 'Indoor Cool 1 Δ',
+  'name': 'Cool Δ',
   'color': beestat.series.compressor_cool_1.color
 };
 beestat.series.indoor_cool_1_delta_raw = beestat.series.indoor_cool_1_delta;
 
 beestat.series.indoor_cool_2_delta = {
-  'name': 'Indoor Cool 2 Δ',
+  'name': 'Cool 2 Δ',
   'color': beestat.series.compressor_cool_2.color
 };
 beestat.series.indoor_cool_2_delta_raw = beestat.series.indoor_cool_2_delta;
 
 beestat.series.indoor_resist_delta = {
-  'name': 'Indoor Δ',
+  'name': 'Resist Δ',
   'color': beestat.style.color.gray.dark
 };
 beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;
