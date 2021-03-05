@@ -338,28 +338,6 @@ beestat.component.card.comparison_settings.prototype.get_title_ = function() {
 };
 
 /**
- * Get the subtitle of the card.
- *
- * @return {string} The subtitle of the card.
- */
-beestat.component.card.comparison_settings.prototype.get_subtitle_ = function() {
-  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
-  const address = beestat.cache.address[thermostat.address_id];
-
-  let string = 'Thermostat at ';
-
-  if (address.normalized !== null && address.normalized.delivery_line_1 !== undefined) {
-    string += address.normalized.delivery_line_1;
-  } else if (address.normalized !== null && address.normalized.address1 !== undefined) {
-    string += address.normalized.address1;
-  } else {
-    string += 'unknown address';
-  }
-
-  return string;
-};
-
-/**
  * Decorate the menu.
  *
  * @param {rocket.Elements} parent
