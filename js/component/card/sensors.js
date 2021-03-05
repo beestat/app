@@ -132,9 +132,9 @@ beestat.component.card.sensors.prototype.decorate_sensor_ = function(parent, sen
   }
 
   if (sensor.occupancy === true) {
-    (new beestat.component.icon('eye')).render(td_icons);
+    (new beestat.component.icon('eye', 'Occupied')).render(td_icons);
   } else {
-    (new beestat.component.icon('eye_off'))
+    (new beestat.component.icon('eye_off', 'Unoccupied'))
       .set_color(beestat.style.color.bluegray.light)
       .render(td_icons);
   }
@@ -145,9 +145,9 @@ beestat.component.card.sensors.prototype.decorate_sensor_ = function(parent, sen
   }));
 
   if (sensor.in_use === true) {
-    (new beestat.component.icon('check')).render(td_icons);
+    (new beestat.component.icon('check', 'In use')).render(td_icons);
   } else {
-    (new beestat.component.icon('check'))
+    (new beestat.component.icon('check', 'Not in use'))
       .set_color(beestat.style.color.bluegray.light)
       .render(td_icons);
   }

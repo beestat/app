@@ -1,5 +1,6 @@
-beestat.component.icon = function(icon_name) {
+beestat.component.icon = function(icon_name, tooltip) {
   this.icon_name_ = icon_name;
+  this.tooltip_ = tooltip;
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.icon, beestat.component);
@@ -23,6 +24,11 @@ beestat.component.icon.prototype.decorate_ = function(parent) {
       'icon',
       this.icon_name_
     ]);
+
+  if (this.tooltip_ !== undefined) {
+    icon.setAttribute('title', this.tooltip_);
+  }
+
   container.appendChild(icon);
 
   if (this.size_ !== undefined && this.size_ !== 24) {

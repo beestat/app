@@ -86,7 +86,7 @@ beestat.component.card.system.prototype.decorate_circle_ = function(parent) {
     });
   circle.appendChild(humidity_container);
 
-  (new beestat.component.icon('water_percent')
+  (new beestat.component.icon('water_percent', 'Humidity')
     .set_size(24)
   ).render(humidity_container);
 
@@ -154,7 +154,7 @@ beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
     });
   circle.appendChild(humidity_container);
 
-  (new beestat.component.icon('water_percent')
+  (new beestat.component.icon('water_percent', 'Humidity')
     .set_size(16)
   ).render(humidity_container);
 
@@ -175,20 +175,20 @@ beestat.component.card.system.prototype.decorate_weather_ = function(parent) {
 beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  var render_icon = function(icon_parent, icon, color, text) {
-    (new beestat.component.icon(icon)
+  var render_icon = function(icon_parent, icon, color, subscript, tooltip) {
+    (new beestat.component.icon(icon, tooltip)
       .set_size(24)
       .set_color(color)
     ).render(icon_parent);
 
-    if (text !== undefined) {
+    if (subscript !== undefined) {
       var sub = $.createElement('sub')
         .style({
           'font-size': '10px',
           'font-weight': beestat.style.font_weight.bold,
           'color': color
         })
-        .innerHTML(text);
+        .innerHTML(subscript);
       icon_parent.appendChild(sub);
     } else {
       // A little spacer to help things look less uneven.
@@ -198,64 +198,71 @@ beestat.component.card.system.prototype.decorate_equipment_ = function(parent) {
   };
 
   if (thermostat.running_equipment.length === 0) {
-    render_icon(parent, 'cancel', beestat.style.color.gray.base, 'none');
+    render_icon(parent, 'cancel', beestat.style.color.gray.base, 'none', 'No equipment running');
   } else {
     thermostat.running_equipment.forEach(function(equipment) {
       let subscript;
+      let tooltip;
       switch (equipment) {
       case 'fan':
-        render_icon(parent, 'fan', beestat.style.color.gray.light);
+        render_icon(parent, 'fan', beestat.style.color.gray.light, undefined, 'Fan');
         break;
       case 'cool_1':
+        tooltip = 'Cool';
         if (thermostat.system_type.detected.cool.stages > 1) {
           subscript = '1';
+          tooltip += ' 1';
         } else {
           subscript = undefined;
         }
-        render_icon(parent, 'snowflake', beestat.style.color.blue.light, subscript);
+        render_icon(parent, 'snowflake', beestat.style.color.blue.light, subscript, tooltip);
         break;
       case 'cool_2':
-        render_icon(parent, 'snowflake', beestat.style.color.blue.light, '2');
+        render_icon(parent, 'snowflake', beestat.style.color.blue.light, '2', 'Cool 2');
         break;
       case 'heat_1':
+        tooltip = 'Heat';
         if (thermostat.system_type.detected.heat.stages > 1) {
           subscript = '1';
+          tooltip += ' 1';
         } else {
           subscript = undefined;
         }
-        render_icon(parent, 'fire', beestat.style.color.orange.base, subscript);
+        render_icon(parent, 'fire', beestat.style.color.orange.base, subscript, tooltip);
         break;
       case 'heat_2':
-        render_icon(parent, 'fire', beestat.style.color.orange.base, '2');
+        render_icon(parent, 'fire', beestat.style.color.orange.base, '2', 'Heat 2');
         break;
       case 'heat_3':
-        render_icon(parent, 'fire', beestat.style.color.orange.base, '3');
+        render_icon(parent, 'fire', beestat.style.color.orange.base, '3', 'Heat 3');
         break;
       case 'auxiliary_heat_1':
+        tooltip = 'Aux heat';
         if (thermostat.system_type.detected.auxiliary_heat.stages > 1) {
           subscript = '1';
+          tooltip += ' 1';
         } else {
           subscript = undefined;
         }
-        render_icon(parent, 'fire', beestat.style.color.red.base, subscript);
+        render_icon(parent, 'fire', beestat.style.color.red.base, subscript, tooltip);
         break;
       case 'auxiliary_heat_2':
-        render_icon(parent, 'fire', beestat.style.color.red.base, '2');
+        render_icon(parent, 'fire', beestat.style.color.red.base, '2', 'Aux heat 2');
         break;
       case 'auxiliary_heat_3':
-        render_icon(parent, 'fire', beestat.style.color.red.base, '3');
+        render_icon(parent, 'fire', beestat.style.color.red.base, '3', 'Aux heat 3');
         break;
       case 'humidifier':
-        render_icon(parent, 'water_percent', beestat.style.color.gray.base, '');
+        render_icon(parent, 'water_percent', beestat.style.color.gray.base, '', 'Humidifier');
         break;
       case 'dehumidifier':
-        render_icon(parent, 'water_off', beestat.style.color.gray.base, '');
+        render_icon(parent, 'water_off', beestat.style.color.gray.base, '', 'Dehumidifier');
         break;
       case 'ventilator':
-        render_icon(parent, 'air_purifier', beestat.style.color.gray.base, 'v');
+        render_icon(parent, 'air_purifier', beestat.style.color.gray.base, 'v', 'Ventilator');
         break;
       case 'economizer':
-        render_icon(parent, 'cash', beestat.style.color.gray.base, '');
+        render_icon(parent, 'cash', beestat.style.color.gray.base, '', 'Economizer');
         break;
       }
     });
