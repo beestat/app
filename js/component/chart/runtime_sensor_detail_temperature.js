@@ -238,6 +238,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       var value;
       var group;
       var color;
+      var point_value;
 
       if (
         point.series_code.includes('calendar_event')
@@ -252,12 +253,14 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
         color = point.color;
         if (point.value === undefined) {
           value = '-';
+          point_value = 0;
         } else {
           value = beestat.temperature({
             'temperature': point.value,
             'convert': false,
             'units': true
           });
+          point_value = point.value;
         }
 
         var occupancy_key = point.series_code.replace('temperature', 'occupancy');
@@ -269,8 +272,14 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       groups[group].push({
         'label': label,
         'value': value,
-        'color': color
+        'color': color,
+        'point_value': point_value
       });
+    });
+
+    // Sort sensor data by temperature descending.
+    groups.data.sort(function(a, b) {
+      return b.point_value - a.point_value;
     });
 
     if (
