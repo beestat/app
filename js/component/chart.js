@@ -573,7 +573,9 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
   var tooltip = $.createElement('div')
     .style({
       'background-color': beestat.style.color.bluegray.dark,
-      'padding': beestat.style.size.gutter / 2
+      'padding': beestat.style.size.gutter / 2,
+      'border-radius': beestat.style.size.border_radius,
+      'box-shadow': '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
     });
 
   var title_div = $.createElement('div')

@@ -51,7 +51,8 @@ beestat.component.card.sensors.prototype.decorate_contents_ = function(parent) {
       .style({
         'display': 'grid',
         'grid-template-columns': 'repeat(auto-fit, minmax(160px, 1fr))',
-        'margin': '0 0 ' + beestat.style.size.gutter + 'px -' + beestat.style.size.gutter + 'px'
+        'margin': '0 0 ' + beestat.style.size.gutter + 'px -' + beestat.style.size.gutter + 'px',
+        'border-radius': beestat.style.size.border_radius
       });
     parent.appendChild(sensor_container);
 

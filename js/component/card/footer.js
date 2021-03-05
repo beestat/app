@@ -6,6 +6,8 @@ beestat.component.card.footer = function() {
 };
 beestat.extend(beestat.component.card.footer, beestat.component.card);
 
+beestat.component.card.footer.prototype.box_shadow_ = false;
+
 beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
   parent.style('background', beestat.style.color.bluegray.light);
 

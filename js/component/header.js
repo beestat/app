@@ -50,7 +50,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     'display': 'flex',
     'align-items': 'center',
     'flex-grow': '1',
-    'margin': '-' + gutter + 'px 0 0 -' + gutter + 'px'
+    'margin': '-' + (gutter / 2) + 'px 0 ' + (gutter / 4) + 'px -' + gutter + 'px'
   });
   parent.appendChild(row);
 

@@ -6,6 +6,8 @@ beestat.component.card = function() {
 };
 beestat.extend(beestat.component.card, beestat.component);
 
+beestat.component.card.prototype.box_shadow_ = true;
+
 /**
  * [get_class_name_recursive_ description]
  *
@@ -47,12 +49,17 @@ beestat.component.card.prototype.decorate_ = function(parent) {
 
   this.contents_ = $.createElement('div')
     .style({
-      'padding': (beestat.style.size.gutter),
+      'padding': beestat.style.size.gutter,
       'height': '100%',
-      'background': beestat.style.color.bluegray.base
+      'background': beestat.style.color.bluegray.base,
+      'border-radius': beestat.style.size.border_radius
     });
-  parent.appendChild(this.contents_);
 
+  if (this.box_shadow_ === true) {
+    this.contents_.style('box-shadow', '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)');
+  }
+
+  parent.appendChild(this.contents_);
   this.decorate_back_(this.contents_);
 
   var top_right = $.createElement('div').style('float', 'right');

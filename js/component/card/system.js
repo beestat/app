@@ -349,7 +349,8 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
     'background': beestat.style.color.bluegray.dark,
     'padding': beestat.style.size.gutter / 2,
     'text-align': 'center',
-    'margin-top': beestat.style.size.gutter
+    'margin-top': beestat.style.size.gutter,
+    'border-radius': beestat.style.size.border_radius
   });
   parent.appendChild(container);
 
