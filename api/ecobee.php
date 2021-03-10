@@ -229,6 +229,14 @@ class ecobee extends external_api {
       $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
       throw new cora\exception('Ecobee access was revoked by user.', 10500, false, null, false);
     }
+    else if (isset($response['status']) === true && $response['status']['code'] === 2) {
+      // Not authorized.
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response, true);
+      }
+      $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
+      throw new cora\exception('Ecobee access was revoked by user.', 10508, false, null, false);
+    }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
       // Any other error
       if($this::$log_mysql !== 'all') {
