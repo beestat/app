@@ -339,59 +339,71 @@ class runtime extends cora\api {
      */
     $begin = floor($begin / 300) * 300;
     $end = floor($end / 300) * 300;
-
     $begin_interval = $this->get_interval($begin);
     $end_interval = $this->get_interval($end);
 
     $begin_date = date('Y-m-d', $begin);
     $end_date = date('Y-m-d', $end);
 
-    $response = $this->api(
-      'ecobee',
-      'ecobee_api',
-      [
-        'method' => 'GET',
-        'endpoint' => 'runtimeReport',
-        'arguments' => [
-          'body' => json_encode([
-            'selection' => [
-              'selectionType' => 'thermostats',
-              'selectionMatch' => $ecobee_thermostat['identifier']
-            ],
-            'startDate' => $begin_date,
-            'endDate' => $end_date,
-            'startInterval' => $begin_interval,
-            'endInterval' => $end_interval,
-            'columns' => implode(
-              ',',
-              [
-                'compCool1',         // compressor_1
-                'compCool2',         // compressor_2
-                'compHeat1',         // compressor_1
-                'compHeat2',         // compressor_2
-                'auxHeat1',          // auxiliary_heat_1
-                'auxHeat2',          // auxiliary_heat_2
-                'fan',               // fan
-                'humidifier',        // accessory
-                'dehumidifier',      // accessory
-                'ventilator',        // accessory
-                'economizer',        // accessory
-                'hvacMode',          // system_mode
-                'zoneAveTemp',       // indoor_temperature
-                'zoneHumidity',      // indoor_humidity
-                'outdoorTemp',       // outdoor_temperature
-                'outdoorHumidity',   // outdoor_humidity
-                'zoneCalendarEvent', // event_runtime_thermostat_text_id
-                'zoneClimate',       // climate_runtime_thermostat_text_id
-                'zoneCoolTemp',      // setpoint_cool
-                'zoneHeatTemp'       // setpoint_heat
-              ]
-            ),
-            'includeSensors' => true
-          ])
+    try {
+      $response = $this->api(
+        'ecobee',
+        'ecobee_api',
+        [
+          'method' => 'GET',
+          'endpoint' => 'runtimeReport',
+          'arguments' => [
+            'body' => json_encode([
+              'selection' => [
+                'selectionType' => 'thermostats',
+                'selectionMatch' => $ecobee_thermostat['identifier']
+              ],
+              'startDate' => $begin_date,
+              'endDate' => $end_date,
+              'startInterval' => $begin_interval,
+              'endInterval' => $end_interval,
+              'columns' => implode(
+                ',',
+                [
+                  'compCool1',         // compressor_1
+                  'compCool2',         // compressor_2
+                  'compHeat1',         // compressor_1
+                  'compHeat2',         // compressor_2
+                  'auxHeat1',          // auxiliary_heat_1
+                  'auxHeat2',          // auxiliary_heat_2
+                  'fan',               // fan
+                  'humidifier',        // accessory
+                  'dehumidifier',      // accessory
+                  'ventilator',        // accessory
+                  'economizer',        // accessory
+                  'hvacMode',          // system_mode
+                  'zoneAveTemp',       // indoor_temperature
+                  'zoneHumidity',      // indoor_humidity
+                  'outdoorTemp',       // outdoor_temperature
+                  'outdoorHumidity',   // outdoor_humidity
+                  'zoneCalendarEvent', // event_runtime_thermostat_text_id
+                  'zoneClimate',       // climate_runtime_thermostat_text_id
+                  'zoneCoolTemp',      // setpoint_cool
+                  'zoneHeatTemp'       // setpoint_heat
+                ]
+              ),
+              'includeSensors' => true
+            ])
+          ]
         ]
-      ]
-    );
+      );
+    } catch (cora\exception $e) {
+      if($e->getCode() === 10509) {
+        // Try the sync again with times that exist. :)
+        return $this->sync_(
+          $thermostat_id,
+          strtotime('-1 hour', $begin),
+          strtotime('+1 hour', $end)
+        );
+      } else {
+        throw $e;
+      }
+    }
 
     $return = $this->sync_runtime_thermostat($thermostat, $response);
     $this->sync_runtime_sensor($thermostat, $response);

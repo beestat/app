@@ -237,6 +237,19 @@ class ecobee extends external_api {
       $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
       throw new cora\exception('Ecobee access was revoked by user.', 10508, false, null, false);
     }
+    else if (isset($response['status']) === true && $response['status']['code'] === 3) {
+      if (
+        isset($response['status']['message']) === true &&
+        stripos($response['status']['message'], 'Illegal instant due to time zone offset transition') !== false
+      ) {
+        // Processing error. Illegal instant due to time zone offset transition (daylight savings time 'gap'): ...
+        // Happens when you try to use a time that doesn't exist due to daylight savings spring forward
+        if($this::$log_mysql !== 'all') {
+          $this->log_mysql($curl_response, true);
+        }
+        throw new cora\exception('Illegal instant due to time zone offset transition.', 10509, false, null, false);
+      }
+    }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
       // Any other error
       if($this::$log_mysql !== 'all') {
