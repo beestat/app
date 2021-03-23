@@ -945,12 +945,8 @@ class ecobee_thermostat extends cora\crud {
 
   /**
    * Get program. This is just a clone of the ecobee_thermostat program with a
-   * slight modification to the temperature values. First, divide by 10 since
-   * this data is returned directly by the API. Second, round. This is weird
-   * to do, but as an example one of my comfort settings said "74" in the
-   * ecobee GUI but "73.5" in the API. After changing it in the GUI the
-   * fractional amount was removed. I assume this is an old ecobee bug but it
-   * affects like 10% of thermostats in my database.
+   * slight modification to the temperature values. Divide by 10 since this
+   * data is returned directly by the API.
    *
    * @param array $thermostat
    * @param array $ecobee_thermostat
@@ -961,8 +957,8 @@ class ecobee_thermostat extends cora\crud {
     $program = $ecobee_thermostat['program'];
     if(isset($program['climates']) === true) {
       foreach($program['climates'] as &$climate) {
-        $climate['coolTemp'] = round($climate['coolTemp'] / 10);
-        $climate['heatTemp'] = round($climate['heatTemp'] / 10);
+        $climate['coolTemp'] = $climate['coolTemp'] / 10;
+        $climate['heatTemp'] = $climate['heatTemp'] / 10;
       }
     }
 
