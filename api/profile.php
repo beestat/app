@@ -951,8 +951,10 @@ class profile extends cora\api {
         $system_type_heat !== null &&
         $system_type_heat !== 'none'
       ) {
-        $profile['runtime_per_degree_day']['heat_1'] = round($profile['runtime']['heat_1'] / $profile['degree_days']['heat'], 2);
-        if($heat_stages === 2) {
+        if($profile['runtime']['heat_1'] > 0) {
+          $profile['runtime_per_degree_day']['heat_1'] = round($profile['runtime']['heat_1'] / $profile['degree_days']['heat'], 2);
+        }
+        if($profile['runtime']['heat_2'] > 0) {
           $profile['runtime_per_degree_day']['heat_2'] = round($profile['runtime']['heat_2'] / $profile['degree_days']['heat'], 2);
         }
       }
@@ -966,8 +968,10 @@ class profile extends cora\api {
         $system_type_cool !== null &&
         $system_type_cool !== 'none'
       ) {
-        $profile['runtime_per_degree_day']['cool_1'] = round($profile['runtime']['cool_1'] / $profile['degree_days']['cool'], 2);
-        if($cool_stages === 2) {
+        if($profile['runtime']['cool_1'] > 0) {
+          $profile['runtime_per_degree_day']['cool_1'] = round($profile['runtime']['cool_1'] / $profile['degree_days']['cool'], 2);
+        }
+        if($profile['runtime']['cool_2'] > 0) {
           $profile['runtime_per_degree_day']['cool_2'] = round($profile['runtime']['cool_2'] / $profile['degree_days']['cool'], 2);
         }
       }
