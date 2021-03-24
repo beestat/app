@@ -271,8 +271,8 @@ class profile extends cora\api {
 
           // Normalizing heating and cooling a bit.
           if(
-            $thermostat['system_type']['detected']['heat']['equipment'] === 'compressor' ||
-            $thermostat['system_type']['detected']['heat']['equipment'] === 'geothermal'
+            $system_type_heat === 'compressor' ||
+            $system_type_heat === 'geothermal'
           ) {
             if($row['compressor_mode'] === 'heat') {
               $row['heat_1'] = $row['compressor_1'];
