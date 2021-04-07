@@ -375,7 +375,7 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
       }) +
       ' / h)';
 
-    if (degrees_per_hour < 0.05) {
+    if (Math.abs(degrees_per_hour) < 0.05) {
       // If the degrees would display as 0.0/h, go for "never" as the time.
       text = 'Never';
     } else {
@@ -390,7 +390,7 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
         break;
       case 'cool':
         degrees_to_go = indoor_temperature - thermostat.setpoint_cool;
-        hours_to_go = degrees_to_go / degrees_per_hour;
+        hours_to_go = degrees_to_go / degrees_per_hour * -1;
         text = beestat.time(hours_to_go * 60 * 60)
           .replace(/^0h /, '');
         break;
