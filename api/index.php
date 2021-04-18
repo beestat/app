@@ -1,7 +1,5 @@
 <?php
 
-die('Down for some brief maintenance. Back soon!');
-
 /**
  * Entry point for the API. This sets up cora, the error/exception handlers,
  * and then sends the request off for processing. All requests should start
