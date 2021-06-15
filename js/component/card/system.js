@@ -31,9 +31,7 @@ beestat.component.card.system.prototype.decorate_contents_ = function(parent) {
   this.decorate_equipment_(parent);
   this.decorate_climate_(parent);
 
-  if (beestat.user.has_early_access() === true) {
-    this.decorate_time_to_temperature_(parent);
-  }
+  this.decorate_time_to_temperature_(parent);
 };
 
 /**
