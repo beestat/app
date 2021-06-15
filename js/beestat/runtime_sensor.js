@@ -68,7 +68,7 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
       range.dynamic,
       'day'
     );
-    end_m = moment().subtract(1, 'hour');
+    end_m = moment();
   } else {
     begin_m = moment(
       range.static_begin + ' 00:00:00'

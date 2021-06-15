@@ -16,7 +16,7 @@ class runtime extends cora\api {
   ];
 
   public static $cache = [
-    'sync' => 900 // 15 Minutes
+    'sync' => 300 // 5 Minutes
   ];
 
   /**
