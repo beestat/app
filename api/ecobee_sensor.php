@@ -214,8 +214,8 @@ class ecobee_sensor extends cora\crud {
             case 'temperature':
               if(
                 is_numeric($capability['value']) === true &&
-                $capability['value'] <= 999.99 &&
-                $capability['value'] >= -999.99
+                ($capability['value'] / 10) <= 200 &&
+                ($capability['value'] / 10) >= -200
               ) {
                 $attributes['temperature'] = $capability['value'] / 10;
               } else {
