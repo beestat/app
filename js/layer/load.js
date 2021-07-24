@@ -238,10 +238,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       beestat.setting('first_run', false);
       (new beestat.component.modal.newsletter()).render();
     } else if (
-      last_read_announcement_id === undefined ||
+      beestat.cache.announcement.length > 0 &&
       (
-        most_recent_important_announcement_id !== undefined &&
-        last_read_announcement_id < most_recent_important_announcement_id
+        last_read_announcement_id === undefined ||
+        (
+          most_recent_important_announcement_id !== undefined &&
+          last_read_announcement_id < most_recent_important_announcement_id
+        )
       )
     ) {
       (new beestat.component.modal.announcements()).render();
