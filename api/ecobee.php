@@ -248,6 +248,16 @@ class ecobee extends external_api {
           $this->log_mysql($curl_response, true);
         }
         throw new cora\exception('Illegal instant due to time zone offset transition.', 10509, false, null, false);
+      } else if (
+        isset($response['status']['message']) === true &&
+        stripos($response['status']['message'], 'User cannot access thermostat with id') !== false
+      ) {
+        // Processing error. User cannot access thermostat with id ...
+        // Not sure why this happens
+        if($this::$log_mysql !== 'all') {
+          $this->log_mysql($curl_response, true);
+        }
+        throw new cora\exception('User cannot access thermostat.', 10510, false, null, false);
       }
     }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
