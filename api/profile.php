@@ -323,11 +323,20 @@ class profile extends cora\api {
         }
       }
 
+
       if(
         isset($runtime[$current_timestamp]) === true && // Had data for at least one thermostat
         isset($runtime[$current_timestamp][$thermostat_id]) === true // Had data for the requested thermostat
       ) {
         $current_runtime = $runtime[$current_timestamp][$thermostat_id];
+
+        // List of thermostat_ids that have data for this timestamp.
+        $relevant_thermostat_ids = [];
+        foreach($group_thermostats as $possible_relevant_thermostat) {
+          if(strtotime($possible_relevant_thermostat['data_begin']) <= $current_timestamp) {
+            $relevant_thermostat_ids[] = $possible_relevant_thermostat['thermostat_id'];
+          }
+        }
 
         if($debug === true) {
           $debug_data = [
@@ -357,7 +366,7 @@ class profile extends cora\api {
         $most_off = true;
         $all_off = true;
         if(
-          count($runtime[$current_timestamp]) < count($thermostat_ids)
+          count($runtime[$current_timestamp]) < count($relevant_thermostat_ids)
         ) {
           // If I didn't get data at this timestamp for all thermostats in the
           // group, all off can't be true.
