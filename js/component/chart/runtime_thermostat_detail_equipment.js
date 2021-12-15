@@ -1,5 +1,5 @@
 /**
- * Runtime sensor detail chart.
+ * Runtime thermostat detail equipment chart.
  *
  * @param {object} data The chart data.
  */

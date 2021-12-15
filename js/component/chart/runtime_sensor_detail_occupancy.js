@@ -1,5 +1,5 @@
 /**
- * Runtime sensor detail chart.
+ * Runtime sensor detail occupancy chart.
  *
  * @param {object} data The chart data.
  */
