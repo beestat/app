@@ -37,6 +37,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/runtime_sensor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/sensor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/requestor.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/touch.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
