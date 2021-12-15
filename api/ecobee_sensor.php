@@ -35,6 +35,17 @@ class ecobee_sensor extends cora\crud {
         ) === true
       ) {
         $return[$ecobee_sensor['ecobee_sensor_id']] = $ecobee_sensor;
+      } else if (
+        in_array(
+          $ecobee_sensor['type'],
+          ['monitor_sensor', 'control_sensor']
+        ) === true
+      ) {
+        foreach($ecobee_sensor['capability'] as $capability) {
+          if($capability['type'] === 'temperature') {
+            $return[$ecobee_sensor['ecobee_sensor_id']] = $ecobee_sensor;
+          }
+        }
       }
     }
 

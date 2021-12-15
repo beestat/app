@@ -755,6 +755,9 @@ class runtime extends cora\api {
            * has to be accounted for.
            *
            * For now I am simply ignoring this situation.
+           *
+           * Update 12/14/2021: At the very least this affects monitor_sensor
+           * and control_sensor. Both are somewhat uncommon.
            */
           if (isset($sensors_by_identifier[$sensor_identifier]) === true) {
             $sensor = $sensors_by_identifier[$sensor_identifier];
@@ -779,6 +782,38 @@ class runtime extends cora\api {
                 $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
               }
             }
+          } else {
+            // If the first attempt to identify the sensor failed, try again.
+            // This is for monitor_sensor and control_sensor.
+            $sensor_identifier = $key;
+            $capability_identifier = '';
+
+            if (isset($sensors_by_identifier[$sensor_identifier]) === true) {
+              $sensor = $sensors_by_identifier[$sensor_identifier];
+              $sensor_id = $sensors_by_identifier[$sensor_identifier]['sensor_id'];
+
+              if (isset($datas[$sensor['sensor_id']]) === false) {
+                $datas[$sensor['sensor_id']] = [
+                  'sensor_id' => $sensor['sensor_id'],
+                  'timestamp' => get_utc_datetime(
+                    $columns['date'] . ' ' . $columns['time'],
+                    $thermostat['time_zone']
+                  )
+                ];
+              }
+
+              foreach($sensor['capability'] as $capability) {
+                if(
+                  $capability['id'] == $capability_identifier &&
+                  in_array($capability['type'], ['temperature', 'occupancy']) === true &&
+                  $value !== null
+                ) {
+                  $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+                }
+              }
+            }
+
+
           }
         }
 

@@ -132,12 +132,18 @@ beestat.component.card.sensors.prototype.decorate_sensor_ = function(parent, sen
       .render(td_above_below);
   }
 
-  if (sensor.occupancy === true) {
-    (new beestat.component.icon('eye', 'Occupied')).render(td_icons);
-  } else {
-    (new beestat.component.icon('eye_off', 'Unoccupied'))
-      .set_color(beestat.style.color.bluegray.light)
-      .render(td_icons);
+  if (
+    sensor.type !== 'monitor_sensor' &&
+    sensor.type !== 'control_sensor'
+  ) {
+    // Occupancy is not supported for these legacy sensor types.
+    if (sensor.occupancy === true) {
+      (new beestat.component.icon('eye', 'Occupied')).render(td_icons);
+    } else {
+      (new beestat.component.icon('eye_off', 'Unoccupied'))
+        .set_color(beestat.style.color.bluegray.light)
+        .render(td_icons);
+    }
   }
 
   td_icons.appendChild($.createElement('span').style({

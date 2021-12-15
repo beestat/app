@@ -39,6 +39,28 @@ class sensor extends cora\crud {
         ) === true
       ) {
         $return[$sensor['sensor_id']] = $sensor;
+      } else if (
+        in_array(
+          $sensor['type'],
+          ['monitor_sensor', 'control_sensor']
+        ) === true
+      ) {
+        /**
+         * Support for these sensor types is rudimentary. It's enough to get
+         * temperature but some of these legacy sensors split a single sensor
+         * up into multiple sensors. For example, thermostat temperature,
+         * humidity, and motion are three different sensors. Newer sensors
+         * show up as a single sensor with more than one capability. To make
+         * sense of this I would have to do a good deal of merging etc in the
+         * GUI.
+         *
+         * I don't really think it's worth the clutter or the time investment.
+         */
+        foreach($sensor['capability'] as $capability) {
+          if($capability['type'] === 'temperature') {
+            $return[$sensor['sensor_id']] = $sensor;
+          }
+        }
       }
     }
 
