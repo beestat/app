@@ -378,10 +378,18 @@ class profile extends cora\api {
           $current_runtime['outdoor_temperature'] = round($current_runtime['outdoor_temperature'] / $smoothing) * $smoothing;
         }
 
-        // If the system mode was heat or cool, log the setpoint.
-        if($current_runtime['system_mode'] === 'heat') {
+        // Log the setpoint.
+        if(
+          $current_runtime['system_mode'] === 'heat' ||
+          $current_runtime['system_mode'] === 'auto'
+        ) {
           $setpoints['heat'][] = $current_runtime['setpoint_heat'];
-        } else if($current_runtime['system_mode'] === 'cool') {
+        }
+
+        if(
+          $current_runtime['system_mode'] === 'cool' ||
+          $current_runtime['system_mode'] === 'auto'
+        ) {
           $setpoints['cool'][] = $current_runtime['setpoint_cool'];
         }
 
