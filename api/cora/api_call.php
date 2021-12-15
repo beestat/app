@@ -38,6 +38,27 @@ final class api_call {
   private $alias;
 
   /**
+   * Bypass the cache read.
+   *
+   * @var boolean
+   */
+  private $bypass_cache_read;
+
+  /**
+   * Bypass the cache write.
+   *
+   * @var boolean
+   */
+  private $bypass_cache_write;
+
+  /**
+   * Clear the cache for this API call, don't actually run the call.
+   *
+   * @var boolean
+   */
+  private $clear_cache;
+
+  /**
    * The current auto-alias. If an alias is not provided, an auto-alias is
    * assigned.
    *
@@ -87,6 +108,29 @@ final class api_call {
     } else {
       $this->alias = $this->get_auto_alias();
     }
+
+    /**
+     * Note the following three parameters will come in as strings when not in
+     * a batch and boolean values when in a batch because of the JSON. Cast to
+     * boolean to support various representations.
+     */
+    if(isset($api_call['bypass_cache_read']) === true) {
+      $this->bypass_cache_read = ((bool) $api_call['bypass_cache_read'] === true);
+    } else {
+      $this->bypass_cache_read = false;
+    }
+
+    if(isset($api_call['bypass_cache_write']) === true) {
+      $this->bypass_cache_write = ((bool) $api_call['bypass_cache_write'] === true);
+    } else {
+      $this->bypass_cache_write = false;
+    }
+
+    if(isset($api_call['clear_cache']) === true) {
+      $this->clear_cache = ((bool) $api_call['clear_cache'] === true);
+    } else {
+      $this->clear_cache = false;
+    }
   }
 
   /**
@@ -103,31 +147,37 @@ final class api_call {
     }
 
     // Caching! If this API call is configured for caching,
-    // $cache_config = $this->setting->get('cache');
     if( // Is cacheable
       isset($this->resource::$cache) === true &&
       isset($this->resource::$cache[$this->method]) === true
     ) {
       $api_cache_instance = new api_cache();
-      $api_cache = $api_cache_instance->retrieve($this);
-
-      if($api_cache !== null) {
-        // If there was a cache entry available, use that.
-        $this->response = $api_cache['response_data'];
-        $this->cached_until = date('Y-m-d H:i:s', strtotime($api_cache['expires_at']));
+      if($this->clear_cache === true) {
+        $this->response = $api_cache_instance->clear_cache($this);
+        $this->cached_until = date('Y-m-d H:i:s', strtotime('1970-01-01 00:00:01'));
       } else {
-        // Else just run the API call, then cache it.
-        $this->response = call_user_func_array(
-          [$resource_instance, $this->method],
-          $this->arguments
-        );
+        $api_cache = $api_cache_instance->retrieve($this);
 
-        $api_cache = $api_cache_instance->cache(
-          $this,
-          $this->response,
-          $this->resource::$cache[$this->method]
-        );
-        $this->cached_until = date('Y-m-d H:i:s', strtotime($api_cache['expires_at']));
+        if($api_cache !== null && $this->bypass_cache_read === false) {
+          // If there was a cache entry available, use that.
+          $this->response = $api_cache['response_data'];
+          $this->cached_until = date('Y-m-d H:i:s', strtotime($api_cache['expires_at']));
+        } else {
+          // Else just run the API call, then cache it.
+          $this->response = call_user_func_array(
+            [$resource_instance, $this->method],
+            $this->arguments
+          );
+
+          if($this->bypass_cache_write === false) {
+            $api_cache = $api_cache_instance->cache(
+              $this,
+              $this->response,
+              $this->resource::$cache[$this->method]
+            );
+            $this->cached_until = date('Y-m-d H:i:s', strtotime($api_cache['expires_at']));
+          }
+        }
       }
     }
     else { // Not cacheable

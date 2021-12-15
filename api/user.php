@@ -166,8 +166,9 @@ class user extends cora\crud {
       $settings = $user['settings'];
     }
 
-    $settings[$key] = $value;
+    $settings = $this->update_setting_($settings, $key, $value);
 
+    // Disallow setting changes in the demo.
     if($this->setting->is_demo() === false) {
       $this->update(
         [
@@ -178,6 +179,72 @@ class user extends cora\crud {
     }
 
     return $settings;
+  }
+
+  /**
+   * Recursively update the setting array.
+   *
+   * @param array $settings Settings array
+   * @param string $key Key to update. Dots indicate a path.
+   * @param mixed $value Value to set.
+   *
+   * @return array Updated settings array.
+   */
+  private function update_setting_($settings, $key, $value) {
+    $path = explode('.', $key);
+    if(count($path) > 1) {
+      $this_key = array_shift($path);
+      if(isset($settings[$this_key]) === false) {
+        $settings[$this_key] = [];
+      }
+      $settings[$this_key] = $this->update_setting_(
+        $settings[$this_key],
+        implode('.', $path),
+        $value
+      );
+    } else {
+      $settings[$key] = $value;
+    }
+
+    return $settings;
+  }
+
+  /**
+   * Get a specific setting.
+   *
+   * @param string $key The setting to get. Supports dotted paths.
+   *
+   * @return mixed The setting. Null if not set.
+   */
+  public function get_setting($key) {
+    $user = $this->get($this->session->get_user_id());
+    return $this->get_setting_($user['settings'], $key);
+  }
+
+  /**
+   * Recursive helper function for getting a setting.
+   *
+   * @param array $settings Settings array
+   * @param string $key The key of the setting to get.
+   *
+   * @return mixed The setting. Null if not set.
+   */
+  private function get_setting_($settings, $key) {
+    $path = explode('.', $key);
+    if(count($path) > 1) {
+      $this_key = array_shift($path);
+      if(isset($settings[$this_key]) === true) {
+        return $this->get_setting_($settings[$this_key], implode('.', $path));
+      } else {
+        return null;
+      }
+    } else {
+      if(isset($settings[$key]) === true) {
+        return $settings[$key];
+      } else {
+        return null;
+      }
+    }
   }
 
   /**

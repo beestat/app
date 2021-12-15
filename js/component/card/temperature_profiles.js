@@ -165,6 +165,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
               parseFloat(x_fixed),
               profile.deltas[x_fixed]
             ]);
+
             y_min = Math.min(y_min, profile.deltas[x_fixed]);
             y_max = Math.max(y_max, profile.deltas[x_fixed]);
           }

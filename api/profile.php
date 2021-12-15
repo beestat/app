@@ -114,14 +114,18 @@ class profile extends cora\api {
      */
     $max_lookahead = 1800; // 30 min
 
+    // Get some stuff
+    $thermostat = $this->api('thermostat', 'get', $thermostat_id);
+
     /**
      * Attempt to ignore the effects of solar heating by only looking at
      * samples when the sun is down.
      */
-    $ignore_solar_heating = false;
-
-    // Get some stuff
-    $thermostat = $this->api('thermostat', 'get', $thermostat_id);
+    $ignore_solar_gain = $this->api(
+      'user',
+      'get_setting',
+      'thermostat.' . $thermostat_id . '.profile.ignore_solar_gain'
+    );
 
     if($thermostat['system_type']['reported']['heat']['equipment'] !== null) {
       $system_type_heat = $thermostat['system_type']['reported']['heat']['equipment'];
@@ -164,6 +168,26 @@ class profile extends cora\api {
         ]
       ]
     );
+
+    // Get latitude/longitude. If that's not possible, disable solar gain
+    // check.
+    if($ignore_solar_gain === true) {
+      if($thermostat['address_id'] === null) {
+        $ignore_solar_gain = false;
+      } else {
+        $address = $this->api('address', 'get', $thermostat['address_id']);
+        if(
+          isset($address['normalized']['metadata']) === false ||
+          isset($address['normalized']['metadata']['latitude']) === false ||
+          isset($address['normalized']['metadata']['longitude']) === false
+        ) {
+          $ignore_solar_gain = false;
+        } else {
+          $latitude = $address['normalized']['metadata']['latitude'];
+          $longitude = $address['normalized']['metadata']['longitude'];
+        }
+      }
+    }
 
     // Get all of the relevant data
     $thermostat_ids = [];
@@ -254,7 +278,6 @@ class profile extends cora\api {
         $degree_days_temperatures = [];
         while($row = $result->fetch_assoc()) {
           $timestamp = strtotime($row['timestamp']);
-          $hour = date('G', $timestamp);
           $date = date('Y-m-d', $timestamp);
 
           // Degree days
@@ -308,12 +331,15 @@ class profile extends cora\api {
           $runtime_seconds['cool_1'] += $row['cool_1'];
           $runtime_seconds['cool_2'] += $row['cool_2'];
 
-          if (
-            $ignore_solar_heating === true &&
-            $hour > 6 &&
-            $hour < 22
-          ) {
-            continue;
+          // Ignore data between sunrise and sunset.
+          if($ignore_solar_gain === true) {
+            $sun_info = date_sun_info($timestamp, $latitude, $longitude);
+            if(
+              $timestamp > $sun_info['sunrise'] &&
+              $timestamp < $sun_info['sunset']
+            ) {
+              continue;
+            }
           }
 
           if (isset($runtime[$timestamp]) === false) {

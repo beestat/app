@@ -20,7 +20,7 @@ beestat.component.input.text = function() {
     });
   });
 
-  beestat.component.apply(this, arguments);
+  beestat.component.input.apply(this, arguments);
 };
 beestat.extend(beestat.component.input.text, beestat.component.input);
 

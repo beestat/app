@@ -1,17 +1,30 @@
 /**
- * Get or set a setting.
+ * Get or set a setting. ESLint Forgive my variable naming sins for the sake
+ * of no-shadow.
  *
- * @param {mixed} key If a string, get/set that specific key. If an object, set all the specified keys in the object.
+ * @param {mixed} argument_1 If a string, get/set that specific key. If an
+ * object, set all the specified keys in the object.
  * @param {mixed} opt_value If a string, set the specified key to this value.
  * @param {mixed} opt_callback Optional callback.
  *
  * @return {mixed} The setting if requesting (undefined if not set), undefined
  * otherwise.
  */
-beestat.setting = function(key, opt_value, opt_callback) {
-  var user = beestat.user.get();
+beestat.setting = function(argument_1, opt_value, opt_callback) {
+  const user = beestat.user.get();
+  if (user.settings === null) {
+    user.settings = {};
+  }
 
-  var defaults = {
+  // TODO Some of these are still strings instead of ints in the database.
+  if (user.settings.thermostat_id !== undefined) {
+    user.settings.thermostat_id = parseInt(
+      user.settings.thermostat_id,
+      10
+    );
+  }
+
+  const defaults = {
     'runtime_thermostat_detail_range_type': 'dynamic',
     'runtime_thermostat_detail_range_static_begin': moment()
       .subtract(3, 'day')
@@ -37,49 +50,113 @@ beestat.setting = function(key, opt_value, opt_callback) {
 
     'temperature_unit': '°F',
 
-    'first_run': true
+    'first_run': true,
+
+    'thermostat.#.profile.ignore_solar_gain': false
   };
 
-  if (user.settings === null) {
-    user.settings = {};
-  }
-
-  /*
-   * TODO This is temporary until I get all the setting data types under
-   * control. Just doing this so other parts of the application can be built out
-   * properly.
-   */
-  if (user.settings.thermostat_id !== undefined) {
-    user.settings.thermostat_id = parseInt(
-      user.settings.thermostat_id,
-      10
-    );
-  }
-
-  if (opt_value === undefined && typeof key !== 'object') {
-    if (user.settings[key] !== undefined) {
-      return user.settings[key];
-    } else if (defaults[key] !== undefined) {
-      return defaults[key];
-    }
-    return undefined;
-  }
-  var settings;
-  if (typeof key === 'object') {
-    settings = key;
+  // Figure out what we're trying to do.
+  let settings;
+  let key;
+  let mode;
+  if (typeof argument_1 === 'object') {
+    settings = argument_1;
   } else {
-    settings = {};
-    settings[key] = opt_value;
+    key = argument_1;
+
+    if (opt_value !== undefined) {
+      settings = {};
+      settings[key] = opt_value;
+    }
+  }
+  mode = (settings !== undefined || opt_value !== undefined) ? 'set' : 'get';
+
+  // Get the requested value.
+  if (mode === 'get') {
+    /**
+     * Get a value nested in an object from a string path.
+     *
+     * @param {object} o The object to search in.
+     * @param {string} p) The path (ex: thermostat.1.profile.ignore_solar_gain)
+     *
+     * @throws {exception} If the path is invalid.
+     * @return {mixed} The value, or undefined if it doesn't exist.
+     */
+    const get_value_from_path = (o, p) => p.split('.').reduce((a, v) => a[v], o);
+
+    /**
+     * Get the default value of a setting.
+     *
+     * @param {string} k The setting to get.
+     *
+     * @return {mixed} The default value, or undefined if there is none.
+     */
+    const get_default_value = function(k) {
+      // Replace any numeric key parts with a # as a placeholder.
+      let old_parts = k.split('.');
+      let new_parts = [];
+      old_parts.forEach(function(part) {
+        if (isNaN(part) === false) {
+          new_parts.push('#');
+        } else {
+          new_parts.push(part);
+        }
+      });
+
+      return defaults[new_parts.join('.')];
+    };
+
+    let value;
+    try {
+      value = get_value_from_path(user.settings, key);
+    } catch (error) {
+      value = undefined;
+    }
+
+    return (value === undefined ? get_default_value(key) : value);
   }
 
-  var api = new beestat.api();
+  // Set the requested value.
+
+  /**
+   * Recursively update the setting object.
+   *
+   * @param {object} user_settings Settings object
+   * @param {string} k Key to update. Dots indicate a path.
+   * @param {mixed} v Value to set
+   *
+   * @return {object} Updated settings object.
+   */
+  const update_setting = function(user_settings, k, v) {
+    let path = k.split('.');
+    if (path.length > 1) {
+      const this_key = path.shift();
+      if (user_settings[this_key] === undefined) {
+        user_settings[this_key] = {};
+      }
+      if (typeof user_settings[this_key] !== 'object') {
+        throw new Error('Tried to set sub-key of non-object setting.');
+      }
+      user_settings[this_key] = update_setting(
+        user_settings[this_key],
+        path.join('.'),
+        v
+      );
+    } else {
+      user_settings[k] = v;
+    }
+
+    return user_settings;
+  };
+
+  const api = new beestat.api();
   api.set_callback(opt_callback);
 
-  var has_calls = false;
+  let has_calls = false;
 
-  for (var k in settings) {
-    if (user.settings[k] !== settings[k]) {
-      user.settings[k] = settings[k];
+  for (let k in settings) {
+    if (beestat.setting(k) !== settings[k]) {
+      user.settings = update_setting(user.settings, k, settings[k]);
 
       beestat.dispatcher.dispatchEvent('setting.' + k);
 
@@ -107,4 +184,6 @@ beestat.setting = function(key, opt_value, opt_callback) {
       opt_callback();
     }
   }
+
+  return undefined;
 };

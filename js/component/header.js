@@ -185,6 +185,13 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   }
 
   menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Settings')
+    .set_icon('cog')
+    .set_callback(function() {
+      (new beestat.layer.settings()).render();
+    }));
+
+  menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')
     .set_icon('exit_to_app')
     .set_callback(function() {

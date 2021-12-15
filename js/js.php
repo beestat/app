@@ -44,6 +44,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/compare.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/analyze.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/settings.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
@@ -64,6 +65,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/system.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/temperature_profiles.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/metrics.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
@@ -95,6 +97,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/newsletter.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;

@@ -218,6 +218,56 @@ a.inverted:active {
 }
 
 
+/**
+ * Inputs
+ */
+input[type=checkbox] {
+  visibility: hidden;
+}
+
+.checkbox {
+  position: relative;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.checkbox label {
+  cursor: pointer;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0;
+  left: 0;
+  border-radius: 4px;
+  box-shadow: inset 0px 1px 1px rgba(0,0,0,0.5), 0px 1px 0px rgba(255, 255, 255, 0.4);
+  background: #37474f; /* bluegray light */
+}
+
+.checkbox label::after {
+  opacity: 0;
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 8px;
+  background: transparent;
+  top: 5px;
+  left: 4px;
+  border: 3px solid #20bf6b;
+  border-top: none;
+  border-right: none;
+  transform: rotate(-45deg);
+  transition: opacity 200ms ease;
+
+}
+
+.checkbox input[type=checkbox]:checked + label:after {
+  opacity: 1;
+}
+
+.checkbox input[type=checkbox]:disabled + label:after {
+  opacity: 0.25;
+}
+
 
 /**
  * This is a stripped down version of https://flexgridlite.elliotdahl.com/
@@ -344,6 +394,7 @@ a.inverted:active {
 .icon.close_network:before { content: "\F015B"; }
 .icon.cloud_question:before { content: "\F0A39"; }
 .icon.code_tags:before { content: "\F0174"; }
+.icon.cog:before { content: "\F0493"; }
 .icon.dots_vertical:before { content: "\F01D9"; }
 .icon.download:before { content: "\F01DA"; }
 .icon.earth:before { content: "\F01E7"; }

@@ -16,7 +16,8 @@ class thermostat extends cora\crud {
       'set_reported_system_types',
       'generate_profile',
       'generate_profiles',
-      'get_metrics'
+      'get_metrics',
+      'update'
     ],
     'public' => []
   ];
@@ -240,7 +241,8 @@ class thermostat extends cora\crud {
   }
 
   /**
-   * Generate a new profile for this thermostat.
+   * Generate a new profile for this thermostat. This is called from the GUI
+   * often but is cached.
    *
    * @param int $thermostat_id
    */

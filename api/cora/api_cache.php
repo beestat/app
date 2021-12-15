@@ -58,6 +58,28 @@ class api_cache extends crud {
   }
 
   /**
+   * Clear the cache for a specific API call.
+   *
+   * @param $api_call The API call to clear the cache for.
+   *
+   * @return mixed The updated cache row or null if it wasn't cached.
+   */
+  public function clear_cache($api_call) {
+    $key = $this->generate_key($api_call);
+    $cache_hits = $this->read(['key' => $key]);
+
+    if(count($cache_hits) > 0) {
+      $cache_hit = $cache_hits[0];
+      $attributes = [];
+      $attributes['expires_at'] = date('Y-m-d H:i:s', strtotime('1970-01-01 00:00:01'));
+      $attributes['api_cache_id'] = $cache_hit['api_cache_id'];
+      return $this->update($attributes);
+    }
+
+    return null;
+  }
+
+  /**
    * Retrieve a cache entry with a matching key that is not expired.
    *
    * @param $api_call The API call to retrieve.

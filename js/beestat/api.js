@@ -114,17 +114,29 @@ beestat.api.prototype.send = function(opt_api_call) {
  * @param {string} method The method.
  * @param {Object=} opt_args Optional arguments.
  * @param {string=} opt_alias Optional alias (required for batch API calls).
+ * @param {boolean=} opt_bypass_cache_read Optional bypass of cache read.
+ * @param {boolean=} opt_bypass_cache_write Optional bypass of cache write.
  *
  * @return {beestat.api} This.
  */
-beestat.api.prototype.add_call = function(resource, method, opt_args, opt_alias) {
+beestat.api.prototype.add_call = function(resource, method, opt_args, opt_alias, opt_bypass_cache_read, opt_bypass_cache_write, opt_clear_cache) {
   var api_call = {
     'resource': resource,
     'method': method,
     'arguments': JSON.stringify(beestat.default_value(opt_args, {}))
   };
+
   if (opt_alias !== undefined) {
     api_call.alias = opt_alias;
+  }
+  if (opt_bypass_cache_read !== undefined) {
+    api_call.bypass_cache_read = opt_bypass_cache_read;
+  }
+  if (opt_bypass_cache_write !== undefined) {
+    api_call.bypass_cache_write = opt_bypass_cache_write;
+  }
+  if (opt_clear_cache !== undefined) {
+    api_call.clear_cache = opt_clear_cache;
   }
 
   this.api_calls_.push(api_call);
@@ -296,7 +308,9 @@ beestat.api.prototype.get_cached_ = function(api_call) {
   var cached = beestat.api.cache[this.get_key_(api_call)];
   if (
     cached !== undefined &&
-    moment().isAfter(cached.until) === false
+    moment().isAfter(cached.until) === false &&
+    api_call.bypass_cache_read !== true &&
+    api_call.clear_cache !== true
   ) {
     return cached;
   }

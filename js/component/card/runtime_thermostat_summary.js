@@ -580,38 +580,6 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
       .set_callback(function() {
         self.chart_.reset_zoom();
       }));
-
-    if (beestat.setting('runtime_thermostat_summary_gap_fill') === true) {
-      menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Disable Gap Fill')
-        .set_icon('basket_unfill')
-        .set_callback(function() {
-          beestat.setting('runtime_thermostat_summary_gap_fill', false);
-        }));
-    } else {
-      menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Enable Gap Fill')
-        .set_icon('basket_fill')
-        .set_callback(function() {
-          beestat.setting('runtime_thermostat_summary_gap_fill', true);
-        }));
-    }
-
-    if (beestat.setting('runtime_thermostat_summary_smart_scale') === true) {
-      menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Disable Smart Scale')
-        .set_icon('network_strength_off')
-        .set_callback(function() {
-          beestat.setting('runtime_thermostat_summary_smart_scale', false);
-        }));
-    } else {
-      menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Enable Smart Scale')
-        .set_icon('network_strength_4')
-        .set_callback(function() {
-          beestat.setting('runtime_thermostat_summary_smart_scale', true);
-        }));
-    }
   }
 
   menu.add_menu_item(new beestat.component.menu_item()
