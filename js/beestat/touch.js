@@ -5,7 +5,6 @@
  * @return {boolean} Whether or not the device is touch enabled.
  */
 beestat.touch = function() {
-  return true;
   if (beestat.touch_ !== undefined) {
     return beestat.touch_;
   }
