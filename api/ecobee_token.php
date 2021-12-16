@@ -8,6 +8,30 @@
 class ecobee_token extends cora\crud {
 
   /**
+   * Create an ecobee token. Does the normal CRUD create and also extracts the
+   * ecobee_account_id from the token and attaches it to the user. A user only
+   * has one ecobee_token row so this really only runs once per user.
+   *
+   * @param array $attributes
+   *
+   * @return int
+   */
+  public function create($attributes) {
+    $this->api(
+      'user',
+      'update',
+      [
+        'attributes' => [
+          'user_id' => $this->session->get_user_id(),
+          'ecobee_account_id' => $this->get_ecobee_account_id($attributes)
+        ]
+      ]
+    );
+
+    return parent::create($attributes);
+  }
+
+  /**
    * This should be called when connecting a new user. Get the access/refresh
    * tokens, then attach them to a brand new anonymous user.
    *
@@ -46,6 +70,35 @@ class ecobee_token extends cora\crud {
       'timestamp' => date('Y-m-d H:i:s'),
       'deleted' => 0
     ];
+  }
+
+  /**
+   * Get an ecobee_account_id from the ecobee JWT.
+   *
+   * @param ecobee_token $ecobee_token The ecobee_token.
+   *
+   * @return string The ecobee_account_id.
+   */
+  public function get_ecobee_account_id($ecobee_token) {
+    $access_token_decoded = json_decode(
+      base64_decode(
+        str_replace(
+          '_',
+          '/',
+          str_replace(
+            '-',
+            '+',
+            explode(
+              '.',
+              $ecobee_token['access_token']
+            )[1]
+          )
+        )
+      ),
+      true
+    );
+
+    return explode('|', $access_token_decoded['sub'])[1];
   }
 
   /**
@@ -108,6 +161,17 @@ class ecobee_token extends cora\crud {
         'access_token' => $response['access_token'],
         'refresh_token' => $response['refresh_token'],
         'timestamp' => date('Y-m-d H:i:s')
+      ]
+    );
+
+    $this->api(
+      'user',
+      'update',
+      [
+        'attributes' => [
+          'user_id' => $this->session->get_user_id(),
+          'ecobee_account_id' => $this->get_ecobee_account_id($ecobee_token)
+        ]
       ]
     );
 
