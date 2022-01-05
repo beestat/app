@@ -59,6 +59,34 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
 
   // Trendline data
   series.push({
+    'data': this.data_.series.trendline_auxiliary_heat_1,
+    'name': 'indoor_auxiliary_heat_1_delta',
+    'color': beestat.series.indoor_auxiliary_heat_1_delta.color,
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'line',
+    'lineWidth': 2,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Trendline data
+  series.push({
+    'data': this.data_.series.trendline_auxiliary_heat_2,
+    'name': 'indoor_auxiliary_heat_2_delta',
+    'color': beestat.series.indoor_auxiliary_heat_2_delta.color,
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'line',
+    'lineWidth': 2,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Trendline data
+  series.push({
     'data': this.data_.series.trendline_cool_1,
     'name': 'indoor_cool_1_delta',
     'color': beestat.series.indoor_cool_1_delta.color,
@@ -129,6 +157,35 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
     'states': {'hover': {'lineWidthPlus': 0}}
   });
 
+  series.push({
+    'data': this.data_.series.raw_auxiliary_heat_1,
+    'name': 'indoor_auxiliary_heat_1_delta_raw',
+    'color': beestat.series.indoor_auxiliary_heat_1_delta_raw.color,
+    'dashStyle': 'ShortDot',
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'spline',
+    'lineWidth': 1,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
+  // Raw data
+  series.push({
+    'data': this.data_.series.raw_auxiliary_heat_2,
+    'name': 'indoor_auxiliary_heat_2_delta_raw',
+    'color': beestat.series.indoor_auxiliary_heat_2_delta_raw.color,
+    'dashStyle': 'ShortDot',
+    'marker': {
+      'enabled': false,
+      'states': {'hover': {'enabled': false}}
+    },
+    'type': 'spline',
+    'lineWidth': 1,
+    'states': {'hover': {'lineWidthPlus': 0}}
+  });
+
   // Raw data
   series.push({
     'data': this.data_.series.raw_cool_1,
@@ -183,9 +240,13 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
  * @return {Array} The y-axis options.
  */
 beestat.component.chart.temperature_profiles.prototype.get_options_yAxis_ = function() {
+  /**
+   * The 0.25° in either direction forces the chart to pad another degree when
+   * this close to the boundary.
+   */
   var absolute_y_max = Math.max(
-    Math.abs(this.data_.metadata.chart.y_min),
-    Math.abs(this.data_.metadata.chart.y_max)
+    Math.abs(this.data_.metadata.chart.y_min - 0.25),
+    Math.abs(this.data_.metadata.chart.y_max + 0.25)
   );
 
   var y_min = absolute_y_max * -1;
@@ -239,6 +300,10 @@ beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_forma
         'delta': true,
         'type': 'string'
       }) + ' / h';
+
+      if (point.y.toFixed(1) > 0) {
+        value = '+' + value;
+      }
 
       if (series.name.indexOf('raw') === -1) {
         section.push({
