@@ -373,8 +373,17 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
       }) +
       ' / h)';
 
-    if (Math.abs(degrees_per_hour) < 0.05) {
-      // If the degrees would display as 0.0/h, go for "never" as the time.
+    if (
+      (
+        simplified_operating_mode === 'heat' &&
+        degrees_per_hour < 0.05
+      ) ||
+      (
+        simplified_operating_mode === 'cool' &&
+        degrees_per_hour > -0.05
+      )
+    ) {
+      // If the degrees would display as 0.0/h, go for "Never" as the time.
       text = 'Never';
     } else {
       let degrees_to_go;
