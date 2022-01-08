@@ -73,32 +73,49 @@ class ecobee_token extends cora\crud {
   }
 
   /**
-   * Get an ecobee_account_id from the ecobee JWT.
+   * Get an ecobee_account_id from the ecobee JWT. Check a bunch of stuff to
+   * make sure it's valid.
    *
    * @param ecobee_token $ecobee_token The ecobee_token.
    *
    * @return string The ecobee_account_id.
    */
   public function get_ecobee_account_id($ecobee_token) {
-    $access_token_decoded = json_decode(
-      base64_decode(
-        str_replace(
-          '_',
-          '/',
-          str_replace(
-            '-',
-            '+',
-            explode(
-              '.',
-              $ecobee_token['access_token']
-            )[1]
-          )
-        )
-      ),
-      true
-    );
+    $parts = explode('.', $ecobee_token['access_token']);
+    if(count($parts) !== 3) {
+      return null;
+    }
 
-    return explode('|', $access_token_decoded['sub'])[1];
+    $payload = $parts[1];
+    $payload = str_replace(['_', '-'], ['/', '+'], $payload);
+
+    $json = base64_decode($payload);
+
+    if($json === false) {
+      return null;
+    }
+
+    $object = json_decode($json, true);
+    if($object === null) {
+      return null;
+    }
+
+    if(isset($object['sub']) === false) {
+      return null;
+    }
+
+    $sub_parts = explode('|', $object['sub']);
+    if(count($sub_parts) !== 2) {
+      return null;
+    }
+
+    $ecobee_account_id = $sub_parts[1];
+
+    if(strlen($ecobee_account_id) !== 36) {
+      return null;
+    }
+
+    return $ecobee_account_id;
   }
 
   /**
