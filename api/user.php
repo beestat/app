@@ -55,8 +55,8 @@ class user extends cora\crud {
    * without having to spend the time creating an actual user.
    */
   public function create_anonymous_user() {
-    $username = strtolower(sha1(uniqid(mt_rand(), true)));
-    $password = strtolower(sha1(uniqid(mt_rand(), true)));
+    $username = bin2hex(random_bytes(20));
+    $password = bin2hex(random_bytes(20));
     $user = $this->create([
       'username' => $username,
       'password' => $password,

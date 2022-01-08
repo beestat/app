@@ -250,7 +250,7 @@ final class session {
    * @return string The generated session key.
    */
   private function generate_session_key() {
-    return strtolower(sha1(uniqid(mt_rand(), true)));
+    return bin2hex(random_bytes(20));
   }
 
   /**
