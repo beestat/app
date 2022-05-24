@@ -214,8 +214,7 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
     .innerHTML('Date')
     .style('font-weight', beestat.style.font_weight.bold));
   var timestamp = moment(this.alert_.timestamp);
-  date.appendChild($.createElement('div').innerHTML(timestamp.format('MMM M')));
-  // date.appendChild($.createElement('div').innerHTML(timestamp.format('MMM M @ h:mm a')));
+  date.appendChild($.createElement('div').innerHTML(timestamp.format('MMM Do')));
 
   var details = $.createElement('div');
   this.alert_detail_.appendChild(details);
