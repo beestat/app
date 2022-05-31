@@ -4,7 +4,7 @@
 var beestat = {};
 
 beestat.ecobee_thermostat_models = {
-  'apolloEms': 'apolloEms',
+  'apolloEms': 'ecobee4 EMS',
   'apolloSmart': 'ecobee4',
   'athenaEms': 'ecobee3 EMS',
   'athenaSmart': 'ecobee3',
@@ -15,7 +15,9 @@ beestat.ecobee_thermostat_models = {
   'nikeSmart': 'ecobee3 lite',
   'siEms': 'Smart Si EMS',
   'siSmart': 'Smart Si',
-  'vulcanSmart': 'SmartThermostat'
+  'vulcanSmart': 'SmartThermostat',
+  'aresSmart': 'SmartThermostat',
+  'artemisSmart': 'SmartThermostat'
 };
 
 /**
