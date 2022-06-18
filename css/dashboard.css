@@ -430,6 +430,7 @@ input[type=checkbox] {
 .icon.resistor:before { content: "\F0B44"; }
 .icon.snowflake:before { content: "\F0717"; }
 .icon.swap_horizontal:before { content: "\F04E1"; }
+.icon.thermostat:before { content: "\F0393"; }
 .icon.thumb_up:before { content: "\F0513"; }
 .icon.tune:before { content: "\F062E"; }
 .icon.twitter:before { content: "\F0544"; }
