@@ -30,33 +30,6 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_se
   var self = this;
   var series = [];
 
-  var colors = [
-    beestat.style.color.blue.base,
-    beestat.style.color.red.base,
-    beestat.style.color.yellow.base,
-    beestat.style.color.green.base,
-    beestat.style.color.orange.base,
-    beestat.style.color.bluegreen.base,
-    beestat.style.color.purple.base,
-    beestat.style.color.lightblue.base,
-    beestat.style.color.blue.light,
-    beestat.style.color.red.light,
-    beestat.style.color.yellow.light,
-    beestat.style.color.green.light,
-    beestat.style.color.orange.light,
-    beestat.style.color.bluegreen.light,
-    beestat.style.color.purple.light,
-    beestat.style.color.lightblue.light,
-    beestat.style.color.blue.dark,
-    beestat.style.color.red.dark,
-    beestat.style.color.yellow.dark,
-    beestat.style.color.green.dark,
-    beestat.style.color.orange.dark,
-    beestat.style.color.bluegreen.dark,
-    beestat.style.color.purple.dark,
-    beestat.style.color.lightblue.dark
-  ];
-
   /**
    * This chart does not need the entire dummy series, but it does need the
    * first series to have *some* non-null data or Highcharts does not find a
@@ -77,7 +50,7 @@ beestat.component.chart.runtime_sensor_detail_occupancy.prototype.get_options_se
     series.push({
       'name': 'occupancy_' + sensor.sensor_id,
       'data': self.data_.series['occupancy_' + sensor.sensor_id],
-      'color': colors[i],
+      'color': self.data_.metadata.series['occupancy_' + sensor.sensor_id].color,
       'yAxis': 0,
       'type': 'line',
       'lineWidth': beestat.component.chart.runtime_sensor_detail_occupancy.get_swimlane_properties(self.data_.metadata.sensors.length, 1).line_width,

@@ -323,3 +323,19 @@ beestat.series.indoor_resist_delta = {
   'color': beestat.style.color.gray.dark
 };
 beestat.series.indoor_resist_delta_raw = beestat.series.indoor_resist_delta;
+
+// Air Quality
+beestat.series.air_quality = {
+  'name': 'Air Quality',
+  'color': beestat.style.color.gray.base
+};
+
+beestat.series.voc_concentration = {
+  'name': 'TVOC',
+  'color': beestat.style.color.yellow.dark
+};
+
+beestat.series.co2_concentration = {
+  'name': 'CO₂',
+  'color': beestat.style.color.blue.base
+};

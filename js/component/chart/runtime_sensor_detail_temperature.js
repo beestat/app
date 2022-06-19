@@ -60,39 +60,12 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
   var self = this;
   var series = [];
 
-  var colors = [
-    beestat.style.color.blue.base,
-    beestat.style.color.red.base,
-    beestat.style.color.yellow.base,
-    beestat.style.color.green.base,
-    beestat.style.color.orange.base,
-    beestat.style.color.bluegreen.base,
-    beestat.style.color.purple.base,
-    beestat.style.color.lightblue.base,
-    beestat.style.color.blue.light,
-    beestat.style.color.red.light,
-    beestat.style.color.yellow.light,
-    beestat.style.color.green.light,
-    beestat.style.color.orange.light,
-    beestat.style.color.bluegreen.light,
-    beestat.style.color.purple.light,
-    beestat.style.color.lightblue.light,
-    beestat.style.color.blue.dark,
-    beestat.style.color.red.dark,
-    beestat.style.color.yellow.dark,
-    beestat.style.color.green.dark,
-    beestat.style.color.orange.dark,
-    beestat.style.color.bluegreen.dark,
-    beestat.style.color.purple.dark,
-    beestat.style.color.lightblue.dark
-  ];
-
   // Sensors
-  this.data_.metadata.sensors.forEach(function(sensor, i) {
+  this.data_.metadata.sensors.forEach(function(sensor) {
     series.push({
       'name': 'temperature_' + sensor.sensor_id,
       'data': self.data_.series['temperature_' + sensor.sensor_id],
-      'color': colors[i],
+      'color': self.data_.metadata.series['temperature_' + sensor.sensor_id].color,
       'yAxis': 0,
       'type': 'spline',
       'lineWidth': 1

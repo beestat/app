@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /*
  Highcharts JS vv7.1.2 custom build (2019-07-17)
 

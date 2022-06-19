@@ -61,6 +61,7 @@ window.addEventListener('resize', rocket.throttle(100, function() {
   var breakpoints = [
     600,
     650,
+    800,
     1000
   ];
 

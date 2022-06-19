@@ -422,6 +422,7 @@ input[type=checkbox] {
 .icon.network_strength_4:before { content: "\F08FA"; }
 .icon.network_strength_off:before { content: "\F08FC"; }
 .icon.numeric_1_box:before { content: "\F03A4"; }
+.icon.numeric_4_box:before { content: "\F03AD"; }
 .icon.numeric_3_box:before { content: "\F03AA"; }
 .icon.numeric_7_box:before { content: "\F03B6"; }
 .icon.patreon:before { content: "\F0882"; }

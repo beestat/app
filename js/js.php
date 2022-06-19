@@ -46,6 +46,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/compare.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/analyze.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/settings.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/air_quality.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
@@ -67,6 +68,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/temperature_profiles.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/metrics.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/settings.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/air_quality_detail.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/voc_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
@@ -74,6 +77,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/chart/runtime_thermostat_detail_equipment.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_sensor_detail_temperature.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_sensor_detail_occupancy.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/voc_concentration.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/co2_concentration.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/air_quality.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/header.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/icon.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/layout.js"></script>' . PHP_EOL;
@@ -96,6 +102,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/weather.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/patreon_status.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/newsletter.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/air_quality_detail_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;

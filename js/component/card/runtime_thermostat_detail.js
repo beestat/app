@@ -27,7 +27,7 @@ beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
     [
       'setting.runtime_thermostat_detail_range_type',
       'setting.runtime_thermostat_detail_range_dynamic',
-      'cache.data.runtime_thermostat_thermostat_detail',
+      'cache.data.runtime_thermostat_detail__runtime_thermostat',
       'cache.thermostat'
     ],
     change_function
@@ -150,7 +150,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
    * the database, check every 2 seconds until it does.
    */
   if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
-    if (beestat.cache.data.runtime_thermostat_thermostat_detail === undefined) {
+    if (beestat.cache.data.runtime_thermostat_detail__runtime_thermostat === undefined) {
       this.show_loading_('Fetching');
 
       var value;
@@ -182,7 +182,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
           }
         )
         .set_callback(function(response) {
-          beestat.cache.set('data.runtime_thermostat_thermostat_detail', response);
+          beestat.cache.set('data.runtime_thermostat_detail__runtime_thermostat', response);
         })
         .send();
     } else if (this.has_data_() === false) {
@@ -242,7 +242,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
         beestat.setting('runtime_thermostat_detail_range_dynamic') !== 1 ||
         beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_thermostat_thermostat_detail');
+        beestat.cache.delete('data.runtime_thermostat_detail__runtime_thermostat');
         beestat.setting({
           'runtime_thermostat_detail_range_dynamic': 1,
           'runtime_thermostat_detail_range_type': 'dynamic'
@@ -258,7 +258,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
         beestat.setting('runtime_thermostat_detail_range_dynamic') !== 3 ||
         beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_thermostat_thermostat_detail');
+        beestat.cache.delete('data.runtime_thermostat_detail__runtime_thermostat');
         beestat.setting({
           'runtime_thermostat_detail_range_dynamic': 3,
           'runtime_thermostat_detail_range_type': 'dynamic'
@@ -274,7 +274,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
         beestat.setting('runtime_thermostat_detail_range_dynamic') !== 7 ||
         beestat.setting('runtime_thermostat_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_thermostat_thermostat_detail');
+        beestat.cache.delete('data.runtime_thermostat_detail__runtime_thermostat');
         beestat.setting({
           'runtime_thermostat_detail_range_dynamic': 7,
           'runtime_thermostat_detail_range_type': 'dynamic'
@@ -352,7 +352,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(
     this.data_ = beestat.runtime_thermostat.get_data(
       this.thermostat_id_,
       range,
-      'runtime_thermostat_thermostat_detail'
+      'runtime_thermostat_detail__runtime_thermostat'
     );
 
     this.data_.metadata.chart.title = this.get_title_();

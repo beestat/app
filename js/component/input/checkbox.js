@@ -34,12 +34,10 @@ beestat.component.input.checkbox.prototype.decorate_ = function(parent) {
     .innerText(this.label_)
     .addEventListener('click', function() {
       self.input_[0].click();
-      // self.input_.checked(!self.input_.checked());
     });
   div.appendChild(text_label);
 
   this.input_.addEventListener('change', function() {
-    // console.log('input changed');
     self.dispatchEvent('change');
   });
 

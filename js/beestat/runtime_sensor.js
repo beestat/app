@@ -6,10 +6,13 @@ beestat.runtime_sensor = {};
  *
  * @param {number} thermostat_id The thermostat_id to get data for.
  * @param {object} range Range settings.
+ * @param {string} key The key to pull the data from inside
+ * beestat.cache.data. This exists because runtime_sensor data exists in
+ * multiple spots.
  *
  * @return {object} The data.
  */
-beestat.runtime_sensor.get_data = function(thermostat_id, range) {
+beestat.runtime_sensor.get_data = function(thermostat_id, range, key) {
   var data = {
     'x': [],
     'series': {},
@@ -21,6 +24,33 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     }
   };
 
+  var colors = [
+    beestat.style.color.blue.base,
+    beestat.style.color.red.base,
+    beestat.style.color.yellow.base,
+    beestat.style.color.green.base,
+    beestat.style.color.orange.base,
+    beestat.style.color.bluegreen.base,
+    beestat.style.color.purple.base,
+    beestat.style.color.lightblue.base,
+    beestat.style.color.blue.light,
+    beestat.style.color.red.light,
+    beestat.style.color.yellow.light,
+    beestat.style.color.green.light,
+    beestat.style.color.orange.light,
+    beestat.style.color.bluegreen.light,
+    beestat.style.color.purple.light,
+    beestat.style.color.lightblue.light,
+    beestat.style.color.blue.dark,
+    beestat.style.color.red.dark,
+    beestat.style.color.yellow.dark,
+    beestat.style.color.green.dark,
+    beestat.style.color.orange.dark,
+    beestat.style.color.bluegreen.dark,
+    beestat.style.color.purple.dark,
+    beestat.style.color.lightblue.dark
+  ];
+
   // Duration objects. These are passed by reference into the metadata.
   var durations = {};
 
@@ -31,10 +61,19 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
   data.metadata.sensors = sensors;
 
   // Set up the series_codes.
-  sensors.forEach(function(sensor) {
+  const sensor_series_colors = {};
+  sensors.forEach(function(sensor, i) {
     if (sensor.thermostat_id === thermostat_id) {
       series_codes.push('temperature_' + sensor.sensor_id);
       series_codes.push('occupancy_' + sensor.sensor_id);
+
+      sensor_series_colors[sensor.sensor_id] = colors[i];
+
+      if (sensor.type === 'thermostat') {
+        series_codes.push('air_quality_' + sensor.sensor_id);
+        series_codes.push('voc_concentration_' + sensor.sensor_id);
+        series_codes.push('co2_concentration_' + sensor.sensor_id);
+      }
     }
   });
 
@@ -53,9 +92,16 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     };
     if (series_code === 'dummy') {
       data.metadata.series[series_code].name = null;
+    } else if (series_code.includes('air_quality_') === true) {
+      data.metadata.series[series_code].name = 'AQ';
+    } else if (series_code.includes('voc_concentration_') === true) {
+      data.metadata.series[series_code].name = 'TVOC';
+    } else if (series_code.includes('co2_concentration_') === true) {
+      data.metadata.series[series_code].name = 'CO2';
     } else {
       var sensor_id = series_code.replace(/[^0-9]/g, '');
       data.metadata.series[series_code].name = beestat.cache.sensor[sensor_id].name;
+      data.metadata.series[series_code].color = sensor_series_colors[sensor_id];
     }
 
     durations[series_code] = {'seconds': 0};
@@ -83,7 +129,7 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
     .second(0)
     .millisecond(0);
 
-  var runtime_sensors = beestat.runtime_sensor.get_runtime_sensors_by_date_();
+  var runtime_sensors = beestat.runtime_sensor.get_runtime_sensors_by_date_(key);
 
   // Loop.
   var current_m = begin_m;
@@ -100,6 +146,12 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
         if (runtime_sensor === undefined) {
           data.series['temperature_' + sensor.sensor_id].push(null);
           data.series['occupancy_' + sensor.sensor_id].push(null);
+
+          if (sensor.type === 'thermostat') {
+            data.series['air_quality_' + sensor.sensor_id].push(null);
+            data.series['voc_concentration_' + sensor.sensor_id].push(null);
+            data.series['co2_concentration_' + sensor.sensor_id].push(null);
+          }
           return;
         }
 
@@ -107,6 +159,20 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
         data.series['temperature_' + runtime_sensor.sensor_id].push(temperature);
         data.metadata.series['temperature_' + runtime_sensor.sensor_id].active = true;
         data.metadata.series['temperature_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = temperature;
+
+        if (sensor.type === 'thermostat') {
+          data.series['air_quality_' + runtime_sensor.sensor_id].push(runtime_sensor.air_quality);
+          data.metadata.series['air_quality_' + runtime_sensor.sensor_id].active = true;
+          data.metadata.series['air_quality_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = runtime_sensor.air_quality;
+
+          data.series['voc_concentration_' + runtime_sensor.sensor_id].push(runtime_sensor.voc_concentration);
+          data.metadata.series['voc_concentration_' + runtime_sensor.sensor_id].active = true;
+          data.metadata.series['voc_concentration_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = runtime_sensor.voc_concentration;
+
+          data.series['co2_concentration_' + runtime_sensor.sensor_id].push(runtime_sensor.co2_concentration);
+          data.metadata.series['co2_concentration_' + runtime_sensor.sensor_id].active = true;
+          data.metadata.series['co2_concentration_' + runtime_sensor.sensor_id].data[current_m.valueOf()] = runtime_sensor.co2_concentration;
+        }
 
         if (runtime_sensor.occupancy === true) {
           let swimlane_properties =
@@ -139,6 +205,12 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
         if (sensor.thermostat_id === thermostat_id) {
           data.series['temperature_' + sensor.sensor_id].push(null);
           data.series['occupancy_' + sensor.sensor_id].push(null);
+
+          if (sensor.type === 'thermostat') {
+            data.series['air_quality_' + sensor.sensor_id].push(null);
+            data.series['voc_concentration_' + sensor.sensor_id].push(null);
+            data.series['co2_concentration_' + sensor.sensor_id].push(null);
+          }
         }
       });
     }
@@ -152,12 +224,16 @@ beestat.runtime_sensor.get_data = function(thermostat_id, range) {
 /**
  * Get all the runtime_sensor rows indexed by date.
  *
+ * @param {string} key The key to pull the data from inside
+ * beestat.cache.data. This exists because runtime_sensor data exists in
+ * multiple spots.
+ *
  * @return {array} The runtime_sensor rows.
  */
-beestat.runtime_sensor.get_runtime_sensors_by_date_ = function() {
+beestat.runtime_sensor.get_runtime_sensors_by_date_ = function(key) {
   var runtime_sensors = {};
-  if (beestat.cache.runtime_sensor !== undefined) {
-    beestat.cache.runtime_sensor.forEach(function(runtime_sensor) {
+  if (beestat.cache.data[key] !== undefined) {
+    beestat.cache.data[key].forEach(function(runtime_sensor) {
       var timestamp = [moment(runtime_sensor.timestamp).valueOf()];
       if (runtime_sensors[timestamp] === undefined) {
         runtime_sensors[timestamp] = {};

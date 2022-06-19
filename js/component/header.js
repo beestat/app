@@ -24,6 +24,11 @@ beestat.component.header.prototype.rerender_on_breakpoint_ = true;
 beestat.component.header.prototype.decorate_ = function(parent) {
   var self = this;
 
+  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  const ecobee_thermostat = beestat.cache.ecobee_thermostat[
+    thermostat.ecobee_thermostat_id
+  ];
+
   var pages;
 
   pages = [
@@ -43,6 +48,17 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       'icon': 'earth'
     }
   ];
+
+  if (
+    beestat.user.has_early_access() === true &&
+    ecobee_thermostat.model_number === 'aresSmart'
+  ) {
+    pages.push({
+      'layer': 'air_quality',
+      'text': 'Air Quality',
+      'icon': 'weather_windy'
+    });
+  }
 
   var gutter = beestat.style.size.gutter;
 
@@ -89,7 +105,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       .set_icon(page.icon)
       .set_text_color(beestat.style.color.bluegray.dark);
 
-    if (beestat.width > 650) {
+    if (beestat.width > 800) {
       button.set_text(page.text);
     }
 

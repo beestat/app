@@ -776,10 +776,31 @@ class runtime extends cora\api {
             foreach($sensor['capability'] as $capability) {
               if(
                 $capability['id'] == $capability_identifier &&
-                in_array($capability['type'], ['temperature', 'occupancy']) === true &&
                 $value !== null
               ) {
-                $datas[$sensor['sensor_id']][$capability['type']] = ($capability['type'] === 'temperature') ? ($value * 10) : $value;
+                switch($capability['type']) {
+                  case 'temperature':
+                    $datas[$sensor['sensor_id']]['temperature'] = ($value * 10);
+                  break;
+                  case 'occupancy':
+                    $datas[$sensor['sensor_id']]['occupancy'] = $value;
+                  break;
+                  case 'airPressure':
+                    $datas[$sensor['sensor_id']]['air_pressure'] = $value;
+                  break;
+                  case 'airQuality':
+                    $datas[$sensor['sensor_id']]['air_quality'] = $value;
+                  break;
+                  case 'airQualityAccuracy':
+                    $datas[$sensor['sensor_id']]['air_quality_accuracy'] = $value;
+                  break;
+                  case 'vocPPM':
+                    $datas[$sensor['sensor_id']]['voc_concentration'] = $value;
+                  break;
+                  case 'co2PPM':
+                    $datas[$sensor['sensor_id']]['co2_concentration'] = $value;
+                  break;
+                }
               }
             }
           } else {

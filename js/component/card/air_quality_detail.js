@@ -1,11 +1,11 @@
 /**
- * Runtime detail card. Shows a graph similar to what ecobee shows with the
- * runtime info for a recent period of time.
+ * Air Quality card. Shows a chart with comfort profiles, occupancy, and air
+ * quality data.
  *
  * @param {number} thermostat_id The thermostat_id this card is displaying
  * data for
  */
-beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
+beestat.component.card.air_quality_detail = function(thermostat_id) {
   var self = this;
 
   this.thermostat_id_ = thermostat_id;
@@ -25,34 +25,37 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.runtime_sensor_detail_range_type',
-      'setting.runtime_sensor_detail_range_dynamic',
-      'cache.data.runtime_sensor_detail__runtime_thermostat',
-      'cache.data.runtime_sensor_detail__runtime_sensor'
+      'setting.air_quality_detail_range_type',
+      'setting.air_quality_detail_range_dynamic',
+      'cache.data.air_quality_detail__runtime_thermostat',
+      'cache.data.air_quality_detail__runtime_sensor'
     ],
     change_function
   );
 
   beestat.component.card.apply(this, arguments);
 };
-beestat.extend(beestat.component.card.runtime_sensor_detail, beestat.component.card);
+beestat.extend(beestat.component.card.air_quality_detail, beestat.component.card);
 
 /**
  * Decorate
  *
  * @param {rocket.ELements} parent
  */
-beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = function(parent) {
+beestat.component.card.air_quality_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
   this.charts_ = {
-    'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(
-      this.get_data_()
-    ),
     'occupancy': new beestat.component.chart.runtime_sensor_detail_occupancy(
       this.get_data_()
     ),
-    'temperature': new beestat.component.chart.runtime_sensor_detail_temperature(
+    'air_quality': new beestat.component.chart.air_quality(
+      this.get_data_()
+    ),
+    'voc_concentration': new beestat.component.chart.voc_concentration(
+      this.get_data_()
+    ),
+    'co2_concentration': new beestat.component.chart.co2_concentration(
       this.get_data_()
     )
   };
@@ -65,9 +68,18 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
   var chart_container = $.createElement('div');
   container.appendChild(chart_container);
 
-  this.charts_.equipment.render(chart_container);
   this.charts_.occupancy.render(chart_container);
-  this.charts_.temperature.render(chart_container);
+
+  chart_container.appendChild($.createElement('p').innerText('Air Quality'));
+  this.charts_.air_quality.render(chart_container);
+
+  chart_container.appendChild($.createElement('p').innerText('TVOC Concentration'));
+  this.charts_.voc_concentration.render(chart_container);
+
+  chart_container.appendChild($.createElement('p').innerText('CO₂ Concentration'));
+  this.charts_.co2_concentration.render(chart_container);
+
+  // this.charts_.x_axis.render(chart_container);
 
   // Sync extremes and crosshair.
   Object.values(this.charts_).forEach(function(source_chart) {
@@ -77,26 +89,14 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
     });
   });
 
-  // Keep the series list in sync across charts.
-  this.charts_.temperature.addEventListener('legend_item_click', function() {
-    this.get_chart().series.forEach(function(temperature_series) {
-      var occupancy_key = temperature_series.name.replace('temperature', 'occupancy');
-      self.charts_.occupancy.get_chart().series.forEach(function(occupancy_series) {
-        if (occupancy_series.name === occupancy_key) {
-          occupancy_series.setVisible(temperature_series.visible);
-        }
-      });
-    });
-  });
-
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   var required_begin;
   var required_end;
-  if (beestat.setting('runtime_sensor_detail_range_type') === 'dynamic') {
+  if (beestat.setting('air_quality_detail_range_type') === 'dynamic') {
     required_begin = moment()
       .subtract(
-        beestat.setting('runtime_sensor_detail_range_dynamic'),
+        beestat.setting('air_quality_detail_range_dynamic'),
         'day'
       )
       .second(0);
@@ -106,10 +106,10 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
       .second(0);
   } else {
     required_begin = moment(
-      beestat.setting('runtime_sensor_detail_range_static_begin') + ' 00:00:00'
+      beestat.setting('air_quality_detail_range_static_begin') + ' 00:00:00'
     );
     required_end = moment(
-      beestat.setting('runtime_sensor_detail_range_static_end') + ' 23:59:59'
+      beestat.setting('air_quality_detail_range_static_end') + ' 23:59:59'
     );
   }
 
@@ -126,18 +126,18 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
   );
 
   /**
-   * If the needed data exists in the database and the runtime_sensor cache is
-   * empty, then query the data. If the needed data does not exist in the
-   * database, check every 2 seconds until it does.
+   * If the needed data exists in the database and the runtime_sensor
+   * cache is empty, then query the data. If the needed data does not exist in
+   * the database, check every 2 seconds until it does.
    */
   if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
-    if (beestat.cache.data.runtime_sensor_detail__runtime_sensor === undefined) {
+    if (beestat.cache.data.air_quality_detail__runtime_sensor === undefined) {
       this.show_loading_('Fetching');
 
       var value;
       var operator;
 
-      if (beestat.setting('runtime_sensor_detail_range_type') === 'dynamic') {
+      if (beestat.setting('air_quality_detail_range_type') === 'dynamic') {
         value = required_begin.format();
         operator = '>=';
       } else {
@@ -188,12 +188,12 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
         for (var alias in response) {
           var r = response[alias];
           if (alias === 'runtime_thermostat') {
-            beestat.cache.set('data.runtime_sensor_detail__runtime_thermostat', r);
+            beestat.cache.set('data.air_quality_detail__runtime_thermostat', r);
           } else {
             runtime_sensors = runtime_sensors.concat(r);
           }
         }
-        beestat.cache.set('data.runtime_sensor_detail__runtime_sensor', runtime_sensors);
+        beestat.cache.set('data.air_quality_detail__runtime_sensor', runtime_sensors);
       });
 
       api_call.send();
@@ -242,7 +242,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = function(parent) {
+beestat.component.card.air_quality_detail.prototype.decorate_top_right_ = function(parent) {
   var self = this;
 
   var menu = (new beestat.component.menu()).render(parent);
@@ -252,13 +252,13 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_icon('numeric_1_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_sensor_detail_range_dynamic') !== 1 ||
-        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+        beestat.setting('air_quality_detail_range_dynamic') !== 1 ||
+        beestat.setting('air_quality_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_sensor_detail__runtime_sensor');
+        beestat.cache.delete('data.air_quality_detail__runtime_sensor');
         beestat.setting({
-          'runtime_sensor_detail_range_dynamic': 1,
-          'runtime_sensor_detail_range_type': 'dynamic'
+          'air_quality_detail_range_dynamic': 1,
+          'air_quality_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -268,13 +268,13 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_icon('numeric_3_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_sensor_detail_range_dynamic') !== 3 ||
-        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+        beestat.setting('air_quality_detail_range_dynamic') !== 3 ||
+        beestat.setting('air_quality_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_sensor_detail__runtime_sensor');
+        beestat.cache.delete('data.air_quality_detail__runtime_sensor');
         beestat.setting({
-          'runtime_sensor_detail_range_dynamic': 3,
-          'runtime_sensor_detail_range_type': 'dynamic'
+          'air_quality_detail_range_dynamic': 3,
+          'air_quality_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -284,13 +284,13 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_icon('numeric_7_box')
     .set_callback(function() {
       if (
-        beestat.setting('runtime_sensor_detail_range_dynamic') !== 7 ||
-        beestat.setting('runtime_sensor_detail_range_type') !== 'dynamic'
+        beestat.setting('air_quality_detail_range_dynamic') !== 7 ||
+        beestat.setting('air_quality_detail_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.runtime_sensor_detail__runtime_sensor');
+        beestat.cache.delete('data.air_quality_detail__runtime_sensor');
         beestat.setting({
-          'runtime_sensor_detail_range_dynamic': 7,
-          'runtime_sensor_detail_range_type': 'dynamic'
+          'air_quality_detail_range_dynamic': 7,
+          'air_quality_detail_range_type': 'dynamic'
         });
       }
     }));
@@ -299,22 +299,15 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_text('Custom')
     .set_icon('calendar_edit')
     .set_callback(function() {
-      (new beestat.component.modal.runtime_sensor_detail_custom()).render();
+      (new beestat.component.modal.air_quality_detail_custom()).render();
     }));
 
   if (this.has_data_() === true) {
     menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Download Chart')
-      .set_icon('download')
-      .set_callback(function() {
-        self.charts_.temperature.export();
-      }));
-
-    menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Reset Zoom')
       .set_icon('magnify_minus')
       .set_callback(function() {
-        self.charts_.temperature.reset_zoom();
+        self.charts_.air_quality.reset_zoom();
       }));
   }
 
@@ -322,7 +315,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      window.open('https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29');
+      window.open('https://doc.beestat.io/2685b4aae86a4f5d80dd0a4e5dd88201');
     }));
 };
 
@@ -331,7 +324,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_top_right_ = fun
  *
  * @return {boolean} Whether or not there is data to display on the chart.
  */
-beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
+beestat.component.card.air_quality_detail.prototype.has_data_ = function() {
   var data = this.get_data_();
   for (var series_code in data.metadata.series) {
     if (
@@ -353,24 +346,24 @@ beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
  *
  * @return {object} The data.
  */
-beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(force) {
+beestat.component.card.air_quality_detail.prototype.get_data_ = function(force) {
   if (this.data_ === undefined || force === true) {
     var range = {
-      'type': beestat.setting('runtime_sensor_detail_range_type'),
-      'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),
-      'static_begin': beestat.setting('runtime_sensor_detail_range_static_begin'),
-      'static_end': beestat.setting('runtime_sensor_detail_range_static_end')
+      'type': beestat.setting('air_quality_detail_range_type'),
+      'dynamic': beestat.setting('air_quality_detail_range_dynamic'),
+      'static_begin': beestat.setting('air_quality_detail_range_static_begin'),
+      'static_end': beestat.setting('air_quality_detail_range_static_end')
     };
 
     var sensor_data = beestat.runtime_sensor.get_data(
       this.thermostat_id_,
       range,
-      'runtime_sensor_detail__runtime_sensor'
+      'air_quality_detail__runtime_sensor'
     );
     var thermostat_data = beestat.runtime_thermostat.get_data(
       this.thermostat_id_,
       range,
-      'runtime_sensor_detail__runtime_thermostat'
+      'air_quality_detail__runtime_thermostat'
     );
 
     this.data_ = sensor_data;
@@ -390,8 +383,8 @@ beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(forc
  *
  * @return {string} Title
  */
-beestat.component.card.runtime_sensor_detail.prototype.get_title_ = function() {
-  return 'Sensor Detail';
+beestat.component.card.air_quality_detail.prototype.get_title_ = function() {
+  return 'Air Quality Detail';
 };
 
 /**
@@ -399,19 +392,19 @@ beestat.component.card.runtime_sensor_detail.prototype.get_title_ = function() {
  *
  * @return {string} Subtitle
  */
-beestat.component.card.runtime_sensor_detail.prototype.get_subtitle_ = function() {
-  if (beestat.setting('runtime_sensor_detail_range_type') === 'dynamic') {
-    var s = (beestat.setting('runtime_sensor_detail_range_dynamic') > 1) ? 's' : '';
+beestat.component.card.air_quality_detail.prototype.get_subtitle_ = function() {
+  if (beestat.setting('air_quality_detail_range_type') === 'dynamic') {
+    var s = (beestat.setting('air_quality_detail_range_dynamic') > 1) ? 's' : '';
 
     return 'Past ' +
-      beestat.setting('runtime_sensor_detail_range_dynamic') +
+      beestat.setting('air_quality_detail_range_dynamic') +
       ' day' +
       s;
   }
 
-  var begin = moment(beestat.setting('runtime_sensor_detail_range_static_begin'))
+  var begin = moment(beestat.setting('air_quality_detail_range_static_begin'))
     .format('MMM D, YYYY');
-  var end = moment(beestat.setting('runtime_sensor_detail_range_static_end'))
+  var end = moment(beestat.setting('air_quality_detail_range_static_end'))
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;

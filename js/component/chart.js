@@ -182,6 +182,7 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     // For consistent left spacing on charts with no y-axis values
     'marginLeft': this.get_options_chart_marginLeft_(),
     'marginRight': this.get_options_chart_marginRight_(),
+    'marginBottom': this.get_options_chart_marginBottom_(),
     'zoomType': this.get_options_chart_zoomType_(),
     'panning': true,
     'panKey': 'ctrl',
@@ -211,6 +212,15 @@ beestat.component.chart.prototype.get_options_chart_marginLeft_ = function() {
  * @return {number} The right margin for the chart.
  */
 beestat.component.chart.prototype.get_options_chart_marginRight_ = function() {
+  return undefined;
+};
+
+/**
+ * Get the bottom margin for the chart.
+ *
+ * @return {number} The right margin for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_marginBottom_ = function() {
   return undefined;
 };
 
@@ -578,15 +588,17 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
       'box-shadow': '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
     });
 
-  var title_div = $.createElement('div')
-    .style({
-      'font-weight': beestat.style.font_weight.bold,
-      'font-size': beestat.style.font_size.large,
-      'margin-bottom': beestat.style.size.gutter / 4,
-      'color': beestat.style.color.gray.light
-    })
-    .innerText(title);
-  tooltip.appendChild(title_div);
+  if (title !== null) {
+    var title_div = $.createElement('div')
+      .style({
+        'font-weight': beestat.style.font_weight.bold,
+        'font-size': beestat.style.font_size.large,
+        'margin-bottom': beestat.style.size.gutter / 4,
+        'color': beestat.style.color.gray.light
+      })
+      .innerText(title);
+    tooltip.appendChild(title_div);
+  }
 
   var table = $.createElement('table')
     .setAttribute({
