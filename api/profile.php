@@ -10,8 +10,8 @@
 class profile extends cora\api {
 
   public static $exposed = [
-    'private' => [],
-    'public' => ['generate']
+    'private' => ['generate'],
+    'public' => []
   ];
 
   public static $cache = [];
@@ -126,6 +126,14 @@ class profile extends cora\api {
       'get_setting',
       'thermostat.' . $thermostat_id . '.profile.ignore_solar_gain'
     );
+    /**
+     * Allow a custom start date.
+     */
+    $custom_range_begin = $this->api(
+      'user',
+      'get_setting',
+      'thermostat.' . $thermostat_id . '.profile.range_begin'
+    );
 
     if($thermostat['system_type']['reported']['heat']['equipment'] !== null) {
       $system_type_heat = $thermostat['system_type']['reported']['heat']['equipment'];
@@ -152,7 +160,15 @@ class profile extends cora\api {
     // Figure out all the starting and ending times. Round begin/end to the
     // nearest 5 minutes to help with the looping later on.
     $end_timestamp = time();
-    $begin_timestamp = strtotime('-1 year', $end_timestamp);
+
+    if($custom_range_begin !== null) {
+      $begin_timestamp = max(
+        strtotime($custom_range_begin),
+        strtotime('-1 year', $end_timestamp)
+      );
+    } else {
+      $begin_timestamp = strtotime('-1 year', $end_timestamp);
+    }
 
     // Round to 5 minute intervals.
     $begin_timestamp = floor($begin_timestamp / 300) * 300;

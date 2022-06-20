@@ -60,7 +60,10 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
 
   parent.appendChild(
     $.createElement('p')
-      .style('font-weight', '400')
+      .style({
+        'font-weight': '400',
+        'margin-top': (beestat.style.size.gutter * 2) + 'px'
+      })
       .innerText('Temperature Profiles')
   );
   const ignore_solar_gain = new beestat.component.input.checkbox();
@@ -76,6 +79,10 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
       ignore_solar_gain_key,
       ignore_solar_gain.get_value(),
       function() {
+        /**
+         * Clear the API call cache and delete the profile so it regenerates
+         * next time you go to the page.
+         */
         new beestat.api()
           .add_call(
             'thermostat',
@@ -117,6 +124,96 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
       }
     );
   });
+
+  // Temperature profile begin/end
+  const temperature_profiles_range_begin_key = 'thermostat.' + thermostat.thermostat_id + '.profile.range_begin';
+
+  parent.appendChild(
+    $.createElement('p')
+      .innerText('Custom Start Date')
+  );
+
+  var temperature_profiles_range_begin = new beestat.component.input.text()
+    .set_style({
+      'width': 110,
+      'text-align': 'center',
+      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
+    })
+    .set_attribute({
+      'maxlength': 10
+    })
+    .set_icon('calendar');
+
+  var temperature_profiles_range_begin_m =
+    moment(beestat.setting(temperature_profiles_range_begin_key));
+
+  if (temperature_profiles_range_begin_m.isValid() === true) {
+    temperature_profiles_range_begin.set_value(
+      temperature_profiles_range_begin_m.format('M/D/YYYY')
+    );
+  }
+
+  temperature_profiles_range_begin.addEventListener('change', function() {
+    var m = moment(this.get_value());
+    var temperature_profiles_range_begin_value;
+    if (m.isValid() === true) {
+      this.set_value(m.format('M/D/YYYY'));
+      temperature_profiles_range_begin_value = m.format('YYYY-MM-DD');
+    } else {
+      this.set_value('');
+      temperature_profiles_range_begin_value = null;
+    }
+
+    beestat.setting(
+      temperature_profiles_range_begin_key,
+      temperature_profiles_range_begin_value,
+      function() {
+        /**
+         * Clear the API call cache and delete the profile so it regenerates
+         * next time you go to the page.
+         */
+        new beestat.api()
+          .add_call(
+            'thermostat',
+            'generate_profile',
+            {
+              'thermostat_id': thermostat.thermostat_id
+            },
+            undefined,
+            undefined,
+            undefined,
+            // Clear cache
+            true
+          )
+          .add_call(
+            'thermostat',
+            'update',
+            {
+              'attributes': {
+                'thermostat_id': thermostat.thermostat_id,
+                'profile': null
+              }
+            }
+          )
+          .add_call(
+            'thermostat',
+            'read_id',
+            {
+              'attributes': {
+                'inactive': 0
+              }
+            },
+            'thermostat'
+          )
+          .set_callback(function(response) {
+            beestat.cache.set('thermostat', response.thermostat);
+          })
+          .send();
+      }
+    );
+  });
+
+  temperature_profiles_range_begin.render(parent);
 };
 
 /**

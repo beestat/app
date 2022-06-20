@@ -20,6 +20,10 @@ beestat.component.input.text = function() {
     });
   });
 
+  this.input_.addEventListener('change', function() {
+    self.dispatchEvent('change');
+  });
+
   beestat.component.input.apply(this, arguments);
 };
 beestat.extend(beestat.component.input.text, beestat.component.input);

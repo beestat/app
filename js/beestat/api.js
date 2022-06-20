@@ -116,10 +116,20 @@ beestat.api.prototype.send = function(opt_api_call) {
  * @param {string=} opt_alias Optional alias (required for batch API calls).
  * @param {boolean=} opt_bypass_cache_read Optional bypass of cache read.
  * @param {boolean=} opt_bypass_cache_write Optional bypass of cache write.
+ * @param {boolean=} opt_clear_cache Optional flag to just clear the cache for
+ * an API call.
  *
  * @return {beestat.api} This.
  */
-beestat.api.prototype.add_call = function(resource, method, opt_args, opt_alias, opt_bypass_cache_read, opt_bypass_cache_write, opt_clear_cache) {
+beestat.api.prototype.add_call = function(
+  resource,
+  method,
+  opt_args,
+  opt_alias,
+  opt_bypass_cache_read,
+  opt_bypass_cache_write,
+  opt_clear_cache
+) {
   var api_call = {
     'resource': resource,
     'method': method,
