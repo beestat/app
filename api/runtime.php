@@ -789,13 +789,25 @@ class runtime extends cora\api {
                     $datas[$sensor['sensor_id']]['air_pressure'] = $value;
                   break;
                   case 'airQuality':
-                    $datas[$sensor['sensor_id']]['air_quality'] = $value;
+                    // Apparently this value can get larger than 255. Temporary
+                    // fix until I can rebuild this table. Max I saw: 256
+                    if($value > 255) {
+                      $datas[$sensor['sensor_id']]['air_quality'] = null;
+                    } else {
+                      $datas[$sensor['sensor_id']]['air_quality'] = $value;
+                    }
                   break;
                   case 'airQualityAccuracy':
                     $datas[$sensor['sensor_id']]['air_quality_accuracy'] = $value;
                   break;
                   case 'vocPPM':
-                    $datas[$sensor['sensor_id']]['voc_concentration'] = $value;
+                    // Apparently this value can get larger than 65535. Temporary
+                    // fix until I can rebuild this table. Max I saw: 120071
+                    if($value > 65535) {
+                      $datas[$sensor['sensor_id']]['voc_concentration'] = null;
+                    } else {
+                      $datas[$sensor['sensor_id']]['voc_concentration'] = $value;
+                    }
                   break;
                   case 'co2PPM':
                     $datas[$sensor['sensor_id']]['co2_concentration'] = $value;
