@@ -11,7 +11,7 @@ class runtime_thermostat_summary extends cora\crud {
     'private' => [
       'read_id',
       'sync',
-      'populate'
+      'populate_backwards'
     ],
     'public' => []
   ];
