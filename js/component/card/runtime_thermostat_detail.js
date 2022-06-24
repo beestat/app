@@ -135,7 +135,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
   // Don't go before there's data.
   required_begin = moment.max(
     required_begin,
-    moment.utc(thermostat.first_connected)
+    moment.utc(thermostat.data_begin)
   );
 
   // Don't go after now.

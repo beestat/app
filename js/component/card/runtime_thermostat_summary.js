@@ -182,7 +182,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
   var begin_m;
   if (beestat.setting('runtime_thermostat_summary_time_period') === 'all') {
     begin_m = moment(
-      beestat.cache.thermostat[this.thermostat_id_].first_connected
+      beestat.cache.thermostat[this.thermostat_id_].data_begin
     );
   } else {
     var time_periods = [

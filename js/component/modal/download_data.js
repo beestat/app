@@ -175,7 +175,7 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
     },
     {
       'label': 'All Time',
-      'range_begin': moment.max(moment(thermostat.first_connected), now.clone().subtract(1, 'year')),
+      'range_begin': moment.max(moment(thermostat.data_begin), now.clone().subtract(1, 'year')),
       'range_end': now.clone(),
       'button': new beestat.component.button()
     }

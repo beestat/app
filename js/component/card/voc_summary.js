@@ -82,7 +82,7 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
   // Don't go before there's data.
   required_begin = moment.max(
     required_begin,
-    moment.utc(thermostat.first_connected)
+    moment.utc(thermostat.data_begin)
   );
 
   // Don't go after now.
