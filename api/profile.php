@@ -7,7 +7,7 @@
  *
  * @author Jon Ziebell
  */
-class profile extends cora\api {
+class profile extends cora\crud {
 
   public static $exposed = [
     'private' => ['generate'],
@@ -884,6 +884,16 @@ class profile extends cora\api {
       $deltas_raw[$sample['type']][$sample['outdoor_temperature']]['deltas_per_hour'][] = $sample['delta_per_hour'];
     }
 
+    // Get the raw thermostat with the generated columns to store the data in
+    // the profile. The CRUD read doesn't return them.
+    $thermostat_database = $this->database->read(
+      'thermostat',
+      [
+        'thermostat_id' => $thermostat_id
+      ]
+    );
+    $thermostat_database = end($thermostat_database);
+
     // Generate the final profile and save it.
     $profile = [
       'temperature' => [
@@ -931,8 +941,22 @@ class profile extends cora\api {
         'resist' => null
       ],
       'property' => [
-        'age' => null,
-        'square_feet' => null
+        'age' => $thermostat_database['property_age'],
+        'square_feet' => $thermostat_database['property_square_feet'],
+        'stories' => $thermostat_database['property_stories'],
+        'structure_type' => $thermostat_database['property_structure_type']
+      ],
+      'system_type' => [
+        'heat' => $thermostat_database['system_type_heat'],
+        'heat_stages' => $thermostat_database['system_type_heat_stages'],
+        'auxiliary_heat' => $thermostat_database['system_type_auxiliary_heat'],
+        'auxiliary_heat_stages' => $thermostat_database['system_type_auxiliary_heat_stages'],
+        'cool' => $thermostat_database['system_type_cool'],
+        'cool_stages' => $thermostat_database['system_type_cool_stages']
+      ],
+      'address' => [
+        'latitude' => $thermostat_database['address_latitude'],
+        'longitude' => $thermostat_database['address_longitude']
       ],
       'metadata' => [
         'generated_at' => date('c'),
@@ -1111,14 +1135,7 @@ class profile extends cora\api {
       $profile['setback']['heat'] = $temperature_home_heat - $temperature_away_heat;
     }
 
-    // Property
-    if(isset($thermostat['property']['age']) === true) {
-      $profile['property']['age'] = $thermostat['property']['age'];
-    }
-    if(isset($thermostat['property']['square_feet']) === true) {
-      $profile['property']['square_feet'] = $thermostat['property']['square_feet'];
-    }
-
+    // Debug
     if($debug === true) {
       fclose($output);
 
@@ -1129,6 +1146,61 @@ class profile extends cora\api {
         'Pragma' => 'no-cache',
         'Expires' => '0',
       ], true);
+    }
+
+    /**
+     * Store the profile. A single profile can be stored per day for
+     * flexibility purposes, but this code forces a single profile to be
+     * stored per week. This makes the GUI easy and intuitive.
+     */
+    $day_of_week = date(
+      'w',
+      get_local_datetime(
+        $profile['metadata']['generated_at'],
+        $thermostat['time_zone'],
+        'U'
+      )
+    );
+
+    $start_of_week = date('Y-m-d', strtotime('-' . $day_of_week . ' days'));
+
+    $dates_this_week = [
+      $start_of_week,
+      date('Y-m-d', strtotime($start_of_week . ' +1 day')),
+      date('Y-m-d', strtotime($start_of_week . ' +2 day')),
+      date('Y-m-d', strtotime($start_of_week . ' +3 day')),
+      date('Y-m-d', strtotime($start_of_week . ' +4 day')),
+      date('Y-m-d', strtotime($start_of_week . ' +5 day')),
+      date('Y-m-d', strtotime($start_of_week . ' +6 day'))
+    ];
+
+    $existing_profiles = $this->read([
+      'thermostat_id' => $thermostat['thermostat_id'],
+      'date' => $dates_this_week
+    ]);
+
+    if(count($existing_profiles) === 0) {
+      $this->create([
+        'user_id' => $thermostat['user_id'],
+        'thermostat_id' => $thermostat['thermostat_id'],
+        'date' => get_local_datetime(
+          $profile['metadata']['generated_at'],
+          $thermostat['time_zone'],
+          'Y-m-d'
+        ),
+        'profile' => $profile
+      ]);
+    } else {
+      $most_recent_profile = end($existing_profiles);
+      $this->update([
+        'profile_id' => $most_recent_profile['profile_id'],
+        'date' => get_local_datetime(
+          $profile['metadata']['generated_at'],
+          $thermostat['time_zone'],
+          'Y-m-d'
+        ),
+        'profile' => $profile
+      ]);
     }
 
     return $profile;

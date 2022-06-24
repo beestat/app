@@ -256,7 +256,7 @@ class thermostat extends cora\crud {
   /**
    * Compare this thermostat to all other matching ones.
    *
-   * @param array $thermosat_id The base thermostat_id.
+   * @param array $thermostat_id The base thermostat_id.
    * @param array $attributes Optional attributes:
    * property_structure_type
    * property_age
