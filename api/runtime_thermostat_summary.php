@@ -10,7 +10,8 @@ class runtime_thermostat_summary extends cora\crud {
   public static $exposed = [
     'private' => [
       'read_id',
-      'sync'
+      'sync',
+      'populate'
     ],
     'public' => []
   ];
