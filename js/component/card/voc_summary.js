@@ -253,9 +253,14 @@ beestat.component.card.voc_summary.prototype.decorate_chart_ = function(parent) 
       var background = beestat.style.color.bluegray.light;
 
       if (cell_value !== undefined) {
-        var average = grid_data[day + '_' + hour].reduce(function(a, b) {
-          return a + b;
-        }) / grid_data[day + '_' + hour].length;
+        var average;
+        if (grid_data[day + '_' + hour].length > 0) {
+          average = grid_data[day + '_' + hour].reduce(function(a, b) {
+            return a + b;
+          }) / grid_data[day + '_' + hour].length;
+        } else {
+          average = 0;
+        }
 
         td.setAttribute('title', Math.round(average) + ' ppb');
 
@@ -366,7 +371,7 @@ beestat.component.card.voc_summary.prototype.has_data_ = function() {
  * @return {string} Title
  */
 beestat.component.card.voc_summary.prototype.get_title_ = function() {
-  return 'TVOC Summary';
+  return 'TVOC Concentration Summary';
 };
 
 /**

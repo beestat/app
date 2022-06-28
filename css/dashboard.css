@@ -425,6 +425,7 @@ input[type=checkbox] {
 .icon.numeric_4_box:before { content: "\F03AD"; }
 .icon.numeric_3_box:before { content: "\F03AA"; }
 .icon.numeric_7_box:before { content: "\F03B6"; }
+.icon.open_in_new:before { content: "\F03CC"; }
 .icon.patreon:before { content: "\F0882"; }
 .icon.pound:before { content: "\F0423"; }
 .icon.refresh:before { content: "\F0450"; }

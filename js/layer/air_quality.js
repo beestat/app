@@ -7,8 +7,6 @@ beestat.layer.air_quality = function() {
 beestat.extend(beestat.layer.air_quality, beestat.layer);
 
 beestat.layer.air_quality.prototype.decorate_ = function(parent) {
-  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-
   /*
    * Set the overflow on the body so the scrollbar is always present so
    * highcharts graphs render properly.
@@ -33,19 +31,21 @@ beestat.layer.air_quality.prototype.decorate_ = function(parent) {
     ]);
   }
 
-  cards.push([
-    {
-      'card': new beestat.component.card.early_access(
-        thermostat.thermostat_id
-      ),
-      'size': 12
-    }
-  ]);
+  if (beestat.thermostat.supports_air_quality(beestat.setting('thermostat_id')) === false) {
+    cards.push([
+      {
+        'card': new beestat.component.card.air_quality_not_supported(
+          beestat.setting('thermostat_id')
+        ),
+        'size': 12
+      }
+    ]);
+  }
 
   cards.push([
     {
       'card': new beestat.component.card.air_quality_detail(
-        thermostat.thermostat_id
+        beestat.setting('thermostat_id')
       ),
       'size': 12
     }
@@ -54,7 +54,7 @@ beestat.layer.air_quality.prototype.decorate_ = function(parent) {
   cards.push([
     {
       'card': new beestat.component.card.voc_summary(
-        thermostat.thermostat_id
+        beestat.setting('thermostat_id')
       ),
       'size': 12
     }

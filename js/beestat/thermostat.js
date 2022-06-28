@@ -175,3 +175,17 @@ beestat.thermostat.get_current_climate = function(thermostat_id) {
 
   return null;
 };
+
+/**
+ * Get whether or not the thermostat supports air quality.
+ *
+ * @param {number} thermostat_id
+ * @param {string} climate_ref The ecobee climateRef
+ *
+ * @return {boolean} Whether or not the thermostat supports air quality.
+ */
+beestat.thermostat.supports_air_quality = function(thermostat_id) {
+  const thermostat = beestat.cache.thermostat[thermostat_id];
+  const ecobee_thermostat = beestat.cache.ecobee_thermostat[thermostat.ecobee_thermostat_id];
+  return ecobee_thermostat.model_number === 'aresSmart';
+};

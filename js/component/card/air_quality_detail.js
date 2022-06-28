@@ -368,6 +368,21 @@ beestat.component.card.air_quality_detail.prototype.get_data_ = function(force) 
 
     this.data_ = sensor_data;
 
+    if (beestat.thermostat.supports_air_quality(this.thermostat_id_) === false) {
+      // Override with 0s for unsupported thermostats so the charts look ok.
+      for (let i = 0; i < sensor_data.series['voc_concentration_' + this.thermostat_id_].length; i++) {
+        sensor_data.series['air_quality_' + this.thermostat_id_][i] = 0;
+        sensor_data.series['voc_concentration_' + this.thermostat_id_][i] = 0;
+        sensor_data.series['co2_concentration_' + this.thermostat_id_][i] = 0;
+      }
+
+      for (let timestamp in sensor_data.metadata.series['air_quality_' + this.thermostat_id_].data) {
+        sensor_data.metadata.series['air_quality_' + this.thermostat_id_].data[timestamp] = 0;
+        sensor_data.metadata.series['voc_concentration_' + this.thermostat_id_].data[timestamp] = 0;
+        sensor_data.metadata.series['co2_concentration_' + this.thermostat_id_].data[timestamp] = 0;
+      }
+    }
+
     Object.assign(this.data_.series, thermostat_data.series);
     Object.assign(this.data_.metadata.series, thermostat_data.metadata.series);
 
