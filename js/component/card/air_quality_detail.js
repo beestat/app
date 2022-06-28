@@ -369,17 +369,24 @@ beestat.component.card.air_quality_detail.prototype.get_data_ = function(force) 
     this.data_ = sensor_data;
 
     if (beestat.thermostat.supports_air_quality(this.thermostat_id_) === false) {
-      // Override with 0s for unsupported thermostats so the charts look ok.
-      for (let i = 0; i < sensor_data.series['voc_concentration_' + this.thermostat_id_].length; i++) {
-        sensor_data.series['air_quality_' + this.thermostat_id_][i] = 0;
-        sensor_data.series['voc_concentration_' + this.thermostat_id_][i] = 0;
-        sensor_data.series['co2_concentration_' + this.thermostat_id_][i] = 0;
-      }
+      for (let sensor_id in beestat.cache.sensor) {
+        if (
+          beestat.cache.sensor[sensor_id].type === 'thermostat' &&
+          beestat.cache.sensor[sensor_id].thermostat_id === this.thermostat_id_
+        ) {
+          // Override with 0s for unsupported thermostats so the charts look ok.
+          for (let i = 0; i < sensor_data.series['air_quality_' + sensor_id].length; i++) {
+            sensor_data.series['air_quality_' + sensor_id][i] = 0;
+            sensor_data.series['voc_concentration_' + sensor_id][i] = 0;
+            sensor_data.series['co2_concentration_' + sensor_id][i] = 0;
+          }
 
-      for (let timestamp in sensor_data.metadata.series['air_quality_' + this.thermostat_id_].data) {
-        sensor_data.metadata.series['air_quality_' + this.thermostat_id_].data[timestamp] = 0;
-        sensor_data.metadata.series['voc_concentration_' + this.thermostat_id_].data[timestamp] = 0;
-        sensor_data.metadata.series['co2_concentration_' + this.thermostat_id_].data[timestamp] = 0;
+          for (let timestamp in sensor_data.metadata.series['air_quality_' + sensor_id].data) {
+            sensor_data.metadata.series['air_quality_' + sensor_id].data[timestamp] = 0;
+            sensor_data.metadata.series['voc_concentration_' + sensor_id].data[timestamp] = 0;
+            sensor_data.metadata.series['co2_concentration_' + sensor_id].data[timestamp] = 0;
+          }
+        }
       }
     }
 
