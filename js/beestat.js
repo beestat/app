@@ -17,7 +17,7 @@ beestat.ecobee_thermostat_models = {
   'siSmart': 'Smart Si',
   'vulcanSmart': 'SmartThermostat',
   'aresSmart': 'SmartThermostat Premium',
-  'artemisSmart': 'SmartThermostat'
+  'artemisSmart': 'SmartThermostat Enhanced'
 };
 
 /**
