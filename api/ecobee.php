@@ -41,6 +41,17 @@ class ecobee extends external_api {
       // exist yet.
       $ecobee_token = $this->api('ecobee_token', 'obtain', ['code' => $code]);
 
+      /**
+       * I registered an ecobee account (demo@beestat.io). It doesn't have any
+       * thermostats, so if we run into this account just go to the demo page.
+       * Presently this is just for Google Play so they can log in with fake
+       * credentials and approve the app.
+       */
+      if($ecobee_token['ecobee_account_id'] === 'd90d2785-890b-4743-8b51-477020a7f6e9') {
+        header('Location: https://demo.beestat.io');
+        die();
+      }
+
       // Get the thermostat list from ecobee.
       $response = $this->ecobee_api(
         'GET',
