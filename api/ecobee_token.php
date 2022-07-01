@@ -67,6 +67,7 @@ class ecobee_token extends cora\crud {
     return [
       'access_token' => $response['access_token'],
       'refresh_token' => $response['refresh_token'],
+      'ecobee_account_id' => $this->get_ecobee_account_id($response),
       'timestamp' => date('Y-m-d H:i:s'),
       'deleted' => 0
     ];
