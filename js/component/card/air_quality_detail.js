@@ -70,13 +70,13 @@ beestat.component.card.air_quality_detail.prototype.decorate_contents_ = functio
 
   this.charts_.occupancy.render(chart_container);
 
-  chart_container.appendChild($.createElement('p').innerText('Air Quality'));
+  chart_container.appendChild($.createElement('p').innerText('Air Quality (%)'));
   this.charts_.air_quality.render(chart_container);
 
-  chart_container.appendChild($.createElement('p').innerText('TVOC Concentration'));
+  chart_container.appendChild($.createElement('p').innerText('TVOC Concentration (ppb)'));
   this.charts_.voc_concentration.render(chart_container);
 
-  chart_container.appendChild($.createElement('p').innerText('CO₂ Concentration'));
+  chart_container.appendChild($.createElement('p').innerText('CO₂ Concentration (ppm)'));
   this.charts_.co2_concentration.render(chart_container);
 
   // this.charts_.x_axis.render(chart_container);

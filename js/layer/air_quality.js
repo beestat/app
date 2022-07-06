@@ -53,7 +53,7 @@ beestat.layer.air_quality.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.voc_summary(
+      'card': new beestat.component.card.air_quality_summary(
         beestat.setting('thermostat_id')
       ),
       'size': 12

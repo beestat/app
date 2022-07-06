@@ -5,7 +5,7 @@
  * @param {number} thermostat_id The thermostat_id this card is displaying
  * data for
  */
-beestat.component.card.voc_summary = function(thermostat_id) {
+beestat.component.card.air_quality_summary = function(thermostat_id) {
   var self = this;
 
   this.thermostat_id_ = thermostat_id;
@@ -24,25 +24,25 @@ beestat.component.card.voc_summary = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.voc_summary_range_type',
-      'setting.voc_summary_range_dynamic',
-      'cache.data.voc_summary'
+      'setting.air_quality_summary_range_type',
+      'setting.air_quality_summary_range_dynamic',
+      'cache.data.air_quality_summary'
     ],
     change_function
   );
 
   beestat.component.card.apply(this, arguments);
 };
-beestat.extend(beestat.component.card.voc_summary, beestat.component.card);
+beestat.extend(beestat.component.card.air_quality_summary, beestat.component.card);
 
-beestat.component.card.voc_summary.prototype.rerender_on_breakpoint_ = true;
+beestat.component.card.air_quality_summary.prototype.rerender_on_breakpoint_ = true;
 
 /**
  * Decorate
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.voc_summary.prototype.decorate_contents_ = function(parent) {
+beestat.component.card.air_quality_summary.prototype.decorate_contents_ = function(parent) {
   var self = this;
 
   var container = $.createElement('div').style({
@@ -59,10 +59,10 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
 
   var required_begin;
   var required_end;
-  if (beestat.setting('voc_summary_range_type') === 'dynamic') {
+  if (beestat.setting('air_quality_summary_range_type') === 'dynamic') {
     required_begin = moment()
       .subtract(
-        beestat.setting('voc_summary_range_dynamic'),
+        beestat.setting('air_quality_summary_range_dynamic'),
         'day'
       )
       .second(0);
@@ -72,10 +72,10 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
       .second(0);
   } else {
     required_begin = moment(
-      beestat.setting('voc_summary_range_static_begin') + ' 00:00:00'
+      beestat.setting('air_quality_summary_range_static_begin') + ' 00:00:00'
     );
     required_end = moment(
-      beestat.setting('voc_summary_range_static_end') + ' 23:59:59'
+      beestat.setting('air_quality_summary_range_static_end') + ' 23:59:59'
     );
   }
 
@@ -97,13 +97,13 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
    * the database, check every 2 seconds until it does.
    */
   if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
-    if (beestat.cache.data.voc_summary === undefined) {
+    if (beestat.cache.data.air_quality_summary === undefined) {
       this.show_loading_('Fetching');
 
       var value;
       var operator;
 
-      if (beestat.setting('voc_summary_range_type') === 'dynamic') {
+      if (beestat.setting('air_quality_summary_range_type') === 'dynamic') {
         value = required_begin.format();
         operator = '>=';
       } else {
@@ -143,7 +143,7 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
           var r = response[alias];
           runtime_sensors = runtime_sensors.concat(r);
         }
-        beestat.cache.set('data.voc_summary', runtime_sensors);
+        beestat.cache.set('data.air_quality_summary', runtime_sensors);
       });
 
       api_call.send();
@@ -192,16 +192,16 @@ beestat.component.card.voc_summary.prototype.decorate_contents_ = function(paren
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.voc_summary.prototype.decorate_chart_ = function(parent) {
+beestat.component.card.air_quality_summary.prototype.decorate_chart_ = function(parent) {
   var grid_data = {};
-  for (var runtime_sensor_id in beestat.cache.data.voc_summary) {
-    var runtime_sensor = beestat.cache.data.voc_summary[runtime_sensor_id];
+  for (var runtime_sensor_id in beestat.cache.data.air_quality_summary) {
+    var runtime_sensor = beestat.cache.data.air_quality_summary[runtime_sensor_id];
     var key = moment(runtime_sensor.timestamp).format('d_H');
     if (grid_data[key] === undefined) {
       grid_data[key] = [];
     }
-    if (runtime_sensor.voc_concentration !== null) {
-      grid_data[key].push(runtime_sensor.voc_concentration);
+    if (runtime_sensor.air_quality !== null) {
+      grid_data[key].push(runtime_sensor.air_quality);
     }
   }
 
@@ -262,36 +262,32 @@ beestat.component.card.voc_summary.prototype.decorate_chart_ = function(parent) 
           average = 0;
         }
 
-        td.setAttribute('title', Math.round(average) + ' ppb');
+        td.setAttribute('title', Math.round(average));
 
+        // I am normalizing Air Quality between 0 and 100.
+        const max_average = 100;
+        const colors = [
+          beestat.style.color.green.light,
+          beestat.style.color.green.base,
+          beestat.style.color.green.dark,
+          beestat.style.color.yellow.light,
+          beestat.style.color.yellow.base,
+          beestat.style.color.yellow.dark,
+          beestat.style.color.orange.light,
+          beestat.style.color.orange.base,
+          beestat.style.color.orange.dark,
+          beestat.style.color.red.light,
+          beestat.style.color.red.base,
+          beestat.style.color.red.dark
+        ];
         if (average < 1) {
           background = beestat.style.color.bluegray.light;
-        } else if (average < 75) {
-          background = beestat.style.color.green.light;
-        } else if (average < 150) {
-          background = beestat.style.color.green.base;
-        } else if (average < 225) {
-          background = beestat.style.color.green.dark;
-        } else if (average < 375) {
-          background = beestat.style.color.yellow.light;
-        } else if (average < 525) {
-          background = beestat.style.color.yellow.base;
-        } else if (average < 675) {
-          background = beestat.style.color.yellow.dark;
-        } else if (average < 925) {
-          background = beestat.style.color.orange.light;
-        } else if (average < 1175) {
-          background = beestat.style.color.orange.base;
-        } else if (average < 1425) {
-          background = beestat.style.color.orange.dark;
-        } else if (average < 1675) {
-          background = beestat.style.color.red.light;
-        } else if (average < 1925) {
-          background = beestat.style.color.red.base;
-        } else if (average < 2175) {
-          background = beestat.style.color.red.dark;
+        } else if (average <= max_average) {
+          background = colors[
+            Math.floor(average / (max_average / colors.length))
+          ];
         } else {
-          background = beestat.style.color.red.dark;
+          background = colors[colors.length - 1];
         }
       }
 
@@ -312,7 +308,7 @@ beestat.component.card.voc_summary.prototype.decorate_chart_ = function(parent) 
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.voc_summary.prototype.decorate_top_right_ = function(parent) {
+beestat.component.card.air_quality_summary.prototype.decorate_top_right_ = function(parent) {
   var menu = (new beestat.component.menu()).render(parent);
 
   menu.add_menu_item(new beestat.component.menu_item()
@@ -320,13 +316,13 @@ beestat.component.card.voc_summary.prototype.decorate_top_right_ = function(pare
     .set_icon('numeric_1_box')
     .set_callback(function() {
       if (
-        beestat.setting('voc_summary_range_dynamic') !== 7 ||
-        beestat.setting('voc_summary_range_type') !== 'dynamic'
+        beestat.setting('air_quality_summary_range_dynamic') !== 7 ||
+        beestat.setting('air_quality_summary_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.voc_summary');
+        beestat.cache.delete('data.air_quality_summary');
         beestat.setting({
-          'voc_summary_range_dynamic': 7,
-          'voc_summary_range_type': 'dynamic'
+          'air_quality_summary_range_dynamic': 7,
+          'air_quality_summary_range_type': 'dynamic'
         });
       }
     }));
@@ -336,13 +332,13 @@ beestat.component.card.voc_summary.prototype.decorate_top_right_ = function(pare
     .set_icon('numeric_4_box')
     .set_callback(function() {
       if (
-        beestat.setting('voc_summary_range_dynamic') !== 28 ||
-        beestat.setting('voc_summary_range_type') !== 'dynamic'
+        beestat.setting('air_quality_summary_range_dynamic') !== 28 ||
+        beestat.setting('air_quality_summary_range_type') !== 'dynamic'
       ) {
-        beestat.cache.delete('data.voc_summary');
+        beestat.cache.delete('data.air_quality_summary');
         beestat.setting({
-          'voc_summary_range_dynamic': 28,
-          'voc_summary_range_type': 'dynamic'
+          'air_quality_summary_range_dynamic': 28,
+          'air_quality_summary_range_type': 'dynamic'
         });
       }
     }));
@@ -360,9 +356,9 @@ beestat.component.card.voc_summary.prototype.decorate_top_right_ = function(pare
  *
  * @return {boolean} Whether or not there is data to display on the chart.
  */
-beestat.component.card.voc_summary.prototype.has_data_ = function() {
-  return beestat.cache.data.voc_summary &&
-    beestat.cache.data.voc_summary.length > 0;
+beestat.component.card.air_quality_summary.prototype.has_data_ = function() {
+  return beestat.cache.data.air_quality_summary &&
+    beestat.cache.data.air_quality_summary.length > 0;
 };
 
 /**
@@ -370,8 +366,8 @@ beestat.component.card.voc_summary.prototype.has_data_ = function() {
  *
  * @return {string} Title
  */
-beestat.component.card.voc_summary.prototype.get_title_ = function() {
-  return 'TVOC Concentration Summary';
+beestat.component.card.air_quality_summary.prototype.get_title_ = function() {
+  return 'Air Quality Summary';
 };
 
 /**
@@ -379,19 +375,19 @@ beestat.component.card.voc_summary.prototype.get_title_ = function() {
  *
  * @return {string} Subtitle
  */
-beestat.component.card.voc_summary.prototype.get_subtitle_ = function() {
-  if (beestat.setting('voc_summary_range_type') === 'dynamic') {
-    var s = ((beestat.setting('voc_summary_range_dynamic') / 7) > 1) ? 's' : '';
+beestat.component.card.air_quality_summary.prototype.get_subtitle_ = function() {
+  if (beestat.setting('air_quality_summary_range_type') === 'dynamic') {
+    var s = ((beestat.setting('air_quality_summary_range_dynamic') / 7) > 1) ? 's' : '';
 
     return 'Past ' +
-      (beestat.setting('voc_summary_range_dynamic') / 7) +
+      (beestat.setting('air_quality_summary_range_dynamic') / 7) +
       ' week' +
       s;
   }
 
-  var begin = moment(beestat.setting('voc_summary_range_static_begin'))
+  var begin = moment(beestat.setting('air_quality_summary_range_static_begin'))
     .format('MMM D, YYYY');
-  var end = moment(beestat.setting('voc_summary_range_static_end'))
+  var end = moment(beestat.setting('air_quality_summary_range_static_end'))
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;

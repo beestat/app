@@ -112,6 +112,11 @@ class runtime_sensor extends cora\crud {
       if ($runtime_sensor['temperature'] !== null) {
         $runtime_sensor['temperature'] /= 10;
       }
+
+      // Normalize air quality from 0-350 to 0-100;
+      if ($runtime_sensor['air_quality'] !== null) {
+        $runtime_sensor['air_quality'] = round($runtime_sensor['air_quality'] / 350 * 100);
+      }
     }
 
     return $runtime_sensors;

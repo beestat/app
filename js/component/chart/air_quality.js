@@ -73,7 +73,10 @@ beestat.component.chart.air_quality.prototype.get_options_yAxis_ = function() {
         'formatter': function() {
           return this.value;
         }
-      }
+      },
+      'min': 0,
+      'max': 100,
+      'tickInterval': 100
     }
   ];
 };

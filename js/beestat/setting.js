@@ -46,12 +46,12 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'air_quality_detail_range_static_end': moment().format('MM/DD/YYYY'),
     'air_quality_detail_range_dynamic': 3,
 
-    'voc_summary_range_type': 'dynamic',
-    'voc_summary_range_static_begin': moment()
+    'air_quality_summary_range_type': 'dynamic',
+    'air_quality_summary_range_static_begin': moment()
       .subtract(28, 'day')
       .format('MM/DD/YYYY'),
-    'voc_summary_range_static_end': moment().format('MM/DD/YYYY'),
-    'voc_summary_range_dynamic': 28,
+    'air_quality_summary_range_static_end': moment().format('MM/DD/YYYY'),
+    'air_quality_summary_range_dynamic': 28,
 
     'runtime_thermostat_summary_time_count': 0,
     'runtime_thermostat_summary_time_period': 'all',
