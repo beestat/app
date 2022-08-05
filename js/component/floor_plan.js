@@ -531,21 +531,21 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
   const parts = [];
   if (this.state_.active_room !== undefined) {
     parts.push(this.state_.active_room.name || 'Unnamed Room');
-    // parts.push(
-    //   Math.abs(
-    //     Math.round(
-    //       ClipperLib.Clipper.Area(this.state_.active_room.points) / 144
-    //     )
-    //   ).toLocaleString() + ' sqft'
-    // );
+    parts.push(
+      Math.abs(
+        Math.round(
+          ClipperLib.Clipper.Area(this.state_.active_room.points) / 144
+        )
+      ).toLocaleString() + ' sqft'
+    );
   } else {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
-    // let area = 0;
-    // this.state_.active_group.rooms.forEach(function(room) {
-      // area += Math.abs(ClipperLib.Clipper.Area(room.points));
-    // });
+    let area = 0;
+    this.state_.active_group.rooms.forEach(function(room) {
+      area += Math.abs(ClipperLib.Clipper.Area(room.points));
+    });
 
-    // parts.push(Math.round(area / 144).toLocaleString() + ' sqft');
+    parts.push(Math.round(area / 144).toLocaleString() + ' sqft');
   }
   this.infobox_container_.innerText(parts.join(' • '));
 };

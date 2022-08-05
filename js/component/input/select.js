@@ -103,7 +103,6 @@ beestat.component.input.select.prototype.add_option = function(option) {
  * @return {beestat.component.input.select} This.
  */
 beestat.component.input.select.prototype.set_value = function(value) {
-  console.log('set select value to ' + value);
   this.input_.value = value;
 
   this.dispatchEvent('change');

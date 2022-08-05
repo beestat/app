@@ -73,6 +73,7 @@ beestat.component.floor_plan_entity.prototype.decorate_polygon_ = function(paren
     });
     this.polygon_.addEventListener('mouseup', function(e) {
       if (
+        self.mousedown_mouse_ !== undefined &&
         e.clientX === self.mousedown_mouse_.x &&
         e.clientY === self.mousedown_mouse_.y
       ) {
