@@ -195,7 +195,6 @@ beestat.component.floor_plan.prototype.add_grid_ = function() {
   grid_large_pattern.appendChild(grid_large_path);
 
   const grid_rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  grid_rect.setAttribute('id', 'grid_rect');
   grid_rect.setAttribute('x', this.grid_pixels_ / -2);
   grid_rect.setAttribute('y', this.grid_pixels_ / -2);
   grid_rect.setAttribute('width', this.grid_pixels_);
@@ -264,7 +263,7 @@ beestat.component.floor_plan.prototype.set_draggable_ = function() {
   this.mouseup_handler_ = function(e) {
     // Deselect when clicking on the background.
     if (
-      e.target.getAttribute('id') === 'grid_rect' &&
+      self.parent_.contains(e.target) &&
       e.clientX === self.drag_start_mouse_.x &&
       e.clientY === self.drag_start_mouse_.y
     ) {
