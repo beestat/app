@@ -497,33 +497,35 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
 
   var menu = (new beestat.component.menu()).render(parent);
 
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Add New')
-    .set_icon('home_plus')
-    .set_callback(function() {
-      new beestat.component.modal.create_floor_plan(
-        self.thermostat_id_
-      ).render();
-    }));
-
-  if (Object.keys(beestat.cache.floor_plan).length > 1) {
+  if (window.is_demo === false) {
     menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Switch')
-      .set_icon('home_switch')
+      .set_text('Add New')
+      .set_icon('home_plus')
       .set_callback(function() {
-        (new beestat.component.modal.change_floor_plan()).render();
-      }));
-  }
-
-  if (beestat.setting('floor_plan_id') !== null) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Delete')
-      .set_icon('home_remove')
-      .set_callback(function() {
-        new beestat.component.modal.delete_floor_plan(
-          beestat.setting('floor_plan_id')
+        new beestat.component.modal.create_floor_plan(
+          self.thermostat_id_
         ).render();
       }));
+
+    if (Object.keys(beestat.cache.floor_plan).length > 1) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Switch')
+        .set_icon('home_switch')
+        .set_callback(function() {
+          (new beestat.component.modal.change_floor_plan()).render();
+        }));
+    }
+
+    if (beestat.setting('floor_plan_id') !== null) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Delete')
+        .set_icon('home_remove')
+        .set_callback(function() {
+          new beestat.component.modal.delete_floor_plan(
+            beestat.setting('floor_plan_id')
+          ).render();
+        }));
+    }
   }
 
   menu.add_menu_item(new beestat.component.menu_item()
