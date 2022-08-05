@@ -73,8 +73,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       .style('margin-top', beestat.style.size.gutter / 2);
     parent.appendChild(this.info_pane_container_);
     this.decorate_info_pane_(this.info_pane_container_);
-
-    this.update_floor_plan_();
   }
 };
 
@@ -109,10 +107,19 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   });
 
   // Rerender when stuff happens
-  this.floor_plan_.addEventListener('add_room', self.rerender.bind(this));
-  this.floor_plan_.addEventListener('remove_room', self.rerender.bind(this));
+  this.floor_plan_.addEventListener('add_room', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('remove_room', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('remove_point', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
   this.floor_plan_.addEventListener('clear_room', self.rerender.bind(this));
-  this.floor_plan_.addEventListener('remove_point', self.rerender.bind(this));
   this.floor_plan_.addEventListener('toggle_snapping', self.rerender.bind(this));
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
   this.floor_plan_.addEventListener('zoom', self.rerender.bind(this));
@@ -459,19 +466,14 @@ beestat.component.card.floor_plan_editor.prototype.get_subtitle_ = function() {
     const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
     return floor_plan.name;
   }
+
+  return null;
 };
 
 /**
  * Update the floor plan in the database.
  */
 beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function() {
-  const new_rooms = [];
-  this.entities_.room.forEach(function(entity) {
-    new_rooms.push(entity.get_room());
-  });
-
-  this.state_.active_group.rooms = new_rooms;
-
   new beestat.api()
     .add_call(
       'floor_plan',
