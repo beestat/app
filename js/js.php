@@ -15,7 +15,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/lib/highcharts/highcharts.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/threejs/threejs.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/suncalc/suncalc.js"></script>' . PHP_EOL;
-  echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;
+  // echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;
 
   // Beestat
   echo '<script src="/js/beestat.js"></script>' . PHP_EOL;
@@ -41,6 +41,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/sensor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/requestor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/touch.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/crypto.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
