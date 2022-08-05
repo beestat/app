@@ -299,7 +299,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
 
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Reset Zoom')
-      .set_icon('magnify_minus')
+      .set_icon('magnify_close')
       .set_callback(function() {
         self.charts_.temperature.reset_zoom();
       }));

@@ -15,15 +15,11 @@ beestat.component.modal.newsletter.prototype.decorate_contents_ = function(paren
   parent.appendChild($.createElement('p').innerHTML('Interested in following beestat development? Subscribe to the newsletter for an updates. Emails are sparse; only a few every year.'));
 
   this.email_address_ = new beestat.component.input.text()
-    .set_style({
-      'width': '100%',
-      'max-width': '300px',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    });
+    .set_width('50%');
 
   if (this.subscribed_ === true) {
     this.email_address_.set_icon('check');
-    this.email_address_.disable();
+    this.email_address_.set_enabled(false);
     this.email_address_.set_value(this.state_.email_address_);
   } else if (this.subscribed_ === false) {
     this.email_address_.set_icon('email');

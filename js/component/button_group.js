@@ -53,3 +53,13 @@ beestat.component.button_group.prototype.add_button = function(button) {
 beestat.component.button_group.prototype.get_buttons = function() {
   return this.buttons_;
 };
+
+/**
+ * Remove this component from the page. Disposes the buttons first.
+ */
+beestat.component.button_group.prototype.dispose = function() {
+  this.buttons_.forEach(function(button) {
+    button.dispose();
+  });
+  beestat.component.prototype.dispose.apply(this, arguments);
+};

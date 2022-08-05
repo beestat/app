@@ -26,16 +26,16 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
   const enable_gap_fill = new beestat.component.input.checkbox();
   enable_gap_fill
     .set_label('Enable Gap Fill')
-    .set_value(beestat.setting('runtime_thermostat_summary_gap_fill'))
+    .set_checked(beestat.setting('runtime_thermostat_summary_gap_fill'))
     .render(parent);
 
   enable_gap_fill.addEventListener('change', function() {
-    enable_gap_fill.disable();
+    enable_gap_fill.set_enabled(false);
     beestat.setting(
       'runtime_thermostat_summary_gap_fill',
-      enable_gap_fill.get_value(),
+      enable_gap_fill.get_checked(),
       function() {
-        enable_gap_fill.enable();
+        enable_gap_fill.set_enabled(true);
       }
     );
   });
@@ -44,16 +44,16 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
   const enable_smart_scale = new beestat.component.input.checkbox();
   enable_smart_scale
     .set_label('Enable Smart Scale')
-    .set_value(beestat.setting('runtime_thermostat_summary_smart_scale'))
+    .set_checked(beestat.setting('runtime_thermostat_summary_smart_scale'))
     .render(parent);
 
   enable_smart_scale.addEventListener('change', function() {
-    enable_smart_scale.disable();
+    enable_smart_scale.set_enabled(false);
     beestat.setting(
       'runtime_thermostat_summary_smart_scale',
-      enable_smart_scale.get_value(),
+      enable_smart_scale.get_checked(),
       function() {
-        enable_smart_scale.enable();
+        enable_smart_scale.set_enabled(true);
       }
     );
   });
@@ -70,14 +70,14 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
   const ignore_solar_gain_key = 'thermostat.' + thermostat.thermostat_id + '.profile.ignore_solar_gain';
   ignore_solar_gain
     .set_label('Ignore Solar Gain')
-    .set_value(beestat.setting(ignore_solar_gain_key))
+    .set_checked(beestat.setting(ignore_solar_gain_key))
     .render(parent);
 
   ignore_solar_gain.addEventListener('change', function() {
-    ignore_solar_gain.disable();
+    ignore_solar_gain.set_enabled(false);
     beestat.setting(
       ignore_solar_gain_key,
-      ignore_solar_gain.get_value(),
+      ignore_solar_gain.get_checked(),
       function() {
         /**
          * Clear the API call cache and delete the profile so it regenerates
@@ -117,7 +117,7 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
             'thermostat'
           )
           .set_callback(function(response) {
-            ignore_solar_gain.enable();
+            ignore_solar_gain.set_enabled(true);
             beestat.cache.set('thermostat', response.thermostat);
           })
           .send();
@@ -134,14 +134,7 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
   );
 
   var temperature_profiles_range_begin = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_maxlength(10)
     .set_icon('calendar');
 
   var temperature_profiles_range_begin_m =

@@ -37,14 +37,8 @@ beestat.component.modal.download_data.prototype.decorate_range_ = function(paren
   (new beestat.component.title('Date Range')).render(parent);
 
   var range_begin = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_width(110)
+    .set_maxlength(10)
     .set_icon('calendar')
     .set_value(this.state_.range_begin.format('M/D/YYYY'));
 
@@ -54,14 +48,8 @@ beestat.component.modal.download_data.prototype.decorate_range_ = function(paren
   });
 
   var range_end = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_width(110)
+    .set_maxlength(10)
     .set_icon('calendar')
     .set_value(this.state_.range_end.format('M/D/YYYY'));
 

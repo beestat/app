@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /*
  The Rocket JavaScript library.
   This library is free software: you can redistribute it and/or modify

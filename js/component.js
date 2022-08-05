@@ -59,6 +59,8 @@ beestat.component.prototype.render = function(parent) {
  */
 beestat.component.prototype.rerender = function() {
   if (this.rendered_ === true) {
+    this.rendered_ = false;
+
     var new_container = $.createElement('div')
       .style('position', 'relative');
     this.decorate_(new_container);
@@ -70,6 +72,8 @@ beestat.component.prototype.rerender = function() {
     window.setTimeout(function() {
       self.dispatchEvent('render');
     }, 0);
+
+    this.rendered_ = true;
   }
   return this;
 };

@@ -13,14 +13,8 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
 
   // Time count
   var time_count = new beestat.component.input.text()
-    .set_style({
-      'width': 75,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_width(75)
+    .set_maxlength(10)
     .set_icon('pound')
     .set_value(beestat.setting('runtime_thermostat_summary_time_count'));
 
@@ -75,11 +69,11 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
         .addEventListener('click', function() {
           if (key === 'runtime_thermostat_summary_time_period') {
             if (value === 'all') {
-              time_count.set_value('∞').disable();
+              time_count.set_value('∞').set_enabled(false);
             } else if (time_count.get_value() === '∞') {
               time_count
                 .set_value(self.state_.runtime_thermostat_summary_time_count || '1')
-                .enable();
+                .set_enabled(true);
               time_count.dispatchEvent('blur');
             }
           }

@@ -34,6 +34,10 @@ beestat.component.button.prototype.decorate_ = function(parent) {
     });
   parent.appendChild(this.button_);
 
+  if (this.title_ !== undefined) {
+    this.button_.setAttribute('title', this.title_);
+  }
+
   if (this.icon_ !== undefined && this.text_ !== undefined) {
     // Text + Icon
     this.button_.style({
@@ -233,6 +237,21 @@ beestat.component.button.prototype.set_bubble_text = function(bubble_text) {
  */
 beestat.component.button.prototype.set_bubble_color = function(bubble_color) {
   this.bubble_color_ = bubble_color;
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+  return this;
+};
+
+/**
+ * Set the title for the button.
+ *
+ * @param {string} title
+ *
+ * @return {beestat.component.button} This.
+ */
+beestat.component.button.prototype.set_title = function(title) {
+  this.title_ = title;
   if (this.rendered_ === true) {
     this.rerender();
   }

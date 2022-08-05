@@ -41,14 +41,15 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       'layer': 'compare',
       'text': 'Compare',
       'icon': 'earth'
+    },
+    {
+      'layer': 'air_quality',
+      'text': 'Air Quality',
+      'icon': 'weather_windy'
     }
   ];
 
-  pages.push({
-    'layer': 'air_quality',
-    'text': 'Air Quality',
-    'icon': 'weather_windy'
-  });
+  pages.push();
 
   var gutter = beestat.style.size.gutter;
 
@@ -196,6 +197,15 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     .set_callback(function() {
       (new beestat.layer.settings()).render();
     }));
+
+  if (beestat.user.has_early_access() === true) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Visualize (Early Access)')
+      .set_icon('floor_plan')
+      .set_callback(function() {
+        (new beestat.layer.visualize()).render();
+      }));
+  }
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')

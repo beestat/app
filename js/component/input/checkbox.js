@@ -1,8 +1,15 @@
 /**
- * Checkbox parent class.
+ * Checkbox input.
  */
 beestat.component.input.checkbox = function() {
-  this.input_ = $.createElement('input');
+  const self = this;
+
+  this.input_ = document.createElement('input');
+  this.input_.setAttribute('type', 'checkbox');
+
+  this.input_.addEventListener('change', function() {
+    self.dispatchEvent('change');
+  });
 
   beestat.component.input.apply(this, arguments);
 };
@@ -14,60 +21,51 @@ beestat.extend(beestat.component.input.checkbox, beestat.component.input);
  * @param {rocket.Elements} parent
  */
 beestat.component.input.checkbox.prototype.decorate_ = function(parent) {
-  var self = this;
+  const self = this;
 
-  const div = $.createElement('div').addClass('checkbox');
-  this.input_
-    .setAttribute('id', this.uuid_)
-    .setAttribute('type', 'checkbox');
+  const div = document.createElement('div');
+  div.className = 'checkbox';
+
+  this.input_.setAttribute('id', this.uuid_);
+
   div.appendChild(this.input_);
 
-  const label = $.createElement('label');
+  const label = document.createElement('label');
   label.setAttribute('for', this.uuid_);
   div.appendChild(label);
 
-  const text_label = $.createElement('span')
-    .style({
-      'cursor': 'pointer',
-      'margin-left': (beestat.style.size.gutter / 2)
-    })
-    .innerText(this.label_)
-    .addEventListener('click', function() {
-      self.input_[0].click();
-    });
-  div.appendChild(text_label);
-
-  this.input_.addEventListener('change', function() {
-    self.dispatchEvent('change');
+  const span = document.createElement('span');
+  span.style.cursor = 'pointer';
+  span.style.marginLeft = (beestat.style.size.gutter / 2) + 'px';
+  span.innerText = this.label_;
+  span.addEventListener('click', function() {
+    self.input_.click();
   });
+  div.appendChild(span);
 
   parent.appendChild(div);
 };
 
 /**
- * Set the value in the input field. This bypasses the set_ function to avoid
- * rerendering when the input value is set. It's unnecessary and can also
- * cause minor issues if you try to set the value, then do something else with
- * the input immediately after.
+ * Set whether or not this checkbox is selected.
  *
- * This will not fire off the change event listener.
- *
- * @param {string} value
+ * @param {boolean} checked
  *
  * @return {beestat.component.input.checkbox} This.
  */
-beestat.component.input.checkbox.prototype.set_value = function(value) {
-  this.input_.checked(value);
+beestat.component.input.checkbox.prototype.set_checked = function(checked) {
+  this.input_.checked = checked;
+
   return this;
 };
 
 /**
- * Get the value in the input field.
+ * Get whether or not this checkbox is selected.
  *
- * @return {string} The value in the input field.
+ * @return {string} Whether or not this checkbox is selected.
  */
-beestat.component.input.checkbox.prototype.get_value = function() {
-  return this.input_.checked();
+beestat.component.input.checkbox.prototype.get_checked = function() {
+  return this.input_.checked;
 };
 
 /**
@@ -79,5 +77,10 @@ beestat.component.input.checkbox.prototype.get_value = function() {
  */
 beestat.component.input.checkbox.prototype.set_label = function(label) {
   this.label_ = label;
+
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+
   return this;
 };

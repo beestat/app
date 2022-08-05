@@ -80,6 +80,8 @@ window.addEventListener('resize', rocket.throttle(100, function() {
       beestat.dispatcher.dispatchEvent('breakpoint');
     }
   });
+
+  beestat.dispatcher.dispatchEvent('resize');
 }));
 
 // First run

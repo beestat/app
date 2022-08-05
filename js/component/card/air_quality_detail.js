@@ -305,7 +305,7 @@ beestat.component.card.air_quality_detail.prototype.decorate_top_right_ = functi
   if (this.has_data_() === true) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Reset Zoom')
-      .set_icon('magnify_minus')
+      .set_icon('magnify_close')
       .set_callback(function() {
         self.charts_.air_quality.reset_zoom();
       }));

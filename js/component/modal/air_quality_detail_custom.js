@@ -124,14 +124,8 @@ beestat.component.modal.air_quality_detail_custom.prototype.decorate_range_stati
   };
 
   air_quality_detail_static_range_begin = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_maxlength(10)
+    .set_width(110)
     .set_icon('calendar')
     .set_value(this.state_.air_quality_detail_range_static_begin);
 
@@ -161,14 +155,8 @@ beestat.component.modal.air_quality_detail_custom.prototype.decorate_range_stati
   });
 
   air_quality_detail_static_range_end = new beestat.component.input.text()
-    .set_style({
-      'width': 110,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 10
-    })
+    .set_maxlength(10)
+    .set_width(110)
     .set_icon('calendar')
     .set_value(this.state_.air_quality_detail_range_static_end);
 
@@ -231,14 +219,8 @@ beestat.component.modal.air_quality_detail_custom.prototype.decorate_range_dynam
   var self = this;
 
   var air_quality_detail_range_dynamic = new beestat.component.input.text()
-    .set_style({
-      'width': 75,
-      'text-align': 'center',
-      'border-bottom': '2px solid ' + beestat.style.color.lightblue.base
-    })
-    .set_attribute({
-      'maxlength': 1
-    })
+    .set_maxlength(2)
+    .set_width(75)
     .set_icon('pound')
     .set_value(beestat.setting('air_quality_detail_range_dynamic'));
 

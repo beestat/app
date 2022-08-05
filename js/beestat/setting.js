@@ -66,7 +66,9 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
 
     'first_run': true,
 
-    'thermostat.#.profile.ignore_solar_gain': false
+    'thermostat.#.profile.ignore_solar_gain': false,
+
+    'floor_plan_id': null
   };
 
   // Figure out what we're trying to do.

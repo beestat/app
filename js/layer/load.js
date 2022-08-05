@@ -107,6 +107,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   );
 
   api.add_call(
+    'floor_plan',
+    'read_id',
+    {},
+    'floor_plan'
+  );
+
+  api.add_call(
     'announcement',
     'read_id',
     {},
@@ -135,6 +142,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('ecobee_thermostat', response.ecobee_thermostat);
     beestat.cache.set('ecobee_sensor', response.ecobee_sensor);
     beestat.cache.set('address', response.address);
+    beestat.cache.set('floor_plan', response.floor_plan);
     beestat.cache.set('announcement', response.announcement);
     beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
 

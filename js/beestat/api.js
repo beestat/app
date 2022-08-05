@@ -35,19 +35,12 @@ beestat.api.prototype.send = function(opt_api_call) {
     // Add in the API key
     opt_api_call.api_key = beestat.api.api_key;
 
-    // Build the query string
-    var query_string = Object.keys(opt_api_call)
-      .map(function(k) {
-        return encodeURIComponent(k) + '=' + encodeURIComponent(opt_api_call[k]);
-      })
-      .join('&');
-
     this.xhr_.addEventListener('load', function() {
       self.load_(this.responseText);
     });
 
-    this.xhr_.open('POST', 'api/?' + query_string);
-    this.xhr_.send();
+    this.xhr_.open('POST', 'api/');
+    this.xhr_.send(JSON.stringify(opt_api_call));
   } else {
     if (this.api_calls_.length === 0) {
       throw new Error('Must add at least one API call.');

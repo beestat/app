@@ -13,6 +13,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/lib/rocket/rocket.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/moment/moment.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/highcharts/highcharts.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/threejs/threejs.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/suncalc/suncalc.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;
 
   // Beestat
   echo '<script src="/js/beestat.js"></script>' . PHP_EOL;
@@ -47,6 +50,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/analyze.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/air_quality.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/visualize.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
@@ -70,7 +74,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_summary.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/visualize.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_not_supported.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/floor_plan_editor.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
@@ -88,6 +94,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/logo.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/menu.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/menu_item.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/radio_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/runtime_thermostat_summary_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/announcements.js"></script>' . PHP_EOL;
@@ -104,12 +113,21 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/patreon_status.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/newsletter.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/air_quality_detail_custom.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/create_floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/delete_floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/change_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/input/radio.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/input/select.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/button_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity/room.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity/point.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity/wall.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/setpoint.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/setpoint/heat.js"></script>' . PHP_EOL;

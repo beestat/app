@@ -36,8 +36,15 @@ set_exception_handler([$request, 'exception_handler']);
 // The shutdown handler will output the response.
 register_shutdown_function([$request, 'shutdown_handler']);
 
+$post_body = file_get_contents('php://input');
+if($post_body !== '') {
+  $data = json_decode($post_body, true);
+} else {
+  $data = $_REQUEST;
+}
+
 // Go!
-$request->process($_REQUEST);
+$request->process($data);
 
 // Useful function
 function array_median($array) {
