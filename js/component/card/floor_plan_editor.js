@@ -455,8 +455,10 @@ beestat.component.card.floor_plan_editor.prototype.get_title_ = function() {
  * @return {string} Subtitle
  */
 beestat.component.card.floor_plan_editor.prototype.get_subtitle_ = function() {
-  const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
-  return floor_plan.name;
+  if (beestat.setting('floor_plan_id') !== null) {
+    const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
+    return floor_plan.name;
+  }
 };
 
 /**
