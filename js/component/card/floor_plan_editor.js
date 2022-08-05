@@ -122,7 +122,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.rerender();
   });
   this.floor_plan_.addEventListener('clear_room', self.rerender.bind(this));
-  this.floor_plan_.addEventListener('toggle_snapping', self.rerender.bind(this));
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
 
   // Add all of the entities to the SVG.

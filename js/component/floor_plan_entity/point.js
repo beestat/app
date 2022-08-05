@@ -179,7 +179,7 @@ beestat.component.floor_plan_entity.point.prototype.after_mousedown_handler_ = f
 };
 
 /**
- * point dragging a point around. Snaps to X and Y of other points.
+ * Handle dragging a point around. Snaps to X and Y of other points.
  *
  * @param {Event} e
  */

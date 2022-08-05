@@ -556,7 +556,7 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
  */
 beestat.component.floor_plan.prototype.toggle_snapping_ = function() {
   this.state_.snapping = !this.state_.snapping;
-  this.dispatchEvent('toggle_snapping');
+  this.update_toolbar();
 };
 
 /**
