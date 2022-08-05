@@ -121,7 +121,7 @@ beestat.component.floor_plan_entity.point.prototype.set_room = function(room) {
 };
 
 /**
- * Set the x and y positions of this entity.
+ * Set the x and y positions of this entity. Clamps to the edges of the grid.
  *
  * @param {number} x The x position of this entity.
  * @param {number} y The y position of this entity.
@@ -129,12 +129,19 @@ beestat.component.floor_plan_entity.point.prototype.set_room = function(room) {
  * @return {beestat.component.floor_plan_entity.point} This.
  */
 beestat.component.floor_plan_entity.point.prototype.set_xy = function(x, y) {
+  let clamped_x = x + this.room_.get_x();
+  let clamped_y = y + this.room_.get_y();
+
   if (x !== null) {
-    this.point_.x = Math.round(x);
+    clamped_x = Math.min(clamped_x, (this.floor_plan_.get_grid_pixels() / 2));
+    clamped_x = Math.max(clamped_x, -(this.floor_plan_.get_grid_pixels() / 2));
+    this.point_.x = Math.round(clamped_x - this.room_.get_x());
   }
 
   if (y !== null) {
-    this.point_.y = Math.round(y);
+    clamped_y = Math.min(clamped_y, (this.floor_plan_.get_grid_pixels() / 2));
+    clamped_y = Math.max(clamped_y, -(this.floor_plan_.get_grid_pixels() / 2));
+    this.point_.y = Math.round(clamped_y - this.room_.get_y());
   }
 
   this.update_rect_();

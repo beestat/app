@@ -264,6 +264,7 @@ beestat.component.floor_plan.prototype.set_draggable_ = function() {
     // Deselect when clicking on the background.
     if (
       self.parent_.contains(e.target) &&
+      self.drag_start_mouse_ !== undefined &&
       e.clientX === self.drag_start_mouse_.x &&
       e.clientY === self.drag_start_mouse_.y
     ) {
