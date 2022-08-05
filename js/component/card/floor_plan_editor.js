@@ -163,12 +163,22 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     // Activate the currently active room (mostly for rerenders).
     if (room === self.state_.active_room) {
       room_entity.set_active(true);
+    } else {
+      // Render the room and save to the list of current entities.
+      room_entity.render(self.floor_plan_.get_g());
+      self.entities_.room.push(room_entity);
     }
-
-    // Render the room and save to the list of current entities.
-    room_entity.render(self.floor_plan_.get_g());
-    self.entities_.room.push(room_entity);
   });
+
+  /**
+   * If there was an active room, defer to adding it last so it ends up on
+   * top. The set_active function doesn't do anything if the room isn't
+   * rendered otherwise.
+   */
+  if (this.state_.active_room_entity !== undefined) {
+    this.state_.active_room_entity.render(this.floor_plan_.get_g());
+    this.entities_.room.push(this.state_.active_room_entity);
+  }
 };
 
 /**

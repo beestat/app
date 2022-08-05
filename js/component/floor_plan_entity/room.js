@@ -256,9 +256,9 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
 
       this.dispatchEvent('activate');
       this.update_snap_points_();
-      this.bring_to_front();
+
+      this.bring_to_front_();
     } else {
-      // throw 'foo';
       delete this.state_.active_room;
       delete this.state_.active_room_entity;
 

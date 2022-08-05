@@ -81,7 +81,7 @@ beestat.component.floor_plan_entity.prototype.rerender = function() {
 /**
  * Bring the current element to the front.
  */
-beestat.component.floor_plan_entity.prototype.bring_to_front = function() {
+beestat.component.floor_plan_entity.prototype.bring_to_front_ = function() {
   if (this.rendered_ === true) {
     this.g_.parentNode.appendChild(this.g_);
   }
