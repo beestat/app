@@ -28,6 +28,8 @@ beestat.extend(beestat.component.floor_plan, beestat.component);
 beestat.component.floor_plan.prototype.render = function(parent) {
   const self = this;
 
+  this.parent_ = parent;
+
   this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
   this.defs_ = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
@@ -211,7 +213,7 @@ beestat.component.floor_plan.prototype.set_zoomable_ = function() {
   this.wheel_handler_ = function(e) {
     if (
       e.ctrlKey === true &&
-      e.target.namespaceURI === 'http://www.w3.org/2000/svg'
+      self.parent_[0].contains(e.target)
     ) {
       e.preventDefault();
 
@@ -698,6 +700,7 @@ beestat.component.floor_plan.prototype.zoom_ = function(scale_delta, e) {
   this.view_box_.height *= scale_delta;
 
   this.update_view_box_();
+  this.update_toolbar();
 
   this.dispatchEvent('zoom');
 };

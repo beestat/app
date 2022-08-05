@@ -98,7 +98,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   this.floor_plan_.render(parent);
 
   setTimeout(function() {
-    self.floor_plan_.set_width(parent.getBoundingClientRect().width);
+    if (parent.getBoundingClientRect().width > 0) {
+      self.floor_plan_.set_width(parent.getBoundingClientRect().width);
+    }
   }, 0);
 
   beestat.dispatcher.removeEventListener('resize.floor_plan_editor');
@@ -122,7 +124,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   this.floor_plan_.addEventListener('clear_room', self.rerender.bind(this));
   this.floor_plan_.addEventListener('toggle_snapping', self.rerender.bind(this));
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
-  this.floor_plan_.addEventListener('zoom', self.rerender.bind(this));
 
   // Add all of the entities to the SVG.
   this.entities_ = {
