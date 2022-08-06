@@ -157,7 +157,7 @@ beestat.component.floor_plan.prototype.add_grid_ = function() {
   const small_grids_per_large_grid = 10;
   const pixels_per_large_grid = pixels_per_small_grid * small_grids_per_large_grid;
 
-  const large_grid_repeat = 20;
+  const large_grid_repeat = 100;
   this.grid_pixels_ = pixels_per_large_grid * large_grid_repeat;
 
   const grid_small_pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
@@ -706,6 +706,19 @@ beestat.component.floor_plan.prototype.zoom_ = function(scale_delta, e) {
 };
 
 /**
+ * Reset the view box
+ */
+beestat.component.floor_plan.prototype.reset_view_box_ = function() {
+  this.view_box_ = {
+    'x': 0,
+    'y': 0,
+    'width': this.width_,
+    'height': this.height_
+  };
+  this.update_view_box_();
+};
+
+/**
  * Zoom in
  *
  * @param {Event} e Optional event when zooming to a specific mouse position.
@@ -788,4 +801,53 @@ beestat.component.floor_plan.prototype.get_group_below = function(group) {
   });
 
   return closest_group;
+};
+
+/**
+ * Center the view box on the content. Sets zoom and pan.
+ */
+beestat.component.floor_plan.prototype.center_content = function() {
+  window.fp = this;
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  let min_x = Infinity;
+  let max_x = -Infinity;
+  let min_y = Infinity;
+  let max_y = -Infinity;
+
+  let has_content = false;
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach(function(room) {
+      room.points.forEach(function(point) {
+        has_content = true;
+        min_x = Math.min(room.x + point.x, min_x);
+        max_x = Math.max(room.x + point.x, max_x);
+        min_y = Math.min(room.y + point.y, min_y);
+        max_y = Math.max(room.y + point.y, max_y);
+      });
+    });
+  });
+
+  this.reset_view_box_();
+  if (has_content === true) {
+    const width = (max_x - min_x) + 50;
+    const height = (max_y - min_y) + 50;
+    while (
+      (
+        this.view_box_.width < width ||
+        this.view_box_.height < height
+      ) &&
+      this.can_zoom_out_() === true
+    ) {
+      this.zoom_out_();
+    }
+
+    const center_x = (max_x + min_x) / 2;
+    const center_y = (max_y + min_y) / 2;
+
+    this.view_box_.x = center_x - (this.view_box_.width / 2);
+    this.view_box_.y = center_y - (this.view_box_.height / 2);
+
+    this.update_view_box_();
+  }
 };

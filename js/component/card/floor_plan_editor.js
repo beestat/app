@@ -10,7 +10,11 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   var change_function = beestat.debounce(function() {
     delete self.state_.active_group;
     delete self.state_.active_room;
+
     self.rerender();
+
+    // Center the content if the floor plan changed.
+    self.floor_plan_.center_content();
   }, 10);
 
   beestat.dispatcher.addEventListener(
@@ -27,6 +31,12 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   if (this.state_.snapping === undefined) {
     this.state_.snapping = true;
   }
+
+  // The first time this component renders center the content.
+  this.addEventListener('render', function() {
+    self.floor_plan_.center_content();
+    self.removeEventListener('render');
+  });
 };
 beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card);
 
