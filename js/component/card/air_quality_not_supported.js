@@ -15,7 +15,7 @@ beestat.component.card.air_quality_not_supported.prototype.decorate_contents_ = 
   parent.style('background', beestat.style.color.blue.light);
   parent.appendChild($.createElement('p').innerText('Access to Air Quality information requires a compatible thermostat. Support beestat by buying through this affiliate link.'));
 
-  new beestat.component.button()
+  new beestat.component.tile()
     .set_icon('open_in_new')
     .set_text('Buy an ecobee Smart Thermostat Premium on Amazon')
     .set_background_color(beestat.style.color.green.dark)

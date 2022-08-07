@@ -199,7 +199,7 @@ beestat.component.modal.patreon_status.prototype.get_title_ = function() {
  */
 beestat.component.modal.patreon_status.prototype.get_buttons_ = function() {
   if (beestat.user.patreon_is_connected() === true) {
-    var refresh = new beestat.component.button()
+    var refresh = new beestat.component.tile()
       .set_text('Refresh Status')
       .set_icon('refresh')
       .set_background_color(beestat.style.color.green.base)

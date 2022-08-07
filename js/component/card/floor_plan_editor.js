@@ -53,7 +53,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     parent.appendChild(center_container);
 
     center_container.appendChild($.createElement('p').innerText('You haven\'t created any floor plans yet.'));
-    const get_started_button = new beestat.component.button()
+    const get_started_button = new beestat.component.tile()
       .set_icon('home_plus')
       .set_text('Get Started')
       .set_background_color(beestat.style.color.green.dark)

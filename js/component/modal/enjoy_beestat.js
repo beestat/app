@@ -55,7 +55,7 @@ beestat.component.modal.enjoy_beestat.prototype.hide_patreon_card_for_ = functio
 beestat.component.modal.enjoy_beestat.prototype.get_buttons_ = function() {
   var self = this;
 
-  var hide = new beestat.component.button()
+  var hide = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.bluegray.base)
@@ -66,7 +66,7 @@ beestat.component.modal.enjoy_beestat.prototype.get_buttons_ = function() {
     });
 
   if (beestat.user.patreon_is_connected() === false) {
-    var link = new beestat.component.button()
+    var link = new beestat.component.tile()
       .set_text('Link Patreon')
       .set_background_color(beestat.style.color.green.base)
       .set_background_hover_color(beestat.style.color.green.light)
@@ -83,7 +83,7 @@ beestat.component.modal.enjoy_beestat.prototype.get_buttons_ = function() {
     ];
   }
 
-  var ok = new beestat.component.button()
+  var ok = new beestat.component.tile()
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')

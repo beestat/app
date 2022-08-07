@@ -11,7 +11,7 @@ beestat.component.menu.prototype.decorate_ = function(parent) {
 
   this.menu_items_ = [];
 
-  this.icon_ = new beestat.component.button()
+  this.icon_ = new beestat.component.tile()
     .set_type('pill')
     .set_icon('dots_vertical')
     .set_bubble_text(this.bubble_text_)
@@ -67,14 +67,14 @@ beestat.component.menu.prototype.dispose = function() {
 beestat.component.menu.prototype.open_ = function() {
   var self = this;
 
-  var position = this.icon_.getBoundingClientRect();
+  var position = this.icon_.get_container().getBoundingClientRect();
 
   var container = $.createElement('div')
     .style({
       'background': '#fff',
       'color': '#444',
       'position': 'absolute',
-      'top': position.bottom + 'px',
+      'top': (position.bottom + window.scrollY) + 'px',
       'right': (window.innerWidth - position.right) + 'px',
       'transition': 'all 200ms ease',
       'transform': 'scale(0)',

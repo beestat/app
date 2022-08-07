@@ -121,19 +121,19 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
       'label': 'Today',
       'range_begin': now.clone(),
       'range_end': now.clone(),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'Yesterday',
       'range_begin': now.clone().subtract(1, 'day'),
       'range_end': now.clone().subtract(1, 'day'),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'This Week',
       'range_begin': now.clone().startOf('week'),
       'range_end': now.clone(),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'Last Week',
@@ -143,13 +143,13 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
       'range_end': now.clone()
         .subtract(1, 'week')
         .endOf('week'),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'This Month',
       'range_begin': now.clone().startOf('month'),
       'range_end': now.clone(),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'Last Month',
@@ -159,17 +159,17 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
       'range_end': now.clone()
         .subtract(1, 'month')
         .endOf('month'),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     },
     {
       'label': 'All Time',
       'range_begin': moment.max(moment(thermostat.data_begin), now.clone().subtract(1, 'year')),
       'range_end': now.clone(),
-      'button': new beestat.component.button()
+      'button': new beestat.component.tile()
     }
   ];
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
   presets.forEach(function(preset) {
     preset.button
       .set_background_color(beestat.style.color.bluegray.base)
@@ -242,7 +242,7 @@ beestat.component.modal.download_data.prototype.get_title_ = function() {
 beestat.component.modal.download_data.prototype.get_buttons_ = function() {
   var self = this;
 
-  var cancel = new beestat.component.button()
+  var cancel = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -251,7 +251,7 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
       self.dispose();
     });
 
-  var save = new beestat.component.button()
+  var save = new beestat.component.tile()
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')

@@ -241,7 +241,7 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
     });
   button_container.appendChild(dismiss_container);
 
-  (new beestat.component.button())
+  (new beestat.component.tile())
     .set_icon('bell_off')
     .set_text('Dismiss')
     .set_background_color(beestat.style.color.red.dark)
@@ -278,7 +278,7 @@ beestat.component.alert.prototype.decorate_detail_ = function(parent) {
     });
   button_container.appendChild(restore_container);
 
-  (new beestat.component.button())
+  (new beestat.component.tile())
     .set_icon('bell')
     .set_text('Restore')
     .set_background_color(beestat.style.color.red.dark)

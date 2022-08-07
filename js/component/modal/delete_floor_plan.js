@@ -50,7 +50,7 @@ beestat.component.modal.delete_floor_plan.prototype.get_title_ = function() {
 beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
   const self = this;
 
-  const cancel_button = new beestat.component.button()
+  const cancel_button = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -59,7 +59,7 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
       self.dispose();
     });
 
-  const delete_button = new beestat.component.button()
+  const delete_button = new beestat.component.tile()
     .set_background_color(beestat.style.color.red.base)
     .set_background_hover_color(beestat.style.color.red.light)
     .set_text_color('#fff')

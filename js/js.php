@@ -42,6 +42,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/requestor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/touch.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/crypto.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/floor_plan.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -122,8 +123,10 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/radio.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/select.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/button.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/button_group.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile_group.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile/floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile/thermostat.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity/room.js"></script>' . PHP_EOL;

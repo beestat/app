@@ -56,20 +56,20 @@ beestat.component.card.my_home.prototype.decorate_system_type_ = function(parent
   );
   const cool_stages_string = cool_stages > 1 ? ' (2 Stage)' : '';
 
-  var button_group = new beestat.component.button_group();
-  button_group.add_button(new beestat.component.button()
+  var button_group = new beestat.component.tile_group();
+  button_group.add_button(new beestat.component.tile()
     .set_type('pill')
     .set_background_color(beestat.series.compressor_heat_1.color)
     .set_text_color('#fff')
     .set_icon('fire')
     .set_text(heat.charAt(0).toUpperCase() + heat.slice(1) + heat_stages_string));
-  button_group.add_button(new beestat.component.button()
+  button_group.add_button(new beestat.component.tile()
     .set_type('pill')
     .set_background_color(beestat.series.auxiliary_heat_1.color)
     .set_text_color('#fff')
     .set_icon('fire')
     .set_text(auxiliary_heat.charAt(0).toUpperCase() + auxiliary_heat.slice(1)));
-  button_group.add_button(new beestat.component.button()
+  button_group.add_button(new beestat.component.tile()
     .set_type('pill')
     .set_background_color(beestat.series.compressor_cool_1.color)
     .set_text_color('#fff')
@@ -109,9 +109,9 @@ beestat.component.card.my_home.prototype.decorate_region_ = function(parent) {
     region = null;
   }
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
   if (region !== null) {
-    var button = new beestat.component.button()
+    var button = new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.green.base)
       .set_text_color('#fff')
@@ -119,7 +119,7 @@ beestat.component.card.my_home.prototype.decorate_region_ = function(parent) {
       .set_text(region);
     button_group.add_button(button);
   } else {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.gray.dark)
       .set_text_color('#fff')
@@ -139,10 +139,10 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
 
   (new beestat.component.title('Property')).render(parent);
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
 
   if (thermostat.property.structure_type !== null) {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
@@ -159,7 +159,7 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
       thermostat.property.structure_type === 'semi-detached'
     )
   ) {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
@@ -169,7 +169,7 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
   }
 
   if (thermostat.property.square_feet !== null) {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
@@ -178,7 +178,7 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
   }
 
   if (thermostat.property.age !== null) {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
@@ -187,7 +187,7 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
   }
 
   if (button_group.get_buttons().length === 0) {
-    button_group.add_button(new beestat.component.button()
+    button_group.add_button(new beestat.component.tile()
       .set_type('pill')
       .set_background_color(beestat.style.color.gray.dark)
       .set_text_color('#fff')

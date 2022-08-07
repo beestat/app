@@ -185,7 +185,7 @@ beestat.component.modal.create_floor_plan.prototype.get_title_ = function() {
 beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
   const self = this;
 
-  const cancel = new beestat.component.button()
+  const cancel = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -194,7 +194,7 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
       self.dispose();
     });
 
-  const save = new beestat.component.button()
+  const save = new beestat.component.tile()
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')

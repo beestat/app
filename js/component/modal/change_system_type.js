@@ -62,14 +62,14 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
       key
     );
 
-    let button_group = new beestat.component.button_group();
+    let button_group = new beestat.component.tile_group();
     options[key].forEach(function(system_type) {
       let text = system_type.charAt(0).toUpperCase() + system_type.slice(1);
       if (thermostat.system_type.detected[key].equipment === system_type) {
         text += ' [Detected]';
       }
 
-      let button = new beestat.component.button()
+      let button = new beestat.component.tile()
         .set_background_hover_color(colors[key])
         .set_text_color('#fff')
         .set_text(text)
@@ -113,7 +113,7 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
 
   var self = this;
 
-  var cancel = new beestat.component.button()
+  var cancel = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -122,7 +122,7 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
       self.dispose();
     });
 
-  var save = new beestat.component.button()
+  var save = new beestat.component.tile()
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')

@@ -61,7 +61,7 @@ beestat.component.modal.newsletter.prototype.get_buttons_ = function() {
 
   let buttons = [];
   if (this.subscribed_ === true) {
-    const ok = new beestat.component.button()
+    const ok = new beestat.component.tile()
       .set_background_color(beestat.style.color.green.base)
       .set_background_hover_color(beestat.style.color.green.light)
       .set_text_color('#fff')
@@ -71,7 +71,7 @@ beestat.component.modal.newsletter.prototype.get_buttons_ = function() {
       });
     buttons.push(ok);
   } else {
-    const no_thanks = new beestat.component.button()
+    const no_thanks = new beestat.component.tile()
       .set_background_color('#fff')
       .set_text_color(beestat.style.color.gray.base)
       .set_text_hover_color(beestat.style.color.red.base)
@@ -81,7 +81,7 @@ beestat.component.modal.newsletter.prototype.get_buttons_ = function() {
       });
     buttons.push(no_thanks);
 
-    const subscribe = new beestat.component.button()
+    const subscribe = new beestat.component.tile()
       .set_background_color(beestat.style.color.green.base)
       .set_background_hover_color(beestat.style.color.green.light)
       .set_text_color('#fff')

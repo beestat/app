@@ -49,7 +49,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
   for (let key in options) {
     let current_type = beestat.setting(key);
 
-    let button_group = new beestat.component.button_group();
+    let button_group = new beestat.component.tile_group();
     options[key].forEach(function(value) {
       let text = value.replace('runtime_thermostat_summary_', '')
         .charAt(0)
@@ -62,7 +62,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
           ) ? 's' : ''
         );
 
-      let button = new beestat.component.button()
+      let button = new beestat.component.tile()
         .set_background_hover_color(beestat.style.color.lightblue.base)
         .set_text_color('#fff')
         .set_text(text)
@@ -148,7 +148,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_title_ =
 beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_buttons_ = function() {
   var self = this;
 
-  var cancel = new beestat.component.button()
+  var cancel = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -157,7 +157,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_buttons_
       self.dispose();
     });
 
-  var save = new beestat.component.button()
+  var save = new beestat.component.tile()
     .set_background_color(beestat.style.color.green.base)
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')

@@ -43,9 +43,9 @@ beestat.component.modal.runtime_sensor_detail_custom.prototype.decorate_contents
 beestat.component.modal.runtime_sensor_detail_custom.prototype.decorate_range_type_ = function(parent) {
   var self = this;
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
 
-  button_group.add_button(new beestat.component.button()
+  button_group.add_button(new beestat.component.tile()
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
@@ -59,7 +59,7 @@ beestat.component.modal.runtime_sensor_detail_custom.prototype.decorate_range_ty
       self.rerender();
     }));
 
-  button_group.add_button(new beestat.component.button()
+  button_group.add_button(new beestat.component.tile()
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
@@ -294,7 +294,7 @@ beestat.component.modal.runtime_sensor_detail_custom.prototype.get_title_ = func
 beestat.component.modal.runtime_sensor_detail_custom.prototype.get_buttons_ = function() {
   var self = this;
 
-  var cancel = new beestat.component.button()
+  var cancel = new beestat.component.tile()
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
@@ -310,12 +310,12 @@ beestat.component.modal.runtime_sensor_detail_custom.prototype.get_buttons_ = fu
     this.state_.error.invalid_range_end === true ||
     this.state_.error.out_of_sync_range === true
   ) {
-    save = new beestat.component.button()
+    save = new beestat.component.tile()
       .set_background_color(beestat.style.color.gray.base)
       .set_text_color('#fff')
       .set_text('Save');
   } else {
-    save = new beestat.component.button()
+    save = new beestat.component.tile()
       .set_background_color(beestat.style.color.green.base)
       .set_background_hover_color(beestat.style.color.green.light)
       .set_text_color('#fff')

@@ -28,9 +28,13 @@ beestat.component.card.patreon.prototype.decorate_contents_ = function(parent) {
 
   parent.style('background', beestat.style.color.green.base);
 
-  new beestat.component.button()
+  new beestat.component.tile()
     .set_icon('heart')
-    .set_text('Support this project on Patreon!')
+    .set_size('large')
+    .set_text([
+      'Support this project on Patreon!',
+      'Your contribution matters'
+    ])
     .set_background_color(beestat.style.color.green.dark)
     .set_background_hover_color(beestat.style.color.green.light)
     .addEventListener('click', function() {
@@ -54,7 +58,7 @@ beestat.component.card.patreon.prototype.get_title_ = function() {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.patreon.prototype.decorate_top_right_ = function(parent) {
-  new beestat.component.button()
+  new beestat.component.tile()
     .set_type('pill')
     .set_icon('close')
     .set_text_color('#fff')

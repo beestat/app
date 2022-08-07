@@ -203,7 +203,7 @@ beestat.component.modal.prototype.decorate_title_ = function(parent) {
 beestat.component.modal.prototype.decorate_close_ = function(parent) {
   var self = this;
 
-  var close = new beestat.component.button()
+  var close = new beestat.component.tile()
     .set_type('pill')
     .set_icon('close')
     .set_text_color(beestat.style.color.gray.dark)
@@ -245,7 +245,7 @@ beestat.component.modal.prototype.decorate_buttons_ = function(parent) {
       });
     parent.appendChild(container);
 
-    var button_group = new beestat.component.button_group();
+    var button_group = new beestat.component.tile_group();
     buttons.forEach(function(button) {
       button_group.add_button(button);
     });

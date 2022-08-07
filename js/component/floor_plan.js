@@ -351,16 +351,16 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     this.button_group_floors_.dispose();
   }
 
-  this.button_group_ = new beestat.component.button_group();
+  this.button_group_ = new beestat.component.tile_group();
 
   // Add floor
-  this.button_group_.add_button(new beestat.component.button()
+  this.button_group_.add_button(new beestat.component.tile()
     .set_icon('layers')
     .set_text_color(beestat.style.color.lightblue.base)
   );
 
   // Add room
-  this.button_group_.add_button(new beestat.component.button()
+  this.button_group_.add_button(new beestat.component.tile()
     .set_icon('card_plus_outline')
     .set_title('Add Room [R]')
     .set_text_color(beestat.style.color.gray.light)
@@ -370,7 +370,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   );
 
   // Remove room
-  const remove_room_button = new beestat.component.button()
+  const remove_room_button = new beestat.component.tile()
     .set_icon('card_remove_outline')
     .set_title('Remove Room [Delete]')
     .set_background_color(beestat.style.color.bluegray.base);
@@ -387,7 +387,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   }
 
   // Add point
-  const add_point_button = new beestat.component.button()
+  const add_point_button = new beestat.component.tile()
     .set_icon('vector_square_plus')
     .set_title('Add Point [Double click]')
     .set_background_color(beestat.style.color.bluegray.base);
@@ -404,7 +404,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   }
 
   // Remove point
-  const remove_point_button = new beestat.component.button()
+  const remove_point_button = new beestat.component.tile()
     .set_background_color(beestat.style.color.bluegray.base)
     .set_title('Remove Point [Delete]')
     .set_icon('vector_square_remove');
@@ -434,7 +434,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     snapping_title = 'Enable Snapping [S]';
   }
 
-  this.button_group_.add_button(new beestat.component.button()
+  this.button_group_.add_button(new beestat.component.tile()
     .set_icon(snapping_icon)
     .set_title(snapping_title)
     .set_text_color(beestat.style.color.gray.light)
@@ -444,7 +444,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   );
 
   // Zoom in
-  const zoom_in_button = new beestat.component.button()
+  const zoom_in_button = new beestat.component.tile()
     .set_icon('magnify_plus_outline')
     .set_title('Zoom In')
     .set_background_color(beestat.style.color.bluegray.base);
@@ -465,7 +465,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   }
 
   // Zoom out
-  const zoom_out_button = new beestat.component.button()
+  const zoom_out_button = new beestat.component.tile()
     .set_icon('magnify_minus_outline')
     .set_title('Zoom out')
     .set_background_color(beestat.style.color.bluegray.base);
@@ -489,11 +489,11 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   this.button_group_.render(this.toolbar_container_);
 
   // FLOORS
-  this.button_group_floors_ = new beestat.component.button_group();
+  this.button_group_floors_ = new beestat.component.tile_group();
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   floor_plan.data.groups.forEach(function(group) {
-    const button = new beestat.component.button()
+    const button = new beestat.component.tile()
       .set_title(group.name)
       .set_text_hover_color(beestat.style.color.lightblue.light)
       .set_text_color(beestat.style.color.lightblue.base);
@@ -534,20 +534,15 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
   if (this.state_.active_room !== undefined) {
     parts.push(this.state_.active_room.name || 'Unnamed Room');
     parts.push(
-      Math.abs(
-        Math.round(
-          ClipperLib.Clipper.Area(this.state_.active_room.points) / 144
-        )
-      ).toLocaleString() + ' sqft'
+      beestat.floor_plan.get_area_room(this.state_.active_room)
+        .toLocaleString() + ' sqft'
     );
   } else {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
-    let area = 0;
-    this.state_.active_group.rooms.forEach(function(room) {
-      area += Math.abs(ClipperLib.Clipper.Area(room.points));
-    });
-
-    parts.push(Math.round(area / 144).toLocaleString() + ' sqft');
+    parts.push(
+      beestat.floor_plan.get_area_group(this.state_.active_group)
+        .toLocaleString() + ' sqft'
+    );
   }
   this.infobox_container_.innerText(parts.join(' • '));
 };

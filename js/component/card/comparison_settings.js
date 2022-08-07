@@ -151,9 +151,9 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
 
   var color = beestat.style.color.green.base;
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
   regions.forEach(function(region) {
-    var button = new beestat.component.button()
+    var button = new beestat.component.tile()
       .set_background_hover_color(color)
       .set_text_color('#fff')
       .set_text(region.charAt(0).toUpperCase() + region.slice(1));
@@ -233,9 +233,9 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
 
   var color = beestat.style.color.purple.base;
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
   property_types.forEach(function(property_type) {
-    var button = new beestat.component.button()
+    var button = new beestat.component.tile()
       .set_background_hover_color(color)
       .set_text_color('#fff')
       .set_text(property_type.text);

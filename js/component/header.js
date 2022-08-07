@@ -90,9 +90,9 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   });
   row.appendChild(column_navigation);
 
-  var button_group = new beestat.component.button_group();
+  var button_group = new beestat.component.tile_group();
   pages.forEach(function(page) {
-    var button = new beestat.component.button()
+    var button = new beestat.component.tile()
       .set_icon(page.icon)
       .set_text_color(beestat.style.color.bluegray.dark);
 
