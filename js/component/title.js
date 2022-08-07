@@ -19,7 +19,6 @@ beestat.component.title.prototype.decorate_ = function(parent) {
     .style({
       'font-size': beestat.style.font_size.normal,
       'font-weight': beestat.style.font_weight.bold,
-      'margin-top': (beestat.style.size.gutter),
       'margin-bottom': (beestat.style.size.gutter / 2)
     })
     .innerText(this.title_);

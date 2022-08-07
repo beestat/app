@@ -326,6 +326,8 @@ beestat.component.floor_plan_entity.wall.prototype.set_xy = function(x, y) {
     this.point_2_.y = Math.round(clamped_y - this.room_.get_y());
   }
 
+  this.dispatchEvent('update');
+
   return this;
 };
 
@@ -396,8 +398,6 @@ beestat.component.floor_plan_entity.wall.prototype.after_mousemove_handler_ = fu
       desired_y
     );
   }
-
-  this.dispatchEvent('update');
 };
 
 /**
@@ -576,4 +576,22 @@ beestat.component.floor_plan_entity.wall.prototype.set_active = function(active)
   }
 
   return this;
+};
+
+/**
+ * Get X
+ *
+ * @return {number} x
+ */
+beestat.component.floor_plan_entity.wall.prototype.get_x = function() {
+  return this.is_vertical_() === true ? this.point_1_.x : null;
+};
+
+/**
+ * Get Y
+ *
+ * @return {number} y
+ */
+beestat.component.floor_plan_entity.wall.prototype.get_y = function() {
+  return this.is_horizontal_() === true ? this.point_1_.y : null;
 };

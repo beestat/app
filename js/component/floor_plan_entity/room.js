@@ -114,7 +114,7 @@ beestat.component.floor_plan_entity.prototype.decorate_points_ = function(parent
     point_entity.addEventListener('update', function() {
       self.update_polygon_();
       self.update_walls_();
-      // self.dispatchEvent('update');
+      self.dispatchEvent('update');
     });
 
     // When a point is done moving normalize the points
@@ -178,6 +178,7 @@ beestat.component.floor_plan_entity.prototype.decorate_walls_ = function(parent)
       self.update_polygon_();
       self.update_points_();
       self.update_walls_();
+      self.dispatchEvent('update');
     });
 
     // Clear any active points on drag start.
@@ -380,6 +381,8 @@ beestat.component.floor_plan_entity.room.prototype.set_xy = function(x, y) {
 
   this.room_.x = Math.round(clamped_x);
   this.room_.y = Math.round(clamped_y);
+
+  this.dispatchEvent('update');
 
   return beestat.component.floor_plan_entity.prototype.set_xy.apply(
     this,

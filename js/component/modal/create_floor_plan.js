@@ -21,7 +21,7 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   const self = this;
   const thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
-  parent.appendChild($.createElement('p').innerHTML('Describe your home to help create this floor plan. You can change these values later.'));
+  parent.appendChild($.createElement('p').innerHTML('Describe your home to help create this floor plan.'));
 
   // Name
   (new beestat.component.title('Give your floor plan a name')).render(parent);
@@ -46,7 +46,12 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   }
 
   // Floor count
-  (new beestat.component.title('How many floors does your home have?')).render(parent);
+  const floor_container = document.createElement('div');
+  floor_container.style.marginBottom = `${beestat.style.size.gutter}px`;
+  parent.appendChild(floor_container);
+
+  (new beestat.component.title('How many floors does your home have?'))
+    .render($(floor_container));
 
   const floor_count_input = new beestat.component.input.text()
     .set_icon('layers')
@@ -57,7 +62,7 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
       'type': 'integer',
       'required': true
     })
-    .render(parent);
+    .render($(floor_container));
 
   floor_count_input.addEventListener('change', function() {
     self.state_.floor_count = floor_count_input.get_value();
@@ -76,7 +81,7 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   // Basement
   const basement_checkbox = new beestat.component.input.checkbox()
     .set_label('One of these floors is a basement')
-    .render(parent);
+    .render($(floor_container));
 
   basement_checkbox.addEventListener('change', function() {
     self.state_.basement = basement_checkbox.get_checked();
@@ -94,7 +99,6 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
     .set_maxlength(2)
     .set_requirements({
       'min_value': 1,
-      'max_value': 24,
       'type': 'integer',
       'required': true
     })
@@ -108,7 +112,7 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   if (self.state_.height !== undefined) {
     height_input.set_value(self.state_.height);
   } else if (self.state_.error.height !== true) {
-    height_input.set_value(9);
+    height_input.set_value(8);
   }
 
   // Address
@@ -116,7 +120,7 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   parent.appendChild($.createElement('p').innerHTML('Addresses are pulled directly from your ecobee data.'));
 
   const radio_group = new beestat.component.radio_group();
-  const addresses = $.values(beestat.cache.address);
+  const addresses = Object.values(beestat.cache.address);
   addresses.forEach(function(address) {
     if (
       address.normalized !== null &&
@@ -234,7 +238,6 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
       ];
       for (let i = 0; i < self.state_.floor_count; i++) {
         attributes.data.groups.push({
-          'icon': floor === 0 ? 'alpha_b' : ('numeric_' + floor),
           'name': floor === 0 ? 'Basement' : (ordinals[floor - 1] + ' Floor'),
           'elevation': elevation,
           'height': self.state_.height * 12,

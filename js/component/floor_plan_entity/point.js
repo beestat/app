@@ -146,6 +146,8 @@ beestat.component.floor_plan_entity.point.prototype.set_xy = function(x, y) {
 
   this.update_rect_();
 
+  this.dispatchEvent('update');
+
   return this;
 };
 
@@ -243,8 +245,6 @@ beestat.component.floor_plan_entity.point.prototype.after_mousemove_handler_ = f
     desired_x,
     desired_y
   );
-
-  this.dispatchEvent('update');
 };
 
 /**
@@ -357,4 +357,22 @@ beestat.component.floor_plan_entity.point.prototype.set_active = function(active
   }
 
   return this;
+};
+
+/**
+ * Get X
+ *
+ * @return {number} x
+ */
+beestat.component.floor_plan_entity.point.prototype.get_x = function() {
+  return this.point_.x;
+};
+
+/**
+ * Get Y
+ *
+ * @return {number} y
+ */
+beestat.component.floor_plan_entity.point.prototype.get_y = function() {
+  return this.point_.y;
 };

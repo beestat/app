@@ -14,7 +14,9 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
     self.rerender();
 
     // Center the content if the floor plan changed.
-    self.floor_plan_.center_content();
+    if (self.floor_plan_ !== undefined) {
+      self.floor_plan_.center_content();
+    }
   }, 10);
 
   beestat.dispatcher.addEventListener(
@@ -33,10 +35,12 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   }
 
   // The first time this component renders center the content.
-  this.addEventListener('render', function() {
-    self.floor_plan_.center_content();
-    self.removeEventListener('render');
-  });
+  if (self.floor_plan_ !== undefined) {
+    this.addEventListener('render', function() {
+      self.floor_plan_.center_content();
+      self.removeEventListener('render');
+    });
+  }
 };
 beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card);
 
@@ -52,10 +56,10 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     const center_container = $.createElement('div').style('text-align', 'center');
     parent.appendChild(center_container);
 
-    center_container.appendChild($.createElement('p').innerText('You haven\'t created any floor plans yet.'));
     const get_started_button = new beestat.component.tile()
-      .set_icon('home_plus')
-      .set_text('Get Started')
+      .set_icon('plus')
+      .set_text('Create my first floor plan')
+      .set_size('large')
       .set_background_color(beestat.style.color.green.dark)
       .set_background_hover_color(beestat.style.color.green.light)
       .render(center_container)
@@ -251,9 +255,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
   div = $.createElement('div');
   grid.appendChild(div);
   const elevation_input = new beestat.component.input.text()
-    .set_label('Elevation (inches)')
-    .set_placeholder(this.state_.active_group.elevation)
-    .set_value(this.state_.active_group.elevation || '')
+    .set_label('Elevation (feet)')
+    .set_placeholder(this.state_.active_group.elevation / 12)
+    .set_value(this.state_.active_group.elevation / 12 || '')
     .set_width('100%')
     .set_maxlength('5')
     .set_requirements({
@@ -262,12 +266,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
     })
     .render(div);
 
-  elevation_input.set_value(this.state_.active_group.elevation);
-
   elevation_input.addEventListener('change', function() {
     if (elevation_input.meets_requirements() === true) {
-      self.state_.active_group.elevation = elevation_input.get_value();
+      self.state_.active_group.elevation = elevation_input.get_value() * 12;
       self.update_floor_plan_();
+      self.rerender();
     } else {
       elevation_input.set_value(self.state_.active_group.elevation);
     }
@@ -277,9 +280,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
   div = $.createElement('div');
   grid.appendChild(div);
   const height_input = new beestat.component.input.text()
-    .set_label('Ceiling Height (inches)')
-    .set_placeholder(this.state_.active_group.height)
-    .set_value(this.state_.active_group.height || '')
+    .set_label('Ceiling Height (feet)')
+    .set_placeholder(this.state_.active_group.height / 12)
+    .set_value(this.state_.active_group.height / 12 || '')
     .set_width('100%')
     .set_maxlength('4')
     .set_requirements({
@@ -289,11 +292,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
     })
     .render(div);
 
-  height_input.set_value(this.state_.active_group.height);
-
   height_input.addEventListener('change', function() {
     if (height_input.meets_requirements() === true) {
-      self.state_.active_group.height = height_input.get_value();
+      self.state_.active_group.height = height_input.get_value() * 12;
       self.update_floor_plan_();
     } else {
       height_input.set_value(self.state_.active_group.height);
@@ -353,9 +354,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   div = $.createElement('div');
   grid.appendChild(div);
   const elevation_input = new beestat.component.input.text()
-    .set_label('Elevation (inches)')
-    .set_placeholder(this.state_.active_group.elevation)
-    .set_value(this.state_.active_room.elevation || '')
+    .set_label('Elevation (feet)')
+    .set_placeholder(this.state_.active_group.elevation / 12)
+    .set_value(this.state_.active_room.elevation / 12 || '')
     .set_width('100%')
     .set_maxlength('5')
     .set_requirements({
@@ -363,14 +364,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
     })
     .render(div);
 
-  if (this.state_.active_room.elevation !== undefined) {
-    elevation_input.set_value(this.state_.active_room.elevation);
-  }
-
   elevation_input.addEventListener('change', function() {
     if (elevation_input.meets_requirements() === true) {
-      self.state_.active_room.elevation = elevation_input.get_value();
+      self.state_.active_room.elevation = elevation_input.get_value() * 12;
       self.update_floor_plan_();
+      self.rerender();
     } else {
       elevation_input.set_value('');
     }
@@ -380,9 +378,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   div = $.createElement('div');
   grid.appendChild(div);
   const height_input = new beestat.component.input.text()
-    .set_label('Ceiling Height (inches)')
-    .set_placeholder(this.state_.active_group.height)
-    .set_value(this.state_.active_room.height || '')
+    .set_label('Ceiling Height (feet)')
+    .set_placeholder(this.state_.active_group.height / 12)
+    .set_value(this.state_.active_room.height / 12 || '')
     .set_width('100%')
     .set_maxlength('4')
     .set_requirements({
@@ -391,13 +389,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
     })
     .render(div);
 
-  if (this.state_.active_room.height !== undefined) {
-    height_input.set_value(this.state_.active_room.height);
-  }
-
   height_input.addEventListener('change', function() {
     if (height_input.meets_requirements() === true) {
-      self.state_.active_room.height = height_input.get_value();
+      self.state_.active_room.height = height_input.get_value() * 12;
       self.update_floor_plan_();
     } else {
       height_input.set_value('');
@@ -491,22 +485,26 @@ beestat.component.card.floor_plan_editor.prototype.get_subtitle_ = function() {
 };
 
 /**
- * Update the floor plan in the database.
+ * Update the floor plan in the database. This is throttled so the update can
+ * only run so fast.
  */
 beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function() {
-  new beestat.api()
-    .add_call(
-      'floor_plan',
-      'update',
-      {
-        'attributes': {
-          'floor_plan_id': beestat.setting('floor_plan_id'),
-          'data': beestat.cache.floor_plan[beestat.setting('floor_plan_id')].data
-        }
-      },
-      'update_floor_plan'
-    )
-    .send();
+  window.clearTimeout(this.update_timeout_);
+  this.update_timeout_ = window.setTimeout(function() {
+    new beestat.api()
+      .add_call(
+        'floor_plan',
+        'update',
+        {
+          'attributes': {
+            'floor_plan_id': beestat.setting('floor_plan_id'),
+            'data': beestat.cache.floor_plan[beestat.setting('floor_plan_id')].data
+          }
+        },
+        'update_floor_plan'
+      )
+      .send();
+  }, 1000);
 };
 
 /**
@@ -522,7 +520,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
   if (window.is_demo === false) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Add New')
-      .set_icon('home_plus')
+      .set_icon('plus')
       .set_callback(function() {
         new beestat.component.modal.create_floor_plan(
           self.thermostat_id_
@@ -532,7 +530,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
     if (Object.keys(beestat.cache.floor_plan).length > 1) {
       menu.add_menu_item(new beestat.component.menu_item()
         .set_text('Switch')
-        .set_icon('home_switch')
+        .set_icon('swap_horizontal')
         .set_callback(function() {
           (new beestat.component.modal.change_floor_plan()).render();
         }));
@@ -540,14 +538,26 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
 
     if (beestat.setting('floor_plan_id') !== null) {
       menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Edit')
+        .set_icon('pencil')
+        .set_callback(function() {
+          new beestat.component.modal.update_floor_plan(
+            beestat.setting('floor_plan_id')
+          ).render();
+        }));
+    }
+
+    if (beestat.setting('floor_plan_id') !== null) {
+      menu.add_menu_item(new beestat.component.menu_item()
         .set_text('Delete')
-        .set_icon('home_remove')
+        .set_icon('delete')
         .set_callback(function() {
           new beestat.component.modal.delete_floor_plan(
             beestat.setting('floor_plan_id')
           ).render();
         }));
     }
+
   }
 
   menu.add_menu_item(new beestat.component.menu_item()

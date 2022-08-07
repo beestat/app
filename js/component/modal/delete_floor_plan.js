@@ -16,21 +16,14 @@ beestat.extend(beestat.component.modal.delete_floor_plan, beestat.component.moda
  * @param {rocket.Elements} parent
  */
 beestat.component.modal.delete_floor_plan.prototype.decorate_contents_ = function(parent) {
-  parent.appendChild(
-    $.createElement('p').innerHTML(
-      'Are you sure you want to delete this floor plan?'
-    )
-  );
+  const p = document.createElement('p');
+  p.innerText = 'Are you sure you want to delete this floor plan?';
+  parent.appendChild(p);
 
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  floor_plan.data.groups.forEach(function(group) {
-    parent.appendChild(
-      $.createElement('div')
-        .innerHTML(
-          group.name + ': ' + group.rooms.length + ' room' + (group.rooms.length === 1 ? '' : 's')
-        )
-    );
-  });
+  new beestat.component.tile.floor_plan(this.floor_plan_id_)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_text_color('#fff')
+    .render(parent);
 };
 
 /**

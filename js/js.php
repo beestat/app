@@ -116,6 +116,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/newsletter.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/air_quality_detail_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/create_floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/update_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/delete_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
@@ -126,6 +127,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/tile_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile/floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile/floor_plan_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile/thermostat.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity.js"></script>' . PHP_EOL;

@@ -18,9 +18,20 @@ beestat.component.card.my_home = function(thermostat_id) {
 beestat.extend(beestat.component.card.my_home, beestat.component.card);
 
 beestat.component.card.my_home.prototype.decorate_contents_ = function(parent) {
-  this.decorate_system_type_(parent);
-  this.decorate_region_(parent);
-  this.decorate_property_(parent);
+  const system_container = document.createElement('div');
+  system_container.style.marginBottom = `${beestat.style.size.gutter}px`;
+  parent.appendChild(system_container);
+  this.decorate_system_type_($(system_container));
+
+  const region_container = document.createElement('div');
+  region_container.style.marginBottom = `${beestat.style.size.gutter}px`;
+  parent.appendChild(region_container);
+  this.decorate_region_($(region_container));
+
+  const property_container = document.createElement('div');
+  property_container.style.marginBottom = `${beestat.style.size.gutter}px`;
+  parent.appendChild(property_container);
+  this.decorate_property_($(property_container));
 };
 
 /**
