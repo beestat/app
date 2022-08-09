@@ -95,7 +95,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
           key === 'runtime_thermostat_summary_time_period' &&
           value === 'all'
         ) {
-          time_count.set_value('∞').disable();
+          time_count.set_value('∞').set_enabled(false);
         }
 
         button.set_background_color(beestat.style.color.lightblue.base);
