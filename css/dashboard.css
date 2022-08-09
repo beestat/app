@@ -443,6 +443,7 @@ input[type=radio] {
 .icon.cloud_question:before { content: "\F0A39"; }
 .icon.code_tags:before { content: "\F0174"; }
 .icon.cog:before { content: "\F0493"; }
+.icon.delete:before { content: "\F01B4"; }
 .icon.dots_vertical:before { content: "\F01D9"; }
 .icon.download:before { content: "\F01DA"; }
 .icon.earth:before { content: "\F01E7"; }
@@ -500,7 +501,10 @@ input[type=radio] {
 .icon.numeric_9_box:before { content: "\F03BC"; }
 .icon.open_in_new:before { content: "\F03CC"; }
 .icon.patreon:before { content: "\F0882"; }
+.icon.pencil:before { content: "\F03EB"; }
+.icon.plus:before { content: "\F0415"; }
 .icon.pound:before { content: "\F0423"; }
+.icon.redo:before { content: "\F044E"; }
 .icon.refresh:before { content: "\F0450"; }
 .icon.resistor:before { content: "\F0B44"; }
 .icon.snowflake:before { content: "\F0717"; }
@@ -509,6 +513,7 @@ input[type=radio] {
 .icon.thumb_up:before { content: "\F0513"; }
 .icon.tune:before { content: "\F062E"; }
 .icon.twitter:before { content: "\F0544"; }
+.icon.undo:before { content: "\F054C"; }
 .icon.update:before { content: "\F06B0"; }
 .icon.vector_square_plus:before { content: "\F18DB"; }
 .icon.vector_square_remove:before { content: "\F18DC"; }
@@ -530,9 +535,6 @@ input[type=radio] {
 .icon.wifi_strength_1_alert:before { content: "\F0920"; }
 .icon.wifi_strength_4:before { content: "\F0928"; }
 .icon.zigbee:before { content: "\F0D41"; }
-.icon.pencil:before { content: "\F03EB"; }
-.icon.plus:before { content: "\F0415"; }
-.icon.delete:before { content: "\F01B4"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }

@@ -15,7 +15,6 @@ beestat.extend(beestat.component.floor_plan_entity.point, beestat.component.floo
  */
 beestat.component.floor_plan_entity.point.prototype.decorate_ = function(parent) {
   this.decorate_rect_(parent);
-
   this.set_draggable_(true);
 };
 
@@ -125,10 +124,15 @@ beestat.component.floor_plan_entity.point.prototype.set_room = function(room) {
  *
  * @param {number} x The x position of this entity.
  * @param {number} y The y position of this entity.
+ * @param {string} event Optional event to fire when done.
  *
  * @return {beestat.component.floor_plan_entity.point} This.
  */
-beestat.component.floor_plan_entity.point.prototype.set_xy = function(x, y) {
+beestat.component.floor_plan_entity.point.prototype.set_xy = function(x, y, event = 'lesser_update') {
+  if (event === 'update') {
+    this.floor_plan_.save_buffer();
+  }
+
   let clamped_x = x + this.room_.get_x();
   let clamped_y = y + this.room_.get_y();
 
@@ -146,7 +150,7 @@ beestat.component.floor_plan_entity.point.prototype.set_xy = function(x, y) {
 
   this.update_rect_();
 
-  this.dispatchEvent('update');
+  this.dispatchEvent(event);
 
   return this;
 };
@@ -349,6 +353,8 @@ beestat.component.floor_plan_entity.point.prototype.set_active = function(active
     } else {
       delete this.state_.active_point;
       delete this.state_.active_point_entity;
+
+      this.dispatchEvent('inactivate');
     }
 
     if (this.rendered_ === true) {

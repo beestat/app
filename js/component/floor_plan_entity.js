@@ -189,6 +189,7 @@ beestat.component.floor_plan_entity.prototype.mousemove_handler_ = function(e) {
   if (this.dragged_ === false) {
     this.dispatchEvent('drag_start');
     this.dragged_ = true;
+    this.floor_plan_.save_buffer();
   }
 
   this.after_mousemove_handler_(e);
@@ -218,6 +219,7 @@ beestat.component.floor_plan_entity.prototype.mouseup_handler_ = function(e) {
   // If the mouse was actually moved at all then fire the drag stop event.
   if (this.dragged_ === true) {
     this.dispatchEvent('drag_stop');
+    this.dispatchEvent('update');
   }
 
   this.after_mouseup_handler_(e);

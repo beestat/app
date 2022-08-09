@@ -132,7 +132,12 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         e.key.toLowerCase() === 'z' &&
         e.ctrlKey === true
       ) {
-        console.log('undo');
+        self.undo_();
+      } else if (
+        e.key.toLowerCase() === 'y' &&
+        e.ctrlKey === true
+      ) {
+        self.redo_();
       } else if (
         e.key === 'ArrowLeft' ||
         e.key === 'ArrowRight' ||
@@ -150,16 +155,16 @@ beestat.component.floor_plan.prototype.render = function(parent) {
 
           switch (e.key) {
           case 'ArrowLeft':
-            entity.set_xy(x === null ? null : x - 1, y);
+            entity.set_xy(x === null ? null : x - 1, y, 'update');
             break;
           case 'ArrowRight':
-            entity.set_xy(x === null ? null : x + 1, y);
+            entity.set_xy(x === null ? null : x + 1, y, 'update');
             break;
           case 'ArrowUp':
-            entity.set_xy(x, y === null ? null : y - 1);
+            entity.set_xy(x, y === null ? null : y - 1, 'update');
             break;
           case 'ArrowDown':
-            entity.set_xy(x, y === null ? null : y + 1);
+            entity.set_xy(x, y === null ? null : y + 1, 'update');
             break;
           }
         }
@@ -492,6 +497,48 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .addEventListener('click', this.toggle_snapping_.bind(this))
   );
 
+  // Undo
+  const undo_button = new beestat.component.tile()
+    .set_icon('undo')
+    .set_title('Undo [Ctrl+Z]')
+    .set_background_color(beestat.style.color.bluegray.base);
+  this.button_group_.add_button(undo_button);
+
+  if (
+    this.can_undo_() === true
+  ) {
+    undo_button
+      .set_background_hover_color(beestat.style.color.bluegray.light)
+      .set_text_color(beestat.style.color.gray.light)
+      .addEventListener('click', function() {
+        self.undo_();
+      });
+  } else {
+    undo_button
+      .set_text_color(beestat.style.color.bluegray.dark);
+  }
+
+  // Redo
+  const redo_button = new beestat.component.tile()
+    .set_icon('redo')
+    .set_title('redo [Ctrl+Y]')
+    .set_background_color(beestat.style.color.bluegray.base);
+  this.button_group_.add_button(redo_button);
+
+  if (
+    this.can_redo_() === true
+  ) {
+    redo_button
+      .set_background_hover_color(beestat.style.color.bluegray.light)
+      .set_text_color(beestat.style.color.gray.light)
+      .addEventListener('click', function() {
+        self.redo_();
+      });
+  } else {
+    redo_button
+      .set_text_color(beestat.style.color.bluegray.dark);
+  }
+
   // Zoom in
   const zoom_in_button = new beestat.component.tile()
     .set_icon('magnify_plus_outline')
@@ -624,12 +671,15 @@ beestat.component.floor_plan.prototype.toggle_snapping_ = function() {
  * @param {object} room Optional room to copy from.
  */
 beestat.component.floor_plan.prototype.add_room_ = function(room) {
+  this.save_buffer();
+
   const svg_view_box = this.view_box_;
 
   let new_room;
   if (room === undefined) {
     const new_room_size = 120;
     new_room = {
+      'room_id': window.crypto.randomUUID(),
       'x': svg_view_box.x + (svg_view_box.width / 2) - (new_room_size / 2),
       'y': svg_view_box.y + (svg_view_box.height / 2) - (new_room_size / 2),
       'points': [
@@ -665,6 +715,7 @@ beestat.component.floor_plan.prototype.add_room_ = function(room) {
     });
 
     new_room = {
+      'room_id': window.crypto.randomUUID(),
       'x': svg_view_box.x + (svg_view_box.width / 2) - ((max_x - min_x) / 2),
       'y': svg_view_box.y + (svg_view_box.height / 2) - ((max_y - min_y) / 2),
       'points': beestat.clone(room.points)
@@ -672,11 +723,10 @@ beestat.component.floor_plan.prototype.add_room_ = function(room) {
   }
 
   this.state_.active_group.rooms.push(new_room);
-  this.state_.active_room = new_room;
-
-  if (this.state_.active_point_entity !== undefined) {
-    this.state_.active_point_entity.set_active(false);
-  }
+  new beestat.component.floor_plan_entity.room(this, this.state_)
+    .set_room(new_room)
+    .set_group(this.state_.active_group)
+    .set_active(true);
 
   this.dispatchEvent('add_room');
 };
@@ -685,6 +735,8 @@ beestat.component.floor_plan.prototype.add_room_ = function(room) {
  * Remove the currently active room.
  */
 beestat.component.floor_plan.prototype.remove_room_ = function() {
+  this.save_buffer();
+
   const self = this;
 
   const index = this.state_.active_group.rooms.findIndex(function(active_room) {
@@ -718,13 +770,14 @@ beestat.component.floor_plan.prototype.clear_room_ = function() {
   if (this.state_.active_point_entity !== undefined) {
     this.state_.active_point_entity.set_active(false);
   }
-  this.dispatchEvent('clear_room');
 };
 
 /**
  * Remove the currently active point.
  */
 beestat.component.floor_plan.prototype.remove_point_ = function() {
+  this.save_buffer();
+
   if (this.state_.active_room.points.length > 3) {
     for (let i = 0; i < this.state_.active_room.points.length; i++) {
       if (this.state_.active_point === this.state_.active_room.points[i]) {
@@ -933,4 +986,122 @@ beestat.component.floor_plan.prototype.center_content = function() {
 
     this.update_view_box_();
   }
+};
+
+/**
+ * Save the current state to the undo/redo buffer.
+ *
+ * @param {boolean} clear Whether or not to allow clearing future buffer
+ * entries.
+ */
+beestat.component.floor_plan.prototype.save_buffer = function(clear = true) {
+  const buffer_size = 1000;
+
+  if (this.state_.buffer === undefined) {
+    this.state_.buffer = [];
+    this.state_.buffer_pointer = 0;
+  }
+
+  // If the buffer pointer is not at the end, clear those out.
+  if (
+    clear === true &&
+    this.state_.buffer_pointer !== this.state_.buffer.length + 1
+  ) {
+    this.state_.buffer.length = this.state_.buffer_pointer;
+  }
+
+  this.state_.buffer.push({
+    'floor_plan': beestat.clone(beestat.cache.floor_plan[beestat.setting('floor_plan_id')]),
+    'active_room_entity': this.state_.active_room_entity,
+    'active_group_id': this.state_.active_group.group_id
+  });
+
+  // If the buffer gets too long shrink it.
+  if (this.state_.buffer.length > buffer_size) {
+    this.state_.buffer.shift();
+  }
+
+  /**
+   * Update the buffer pointer. It always points at the index where the next
+   * buffer write will happen.
+   */
+  this.state_.buffer_pointer = this.state_.buffer.length;
+
+  this.update_toolbar();
+};
+
+/**
+ * Undo
+ */
+beestat.component.floor_plan.prototype.undo_ = function() {
+  if (this.can_undo_() === true) {
+    /**
+     * When undoing, first save the buffer if the pointer is at the end to
+     * capture the current state then shift the buffer pointer back an extra.
+     */
+    if (this.state_.buffer_pointer === this.state_.buffer.length) {
+      this.save_buffer(false);
+      this.state_.buffer_pointer--;
+    }
+
+    // Decrement buffer pointer back to the previous row.
+    this.state_.buffer_pointer--;
+
+    // Restore the floor plan.
+    beestat.cache.floor_plan[this.floor_plan_id_] =
+      beestat.clone(this.state_.buffer[this.state_.buffer_pointer].floor_plan);
+
+    // Restore any active room.
+    this.state_.active_room_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_room_entity;
+
+    // Restore any active group.
+    this.state_.active_group_id =
+      this.state_.buffer[this.state_.buffer_pointer].active_group_id;
+
+    this.update_toolbar();
+    this.dispatchEvent('undo');
+  }
+};
+
+/**
+ * Whether or not you can undo.
+ *
+ * @return {boolean}
+ */
+beestat.component.floor_plan.prototype.can_undo_ = function() {
+  return this.state_.buffer_pointer > 0;
+};
+
+/**
+ * Redo
+ */
+beestat.component.floor_plan.prototype.redo_ = function() {
+  if (this.can_redo_() === true) {
+    this.state_.buffer_pointer++;
+    // Restore the floor plan.
+    beestat.cache.floor_plan[this.floor_plan_id_] =
+      beestat.clone(this.state_.buffer[this.state_.buffer_pointer].floor_plan);
+
+    // Restore any active room.
+    this.state_.active_room_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_room_entity;
+
+    // Restore any active group.
+    this.state_.active_group_id =
+      this.state_.buffer[this.state_.buffer_pointer].active_group_id;
+
+    this.update_toolbar();
+    this.dispatchEvent('redo');
+  }
+};
+
+/**
+ * Whether or not you can redo.
+ *
+ * @return {boolean}
+ */
+beestat.component.floor_plan.prototype.can_redo_ = function() {
+  return this.state_.buffer !== undefined &&
+    this.state_.buffer_pointer + 1 < this.state_.buffer.length;
 };

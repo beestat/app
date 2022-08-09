@@ -65,6 +65,8 @@ beestat.component.floor_plan_entity.wall.prototype.decorate_line_ = function(par
  * @param {Event} e
  */
 beestat.component.floor_plan_entity.wall.prototype.add_point = function(e) {
+  this.floor_plan_.save_buffer();
+
   const room = this.room_.get_room();
   for (let i = 0; i < room.points.length; i++) {
     if (this.point_1_ === room.points[i]) {
@@ -303,10 +305,15 @@ beestat.component.floor_plan_entity.wall.prototype.set_room = function(room) {
  *
  * @param {number} x The x position of this entity.
  * @param {number} y The y position of this entity.
+ * @param {string} event Optional event to fire when done.
  *
  * @return {beestat.component.floor_plan_entity.wall} This.
  */
-beestat.component.floor_plan_entity.wall.prototype.set_xy = function(x, y) {
+beestat.component.floor_plan_entity.wall.prototype.set_xy = function(x, y, event = 'lesser_update') {
+  if (event === 'update') {
+    this.floor_plan_.save_buffer();
+  }
+
   let clamped_x = x + this.room_.get_x();
   let clamped_y = y + this.room_.get_y();
 
@@ -326,7 +333,7 @@ beestat.component.floor_plan_entity.wall.prototype.set_xy = function(x, y) {
     this.point_2_.y = Math.round(clamped_y - this.room_.get_y());
   }
 
-  this.dispatchEvent('update');
+  this.dispatchEvent(event);
 
   return this;
 };
@@ -568,6 +575,8 @@ beestat.component.floor_plan_entity.wall.prototype.set_active = function(active)
       this.dispatchEvent('activate');
     } else {
       delete this.state_.active_wall_entity;
+
+      this.dispatchEvent('inactivate');
     }
 
     if (this.rendered_ === true) {

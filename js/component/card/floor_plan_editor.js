@@ -8,6 +8,7 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   this.thermostat_id_ = thermostat_id;
 
   var change_function = beestat.debounce(function() {
+    // todo replace these with (if entity set active false?)
     delete self.state_.active_group;
     delete self.state_.active_room;
 
@@ -71,10 +72,42 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     center_container.appendChild(get_started_button);
   } else {
     const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
-    if (this.state_.active_group === undefined) {
-      this.state_.active_group = floor_plan.data.groups[0];
+
+    // Set group ids if they are not set.
+    floor_plan.data.groups.forEach(function(group) {
+      if (group.group_id === undefined) {
+        group.group_id = window.crypto.randomUUID();
+      }
+    });
+
+    /**
+     * If there is an active_group_id, override whatever the current active
+     * group is. Used for undo/redo.
+     */
+    if (this.state_.active_group_id !== undefined) {
+      for (let i = 0; i < floor_plan.data.groups.length; i++) {
+        if (floor_plan.data.groups[i].group_id === this.state_.active_group_id) {
+          this.state_.active_group = floor_plan.data.groups[i];
+          delete this.state_.active_group_id;
+          break;
+        }
+      }
     }
 
+    // If there is no active group, set it to best guess of ground floor.
+    if (this.state_.active_group === undefined) {
+      let closest_distance = Infinity;
+      let closest_group;
+      floor_plan.data.groups.forEach(function(group) {
+        if (Math.abs(group.elevation) < closest_distance) {
+          closest_group = group;
+          closest_distance = Math.abs(group.elevation);
+        }
+      });
+      this.state_.active_group = closest_group;
+    }
+
+    // Decorate everything.
     const drawing_pane_container = $.createElement('div');
     drawing_pane_container.style({
       'position': 'relative',
@@ -135,7 +168,14 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.update_floor_plan_();
     self.rerender();
   });
-  this.floor_plan_.addEventListener('clear_room', self.rerender.bind(this));
+  this.floor_plan_.addEventListener('undo', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('redo', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
 
   // Add all of the entities to the SVG.
@@ -170,17 +210,28 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     // Update GUI when a room is selected.
     room_entity.addEventListener('activate', function() {
       self.floor_plan_.update_infobox();
+      self.floor_plan_.update_toolbar();
+      self.update_info_pane_();
+    });
+
+    // Update GUI when a room is deselected.
+    room_entity.addEventListener('inactivate', function() {
+      self.floor_plan_.update_infobox();
+      self.floor_plan_.update_toolbar();
       self.update_info_pane_();
     });
 
     // Activate the currently active room (mostly for rerenders).
-    if (room === self.state_.active_room) {
+    if (
+      self.state_.active_room_entity !== undefined &&
+      room.room_id === self.state_.active_room_entity.get_room().room_id
+    ) {
       room_entity.set_active(true);
-    } else {
-      // Render the room and save to the list of current entities.
-      room_entity.render(self.floor_plan_.get_g());
-      self.entities_.room.push(room_entity);
     }
+
+    // Render the room and save to the list of current entities.
+    room_entity.render(self.floor_plan_.get_g());
+    self.entities_.room.push(room_entity);
   });
 
   /**
@@ -489,6 +540,8 @@ beestat.component.card.floor_plan_editor.prototype.get_subtitle_ = function() {
  * only run so fast.
  */
 beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function() {
+  const self = this;
+
   window.clearTimeout(this.update_timeout_);
   this.update_timeout_ = window.setTimeout(function() {
     new beestat.api()
@@ -498,13 +551,32 @@ beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function
         {
           'attributes': {
             'floor_plan_id': beestat.setting('floor_plan_id'),
-            'data': beestat.cache.floor_plan[beestat.setting('floor_plan_id')].data
+            'data': self.get_floor_plan_data_(beestat.setting('floor_plan_id'))
           }
         },
         'update_floor_plan'
       )
       .send();
   }, 1000);
+};
+
+/**
+ * Get floor plan data with UUIDs stripped.
+ *
+ * @param {number} floor_plan_id Floor plan ID
+ *
+ * @return {object} The modified floor plan data.
+ */
+beestat.component.card.floor_plan_editor.prototype.get_floor_plan_data_ = function(floor_plan_id) {
+  const floor_plan = beestat.cache.floor_plan[floor_plan_id];
+  const data = beestat.clone(floor_plan.data);
+  data.groups.forEach(function(group) {
+    delete group.group_id;
+    group.rooms.forEach(function(room) {
+      delete room.room_id;
+    });
+  });
+  return data;
 };
 
 /**
@@ -557,7 +629,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
           ).render();
         }));
     }
-
   }
 
   menu.add_menu_item(new beestat.component.menu_item()

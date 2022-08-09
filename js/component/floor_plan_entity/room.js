@@ -111,18 +111,17 @@ beestat.component.floor_plan_entity.prototype.decorate_points_ = function(parent
       .render(parent);
 
     // Update when a point is moved
-    point_entity.addEventListener('update', function() {
+    point_entity.addEventListener('lesser_update', function() {
       self.update_polygon_();
       self.update_walls_();
-      self.dispatchEvent('update');
     });
 
     // When a point is done moving normalize the points
-    point_entity.addEventListener('drag_stop', function() {
+    point_entity.addEventListener('update', function() {
       self.normalize_points_();
       self.update_points_();
-      self.update_walls_();
       self.update_polygon_();
+      self.update_walls_();
       self.update_snap_points_();
       self.dispatchEvent('update');
     });
@@ -174,25 +173,16 @@ beestat.component.floor_plan_entity.prototype.decorate_walls_ = function(parent)
       .render(parent);
     self.walls_.push(wall_entity);
 
-    wall_entity.addEventListener('update', function() {
+    wall_entity.addEventListener('lesser_update', function() {
       self.update_polygon_();
       self.update_points_();
       self.update_walls_();
-      self.dispatchEvent('update');
     });
 
-    // Clear any active points on drag start.
-    wall_entity.addEventListener('drag_start', function() {
-      if (self.active_point_entity_ !== undefined) {
-        self.active_point_entity_.set_active(false);
-        delete self.active_point_entity_;
-      }
-    });
-
-    wall_entity.addEventListener('drag_stop', function() {
+    wall_entity.addEventListener('update', function() {
       self.normalize_points_();
-      self.update_polygon_();
       self.update_points_();
+      self.update_polygon_();
       self.update_walls_();
       self.update_snap_points_();
       self.dispatchEvent('update');
@@ -240,6 +230,20 @@ beestat.component.floor_plan_entity.prototype.update_walls_ = function() {
  * @return {beestat.component.floor_plan_entity.room} This.
  */
 beestat.component.floor_plan_entity.room.prototype.set_active = function(active) {
+  /**
+   * Always clear the active point and wall when clicking on a room, even if
+   * it's already active. Also force a toolbar update. This is a little hacky
+   * but works.
+   */
+  if (this.state_.active_point_entity !== undefined) {
+    this.state_.active_point_entity.set_active(false);
+    this.floor_plan_.update_toolbar();
+  }
+  if (this.state_.active_wall_entity !== undefined) {
+    this.state_.active_wall_entity.set_active(false);
+    this.floor_plan_.update_toolbar();
+  }
+
   if (active !== this.active_) {
     this.active_ = active;
 
@@ -270,13 +274,13 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
       if (this.state_.active_point_entity !== undefined) {
         this.state_.active_point_entity.set_active(false);
       }
+
+      this.dispatchEvent('inactivate');
     }
 
     if (this.rendered_ === true) {
       this.rerender();
     }
-
-    this.floor_plan_.update_toolbar();
   }
 
   return this;
@@ -337,6 +341,11 @@ beestat.component.floor_plan_entity.room.prototype.set_room = function(room) {
   this.x_ = room.x;
   this.y_ = room.y;
 
+  // Ensure a UUID is set on the room.
+  if (this.room_.room_id === undefined) {
+    this.room_.room_id = window.crypto.randomUUID();
+  }
+
   return this;
 };
 
@@ -359,10 +368,15 @@ beestat.component.floor_plan_entity.room.prototype.set_group = function(group) {
  *
  * @param {number} x The x position of this entity.
  * @param {number} y The y position of this entity.
+ * @param {string} event Optional event to fire when done.
  *
  * @return {beestat.component.floor_plan_entity} This.
  */
-beestat.component.floor_plan_entity.room.prototype.set_xy = function(x, y) {
+beestat.component.floor_plan_entity.room.prototype.set_xy = function(x, y, event = 'lesser_update') {
+  if (event === 'update') {
+    this.floor_plan_.save_buffer();
+  }
+
   let clamped_x = x;
   let clamped_y = y;
 
@@ -382,7 +396,7 @@ beestat.component.floor_plan_entity.room.prototype.set_xy = function(x, y) {
   this.room_.x = Math.round(clamped_x);
   this.room_.y = Math.round(clamped_y);
 
-  this.dispatchEvent('update');
+  this.dispatchEvent(event);
 
   return beestat.component.floor_plan_entity.prototype.set_xy.apply(
     this,
@@ -485,7 +499,6 @@ beestat.component.floor_plan_entity.room.prototype.after_mouseup_handler_ = func
   if (this.dragged_ === true) {
     this.clear_snap_lines_();
     this.update_snap_points_();
-    this.dispatchEvent('update');
   }
 };
 
