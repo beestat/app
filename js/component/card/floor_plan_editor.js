@@ -5,6 +5,7 @@
  */
 beestat.component.card.floor_plan_editor = function(thermostat_id) {
   const self = this;
+
   this.thermostat_id_ = thermostat_id;
 
   var change_function = beestat.debounce(function() {
@@ -36,12 +37,12 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   }
 
   // The first time this component renders center the content.
-  if (self.floor_plan_ !== undefined) {
     this.addEventListener('render', function() {
-      self.floor_plan_.center_content();
-      self.removeEventListener('render');
+      if (this.floor_plan_ !== undefined) {
+        self.floor_plan_.center_content();
+        self.removeEventListener('render');
+      }
     });
-  }
 };
 beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card);
 

@@ -59,7 +59,7 @@
     "sort-keys": "off",
     "space-before-function-paren": ["error", "never"],
     "strict": "off",
-    "valid-jsdoc": ["error", {"requireReturn": false, "requireParamDescription": false}],
+    "valid-jsdoc": ["error", {"requireReturn": false, "requireParamDescription": false, "requireReturnDescription": false}],
     "vars-on-top": "off",
     "operator_assignment": "off",
 

@@ -943,7 +943,6 @@ beestat.component.floor_plan.prototype.get_group_below = function(group) {
  * Center the view box on the content. Sets zoom and pan.
  */
 beestat.component.floor_plan.prototype.center_content = function() {
-  window.fp = this;
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
   let min_x = Infinity;
