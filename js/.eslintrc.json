@@ -61,7 +61,8 @@
     "strict": "off",
     "valid-jsdoc": ["error", {"requireReturn": false, "requireParamDescription": false, "requireReturnDescription": false}],
     "vars-on-top": "off",
-    "operator_assignment": "off",
+    "operator-assignment": "off",
+    "no-else-return": "off",
 
     // Node.js and CommonJS
     "callback-return": "off",

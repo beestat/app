@@ -102,10 +102,7 @@ beestat.component.card.my_home.prototype.decorate_region_ = function(parent) {
   (new beestat.component.title('Region')).render(parent);
 
   var region;
-  if (
-    address.normalized !== null &&
-    address.normalized.components !== undefined
-  ) {
+  if (beestat.address.is_valid(address.address_id) === true) {
     region =
       address.normalized.components.state_abbreviation ||
       address.normalized.components.locality ||

@@ -122,26 +122,9 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   const radio_group = new beestat.component.radio_group();
   const addresses = Object.values(beestat.cache.address);
   addresses.forEach(function(address) {
-    if (
-      address.normalized !== null &&
-      address.normalized.metadata !== undefined &&
-      address.normalized.metadata.latitude !== undefined &&
-      address.normalized.metadata.latitude !== null &&
-      address.normalized.metadata.longitude !== undefined &&
-      address.normalized.metadata.longitude !== null
-    ) {
-      const address_parts = [
-        address.normalized.components.primary_number,
-        address.normalized.components.street_predirection,
-        address.normalized.components.street_name,
-        address.normalized.components.street_suffix,
-        address.normalized.components.city_name + ',',
-        address.normalized.components.state_abbreviation,
-        address.normalized.components.zipcode
-      ];
-
+    if (beestat.address.is_valid(address.address_id) === true) {
       let radio = new beestat.component.input.radio()
-        .set_label(address_parts.join(' '))
+        .set_label(beestat.address.get_lines(address.address_id)[0])
         .set_value(address.address_id);
 
       if (addresses.length === 1) {

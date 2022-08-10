@@ -81,12 +81,7 @@ beestat.comparisons.get_attributes = function() {
   }
 
   if (
-    address.normalized !== null &&
-    address.normalized.metadata !== undefined &&
-    address.normalized.metadata.latitude !== undefined &&
-    address.normalized.metadata.latitude !== null &&
-    address.normalized.metadata.longitude !== undefined &&
-    address.normalized.metadata.longitude !== null &&
+    beestat.address.is_valid(address.address_id) === true &&
     beestat.setting('comparison_region') !== 'global'
   ) {
     attributes.radius = {
