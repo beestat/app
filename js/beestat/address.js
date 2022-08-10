@@ -14,8 +14,6 @@ beestat.address.get_lines = function(address_id) {
     return null;
   }
 
-  console.log(address);
-
   // US Address
   if (address.normalized.components.country_iso_3 === 'USA') {
     return [

@@ -53,6 +53,9 @@ beestat.component.floor_plan_entity.point.prototype.decorate_rect_ = function(pa
   this.rect_.addEventListener('mousedown', function() {
     self.dispatchEvent('mousedown');
   });
+  // this.rect_.addEventListener('touchstart', function() {
+  //   self.dispatchEvent('mousedown');
+  // });
 
   this.rect_.addEventListener('mouseover', function() {
     self.hover_ = true;
@@ -199,8 +202,8 @@ beestat.component.floor_plan_entity.point.prototype.after_mousedown_handler_ = f
 beestat.component.floor_plan_entity.point.prototype.after_mousemove_handler_ = function(e) {
   const snap_distance = 6;
 
-  let desired_x = this.drag_start_entity_.x + ((e.clientX - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
-  let desired_y = this.drag_start_entity_.y + ((e.clientY - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
+  let desired_x = this.drag_start_entity_.x + (((e.clientX || e.touches[0].clientX) - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
+  let desired_y = this.drag_start_entity_.y + (((e.clientY || e.touches[0].clientY) - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
 
   if (this.state_.snapping === true) {
     // Vertical

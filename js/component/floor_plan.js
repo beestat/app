@@ -48,6 +48,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
 
   this.svg_.style.background = beestat.style.color.bluegray.dark;
   this.svg_.style.userSelect = 'none';
+  this.svg_.style.touchAction = 'none';
 
   this.set_zoomable_();
   this.set_draggable_();
@@ -290,8 +291,8 @@ beestat.component.floor_plan.prototype.set_draggable_ = function() {
     e.stopPropagation();
 
     self.drag_start_mouse_ = {
-      'x': e.clientX,
-      'y': e.clientY
+      'x': e.clientX || e.touches[0].clientX,
+      'y': e.clientY || e.touches[0].clientY
     };
 
     self.drag_start_pan_ = {
@@ -304,8 +305,8 @@ beestat.component.floor_plan.prototype.set_draggable_ = function() {
 
   this.mousemove_handler_ = function(e) {
     if (self.dragging_ === true) {
-      const dx = (e.clientX - self.drag_start_mouse_.x);
-      const dy = (e.clientY - self.drag_start_mouse_.y);
+      const dx = ((e.clientX || e.touches[0].clientX) - self.drag_start_mouse_.x);
+      const dy = ((e.clientY || e.touches[0].clientY) - self.drag_start_mouse_.y);
       self.view_box_.x = self.drag_start_pan_.x - (dx * self.get_scale());
       self.view_box_.y = self.drag_start_pan_.y - (dy * self.get_scale());
       self.update_view_box_();
@@ -327,9 +328,13 @@ beestat.component.floor_plan.prototype.set_draggable_ = function() {
   };
 
   this.svg_.addEventListener('mousedown', mousedown_handler.bind(this));
+  this.svg_.addEventListener('touchstart', mousedown_handler.bind(this));
 
   window.addEventListener('mousemove', this.mousemove_handler_);
+  window.addEventListener('touchmove', this.mousemove_handler_);
+
   window.addEventListener('mouseup', this.mouseup_handler_);
+  window.addEventListener('touchend', this.mouseup_handler_);
 };
 
 /**
@@ -384,7 +389,9 @@ beestat.component.floor_plan.prototype.dispose = function() {
     window.removeEventListener('keydown', this.keydown_handler_);
     window.removeEventListener('wheel', this.wheel_handler_);
     window.removeEventListener('mousemove', this.mousemove_handler_);
+    window.removeEventListener('touchmove', this.mousemove_handler_);
     window.removeEventListener('mouseup', this.mouseup_handler_);
+    window.removeEventListener('touchend', this.mouseup_handler_);
     this.rendered_ = false;
   }
 };

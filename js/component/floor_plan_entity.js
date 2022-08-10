@@ -97,6 +97,7 @@ beestat.component.floor_plan_entity.prototype.bring_to_front_ = function() {
 beestat.component.floor_plan_entity.prototype.set_draggable_ = function(draggable) {
   if (draggable === true) {
     this.g_.addEventListener('mousedown', this.mousedown_handler_.bind(this));
+    this.g_.addEventListener('touchstart', this.mousedown_handler_.bind(this));
   }
 
   this.draggable_ = draggable;
@@ -156,13 +157,15 @@ beestat.component.floor_plan_entity.prototype.mousedown_handler_ = function(e) {
 
   this.mousemove_handler_ = this.mousemove_handler_.bind(this);
   window.addEventListener('mousemove', this.mousemove_handler_);
+  window.addEventListener('touchmove', this.mousemove_handler_);
 
   this.mouseup_handler_ = this.mouseup_handler_.bind(this);
   window.addEventListener('mouseup', this.mouseup_handler_);
+  window.addEventListener('touchend', this.mouseup_handler_);
 
   this.drag_start_mouse_ = {
-    'x': e.clientX,
-    'y': e.clientY
+    'x': e.clientX || e.touches[0].clientX,
+    'y': e.clientY || e.touches[0].clientY
   };
 
   this.dragged_ = false;
@@ -211,7 +214,9 @@ beestat.component.floor_plan_entity.prototype.after_mousemove_handler_ = functio
  */
 beestat.component.floor_plan_entity.prototype.mouseup_handler_ = function(e) {
   window.removeEventListener('mousemove', this.mousemove_handler_);
+  window.removeEventListener('touchmove', this.mousemove_handler_);
   window.removeEventListener('mouseup', this.mouseup_handler_);
+  window.removeEventListener('touchend', this.mouseup_handler_);
 
   delete this.drag_start_entity_;
   delete this.drag_start_mouse_;

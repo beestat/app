@@ -65,21 +65,28 @@ beestat.component.floor_plan_entity.prototype.decorate_polygon_ = function(paren
 
   // Activate room on click if the mouse didn't move.
   if (this.enabled_ === true) {
-    this.polygon_.addEventListener('mousedown', function(e) {
+    const mousedown_handler = function(e) {
+      console.log('mousedown');
       self.mousedown_mouse_ = {
-        'x': e.clientX,
-        'y': e.clientY
+        'x': e.clientX || e.touches[0].clientX,
+        'y': e.clientY || e.touches[0].clientY
       };
-    });
-    this.polygon_.addEventListener('mouseup', function(e) {
+    };
+    this.polygon_.addEventListener('mousedown', mousedown_handler);
+    // this.polygon_.addEventListener('touchstart', mousedown_handler);
+
+    const mouseup_handler = function(e) {
+      console.log('mouseup');
       if (
         self.mousedown_mouse_ !== undefined &&
-        e.clientX === self.mousedown_mouse_.x &&
-        e.clientY === self.mousedown_mouse_.y
+        (e.clientX || e.changedTouches[0].clientX) === self.mousedown_mouse_.x &&
+        (e.clientY || e.changedTouches[0].clientY) === self.mousedown_mouse_.y
       ) {
         self.set_active(true);
       }
-    });
+    };
+    this.polygon_.addEventListener('mouseup', mouseup_handler);
+    // this.polygon_.addEventListener('touchend', mouseup_handler);
   }
 
   this.update_polygon_();
@@ -128,6 +135,9 @@ beestat.component.floor_plan_entity.prototype.decorate_points_ = function(parent
 
     // Activate on click
     point_entity.addEventListener('mousedown', function() {
+      point_entity.set_active(true);
+    });
+    point_entity.addEventListener('touchstart', function() {
       point_entity.set_active(true);
     });
 
@@ -194,6 +204,9 @@ beestat.component.floor_plan_entity.prototype.decorate_walls_ = function(parent)
     });
 
     // Activate on mousedown
+    wall_entity.addEventListener('mousedown', function() {
+      wall_entity.set_active(true);
+    });
     wall_entity.addEventListener('mousedown', function() {
       wall_entity.set_active(true);
     });
@@ -450,8 +463,8 @@ beestat.component.floor_plan_entity.room.prototype.after_mousedown_handler_ = fu
 beestat.component.floor_plan_entity.room.prototype.after_mousemove_handler_ = function(e) {
   const self = this;
 
-  let desired_x = this.drag_start_entity_.x + ((e.clientX - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
-  let desired_y = this.drag_start_entity_.y + ((e.clientY - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
+  let desired_x = this.drag_start_entity_.x + (((e.clientX || e.touches[0].clientX) - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
+  let desired_y = this.drag_start_entity_.y + (((e.clientY || e.touches[0].clientY) - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
 
   // Snap
   if (this.state_.snapping === true) {

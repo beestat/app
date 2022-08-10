@@ -46,15 +46,13 @@ beestat.component.floor_plan_entity.wall.prototype.decorate_line_ = function(par
   this.path_.addEventListener('mousedown', function() {
     self.dispatchEvent('mousedown');
   });
+  // this.path_.addEventListener('touchstart', function() {
+  //   self.dispatchEvent('mousedown');
+  // });
 
   this.decorate_text_(parent);
 
   this.update_line_();
-
-  // Update the line if the ctrl key is pressed.
-  this.floor_plan_.addEventListener('ctrl_key', function() {
-    self.update_line_();
-  });
 
   this.path_.addEventListener('dblclick', this.add_point.bind(this));
 };
@@ -347,7 +345,7 @@ beestat.component.floor_plan_entity.wall.prototype.after_mousemove_handler_ = fu
   const snap_distance = 6;
 
   if (this.is_vertical_() === true) {
-    let desired_x = this.drag_start_entity_.x + ((e.clientX - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
+    let desired_x = this.drag_start_entity_.x + (((e.clientX || e.touches[0].clientX) - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
 
     if (this.state_.snapping === true) {
       const point_x = this.room_.get_x() + desired_x;
@@ -376,7 +374,7 @@ beestat.component.floor_plan_entity.wall.prototype.after_mousemove_handler_ = fu
       null
     );
   } else if (this.is_horizontal_() === true) {
-    let desired_y = this.drag_start_entity_.y + ((e.clientY - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
+    let desired_y = this.drag_start_entity_.y + (((e.clientY || e.touches[0].clientY) - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
 
     if (this.state_.snapping === true) {
       const point_y = this.room_.get_y() + desired_y;
