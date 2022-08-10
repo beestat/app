@@ -118,6 +118,7 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   this.container_.appendChild(left_container);
 
   const right_container = document.createElement('div');
+  right_container.style.minWidth = '0';
   this.decorate_right_(right_container);
   this.container_.appendChild(right_container);
 
@@ -157,6 +158,9 @@ beestat.component.tile.prototype.decorate_right_ = function(parent) {
     const line_1_container = document.createElement('div');
     line_1_container.innerText = this.get_text_()[0];
     line_1_container.style.fontWeight = beestat.style.font_weight.bold;
+    line_1_container.style.whiteSpace = 'nowrap';
+    line_1_container.style.overflow = 'hidden';
+    line_1_container.style.textOverflow = 'ellipsis';
     parent.appendChild(line_1_container);
 
     const line_2_container = document.createElement('div');
