@@ -200,8 +200,7 @@ beestat.component.floor_plan_entity.wall.prototype.decorate_text_ = function(par
   this.text_.style.fill = '#ffffff';
   this.text_.style.textAnchor = 'middle';
   this.text_.style.letterSpacing = '-0.5px';
-  this.text_.style.dominantBaseline = 'hanging';
-  this.text_.setAttribute('dy', '5');
+  this.text_.setAttribute('dy', '1.1em');
 
   this.text_path_ = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
   this.text_path_.setAttribute('href', '#' + this.path_id_);
