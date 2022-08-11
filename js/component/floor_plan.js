@@ -102,13 +102,13 @@ beestat.component.floor_plan.prototype.render = function(parent) {
   this.keydown_handler_ = function(e) {
     if (e.target.nodeName === 'BODY') {
       if (e.key === 'Escape') {
-        if (self.state_.active_room !== undefined) {
+        if (self.state_.active_room_entity !== undefined) {
           self.clear_room_();
         }
       } else if (e.key === 'Delete') {
-        if (self.state_.active_point !== undefined) {
+        if (self.state_.active_point_entity !== undefined) {
           self.remove_point_();
-        } else if (self.state_.active_room !== undefined) {
+        } else if (self.state_.active_room_entity !== undefined) {
           self.remove_room_();
         }
       } else if (e.key.toLowerCase() === 'r') {
@@ -121,7 +121,9 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true
       ) {
-        self.state_.copied_room = beestat.clone(self.state_.active_room);
+        self.state_.copied_room = beestat.clone(
+          self.state_.active_room_entity.get_room()
+        );
       } else if (
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true
@@ -437,7 +439,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_background_color(beestat.style.color.bluegray.base);
   this.button_group_.add_button(remove_room_button);
 
-  if (this.state_.active_room !== undefined) {
+  if (this.state_.active_room_entity !== undefined) {
     remove_room_button
       .set_background_hover_color(beestat.style.color.bluegray.light)
       .set_text_color(beestat.style.color.red.base)
@@ -472,8 +474,8 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   this.button_group_.add_button(remove_point_button);
 
   if (
-    this.state_.active_point !== undefined &&
-    this.state_.active_room.points.length > 3
+    this.state_.active_point_entity !== undefined &&
+    this.state_.active_room_entity.get_room().points.length > 3
   ) {
     remove_point_button
       .set_background_hover_color(beestat.style.color.bluegray.light)
@@ -648,10 +650,10 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
  */
 beestat.component.floor_plan.prototype.update_infobox = function() {
   const parts = [];
-  if (this.state_.active_room !== undefined) {
-    parts.push(this.state_.active_room.name || 'Unnamed Room');
+  if (this.state_.active_room_entity !== undefined) {
+    parts.push(this.state_.active_room_entity.get_room().name || 'Unnamed Room');
     parts.push(
-      beestat.floor_plan.get_area_room(this.state_.active_room)
+      beestat.floor_plan.get_area_room(this.state_.active_room_entity.get_room())
         .toLocaleString() + ' sqft'
     );
   } else {
@@ -746,8 +748,8 @@ beestat.component.floor_plan.prototype.remove_room_ = function() {
 
   const self = this;
 
-  const index = this.state_.active_group.rooms.findIndex(function(active_room) {
-    return active_room === self.state_.active_room;
+  const index = this.state_.active_group.rooms.findIndex(function(room) {
+    return room === self.state_.active_room_entity.get_room();
   });
 
   if (this.state_.active_room_entity !== undefined) {
@@ -785,10 +787,10 @@ beestat.component.floor_plan.prototype.clear_room_ = function() {
 beestat.component.floor_plan.prototype.remove_point_ = function() {
   this.save_buffer();
 
-  if (this.state_.active_room.points.length > 3) {
-    for (let i = 0; i < this.state_.active_room.points.length; i++) {
-      if (this.state_.active_point === this.state_.active_room.points[i]) {
-        this.state_.active_room.points.splice(i, 1);
+  if (this.state_.active_room_entity.get_room().points.length > 3) {
+    for (let i = 0; i < this.state_.active_room_entity.get_room().points.length; i++) {
+      if (this.state_.active_point_entity.get_point() === this.state_.active_room_entity.get_room().points[i]) {
+        this.state_.active_room_entity.get_room().points.splice(i, 1);
         if (this.state_.active_point_entity !== undefined) {
           this.state_.active_point_entity.set_active(false);
         }

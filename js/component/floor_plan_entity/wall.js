@@ -98,7 +98,15 @@ beestat.component.floor_plan_entity.wall.prototype.add_point = function(e) {
         projected_point
       );
 
-      this.state_.active_point = projected_point;
+      const projected_point_entity = new beestat.component.floor_plan_entity.point(
+        this.floor_plan_,
+        this.state_
+      )
+        .set_room(room)
+        .set_point(projected_point);
+
+      // this.state_.active_point = projected_point;
+      this.state_.active_point_entity = projected_point_entity;
       if (this.state_.active_wall_entity !== undefined) {
         this.state_.active_wall_entity.set_active(false);
       }
@@ -183,8 +191,8 @@ beestat.component.floor_plan_entity.wall.prototype.project_point_ = function(p, 
   dot = ((b.x - a.x) * (p.y - a.y)) - ((b.y - a.y) * (p.x - a.x));
 
   return {
-    'x': a.x + (atob.x * t),
-    'y': a.y + (atob.y * t)
+    'x': Math.round(a.x + (atob.x * t)),
+    'y': Math.round(a.y + (atob.y * t))
   };
 };
 
@@ -565,7 +573,7 @@ beestat.component.floor_plan_entity.wall.prototype.set_active = function(active)
       this.state_.active_wall_entity = this;
 
       // Deactivate the active point.
-      if (this.state_.active_point !== undefined) {
+      if (this.state_.active_point_entity !== undefined) {
         this.state_.active_point_entity.set_active(false);
       }
 

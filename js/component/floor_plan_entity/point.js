@@ -337,7 +337,7 @@ beestat.component.floor_plan_entity.point.prototype.set_active = function(active
       // Inactivate any other active point.
       if (
         this.state_.active_point_entity !== undefined &&
-        this.state_.active_point !== this.point_
+        this.state_.active_point_entity.get_point() !== this.point_
       ) {
         this.state_.active_point_entity.set_active(false);
       }
@@ -349,12 +349,10 @@ beestat.component.floor_plan_entity.point.prototype.set_active = function(active
         this.state_.active_wall_entity.set_active(false);
       }
 
-      this.state_.active_point = this.point_;
       this.state_.active_point_entity = this;
 
       this.dispatchEvent('activate');
     } else {
-      delete this.state_.active_point;
       delete this.state_.active_point_entity;
 
       this.dispatchEvent('inactivate');

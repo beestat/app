@@ -11,7 +11,6 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   var change_function = beestat.debounce(function() {
     // todo replace these with (if entity set active false?)
     delete self.state_.active_group;
-    delete self.state_.active_room;
 
     self.rerender();
 
@@ -252,7 +251,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
  * @param {rocket.Elements} parent
  */
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_ = function(parent) {
-  if (this.state_.active_room !== undefined) {
+  if (this.state_.active_room_entity !== undefined) {
     this.decorate_info_pane_room_(parent);
   } else {
     this.decorate_info_pane_floor_(parent);
@@ -389,16 +388,16 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
     })
     .render(div);
 
-  if (this.state_.active_room.name !== undefined) {
-    name_input.set_value(this.state_.active_room.name);
+  if (this.state_.active_room_entity.get_room().name !== undefined) {
+    name_input.set_value(this.state_.active_room_entity.get_room().name);
   }
 
   name_input.addEventListener('input', function() {
-    self.state_.active_room.name = name_input.get_value();
+    self.state_.active_room_entity.get_room().name = name_input.get_value();
     self.floor_plan_.update_infobox();
   });
   name_input.addEventListener('change', function() {
-    self.state_.active_room.name = name_input.get_value();
+    self.state_.active_room_entity.get_room().name = name_input.get_value();
     self.update_floor_plan_();
   });
 
@@ -408,7 +407,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   const elevation_input = new beestat.component.input.text()
     .set_label('Elevation (feet)')
     .set_placeholder(this.state_.active_group.elevation / 12)
-    .set_value(this.state_.active_room.elevation / 12 || '')
+    .set_value(this.state_.active_room_entity.get_room().elevation / 12 || '')
     .set_width('100%')
     .set_maxlength('5')
     .set_requirements({
@@ -418,7 +417,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   elevation_input.addEventListener('change', function() {
     if (elevation_input.meets_requirements() === true) {
-      self.state_.active_room.elevation = elevation_input.get_value() * 12;
+      self.state_.active_room_entity.get_room().elevation = elevation_input.get_value() * 12;
       self.update_floor_plan_();
       self.rerender();
     } else {
@@ -432,7 +431,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   const height_input = new beestat.component.input.text()
     .set_label('Ceiling Height (feet)')
     .set_placeholder(this.state_.active_group.height / 12)
-    .set_value(this.state_.active_room.height / 12 || '')
+    .set_value(this.state_.active_room_entity.get_room().height / 12 || '')
     .set_width('100%')
     .set_maxlength('4')
     .set_requirements({
@@ -443,7 +442,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   height_input.addEventListener('change', function() {
     if (height_input.meets_requirements() === true) {
-      self.state_.active_room.height = height_input.get_value() * 12;
+      self.state_.active_room_entity.get_room().height = height_input.get_value() * 12;
       self.update_floor_plan_();
     } else {
       height_input.set_value('');
@@ -483,17 +482,17 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   sensor_input.render(div);
 
-  if (self.state_.active_room.sensor_id !== undefined) {
-    sensor_input.set_value(self.state_.active_room.sensor_id);
+  if (self.state_.active_room_entity.get_room().sensor_id !== undefined) {
+    sensor_input.set_value(self.state_.active_room_entity.get_room().sensor_id);
   } else {
     sensor_input.set_value('');
   }
 
   sensor_input.addEventListener('change', function() {
     if (sensor_input.get_value() === '') {
-      delete self.state_.active_room.sensor_id;
+      delete self.state_.active_room_entity.get_room().sensor_id;
     } else {
-      self.state_.active_room.sensor_id = Number(sensor_input.get_value());
+      self.state_.active_room_entity.get_room().sensor_id = Number(sensor_input.get_value());
     }
     self.update_floor_plan_();
   });

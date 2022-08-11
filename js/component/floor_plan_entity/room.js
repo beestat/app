@@ -66,7 +66,6 @@ beestat.component.floor_plan_entity.prototype.decorate_polygon_ = function(paren
   // Activate room on click if the mouse didn't move.
   if (this.enabled_ === true) {
     const mousedown_handler = function(e) {
-      console.log('mousedown');
       self.mousedown_mouse_ = {
         'x': e.clientX || e.touches[0].clientX,
         'y': e.clientY || e.touches[0].clientY
@@ -76,7 +75,6 @@ beestat.component.floor_plan_entity.prototype.decorate_polygon_ = function(paren
     // this.polygon_.addEventListener('touchstart', mousedown_handler);
 
     const mouseup_handler = function(e) {
-      console.log('mouseup');
       if (
         self.mousedown_mouse_ !== undefined &&
         (e.clientX || e.changedTouches[0].clientX) === self.mousedown_mouse_.x &&
@@ -147,7 +145,10 @@ beestat.component.floor_plan_entity.prototype.decorate_points_ = function(parent
     });
 
     // Activate the currently active point (mostly for rerenders).
-    if (self.state_.active_point === point) {
+    if (
+      self.state_.active_point_entity !== undefined &&
+      self.state_.active_point_entity.get_point() === point
+    ) {
       point_entity.set_active(true);
     }
 
@@ -264,12 +265,11 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
       // Inactivate any other active room.
       if (
         this.state_.active_room_entity !== undefined &&
-        this.state_.active_room !== this.room_
+        this.state_.active_room_entity.get_room() !== this.room_
       ) {
         this.state_.active_room_entity.set_active(false);
       }
 
-      this.state_.active_room = this.room_;
       this.state_.active_room_entity = this;
 
       this.dispatchEvent('activate');
@@ -277,7 +277,6 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
 
       this.bring_to_front_();
     } else {
-      delete this.state_.active_room;
       delete this.state_.active_room_entity;
 
       if (this.state_.active_wall_entity !== undefined) {
