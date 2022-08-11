@@ -36,12 +36,12 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   }
 
   // The first time this component renders center the content.
-    this.addEventListener('render', function() {
-      if (this.floor_plan_ !== undefined) {
-        self.floor_plan_.center_content();
-        self.removeEventListener('render');
-      }
-    });
+  this.addEventListener('render', function() {
+    if (this.floor_plan_ !== undefined) {
+      self.floor_plan_.center_content();
+      self.removeEventListener('render');
+    }
+  });
 };
 beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card);
 
@@ -178,11 +178,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   });
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
 
-  // Add all of the entities to the SVG.
-  this.entities_ = {
-    'room': []
-  };
-
   const group_below = this.floor_plan_.get_group_below(this.state_.active_group);
   if (group_below !== undefined) {
     group_below.rooms.forEach(function(room) {
@@ -195,6 +190,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   }
 
   // Loop over the rooms in this group and add them.
+  let active_room_entity;
   this.state_.active_group.rooms.forEach(function(room) {
     const room_entity = new beestat.component.floor_plan_entity.room(self.floor_plan_, self.state_)
       .set_room(room)
@@ -221,18 +217,28 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
       self.update_info_pane_();
     });
 
-    // Activate the currently active room (mostly for rerenders).
+    /**
+     * If there is currently an active room, use it to match to the newly
+     * created room entities and then store it. After this loop is done
+     * activate it to avoid other rooms getting written on top. Also delete
+     * the active room from the state or it will needlessly be inactivated in
+     * the set_active function.
+     */
     if (
       self.state_.active_room_entity !== undefined &&
       room.room_id === self.state_.active_room_entity.get_room().room_id
     ) {
-      room_entity.set_active(true);
+      delete self.state_.active_room_entity;
+      active_room_entity = room_entity;
     }
 
     // Render the room and save to the list of current entities.
     room_entity.render(self.floor_plan_.get_g());
-    self.entities_.room.push(room_entity);
   });
+
+  if (active_room_entity !== undefined) {
+    active_room_entity.set_active(true);
+  }
 
   /**
    * If there was an active room, defer to adding it last so it ends up on
@@ -241,7 +247,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
    */
   if (this.state_.active_room_entity !== undefined) {
     this.state_.active_room_entity.render(this.floor_plan_.get_g());
-    this.entities_.room.push(this.state_.active_room_entity);
   }
 };
 
