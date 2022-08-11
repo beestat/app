@@ -74,7 +74,7 @@ beestat.component.modal.prototype.decorate_ = function() {
    * Fade in the mask
    * Overpop the modal
    */
-  window.setTimeout(function() {
+  this.timeout_1_ = window.setTimeout(function() {
     $('body').firstElementChild()
       .style('filter', 'blur(3px)');
     mask.style('background', 'rgba(0, 0, 0, 0.5)');
@@ -82,9 +82,9 @@ beestat.component.modal.prototype.decorate_ = function() {
   }, 0);
 
   // Pop the modal back to normal size
-  window.setTimeout(function() {
+  this.timeout_2_ = window.setTimeout(function() {
     modal.style('transform', 'translateX(-50%) scale(1)');
-  }, 200);
+  }, 250);
 
   // Escape to close
   $(window).addEventListener('keydown.modal', function(e) {
@@ -111,6 +111,9 @@ beestat.component.modal.prototype.decorate_ = function() {
 beestat.component.modal.prototype.dispose = function() {
   if (this.rendered_ === true) {
     var self = this;
+
+    window.clearTimeout(this.timeout_1_);
+    window.clearTimeout(this.timeout_2_);
 
     this.modal_.style('transform', 'translateX(-50%) scale(0)');
     this.mask_.style('background', 'rgba(0, 0, 0, 0)');
