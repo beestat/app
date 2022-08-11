@@ -119,18 +119,18 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         self.toggle_snapping_();
       } else if (
         e.key.toLowerCase() === 'c' &&
-        e.ctrlKey === true
+        e.ctrlKey === true &&
+        self.state_.active_room_entity !== undefined
       ) {
         self.state_.copied_room = beestat.clone(
           self.state_.active_room_entity.get_room()
         );
       } else if (
         e.key.toLowerCase() === 'v' &&
-        e.ctrlKey === true
+        e.ctrlKey === true &&
+        self.state_.copied_room !== undefined
       ) {
-        if (self.state_.copied_room !== undefined) {
-          self.add_room_(self.state_.copied_room);
-        }
+        self.add_room_(self.state_.copied_room);
       } else if (
         e.key.toLowerCase() === 'z' &&
         e.ctrlKey === true
