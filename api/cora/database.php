@@ -508,7 +508,9 @@ final class database extends \mysqli {
     while($row = $result->fetch_assoc()) {
       // Cast if necessary.
       foreach($float_fields as $float_field) {
-        $row[$float_field] = (float) $row[$float_field];
+        if($row[$float_field] !== null) {
+          $row[$float_field] = (float) $row[$float_field];
+        }
       }
       foreach($boolean_fields as $boolean_field) {
         if($row[$boolean_field] !== null) {
