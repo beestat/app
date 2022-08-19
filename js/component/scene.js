@@ -210,6 +210,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_.enablePan = false;
   this.controls_.maxDistance = 1000;
   this.controls_.minDistance = 400;
+  this.controls_.maxPolarAngle = Math.PI / 2.5;
 };
 
 /**
