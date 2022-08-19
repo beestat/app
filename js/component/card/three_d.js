@@ -424,31 +424,31 @@ beestat.component.card.three_d.prototype.get_data_ = function(force) {
     if (beestat.cache.data.three_d__runtime_sensor !== undefined) {
       // Add to data
       beestat.cache.data.three_d__runtime_sensor.forEach(function(runtime_sensor) {
-        if (
-          sensor_ids_map[runtime_sensor.sensor_id] !== undefined &&
-          runtime_sensor.temperature !== null &&
-          runtime_sensor.occupancy !== null
-        ) {
+        if (sensor_ids_map[runtime_sensor.sensor_id] !== undefined) {
           const timestamp_m = moment(runtime_sensor.timestamp);
           const time = timestamp_m.format('HH:mm');
 
           // Temperature
-          if (self.data_.series.temperature[runtime_sensor.sensor_id] === undefined) {
-            self.data_.series.temperature[runtime_sensor.sensor_id] = {};
+          if (runtime_sensor.temperature !== null) {
+            if (self.data_.series.temperature[runtime_sensor.sensor_id] === undefined) {
+              self.data_.series.temperature[runtime_sensor.sensor_id] = {};
+            }
+            if (self.data_.series.temperature[runtime_sensor.sensor_id][time] === undefined) {
+              self.data_.series.temperature[runtime_sensor.sensor_id][time] = [];
+            }
+            self.data_.series.temperature[runtime_sensor.sensor_id][time].push(runtime_sensor.temperature);
           }
-          if (self.data_.series.temperature[runtime_sensor.sensor_id][time] === undefined) {
-            self.data_.series.temperature[runtime_sensor.sensor_id][time] = [];
-          }
-          self.data_.series.temperature[runtime_sensor.sensor_id][time].push(runtime_sensor.temperature);
 
           // Occupancy
-          if (self.data_.series.occupancy[runtime_sensor.sensor_id] === undefined) {
-            self.data_.series.occupancy[runtime_sensor.sensor_id] = {};
+          if (runtime_sensor.occupancy !== null) {
+            if (self.data_.series.occupancy[runtime_sensor.sensor_id] === undefined) {
+              self.data_.series.occupancy[runtime_sensor.sensor_id] = {};
+            }
+            if (self.data_.series.occupancy[runtime_sensor.sensor_id][time] === undefined) {
+              self.data_.series.occupancy[runtime_sensor.sensor_id][time] = [];
+            }
+            self.data_.series.occupancy[runtime_sensor.sensor_id][time].push(runtime_sensor.occupancy === true ? 1 : 0);
           }
-          if (self.data_.series.occupancy[runtime_sensor.sensor_id][time] === undefined) {
-            self.data_.series.occupancy[runtime_sensor.sensor_id][time] = [];
-          }
-          self.data_.series.occupancy[runtime_sensor.sensor_id][time].push(runtime_sensor.occupancy === true ? 1 : 0);
         }
       });
 
