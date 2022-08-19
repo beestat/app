@@ -158,24 +158,11 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
         // console.log('data is undefined need to load it');
         this.show_loading_('Fetching');
 
-        var value;
-        var operator;
-        // var value = [
-        //   required_begin.format(),
-        //   required_end.format()
-        // ];
-        // var operator = 'between';
-
-        if (beestat.setting('visualize.range_type') === 'dynamic') {
-          value = required_begin.format();
-          operator = '>=';
-        } else {
-          value = [
-            required_begin.format(),
-            required_end.format()
-          ];
-          operator = 'between';
-        }
+        const value = [
+          required_begin.format(),
+          required_end.format()
+        ];
+        const operator = 'between';
 
         const sensor_ids = Object.keys(this.get_sensor_ids_map_());
         // if (sensor_ids.length > 0) {

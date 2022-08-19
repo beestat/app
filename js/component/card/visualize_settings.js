@@ -221,7 +221,7 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
   const tile_group = new beestat.component.tile_group();
 
   // Current Day
-  const day_tile = new beestat.component.tile()
+  const current_day_tile = new beestat.component.tile()
     .set_background_hover_color(color)
     .set_text_color('#fff')
     .set_icon('calendar')
@@ -231,9 +231,9 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     beestat.setting('visualize.range_type') === 'dynamic' &&
     beestat.setting('visualize.range_dynamic') === 0
   ) {
-    day_tile.set_background_color(color);
+    current_day_tile.set_background_color(color);
   } else {
-    day_tile
+    current_day_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
         beestat.cache.delete('data.three_d__runtime_sensor');
@@ -242,7 +242,31 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
         self.rerender();
       });
   }
-  tile_group.add_tile(day_tile);
+  tile_group.add_tile(current_day_tile);
+
+  // Yesterday
+  const yesterday_tile = new beestat.component.tile()
+    .set_background_hover_color(color)
+    .set_text_color('#fff')
+    .set_icon('calendar')
+    .set_text('Yesterday');
+
+  if (
+    beestat.setting('visualize.range_type') === 'dynamic' &&
+    beestat.setting('visualize.range_dynamic') === 1
+  ) {
+    yesterday_tile.set_background_color(color);
+  } else {
+    yesterday_tile
+      .set_background_color(beestat.style.color.bluegray.light)
+      .addEventListener('click', function() {
+        beestat.cache.delete('data.three_d__runtime_sensor');
+        beestat.setting('visualize.range_type', 'dynamic');
+        beestat.setting('visualize.range_dynamic', 1);
+        self.rerender();
+      });
+  }
+  tile_group.add_tile(yesterday_tile);
 
   // Current Week
   const week_tile = new beestat.component.tile()
