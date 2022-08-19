@@ -25,8 +25,6 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.runtime_sensor_detail_range_type',
-      'setting.runtime_sensor_detail_range_dynamic',
       'cache.data.runtime_sensor_detail__runtime_thermostat',
       'cache.data.runtime_sensor_detail__runtime_sensor'
     ],
@@ -149,7 +147,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
       }
 
       var api_call = new beestat.api();
-      beestat.sensor.get_sorted().forEach(function(sensor) {
+      Object.values(beestat.cache.sensor).forEach(function(sensor) {
         if (sensor.thermostat_id === self.thermostat_id_) {
           api_call.add_call(
             'runtime_sensor',
@@ -354,6 +352,8 @@ beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
  * @return {object} The data.
  */
 beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(force) {
+  const self = this;
+
   if (this.data_ === undefined || force === true) {
     var range = {
       'type': beestat.setting('runtime_sensor_detail_range_type'),
@@ -363,7 +363,10 @@ beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(forc
     };
 
     var sensor_data = beestat.runtime_sensor.get_data(
-      this.thermostat_id_,
+      Object.values(beestat.cache.sensor).filter(function(sensor) {
+        return sensor.thermostat_id === self.thermostat_id_;
+      })
+        .map(sensor => sensor.sensor_id),
       range,
       'runtime_sensor_detail__runtime_sensor'
     );

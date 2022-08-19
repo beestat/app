@@ -404,24 +404,25 @@ beestat.component.floor_plan.prototype.dispose = function() {
 beestat.component.floor_plan.prototype.update_toolbar = function() {
   const self = this;
 
-  if (this.button_group_ !== undefined) {
-    this.button_group_.dispose();
+  if (this.tile_group_ !== undefined) {
+    this.tile_group_.dispose();
   }
 
-  if (this.button_group_floors_ !== undefined) {
-    this.button_group_floors_.dispose();
+  if (this.tile_group_floors_ !== undefined) {
+    this.tile_group_floors_.dispose();
   }
 
-  this.button_group_ = new beestat.component.tile_group();
+  this.tile_group_ = new beestat.component.tile_group();
 
   // Add floor
-  this.button_group_.add_button(new beestat.component.tile()
+  this.tile_group_.add_tile(new beestat.component.tile()
     .set_icon('layers')
+    .set_shadow(false)
     .set_text_color(beestat.style.color.lightblue.base)
   );
 
   // Add room
-  this.button_group_.add_button(new beestat.component.tile()
+  this.tile_group_.add_tile(new beestat.component.tile()
     .set_icon('card_plus_outline')
     .set_title('Add Room [R]')
     .set_text_color(beestat.style.color.gray.light)
@@ -437,7 +438,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('card_remove_outline')
     .set_title('Remove Room [Delete]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(remove_room_button);
+  this.tile_group_.add_tile(remove_room_button);
 
   if (this.state_.active_room_entity !== undefined) {
     remove_room_button
@@ -454,7 +455,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('vector_square_plus')
     .set_title('Add Point [Double click]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(add_point_button);
+  this.tile_group_.add_tile(add_point_button);
 
   if (this.state_.active_wall_entity !== undefined) {
     add_point_button
@@ -471,7 +472,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_background_color(beestat.style.color.bluegray.base)
     .set_title('Remove Point [Delete]')
     .set_icon('vector_square_remove');
-  this.button_group_.add_button(remove_point_button);
+  this.tile_group_.add_tile(remove_point_button);
 
   if (
     this.state_.active_point_entity !== undefined &&
@@ -497,7 +498,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     snapping_title = 'Enable Snapping [S]';
   }
 
-  this.button_group_.add_button(new beestat.component.tile()
+  this.tile_group_.add_tile(new beestat.component.tile()
     .set_icon(snapping_icon)
     .set_title(snapping_title)
     .set_text_color(beestat.style.color.gray.light)
@@ -511,7 +512,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('undo')
     .set_title('Undo [Ctrl+Z]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(undo_button);
+  this.tile_group_.add_tile(undo_button);
 
   if (
     this.can_undo_() === true
@@ -532,7 +533,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('redo')
     .set_title('redo [Ctrl+Y]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(redo_button);
+  this.tile_group_.add_tile(redo_button);
 
   if (
     this.can_redo_() === true
@@ -553,7 +554,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('magnify_plus_outline')
     .set_title('Zoom In')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(zoom_in_button);
+  this.tile_group_.add_tile(zoom_in_button);
 
   if (
     this.can_zoom_in_() === true
@@ -574,7 +575,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('magnify_minus_outline')
     .set_title('Zoom out')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.button_group_.add_button(zoom_out_button);
+  this.tile_group_.add_tile(zoom_out_button);
 
   if (
     this.can_zoom_out_() === true
@@ -591,10 +592,10 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   }
 
   // Render
-  this.button_group_.render(this.toolbar_container_);
+  this.tile_group_.render(this.toolbar_container_);
 
   // FLOORS
-  this.button_group_floors_ = new beestat.component.tile_group();
+  this.tile_group_floors_ = new beestat.component.tile_group();
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
@@ -607,6 +608,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   sorted_groups.forEach(function(group) {
     const button = new beestat.component.tile()
       .set_title(group.name)
+      .set_shadow(false)
       .set_text_hover_color(beestat.style.color.lightblue.light)
       .set_text_color(beestat.style.color.lightblue.base);
 
@@ -639,10 +641,10 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
         });
     }
 
-    self.button_group_floors_.add_button(button);
+    self.tile_group_floors_.add_tile(button);
   });
 
-  this.button_group_floors_.render(this.floors_container_);
+  this.tile_group_floors_.render(this.floors_container_);
 };
 
 /**
@@ -952,30 +954,33 @@ beestat.component.floor_plan.prototype.get_group_below = function(group) {
  * Center the view box on the content. Sets zoom and pan.
  */
 beestat.component.floor_plan.prototype.center_content = function() {
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  // const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
-  let min_x = Infinity;
-  let max_x = -Infinity;
-  let min_y = Infinity;
-  let max_y = -Infinity;
+  // let min_x = Infinity;
+  // let max_x = -Infinity;
+  // let min_y = Infinity;
+  // let max_y = -Infinity;
 
-  let has_content = false;
-  floor_plan.data.groups.forEach(function(group) {
-    group.rooms.forEach(function(room) {
-      room.points.forEach(function(point) {
-        has_content = true;
-        min_x = Math.min(room.x + point.x, min_x);
-        max_x = Math.max(room.x + point.x, max_x);
-        min_y = Math.min(room.y + point.y, min_y);
-        max_y = Math.max(room.y + point.y, max_y);
-      });
-    });
-  });
+  // let has_content = false;
+  // floor_plan.data.groups.forEach(function(group) {
+  //   group.rooms.forEach(function(room) {
+  //     room.points.forEach(function(point) {
+  //       has_content = true;
+  //       min_x = Math.min(room.x + point.x, min_x);
+  //       max_x = Math.max(room.x + point.x, max_x);
+  //       min_y = Math.min(room.y + point.y, min_y);
+  //       max_y = Math.max(room.y + point.y, max_y);
+  //     });
+  //   });
+  // });
+
+  const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
 
   this.reset_view_box_();
-  if (has_content === true) {
-    const width = (max_x - min_x) + 50;
-    const height = (max_y - min_y) + 50;
+  // TODO ADD THIS BACK IN
+  // if (has_content === true) {
+    const width = (bounding_box.width) + 50;
+    const height = (bounding_box.height) + 50;
     while (
       (
         this.view_box_.width < width ||
@@ -986,14 +991,14 @@ beestat.component.floor_plan.prototype.center_content = function() {
       this.zoom_out_();
     }
 
-    const center_x = (max_x + min_x) / 2;
-    const center_y = (max_y + min_y) / 2;
+    const center_x = (bounding_box.right + bounding_box.left) / 2;
+    const center_y = (bounding_box.bottom + bounding_box.top) / 2;
 
     this.view_box_.x = center_x - (this.view_box_.width / 2);
     this.view_box_.y = center_y - (this.view_box_.height / 2);
 
     this.update_view_box_();
-  }
+  // }
 };
 
 /**
@@ -1019,7 +1024,7 @@ beestat.component.floor_plan.prototype.save_buffer = function(clear = true) {
   }
 
   this.state_.buffer.push({
-    'floor_plan': beestat.clone(beestat.cache.floor_plan[beestat.setting('floor_plan_id')]),
+    'floor_plan': beestat.clone(beestat.cache.floor_plan[beestat.setting('visualize.floor_plan_id')]),
     'active_room_entity': this.state_.active_room_entity,
     'active_group_id': this.state_.active_group.group_id
   });

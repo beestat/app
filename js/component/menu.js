@@ -13,6 +13,7 @@ beestat.component.menu.prototype.decorate_ = function(parent) {
 
   this.icon_ = new beestat.component.tile()
     .set_type('pill')
+    .set_shadow(false)
     .set_icon('dots_vertical')
     .set_bubble_text(this.bubble_text_)
     .set_bubble_color(this.bubble_color_)

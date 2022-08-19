@@ -115,7 +115,7 @@ beestat.component.card.air_quality_summary.prototype.decorate_contents_ = functi
       }
 
       var api_call = new beestat.api();
-      beestat.sensor.get_sorted().forEach(function(sensor) {
+      Object.values(beestat.cache.sensor).forEach(function(sensor) {
         if (
           sensor.thermostat_id === self.thermostat_id_ &&
           sensor.type === 'thermostat'

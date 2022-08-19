@@ -417,7 +417,9 @@ input[type=radio] {
 .icon.alarm_snooze:before { content: "\F068E"; }
 .icon.alpha_b:before { content: "\F0AEF"; }
 .icon.alpha_b_box:before { content: "\F0B09"; }
+.icon.arrow_expand_horizontal:before { content: "\F084E"; }
 .icon.arrow_expand_vertical:before { content: "\F084F"; }
+.icon.arrow_horizontal_lock:before { content: "\F115B"; }
 .icon.arrow_left:before { content: "\F004D"; }
 .icon.basket_fill:before { content: "\F0077"; }
 .icon.basket_unfill:before { content: "\F0078"; }
@@ -429,7 +431,8 @@ input[type=radio] {
 .icon.calendar:before { content: "\F00ED"; }
 .icon.calendar_alert:before { content: "\F0A31"; }
 .icon.calendar_edit:before { content: "\F08A7"; }
-.icon.calendar_range:before { content: "\F0679"; }
+.icon.calendar_month:before { content: "\F0E17"; }
+.icon.calendar_week:before { content: "\F0A33"; }
 .icon.cancel:before { content: "\F073A"; }
 .icon.card_plus_outline:before { content: "\F1200"; }
 .icon.card_remove_outline:before { content: "\F1605"; }
@@ -453,6 +456,7 @@ input[type=radio] {
 .icon.eye_circle:before { content: "\F0B94"; }
 .icon.eye_off:before { content: "\F0209"; }
 .icon.fan:before { content: "\F0210"; }
+.icon.fast_forward:before { content: "\F0211"; }
 .icon.fire:before { content: "\F0238"; }
 .icon.floor_plan:before { content: "\F0821"; }
 .icon.google_play:before { content: "\F02BC"; }
@@ -501,7 +505,9 @@ input[type=radio] {
 .icon.numeric_9_box:before { content: "\F03BC"; }
 .icon.open_in_new:before { content: "\F03CC"; }
 .icon.patreon:before { content: "\F0882"; }
+.icon.pause:before { content: "\F03E4"; }
 .icon.pencil:before { content: "\F03EB"; }
+.icon.play:before { content: "\F040A"; }
 .icon.plus:before { content: "\F0415"; }
 .icon.pound:before { content: "\F0423"; }
 .icon.redo:before { content: "\F044E"; }
@@ -509,6 +515,7 @@ input[type=radio] {
 .icon.resistor:before { content: "\F0B44"; }
 .icon.snowflake:before { content: "\F0717"; }
 .icon.swap_horizontal:before { content: "\F04E1"; }
+.icon.thermometer:before { content: "\F050F"; }
 .icon.thermostat:before { content: "\F0393"; }
 .icon.thumb_up:before { content: "\F0513"; }
 .icon.tune:before { content: "\F062E"; }

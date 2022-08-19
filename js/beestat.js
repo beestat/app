@@ -87,6 +87,7 @@ window.addEventListener('resize', rocket.throttle(100, function() {
 // First run
 var $ = rocket.extend(rocket.$, rocket);
 $.ready(function() {
+  moment.suppressDeprecationWarnings = true;
   if (window.environment === 'live') {
     Sentry.init({
       'dsn': 'https://af9fd2cf6cda49dcb93dcaf02fe39fc6@sentry.io/3736982',

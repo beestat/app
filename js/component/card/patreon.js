@@ -60,6 +60,7 @@ beestat.component.card.patreon.prototype.get_title_ = function() {
 beestat.component.card.patreon.prototype.decorate_top_right_ = function(parent) {
   new beestat.component.tile()
     .set_type('pill')
+    .set_shadow(false)
     .set_icon('close')
     .set_text_color('#fff')
     .set_background_hover_color(beestat.style.color.green.light)

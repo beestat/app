@@ -33,7 +33,21 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
 
   cards.push([
     {
-      'card': new beestat.component.card.early_access(),
+      'card': new beestat.component.card.visualize_settings(),
+      'size': 12
+    }
+  ]);
+
+  const three_d = new beestat.component.card.three_d()
+    .set_floor_plan_id(beestat.setting('visualize.floor_plan_id'));
+
+  beestat.dispatcher.addEventListener('setting.visualize.floor_plan_id', function() {
+    three_d.set_floor_plan_id(beestat.setting('visualize.floor_plan_id'));
+  });
+
+  cards.push([
+    {
+      'card': three_d,
       'size': 12
     }
   ]);

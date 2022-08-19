@@ -25,8 +25,6 @@ beestat.component.card.air_quality_detail = function(thermostat_id) {
 
   beestat.dispatcher.addEventListener(
     [
-      'setting.air_quality_detail_range_type',
-      'setting.air_quality_detail_range_dynamic',
       'cache.data.air_quality_detail__runtime_thermostat',
       'cache.data.air_quality_detail__runtime_sensor'
     ],
@@ -78,8 +76,6 @@ beestat.component.card.air_quality_detail.prototype.decorate_contents_ = functio
 
   chart_container.appendChild($.createElement('p').innerText('CO₂ Concentration (ppm)'));
   this.charts_.co2_concentration.render(chart_container);
-
-  // this.charts_.x_axis.render(chart_container);
 
   // Sync extremes and crosshair.
   Object.values(this.charts_).forEach(function(source_chart) {
@@ -149,7 +145,7 @@ beestat.component.card.air_quality_detail.prototype.decorate_contents_ = functio
       }
 
       var api_call = new beestat.api();
-      beestat.sensor.get_sorted().forEach(function(sensor) {
+      Object.values(beestat.cache.sensor).forEach(function(sensor) {
         if (sensor.thermostat_id === self.thermostat_id_) {
           api_call.add_call(
             'runtime_sensor',
@@ -347,6 +343,8 @@ beestat.component.card.air_quality_detail.prototype.has_data_ = function() {
  * @return {object} The data.
  */
 beestat.component.card.air_quality_detail.prototype.get_data_ = function(force) {
+  const self = this;
+
   if (this.data_ === undefined || force === true) {
     var range = {
       'type': beestat.setting('air_quality_detail_range_type'),
@@ -356,7 +354,10 @@ beestat.component.card.air_quality_detail.prototype.get_data_ = function(force) 
     };
 
     var sensor_data = beestat.runtime_sensor.get_data(
-      this.thermostat_id_,
+      Object.values(beestat.cache.sensor).filter(function(sensor) {
+        return sensor.thermostat_id === self.thermostat_id_;
+      })
+        .map(sensor => sensor.sensor_id),
       range,
       'air_quality_detail__runtime_sensor'
     );

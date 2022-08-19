@@ -1,8 +1,12 @@
 /**
  * Home Scene
+ *
+ * @param {number} floor_plan_id The floor plan to render.
+ * @param {object} data Sensor data.
  */
-beestat.component.scene = function(thermostat_id) {
-  this.thermostat_id_ = thermostat_id;
+beestat.component.scene = function(floor_plan_id, data) {
+  this.floor_plan_id_ = floor_plan_id;
+  this.data_ = data;
 
   beestat.component.apply(this, arguments);
 };
@@ -11,13 +15,19 @@ beestat.extend(beestat.component.scene, beestat.component);
 beestat.component.scene.sun_light_intensity = 1;
 beestat.component.scene.moon_light_intensity = 0.3;
 
-beestat.component.scene.ambient_light_intensity_base = 0.3;
+beestat.component.scene.ambient_light_intensity_base = 1.5;
 beestat.component.scene.ambient_light_intensity_sky = 0.4;
+beestat.component.scene.moon_opacity = 0.9;
+
 beestat.component.scene.turbidity = 10;
 beestat.component.scene.rayleigh = 0.5;
 beestat.component.scene.mie_coefficient = 0.001;
 beestat.component.scene.mie_directional_g = 0.95;
-beestat.component.scene.moon_opacity = 0.9;
+
+// beestat.component.scene.turbidity = 14;
+// beestat.component.scene.rayleigh = 0.7;
+// beestat.component.scene.mie_coefficient = 0.008;
+// beestat.component.scene.mie_directional_g = 0.9;
 
 beestat.component.scene.shadow_map_size = 4096;
 
@@ -30,6 +40,20 @@ beestat.component.scene.prototype.rerender = function() {
   this.scene_.remove(this.group_);
   this.add_group_();
   this.add_floor_plan_();
+};
+
+/**
+ * Set the width of this component.
+ *
+ * @param {number} width
+ */
+beestat.component.scene.prototype.set_width = function(width) {
+  this.width_ = width;
+
+  this.camera_.aspect = this.width_ / this.height_;
+  this.camera_.updateProjectionMatrix();
+
+  this.renderer_.setSize(this.width_, this.height_);
 };
 
 /**
@@ -48,17 +72,21 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'watcher': false
   };
 
+  this.width_ = this.state_.scene_width || 800;
+  this.height_ = 500;
 
   this.add_scene_(parent);
+  this.add_background_(parent);
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
-  this.add_sky_();
-  this.add_moon_();
-  this.add_moon_light_();
+  // this.add_sky_();
+  // this.add_moon_();
+  // this.add_moon_light_();
   this.add_sun_light_();
   this.add_ambient_light_();
-  this.add_ground_();
+  // this.add_ground_();
+  // this.add_ground_limited_();
 
   this.add_group_();
   this.add_floor_plan_();
@@ -85,6 +113,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
 
   const animate = function() {
     requestAnimationFrame(animate);
+    self.controls_.update();
     self.renderer_.render(self.scene_, self.camera_);
   };
   animate();
@@ -134,7 +163,7 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
   this.renderer_ = new THREE.WebGLRenderer({
     'antialias': true
   });
-  this.renderer_.setSize(window.innerWidth / 2.2, window.innerHeight / 2.2);
+  this.renderer_.setSize(window.innerWidth /1.1, window.innerHeight / 1.1);
   this.renderer_.shadowMap.enabled = true;
   this.renderer_.shadowMap.autoUpdate = false;
 
@@ -143,7 +172,8 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
    * https://threejs.org/examples/webgl_shaders_sky.html
    */
   this.renderer_.toneMapping = THREE.ACESFilmicToneMapping;
-  this.renderer_.toneMappingExposure = 0.5;
+  // this.renderer_.toneMappingExposure = 0.5;
+  this.renderer_.toneMappingExposure = 0.2;
 
   parent[0].appendChild(this.renderer_.domElement);
 };
@@ -175,7 +205,11 @@ beestat.component.scene.prototype.add_camera_ = function() {
  * @param {rocket.Elements} parent
  */
 beestat.component.scene.prototype.add_controls_ = function(parent) {
-  new THREE.OrbitControls(this.camera_, parent[0]); // eslint-disable-line no-new
+  this.controls_ = new THREE.OrbitControls(this.camera_, parent[0]);
+  this.controls_.enableDamping = true;
+  this.controls_.enablePan = false;
+  this.controls_.maxDistance = 1000;
+  this.controls_.minDistance = 400;
 };
 
 /**
@@ -262,7 +296,8 @@ beestat.component.scene.prototype.add_sun_light_ = function() {
     beestat.component.scene.sun_light_intensity
   );
   this.directional_light_sun_.castShadow = true;
-  this.directional_light_sun_.shadow.bias = -0.00009;
+  // this.directional_light_sun_.shadow.bias = -0.00009;
+  // this.directional_light_sun_.shadow.radius = 32;
   this.directional_light_sun_.shadow.mapSize.width = beestat.component.scene.shadow_map_size;
   this.directional_light_sun_.shadow.mapSize.height = beestat.component.scene.shadow_map_size;
   this.directional_light_sun_.shadow.camera.left = -1000;
@@ -311,14 +346,87 @@ beestat.component.scene.prototype.add_ambient_light_ = function() {
 
 /**
  * Set the date and thus the position of the sun/moon.
- *
- * @param {Date} date
  */
-beestat.component.scene.prototype.set_date = function(date) {
-  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
-  const address = beestat.cache.address[thermostat.address_id];
+beestat.component.scene.prototype.update_ = function() {
+  const self = this;
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  const time = this.date_.format('HH:mm');
+
+  // TODO Memoize this
+  let gradient;
+  if (self.data_type_ === 'temperature') {
+    gradient = beestat.style.generate_gradient(
+      [
+        beestat.style.hex_to_rgb(beestat.style.color.blue.dark),
+        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
+        beestat.style.hex_to_rgb(beestat.style.color.red.dark)
+      ],
+      100
+    );
+  } else if (self.data_type_ === 'occupancy') {
+    gradient = beestat.style.generate_gradient(
+      [
+        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
+        beestat.style.hex_to_rgb(beestat.style.color.orange.dark)
+      ],
+      200
+    );
+  }
+
+  // Set the color of each room
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach(function(room) {
+      let color;
+      if (
+        room.sensor_id !== undefined &&
+        self.data_.series[self.data_type_][room.sensor_id] !== undefined &&
+        self.data_.series[self.data_type_][room.sensor_id][time] !== undefined
+      ) {
+        const value = self.data_.series[self.data_type_][room.sensor_id][time];
+
+        const percentage = Math.min(
+          1,
+          Math.max(
+            0,
+            (value - self.heat_map_min_) / (self.heat_map_max_ - self.heat_map_min_)
+          )
+        );
+        color = beestat.style.rgb_to_hex(gradient[Math.floor((gradient.length - 1) * percentage)]);
+      } else {
+        color = beestat.style.color.gray.dark;
+      }
+
+      self.rooms_[room.room_id].material.color.setHex(color.replace('#', '0x'));
+    });
+  });
+
+  let address;
+  if (floor_plan.address_id !== null) { // todo should be undefined?
+    address = beestat.cache.address[floor_plan.address_id];
+  } else {
+    address = {
+      'normalized': {
+        'metadata': {
+          'latitude': 0,
+          'longitude': 0
+        }
+      }
+    };
+  }
+
 
   // After sunset may need to hide the sun light source...or maybe wean it's brightness off or something.
+
+  // TODO TEMP TO KEEP LIGHTING CONSISTENT
+  // const date = new Date('2022-08-16 12:00:00');
+  // const date = this.date_.toDate();
+  const date = moment()
+    .hour(12)
+    .minute(0)
+    .second(0)
+    .toDate();
 
   const sun_object_vector = new THREE.Vector3();
   const moon_object_vector = new THREE.Vector3();
@@ -386,29 +494,33 @@ beestat.component.scene.prototype.set_date = function(date) {
     beestat.component.scene.ambient_light_intensity_sky * Math.sin(sun_position.altitude) * (1 - eclipse_percentage)
   );
 
-  this.moon_.material.opacity = 0.2;
+  // this.moon_.material.opacity = 0.2;
 
   /**
    * Mess up the sky during an eclipse
    */
 
   // Turn down to 0
-  this.sky_.material.uniforms.rayleigh.value =
-    beestat.component.scene.rayleigh * (1 - eclipse_percentage);
+  if (this.sky_ !== undefined) {
+    this.sky_.material.uniforms.rayleigh.value =
+      beestat.component.scene.rayleigh * (1 - eclipse_percentage);
 
-  // Turn down to almost 0
-  this.sky_.material.uniforms.mieCoefficient.value =
-    Math.max(
-      0.00001,
-      beestat.component.scene.mie_coefficient * (1 - eclipse_percentage)
-    );
+    // Turn down to almost 0
+    this.sky_.material.uniforms.mieCoefficient.value =
+      Math.max(
+        0.00001,
+        beestat.component.scene.mie_coefficient * (1 - eclipse_percentage)
+      );
 
-  // Increase to almost 1
-  this.sky_.material.uniforms.mieDirectionalG.value =
-    Math.max(
-      beestat.component.scene.mie_directional_g,
-      0.9999 * eclipse_percentage
-    );
+    // Increase to almost 1
+    this.sky_.material.uniforms.mieDirectionalG.value =
+      Math.max(
+        beestat.component.scene.mie_directional_g,
+        0.9999 * eclipse_percentage
+      );
+
+    this.sky_.material.uniforms.sunPosition.value.copy(sun_object_vector);
+  }
 
   /*
    *  this.renderer_.toneMappingExposure = Math.max(
@@ -418,12 +530,23 @@ beestat.component.scene.prototype.set_date = function(date) {
    */
 
   // Set the brightness of the sun
-  this.directional_light_sun_.intensity =
-    beestat.component.scene.sun_light_intensity * Math.sin(sun_position.altitude) * (1 - eclipse_percentage);
+  if (this.directional_light_sun_ !== undefined) {
+    this.directional_light_sun_.intensity =
+      beestat.component.scene.sun_light_intensity * Math.sin(sun_position.altitude) * (1 - eclipse_percentage);
+    this.directional_light_sun_.position.copy(sun_light_vector);
+
+  }
 
   // Set the brightness of the moon
-  this.directional_light_moon_.intensity =
-    beestat.component.scene.moon_light_intensity * moon_illumination.fraction;
+  if (this.directional_light_moon_ !== undefined) {
+    this.directional_light_moon_.intensity =
+      beestat.component.scene.moon_light_intensity * moon_illumination.fraction;
+    this.directional_light_moon_.position.copy(moon_light_vector);
+  }
+
+  if (this.moon_ !== undefined) {
+    this.moon_.position.copy(moon_object_vector);
+  }
 
   // TODO size of moon based on distance? Might not be worth it haha.
 
@@ -433,12 +556,8 @@ beestat.component.scene.prototype.set_date = function(date) {
    */
 
   // Update the directional light positions
-  this.directional_light_sun_.position.copy(sun_light_vector);
-  this.directional_light_moon_.position.copy(moon_light_vector);
 
   // Update the position of the sun and moon in the sky
-  this.sky_.material.uniforms.sunPosition.value.copy(sun_object_vector);
-  this.moon_.position.copy(moon_object_vector);
   // this.sky2_.material.uniforms.sunPosition.value.copy(moon_object_vector);
 
   // Update shadows
@@ -484,9 +603,46 @@ beestat.component.scene.prototype.add_ground_ = function() {
   plane.rotation.x += Math.PI / 2;
   plane.receiveShadow = true;
 
-
-
   this.scene_.add(plane);
+
+  if (this.debug_.grid === true) {
+    const grid_size = 100;
+    const grid_divisions = grid_size;
+    const grid_color_center_line = new THREE.Color(beestat.style.color.lightblue.base);
+    const grid_color_grid = new THREE.Color(beestat.style.color.green.base);
+    const grid_helper = new THREE.GridHelper(
+      grid_size,
+      grid_divisions,
+      grid_color_center_line,
+      grid_color_grid
+    );
+    this.scene_.add(grid_helper);
+  }
+};
+beestat.component.scene.prototype.add_ground_limited_ = function() {
+  const height = 24;
+
+  const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
+
+  const size = Math.max(bounding_box.width, bounding_box.height) + 120;
+
+  // const texture = new THREE.TextureLoader().load('img/grass.jpg');
+  // texture.wrapS = THREE.RepeatWrapping;
+  // texture.wrapT = THREE.RepeatWrapping;
+  // texture.repeat.set(1000, 1000);
+
+  const geometry = new THREE.BoxGeometry(size, size, height);
+  const material = new THREE.MeshLambertMaterial({
+    // 'map': texture,
+    'color': new THREE.Color(beestat.style.color.green.dark),
+    'side': THREE.DoubleSide
+  });
+  const box = new THREE.Mesh(geometry, material);
+  box.translateY(height / -2);
+  box.rotation.x += Math.PI / 2;
+  // box.receiveShadow = true;
+
+  this.scene_.add(box);
 
   if (this.debug_.grid === true) {
     const grid_size = 100;
@@ -512,11 +668,10 @@ beestat.component.scene.prototype.add_ground_ = function() {
 /**
  * Add a background.
  */
-/*
- * beestat.component.scene.prototype.add_background_ = function() {
- *   this.scene_.background = new THREE.Color(beestat.style.color.bluegray.dark);
- * }
- */
+beestat.component.scene.prototype.add_background_ = function() {
+  this.scene_.background = new THREE.Color(beestat.style.color.bluegray.dark);
+}
+
 
 
 
@@ -529,97 +684,58 @@ beestat.component.scene.prototype.add_ground_ = function() {
  * @param {object} room The room to add.
  */
 beestat.component.scene.prototype.add_room_ = function(group, room) {
-  const color = new THREE.Color(beestat.style.color.blue.base);
+  const color = beestat.style.color.gray.base;
 
   var clipper_offset = new ClipperLib.ClipperOffset();
 
-  clipper_offset.AddPath(room.points, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+  clipper_offset.AddPath(
+    room.points,
+    ClipperLib.JoinType.jtSquare,
+    ClipperLib.EndType.etClosedPolygon
+  );
   var clipper_hole = new ClipperLib.Path();
-  // var offsetted_paths = new ClipperLib.Path();
-  clipper_offset.Execute(clipper_hole, -5);
+  clipper_offset.Execute(clipper_hole, -3);
 
-  room.height = 12 * 1;
+  // Full height
+  // const extrude_height = (room.height || group.height) - 3;
+
+  // Just the floor plan
+  const extrude_height = 6;
+
+
+
 
   // Create a shape using the points of the room.
   const shape = new THREE.Shape();
-  const first_point = room.points[0];
+  const first_point = clipper_hole[0].shift();
   shape.moveTo(first_point.x, first_point.y);
-  room.points.forEach(function(point) {
+  clipper_hole[0].forEach(function(point) {
     shape.lineTo(point.x, point.y);
   });
 
-
-  // FLOOR
-  const floor = shape.clone();
-  const floor_geometry = new THREE.ShapeGeometry(floor);
-  const floor_material = new THREE.MeshLambertMaterial({
-    'color': color,
-    'side': THREE.DoubleSide
-  });
-  const floor_mesh = new THREE.Mesh(floor_geometry, floor_material);
-  floor_mesh.position.z = ((room.elevation || group.elevation) + room.height) * -1;
-
-  // Translate the floor_mesh to the room x/y position.
-  floor_mesh.translateX(room.x);
-  floor_mesh.translateY(room.y);
-  floor_mesh.translateZ(room.height - 1);
-
-  // floor.rotation.x += Math.PI/2;
-
-  // Shadows are neat.
-  floor_mesh.castShadow = true;
-  floor_mesh.receiveShadow = true;
-
-  // Add the mesh to the group.
-  this.group_.add(floor_mesh);
-
-
-
-
-
-  // Create a hole
-  const hole = new THREE.Shape();
-  const hole_first_point = clipper_hole[0].shift();
-  hole.moveTo(hole_first_point.x, hole_first_point.y);
-  clipper_hole[0].forEach(function(point) {
-    hole.lineTo(point.x, point.y);
-  });
-
-  // Hole
-  // const hole = shape.clone();
-  shape.holes.push(hole);
-
-/*  var paths = [[{x:30,y:30},{x:130,y:30},{x:130,y:130},{x:30,y:130}],
-                   [{x:60,y:60},{x:60,y:100},{x:100,y:100},{x:100,y:60}]];
-  var scale = 100;
-  ClipperLib.JS.ScaleUpPaths(paths, scale);
-  // Possibly ClipperLib.Clipper.SimplifyPolygons() here
-  // Possibly ClipperLib.Clipper.CleanPolygons() here
-  var co = new ClipperLib.ClipperOffset(2, 0.25);
-
-  // ClipperLib.EndType = {etOpenSquare: 0, etOpenRound: 1, etOpenButt: 2, etClosedPolygon: 3, etClosedLine : 4 };
-  co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
-  var offsetted_paths = new ClipperLib.Paths();
-  co.Execute(offsetted_paths, -10 * scale);*/
-
-
-
   // Extrude the shape and create the mesh.
   const extrude_settings = {
-    'depth': room.height,
-    'bevelEnabled': false
+    'depth': extrude_height,
+    'bevelEnabled': true,
+    'bevelThickness': 1,
+    'bevelSize': 1,
+    'bevelOffset': 1,
+    'bevelSegments': 5
   };
 
   const geometry = new THREE.ExtrudeGeometry(
     shape,
     extrude_settings
   );
+  // const material = new THREE.MeshBasicMaterial({
   const material = new THREE.MeshPhongMaterial({
-    // 'color': new THREE.Color(beestat.style.color.red.base)
-    'color': color
+    'color': color,
+    // 'transparent': true,
+    // 'opacity': 0.5
   });
+  // material.opacity = 0.5;
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.z = ((room.elevation || group.elevation) + room.height) * -1;
+  mesh.position.z = -extrude_height - (room.elevation || group.elevation);
 
   // Translate the mesh to the room x/y position.
   mesh.translateX(room.x);
@@ -627,10 +743,16 @@ beestat.component.scene.prototype.add_room_ = function(group, room) {
 
   // Shadows are neat.
   mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  // mesh.receiveShadow = true;
 
   // Add the mesh to the group.
   this.group_.add(mesh);
+
+  // Store a reference to the mesh representing each room.
+  if (this.rooms_ === undefined) {
+    this.rooms_ = {};
+  }
+  this.rooms_[room.room_id] = mesh;
 };
 
 /**
@@ -671,7 +793,16 @@ beestat.component.scene.prototype.update_debug_ = function() {
  * Add a group containing all of the extruded geometry.
  */
 beestat.component.scene.prototype.add_group_ = function() {
+  const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
+  // this.floor_plan_center_x_ = ;
+  // this.floor_plan_center_y_ = (bounding_box.bottom + bounding_box.top) / 2;
+
+  // this.view_box_.x = center_x - (this.view_box_.width / 2);
+  // this.view_box_.y = center_y - (this.view_box_.height / 2);
+
   this.group_ = new THREE.Group();
+  this.group_.translateX((bounding_box.right + bounding_box.left) / -2);
+  this.group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
   // this.group_.rotation.x = -Math.PI / 2;
   //
   this.group_.rotation.x = Math.PI / 2;
@@ -683,10 +814,79 @@ beestat.component.scene.prototype.add_group_ = function() {
  */
 beestat.component.scene.prototype.add_floor_plan_ = function() {
   const self = this;
-  const floor_plan = beestat.cache.floor_plan[1];
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
       self.add_room_(group, room);
     });
   });
+};
+
+/**
+ * Set the current date.
+ *
+ * @param {moment} date
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_date = function(date) {
+  this.date_ = date;
+
+  if (this.rendered_ === true) {
+    this.update_();
+  }
+
+  return this;
+};
+
+/**
+ * Set the type of data this scene is visualizing.
+ *
+ * @param {string} data_type temperature|occupancy
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_data_type = function(data_type) {
+  this.data_type_ = data_type;
+
+  if (this.rendered_ === true) {
+    this.update_();
+  }
+
+  return this;
+};
+
+/**
+ * Set the min value of the heat map.
+ *
+ * @param {string} heat_map_min
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_heat_map_min = function(heat_map_min) {
+  this.heat_map_min_ = heat_map_min;
+
+  if (this.rendered_ === true) {
+    this.update_();
+  }
+
+  return this;
+};
+
+/**
+ * Set the max value of the heat map.
+ *
+ * @param {string} heat_map_max
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_heat_map_max = function(heat_map_max) {
+  this.heat_map_max_ = heat_map_max;
+
+  if (this.rendered_ === true) {
+    this.update_();
+  }
+
+  return this;
 };

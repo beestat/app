@@ -151,7 +151,7 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
 
   var color = beestat.style.color.green.base;
 
-  var button_group = new beestat.component.tile_group();
+  var tile_group = new beestat.component.tile_group();
   regions.forEach(function(region) {
     var button = new beestat.component.tile()
       .set_background_hover_color(color)
@@ -192,9 +192,9 @@ beestat.component.card.comparison_settings.prototype.decorate_region_ = function
         });
     }
 
-    button_group.add_button(button);
+    tile_group.add_tile(button);
   });
-  button_group.render(parent);
+  tile_group.render(parent);
 };
 
 /**
@@ -233,7 +233,7 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
 
   var color = beestat.style.color.purple.base;
 
-  var button_group = new beestat.component.tile_group();
+  var tile_group = new beestat.component.tile_group();
   property_types.forEach(function(property_type) {
     var button = new beestat.component.tile()
       .set_background_hover_color(color)
@@ -274,9 +274,9 @@ beestat.component.card.comparison_settings.prototype.decorate_property_ = functi
         });
     }
 
-    button_group.add_button(button);
+    tile_group.add_tile(button);
   });
-  button_group.render(parent);
+  tile_group.render(parent);
 };
 
 beestat.component.card.comparison_settings.prototype.decorate_detail_ = function(parent) {

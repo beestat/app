@@ -62,7 +62,7 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
       key
     );
 
-    let button_group = new beestat.component.tile_group();
+    let tile_group = new beestat.component.tile_group();
     options[key].forEach(function(system_type) {
       let text = system_type.charAt(0).toUpperCase() + system_type.slice(1);
       if (thermostat.system_type.detected[key].equipment === system_type) {
@@ -93,9 +93,9 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
         button.set_background_color(beestat.style.color.bluegray.base);
       }
 
-      button_group.add_button(button);
+      tile_group.add_tile(button);
     });
-    button_group.render(parent);
+    tile_group.render(parent);
   }
 };
 
@@ -117,6 +117,7 @@ beestat.component.modal.change_system_type.prototype.get_buttons_ = function() {
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();

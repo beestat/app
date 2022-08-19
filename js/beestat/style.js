@@ -339,3 +339,61 @@ beestat.series.co2_concentration = {
   'name': 'CO₂',
   'color': beestat.style.color.blue.base
 };
+
+/**
+ * Generate a number of colors between two points.
+ *
+ * @param {Object} colors Array of colors in RGB.
+ * @param {number} steps Number of colors to generate.
+ *
+ * @see http://forums.codeguru.com/showthread.php?259953-Code-to-create-Color-Gradient-programatically&s=4710043a327ee6059da1f8433ad1e5d2&p=795289#post795289
+ *
+ * @return {Array.<Object>} RGB color array
+ */
+beestat.style.generate_gradient = function(colors, steps) {
+  const gradient_count = colors.length - 1;
+
+  let gradient = [];
+  for (let j = 0; j < gradient_count; j++) {
+    gradient = gradient.concat(this.generate_gradient_(
+      colors[j],
+      colors[j + 1],
+      steps
+    ));
+  }
+
+  return gradient;
+};
+
+beestat.style.generate_gradient_ = function(begin, end, steps) {
+  var gradient = [];
+  for (var i = 0; i < steps; i++) {
+    var n = i / (steps - 1);
+    gradient.push({
+      'r': Math.round(begin.r * (1 - n) + end.r * n),
+      'g': Math.round(begin.g * (1 - n) + end.g * n),
+      'b': Math.round(begin.b * (1 - n) + end.b * n)
+    });
+  }
+  return gradient;
+};
+
+/**
+ * Convert a hex string to RGB components.
+ *
+ * @param {string} hex
+ *
+ * @return {object} RGB
+ */
+beestat.style.hex_to_rgb = function(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    'r': parseInt(result[1], 16),
+    'g': parseInt(result[2], 16),
+    'b': parseInt(result[3], 16)
+  } : null;
+};
+
+beestat.style.rgb_to_hex = function(rgb) {
+  return "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
+}

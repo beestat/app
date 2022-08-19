@@ -57,6 +57,7 @@ beestat.component.modal.enjoy_beestat.prototype.get_buttons_ = function() {
 
   var hide = new beestat.component.tile()
     .set_background_color('#fff')
+    .set_shadow(false)
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.bluegray.base)
     .set_text('Hide for one month')

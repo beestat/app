@@ -38,7 +38,6 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/ecobee.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/runtime_thermostat.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/runtime_sensor.js"></script>' . PHP_EOL;
-  echo '<script src="/js/beestat/sensor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/requestor.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/touch.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/crypto.js"></script>' . PHP_EOL;
@@ -77,7 +76,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_summary.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/visualize.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/three_d.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/visualize_settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_not_supported.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/floor_plan_editor.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
@@ -119,12 +119,12 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/create_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/update_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/delete_floor_plan.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/modal/change_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/radio.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/select.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/input/range.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile/floor_plan.js"></script>' . PHP_EOL;

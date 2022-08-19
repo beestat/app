@@ -8,7 +8,7 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
 
   this.thermostat_id_ = thermostat_id;
 
-  var change_function = beestat.debounce(function() {
+  const change_function = beestat.debounce(function() {
     // todo replace these with (if entity set active false?)
     delete self.state_.active_group;
 
@@ -21,10 +21,7 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   }, 10);
 
   beestat.dispatcher.addEventListener(
-    [
-      'setting.floor_plan_id',
-      'cache.floor_plan'
-    ],
+    'setting.visualize.floor_plan_id',
     change_function
   );
 
@@ -71,7 +68,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       });
     center_container.appendChild(get_started_button);
   } else {
-    const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
+    const floor_plan = beestat.cache.floor_plan[beestat.setting('visualize.floor_plan_id')];
 
     // Set group ids if they are not set.
     floor_plan.data.groups.forEach(function(group) {
@@ -138,7 +135,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
 
   // Create and render a new SVG component.
   this.floor_plan_ = new beestat.component.floor_plan(
-    beestat.setting('floor_plan_id'),
+    beestat.setting('visualize.floor_plan_id'),
     this.state_
   );
 
@@ -467,9 +464,13 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   const sensors = {};
   Object.values(beestat.cache.thermostat).forEach(function(thermostat) {
-    const thermostat_sensors = beestat.sensor.get_sorted(
-      thermostat.thermostat_id
-    );
+    const thermostat_sensors = Object.values(beestat.cache.sensor).filter(function(sensor) {
+      return sensor.thermostat_id === self.thermostat_id_;
+    })
+      .sort(function(a, b) {
+        return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});
+      });
+
     sensors[thermostat.thermostat_id] = thermostat_sensors;
   });
 
@@ -527,25 +528,14 @@ beestat.component.card.floor_plan_editor.prototype.get_title_ = function() {
 };
 
 /**
- * Get the subtitle of the card.
- *
- * @return {string} Subtitle
- */
-beestat.component.card.floor_plan_editor.prototype.get_subtitle_ = function() {
-  if (beestat.setting('floor_plan_id') !== null) {
-    const floor_plan = beestat.cache.floor_plan[beestat.setting('floor_plan_id')];
-    return floor_plan.name;
-  }
-
-  return null;
-};
-
-/**
  * Update the floor plan in the database. This is throttled so the update can
  * only run so fast.
  */
 beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function() {
   const self = this;
+
+  // Fake this event since the cache is being directly modified.
+  beestat.dispatcher.dispatchEvent('cache.floor_plan');
 
   window.clearTimeout(this.update_timeout_);
   this.update_timeout_ = window.setTimeout(function() {
@@ -555,8 +545,8 @@ beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function
         'update',
         {
           'attributes': {
-            'floor_plan_id': beestat.setting('floor_plan_id'),
-            'data': self.get_floor_plan_data_(beestat.setting('floor_plan_id'))
+            'floor_plan_id': beestat.setting('visualize.floor_plan_id'),
+            'data': self.get_floor_plan_data_(beestat.setting('visualize.floor_plan_id'))
           }
         },
         'update_floor_plan'
@@ -566,22 +556,14 @@ beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function
 };
 
 /**
- * Get floor plan data with UUIDs stripped.
+ * Get cloned floor plan data.
  *
  * @param {number} floor_plan_id Floor plan ID
  *
  * @return {object} The modified floor plan data.
  */
 beestat.component.card.floor_plan_editor.prototype.get_floor_plan_data_ = function(floor_plan_id) {
-  const floor_plan = beestat.cache.floor_plan[floor_plan_id];
-  const data = beestat.clone(floor_plan.data);
-  data.groups.forEach(function(group) {
-    delete group.group_id;
-    group.rooms.forEach(function(room) {
-      delete room.room_id;
-    });
-  });
-  return data;
+  return beestat.clone(beestat.cache.floor_plan[floor_plan_id].data);
 };
 
 /**
@@ -592,7 +574,7 @@ beestat.component.card.floor_plan_editor.prototype.get_floor_plan_data_ = functi
 beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = function(parent) {
   const self = this;
 
-  var menu = (new beestat.component.menu()).render(parent);
+  const menu = (new beestat.component.menu()).render(parent);
 
   if (window.is_demo === false) {
     menu.add_menu_item(new beestat.component.menu_item()
@@ -604,33 +586,24 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
         ).render();
       }));
 
-    if (Object.keys(beestat.cache.floor_plan).length > 1) {
-      menu.add_menu_item(new beestat.component.menu_item()
-        .set_text('Switch')
-        .set_icon('swap_horizontal')
-        .set_callback(function() {
-          (new beestat.component.modal.change_floor_plan()).render();
-        }));
-    }
-
-    if (beestat.setting('floor_plan_id') !== null) {
+    if (beestat.setting('visualize.floor_plan_id') !== null) {
       menu.add_menu_item(new beestat.component.menu_item()
         .set_text('Edit')
         .set_icon('pencil')
         .set_callback(function() {
           new beestat.component.modal.update_floor_plan(
-            beestat.setting('floor_plan_id')
+            beestat.setting('visualize.floor_plan_id')
           ).render();
         }));
     }
 
-    if (beestat.setting('floor_plan_id') !== null) {
+    if (beestat.setting('visualize.floor_plan_id') !== null) {
       menu.add_menu_item(new beestat.component.menu_item()
         .set_text('Delete')
         .set_icon('delete')
         .set_callback(function() {
           new beestat.component.modal.delete_floor_plan(
-            beestat.setting('floor_plan_id')
+            beestat.setting('visualize.floor_plan_id')
           ).render();
         }));
     }

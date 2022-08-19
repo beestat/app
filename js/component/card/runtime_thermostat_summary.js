@@ -509,7 +509,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
   if (beestat.thermostat.get_sync_progress(this.thermostat_id_) !== null) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Past 3 Months')
-      .set_icon('calendar_range')
+      .set_icon('calendar_month')
       .set_callback(function() {
         if (
           beestat.setting('runtime_thermostat_summary_time_count') !== 3 ||
@@ -526,7 +526,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
 
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Past 12 Months')
-      .set_icon('calendar_range')
+      .set_icon('calendar_month')
       .set_callback(function() {
         if (
           beestat.setting('runtime_thermostat_summary_time_count') !== 12 ||
@@ -543,7 +543,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_top_right_ 
 
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('All Time')
-      .set_icon('calendar_range')
+      .set_icon('calendar_month')
       .set_callback(function() {
         if (
           beestat.setting('runtime_thermostat_summary_time_count') !== 0 ||

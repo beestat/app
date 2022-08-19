@@ -9,33 +9,10 @@ beestat.extend(beestat.component.card, beestat.component);
 beestat.component.card.prototype.box_shadow_ = true;
 
 /**
- * [get_class_name_recursive_ description]
+ * Decorate
  *
- * @param {[type]} parent [description]
- * @param {[type]} opt_prefix [description]
- *
- * @return {[type]} [description]
+ * @param {rocket.Elements} parent
  */
-beestat.component.card.prototype.get_class_name_recursive_ = function(parent, opt_prefix) {
-  for (var i in parent) {
-    if (
-      (parent[i]) &&
-      (parent[i].prototype) &&
-      (this instanceof parent[i])
-    ) {
-      var name = opt_prefix ? rocket.clone(opt_prefix) : [];
-      name.push(i);
-      if (parent[i] === this.constructor) {
-        return name;
-      }
-      name = this.get_class_name_recursive_(parent[i], name);
-      if (name) {
-        return name;
-      }
-    }
-  }
-};
-
 beestat.component.card.prototype.decorate_ = function(parent) {
   this.hide_loading_();
 

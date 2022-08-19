@@ -90,10 +90,11 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   });
   row.appendChild(column_navigation);
 
-  var button_group = new beestat.component.tile_group();
+  var tile_group = new beestat.component.tile_group();
   pages.forEach(function(page) {
     var button = new beestat.component.tile()
       .set_icon(page.icon)
+      .set_shadow(false)
       .set_text_color(beestat.style.color.bluegray.dark);
 
     if (beestat.width > 800) {
@@ -115,10 +116,10 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       });
     }
 
-    button_group.add_button(button);
+    tile_group.add_tile(button);
   });
 
-  button_group.render(column_navigation);
+  tile_group.render(column_navigation);
 
   // Menu
 

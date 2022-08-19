@@ -25,13 +25,19 @@ beestat.component.card.sensors.prototype.decorate_contents_ = function(parent) {
 
   var sensors = [];
   var internal_sensor;
-  beestat.sensor.get_sorted().forEach(function(sensor) {
-    if (sensor.thermostat_id === beestat.setting('thermostat_id')) {
-      if (sensor.type === 'thermostat') {
-        internal_sensor = sensor;
-      } else {
-        sensors.push(sensor);
-      }
+
+  const thermostat_sensors = Object.values(beestat.cache.sensor).filter(function(sensor) {
+    return sensor.thermostat_id === beestat.setting('thermostat_id');
+  })
+    .sort(function(a, b) {
+      return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});
+    });
+
+  thermostat_sensors.forEach(function(sensor) {
+    if (sensor.type === 'thermostat') {
+      internal_sensor = sensor;
+    } else {
+      sensors.push(sensor);
     }
   });
 

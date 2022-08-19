@@ -2,7 +2,7 @@
  * A group of tiles.
  */
 beestat.component.tile_group = function() {
-  this.buttons_ = [];
+  this.tiles_ = [];
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.tile_group, beestat.component);
@@ -13,53 +13,37 @@ beestat.extend(beestat.component.tile_group, beestat.component);
  * @param {rocket.Elements} parent
  */
 beestat.component.tile_group.prototype.decorate_ = function(parent) {
-  var self = this;
+  const flex = document.createElement('div');
+  Object.assign(flex.style, {
+    'display': 'inline-flex',
+    'flex-wrap': 'wrap',
+    'grid-gap': `${beestat.style.size.gutter / 2}px`
+  });
+  parent.appendChild(flex);
 
-  // Only exists so that there can be spacing between wrapped elements.
-  var outer_container = $.createElement('div')
-    .style({
-      'margin-top': (beestat.style.size.gutter / -2)
-    });
-  parent.appendChild(outer_container);
-
-  this.buttons_.forEach(function(button, i) {
-    var container = $.createElement('div').style({
-      'display': 'inline-block',
-      'margin-right': (i < self.buttons_.length) ? (beestat.style.size.gutter / 2) : 0,
-      'margin-top': (beestat.style.size.gutter / 2)
-    });
-    button.render(container);
-    outer_container.appendChild(container);
+  this.tiles_.forEach(function(tile) {
+    tile.render($(flex));
   });
 };
 
 /**
- * Add a button to this group.
+ * Add a tile to this group.
  *
- * @param {beestat.component.button} button The button to add.
+ * @param {beestat.component.tile} tile The tile to add.
  */
-beestat.component.tile_group.prototype.add_button = function(button) {
-  this.buttons_.push(button);
+beestat.component.tile_group.prototype.add_tile = function(tile) {
+  this.tiles_.push(tile);
   if (this.rendered_ === true) {
     this.rerender();
   }
 };
 
 /**
- * Get all of the buttons in this button group.
- *
- * @return {[beestat.component.button]} The buttons in this group.
- */
-beestat.component.tile_group.prototype.get_buttons = function() {
-  return this.buttons_;
-};
-
-/**
- * Remove this component from the page. Disposes the buttons first.
+ * Remove this component from the page. Disposes the tiles first.
  */
 beestat.component.tile_group.prototype.dispose = function() {
-  this.buttons_.forEach(function(button) {
-    button.dispose();
+  this.tiles_.forEach(function(tile) {
+    tile.dispose();
   });
   beestat.component.prototype.dispose.apply(this, arguments);
 };

@@ -17,10 +17,11 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   const background_color = this.background_color_ || 'none';
   const text_color = this.text_color_ || '#fff';
   const tabbable = this.tabbable_ || false;
+  const shadow = this.shadow_ === undefined ? true : this.shadow_;
   const display = this.display_ === 'block' ? 'flex' : 'inline-flex';
   let border_radius;
   if (this.type_ === 'pill') {
-    border_radius = (this.get_size_() === 'large' ? 48 : 32);
+    border_radius = (this.get_size_() === 'large' ? 48 : 36);
   } else {
     border_radius = beestat.style.size.border_radius;
   }
@@ -30,7 +31,7 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   Object.assign(this.container_.style, {
     'background': background_color,
     'border-radius': `${border_radius}px`,
-    'height': `${(this.get_size_() === 'large' ? 48 : 32)}px`,
+    'height': `${(this.get_size_() === 'large' ? 48 : 36)}px`,
     'display': display,
     'align-items': 'center',
     'color': text_color,
@@ -40,12 +41,18 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
     'text-align': 'left'
   });
 
+  if (shadow === true) {
+    Object.assign(this.container_.style, {
+      'box-shadow': '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
+    });
+  }
+
   parent.appendChild(this.container_);
 
   // Padding. Basically for icon only make it a nice square button.
   if (this.get_text_() === undefined) {
     Object.assign(this.container_.style, {
-      'width': `${(this.get_size_() === 'large' ? 48 : 32)}px`,
+      'width': `${(this.get_size_() === 'large' ? 48 : 36)}px`,
       'justify-content': 'center'
     });
   } else {
@@ -230,7 +237,8 @@ beestat.component.tile.prototype.get_icon_ = function() {
 /**
  * Set the text of the button.
  *
- * @param {string|array} text A single string or array of strings. If an array is passed multiple lines of text will be shown.
+ * @param {string|array} text A single string or array of strings. If an array
+ * is passed multiple lines of text will be shown.
  *
  * @return {beestat.component.tile} This.
  */
@@ -262,6 +270,21 @@ beestat.component.tile.prototype.get_text_ = function() {
  */
 beestat.component.tile.prototype.set_background_color = function(background_color) {
   this.background_color_ = background_color;
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+  return this;
+};
+
+/**
+ * Set whether or not there is a shadow. Default true.
+ *
+ * @param {boolean} shadow
+ *
+ * @return {beestat.component.tile} This.
+ */
+beestat.component.tile.prototype.set_shadow = function(shadow) {
+  this.shadow_ = shadow;
   if (this.rendered_ === true) {
     this.rerender();
   }

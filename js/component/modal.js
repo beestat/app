@@ -208,6 +208,7 @@ beestat.component.modal.prototype.decorate_close_ = function(parent) {
 
   var close = new beestat.component.tile()
     .set_type('pill')
+    .set_shadow(false)
     .set_icon('close')
     .set_text_color(beestat.style.color.gray.dark)
     .set_background_hover_color(beestat.style.color.gray.light)
@@ -248,11 +249,11 @@ beestat.component.modal.prototype.decorate_buttons_ = function(parent) {
       });
     parent.appendChild(container);
 
-    var button_group = new beestat.component.tile_group();
+    var tile_group = new beestat.component.tile_group();
     buttons.forEach(function(button) {
-      button_group.add_button(button);
+      tile_group.add_tile(button);
     });
-    button_group.render(container);
+    tile_group.render(container);
   }
 };
 

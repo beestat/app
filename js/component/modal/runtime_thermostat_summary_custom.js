@@ -43,13 +43,13 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
     ]
   };
 
-  var button_groups = {};
+  var tile_groups = {};
 
   this.selected_buttons_ = {};
   for (let key in options) {
     let current_type = beestat.setting(key);
 
-    let button_group = new beestat.component.tile_group();
+    let tile_group = new beestat.component.tile_group();
     options[key].forEach(function(value) {
       let text = value.replace('runtime_thermostat_summary_', '')
         .charAt(0)
@@ -105,9 +105,9 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
         button.set_background_color(beestat.style.color.bluegray.base);
       }
 
-      button_group.add_button(button);
+      tile_group.add_tile(button);
     });
-    button_groups[key] = button_group;
+    tile_groups[key] = tile_group;
   }
 
   // Display it all
@@ -122,13 +122,13 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.decorate_con
   time_count.render(column);
   column = $.createElement('div').addClass(['column column_10']);
   row.appendChild(column);
-  button_groups.runtime_thermostat_summary_time_period.render(column);
+  tile_groups.runtime_thermostat_summary_time_period.render(column);
   (new beestat.component.title('Group By')).render(parent);
   row = $.createElement('div').addClass('row');
   parent.appendChild(row);
   column = $.createElement('div').addClass(['column column_12']);
   row.appendChild(column);
-  button_groups.runtime_thermostat_summary_group_by.render(column);
+  tile_groups.runtime_thermostat_summary_group_by.render(column);
 };
 
 /**
@@ -152,6 +152,7 @@ beestat.component.modal.runtime_thermostat_summary_custom.prototype.get_buttons_
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();

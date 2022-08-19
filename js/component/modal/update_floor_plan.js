@@ -69,8 +69,8 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
 
   sorted_groups.forEach(function(group) {
     new beestat.component.tile.floor_plan_group(group)
-      .set_background_color(beestat.style.color.bluegray.base)
-      .set_text_color('#fff')
+      .set_background_color(beestat.style.color.gray.dark)
+      .set_shadow(false)
       .set_display('block')
       .render($(grid));
   });
@@ -136,6 +136,7 @@ beestat.component.modal.update_floor_plan.prototype.get_buttons_ = function() {
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();

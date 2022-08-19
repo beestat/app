@@ -43,9 +43,9 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_cont
 beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_range_type_ = function(parent) {
   var self = this;
 
-  var button_group = new beestat.component.tile_group();
+  var tile_group = new beestat.component.tile_group();
 
-  button_group.add_button(new beestat.component.tile()
+  tile_group.add_tile(new beestat.component.tile()
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
@@ -59,7 +59,7 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_rang
       self.rerender();
     }));
 
-  button_group.add_button(new beestat.component.tile()
+  tile_group.add_tile(new beestat.component.tile()
     .set_background_hover_color(beestat.style.color.lightblue.base)
     .set_text_color('#fff')
     .set_background_color(
@@ -78,7 +78,7 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.decorate_rang
   parent.appendChild(row);
   var column = $.createElement('div').addClass(['column column_12']);
   row.appendChild(column);
-  button_group.render(column);
+  tile_group.render(column);
 };
 
 /**
@@ -298,6 +298,7 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_buttons_ 
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();
@@ -332,7 +333,7 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_buttons_ 
           self.state_.runtime_thermostat_detail_range_static_end = temp;
         }
 
-        beestat.cache.delete('runtime_thermostat');
+        beestat.cache.delete('data.runtime_thermostat_detail__runtime_thermostat');
         beestat.setting(
           {
             'runtime_thermostat_detail_range_type': self.state_.runtime_thermostat_detail_range_type,

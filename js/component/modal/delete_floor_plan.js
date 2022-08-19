@@ -47,6 +47,7 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();
@@ -78,9 +79,9 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
           console.log('deleted fp');
           console.log(response);
           if (Object.keys(response.floor_plan).length > 0) {
-            beestat.setting('floor_plan_id', Object.values(response.floor_plan)[0].floor_plan_id);
+            beestat.setting('visualize.floor_plan_id', Object.values(response.floor_plan)[0].floor_plan_id);
           } else {
-            beestat.setting('floor_plan_id', null);
+            beestat.setting('visualize.floor_plan_id', null);
           }
           beestat.cache.set('floor_plan', response.floor_plan);
         })

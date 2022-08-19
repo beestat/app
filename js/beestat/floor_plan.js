@@ -57,3 +57,84 @@ beestat.floor_plan.get_area_room = function(room, round = true) {
 
   return area;
 };
+
+beestat.floor_plan.get_bounding_box = function(floor_plan_id) {
+  const floor_plan = beestat.cache.floor_plan[floor_plan_id];
+
+  let min_x = Infinity;
+  let max_x = -Infinity;
+  let min_y = Infinity;
+  let max_y = -Infinity;
+
+  floor_plan.data.groups.forEach(function(group) {
+    const bounding_box = beestat.floor_plan.get_bounding_box_group(group);
+
+    min_x = Math.min(bounding_box.left, min_x);
+    max_x = Math.max(bounding_box.right, max_x);
+    min_y = Math.min(bounding_box.top, min_y);
+    max_y = Math.max(bounding_box.bottom, max_y);
+  });
+
+  return {
+    'width': max_x - min_x,
+    'height': max_y - min_y,
+    'left': min_x,
+    'top': min_y,
+    'right': max_x,
+    'bottom': max_y,
+    'x': min_x,
+    'y': min_y
+  };
+};
+
+beestat.floor_plan.get_bounding_box_group = function(group) {
+  let min_x = Infinity;
+  let max_x = -Infinity;
+  let min_y = Infinity;
+  let max_y = -Infinity;
+
+  group.rooms.forEach(function(room) {
+    const bounding_box = beestat.floor_plan.get_bounding_box_room(room);
+
+    min_x = Math.min(bounding_box.left, min_x);
+    max_x = Math.max(bounding_box.right, max_x);
+    min_y = Math.min(bounding_box.top, min_y);
+    max_y = Math.max(bounding_box.bottom, max_y);
+  });
+
+  return {
+    'width': max_x - min_x,
+    'height': max_y - min_y,
+    'left': min_x,
+    'top': min_y,
+    'right': max_x,
+    'bottom': max_y,
+    'x': min_x,
+    'y': min_y
+  };
+};
+
+beestat.floor_plan.get_bounding_box_room = function(room) {
+  let min_x = Infinity;
+  let max_x = -Infinity;
+  let min_y = Infinity;
+  let max_y = -Infinity;
+
+  room.points.forEach(function(point) {
+    min_x = Math.min(room.x + point.x, min_x);
+    max_x = Math.max(room.x + point.x, max_x);
+    min_y = Math.min(room.y + point.y, min_y);
+    max_y = Math.max(room.y + point.y, max_y);
+  });
+
+  return {
+    'width': max_x - min_x,
+    'height': max_y - min_y,
+    'left': min_x,
+    'top': min_y,
+    'right': max_x,
+    'bottom': max_y,
+    'x': min_x,
+    'y': min_y
+  };
+};

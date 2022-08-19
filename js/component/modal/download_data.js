@@ -169,7 +169,7 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
     }
   ];
 
-  var button_group = new beestat.component.tile_group();
+  var tile_group = new beestat.component.tile_group();
   presets.forEach(function(preset) {
     preset.button
       .set_background_color(beestat.style.color.bluegray.base)
@@ -181,7 +181,7 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
         self.state_.range_end = preset.range_end;
         self.dispatchEvent('range_change');
       });
-    button_group.add_button(preset.button);
+    tile_group.add_tile(preset.button);
   });
 
   // Highlight the preset if the current date range matches.
@@ -198,7 +198,7 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
     });
   });
 
-  button_group.render(column);
+  tile_group.render(column);
 };
 
 /**
@@ -246,6 +246,7 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
     .set_background_color('#fff')
     .set_text_color(beestat.style.color.gray.base)
     .set_text_hover_color(beestat.style.color.red.base)
+    .set_shadow(false)
     .set_text('Cancel')
     .addEventListener('click', function() {
       self.dispose();
