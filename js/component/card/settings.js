@@ -135,25 +135,26 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
 
   var temperature_profiles_range_begin = new beestat.component.input.text()
     .set_maxlength(10)
+    .set_requirements({
+      'type': 'date'
+    })
     .set_icon('calendar');
 
-  var temperature_profiles_range_begin_m =
-    moment(beestat.setting(temperature_profiles_range_begin_key));
-
-  if (temperature_profiles_range_begin_m.isValid() === true) {
+  if (
+    beestat.setting(temperature_profiles_range_begin_key) !== undefined &&
+    beestat.setting(temperature_profiles_range_begin_key) !== null
+  ) {
     temperature_profiles_range_begin.set_value(
-      temperature_profiles_range_begin_m.format('M/D/YYYY')
+      beestat.setting(temperature_profiles_range_begin_key)
     );
   }
 
   temperature_profiles_range_begin.addEventListener('change', function() {
-    var m = moment(this.get_value());
     var temperature_profiles_range_begin_value;
-    if (m.isValid() === true) {
-      this.set_value(m.format('M/D/YYYY'));
-      temperature_profiles_range_begin_value = m.format('YYYY-MM-DD');
+    if (temperature_profiles_range_begin.meets_requirements() === true) {
+      temperature_profiles_range_begin_value = this.get_value();
     } else {
-      this.set_value('');
+      this.set_value('', false);
       temperature_profiles_range_begin_value = null;
     }
 

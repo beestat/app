@@ -112,6 +112,14 @@ beestat.component.input.prototype.meets_requirements = function() {
     ) {
       return false;
     }
+
+    if (
+      this.get_value() !== undefined &&
+      this.requirements_.type === 'date' &&
+      moment(this.get_value()).isValid() === false
+    ) {
+      return false;
+    }
   }
 
   return true;

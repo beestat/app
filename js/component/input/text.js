@@ -86,13 +86,18 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
  * Set the value in the input field. Do not rerender; it's unnecessary.
  *
  * @param {string} value
+ * @param {boolean} dispatch_event Whether or not to dispatch the change
+ * event. Useful in situations where you need to change the value *inside* the
+ * chagne event.
  *
  * @return {beestat.component.input.text} This.
  */
-beestat.component.input.text.prototype.set_value = function(value) {
+beestat.component.input.text.prototype.set_value = function(value, dispatch_event = true) {
   this.input_.value = value;
 
-  this.dispatchEvent('change');
+  if (dispatch_event === true) {
+    this.dispatchEvent('change');
+  }
 
   return this;
 };
