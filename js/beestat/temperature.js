@@ -5,6 +5,8 @@
  *
  * @param {object} args Instructions on how to format:
  *   temperature (required) - Temperature to work with
+ *   input_temperature_unit (optional, default °F) - Input temperature unit
+ *   output_temperature_unit (optional, default °F|°C) - Input temperature unit; default matches setting.
  *   convert (optional, default true) - Whether or not to convert to Celcius if necessary
  *   delta (optional, default false) - Whether or not the convert action is for a delta instead of a normal value
  *   round (optional, default 1) - Number of decimal points to round to
@@ -21,7 +23,14 @@ beestat.temperature = function(args) {
     };
   }
 
-  var convert = beestat.default_value(args.convert, true);
+  var input_temperature_unit = beestat.default_value(
+    args.input_temperature_unit,
+    '°F'
+  );
+  var output_temperature_unit = beestat.default_value(
+    args.output_temperature_unit,
+    beestat.setting('temperature_unit')
+  );
   var delta = beestat.default_value(args.delta, false);
   var round = beestat.default_value(args.round, 1);
   var units = beestat.default_value(args.units, false);
@@ -35,11 +44,19 @@ beestat.temperature = function(args) {
   }
 
   // Convert to Celcius if necessary and asked for.
-  if (convert === true && beestat.setting('temperature_unit') === '°C') {
-    if (delta === true) {
-      temperature *= (5 / 9);
-    } else {
-      temperature = (temperature - 32) * (5 / 9);
+  if (input_temperature_unit !== output_temperature_unit) {
+    if (input_temperature_unit === '°F') {
+      if (delta === true) {
+        temperature *= (5 / 9);
+      } else {
+        temperature = (temperature - 32) * (5 / 9);
+      }
+    } else if (input_temperature_unit === '°C') {
+      if (delta === true) {
+        temperature *= (9 / 5);
+      } else {
+        temperature = (temperature * (9 / 5)) + 32;
+      }
     }
   }
 
@@ -62,7 +79,7 @@ beestat.temperature = function(args) {
 
   // Append units if asked for.
   if (units === true) {
-    temperature += beestat.setting('temperature_unit');
+    temperature += output_temperature_unit;
   }
 
   return temperature;

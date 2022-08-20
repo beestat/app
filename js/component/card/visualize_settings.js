@@ -150,21 +150,65 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
     parent.appendChild(min_max_container);
 
     const min = new beestat.component.input.text()
-      .set_value(beestat.setting(
-        'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min')
+      .set_maxlength('5')
+      .set_requirements({
+        'type': 'decimal',
+        'required': true
+      })
+      .set_value(
+        beestat.temperature(beestat.setting(
+          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
+        ))
       )
       .set_width(50);
     min.addEventListener('change', function() {
-      beestat.setting('visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min', min.get_value());
+      if (min.meets_requirements() === true) {
+        beestat.setting(
+          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min',
+          beestat.temperature({
+            'temperature': min.get_value(),
+            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'output_temperature_unit': '°F'
+          })
+        );
+      } else {
+        min.set_value(
+          beestat.temperature(beestat.setting(
+            'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
+          ))
+        );
+      }
     });
 
     const max = new beestat.component.input.text()
-      .set_value(beestat.setting(
-        'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max')
+      .set_maxlength('5')
+      .set_requirements({
+        'type': 'decimal',
+        'required': true
+      })
+      .set_value(
+        beestat.temperature(beestat.setting(
+          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
+        ))
       )
       .set_width(50);
     max.addEventListener('change', function() {
-      beestat.setting('visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max', max.get_value());
+      if (max.meets_requirements() === true) {
+        beestat.setting(
+          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max',
+          beestat.temperature({
+            'temperature': max.get_value(),
+            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'output_temperature_unit': '°F'
+          })
+        );
+      } else {
+        max.set_value(
+          beestat.temperature(beestat.setting(
+            'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
+          ))
+        );
+      }
     });
 
     let span;

@@ -79,6 +79,9 @@ beestat.component.input.prototype.meets_requirements = function() {
     case 'integer':
       this.requirements_.regexp = /^-?\d+$/;
       break;
+    case 'decimal':
+      this.requirements_.regexp = /^-?\d+(?:\.\d+)?$/;
+      break;
     }
 
     if (

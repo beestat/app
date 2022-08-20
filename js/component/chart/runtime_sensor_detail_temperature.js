@@ -230,7 +230,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
         } else {
           value = beestat.temperature({
             'temperature': point.value,
-            'convert': false,
+            'input_temperature_unit': beestat.setting('temperature_unit'),
             'units': true
           });
           point_value = point.value;

@@ -103,7 +103,6 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(controls_container);
   this.decorate_controls_(controls_container);
 
-
   // var thermostat = beestat.cache.thermostat[this.thermostat_id_];
 
   let required_begin;

@@ -296,7 +296,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_forma
       var value = beestat.temperature({
         'temperature': point.y,
         'units': true,
-        'convert': false,
+        'input_temperature_unit': beestat.setting('temperature_unit'),
         'delta': true,
         'type': 'string'
       }) + ' / h';
@@ -321,7 +321,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_forma
         'temperature': this.x,
         'round': 0,
         'units': true,
-        'convert': false
+        'input_temperature_unit': beestat.setting('temperature_unit')
       }),
       sections
     );
@@ -380,7 +380,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_ = func
           'useHTML': true,
           'text': 'Now: ' + beestat.temperature({
             'temperature': this.data_.metadata.chart.outdoor_temperature,
-            'convert': false,
+            'input_temperature_unit': beestat.setting('temperature_unit'),
             'units': true,
             'round': 0
           })

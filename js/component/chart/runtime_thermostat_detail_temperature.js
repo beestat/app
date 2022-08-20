@@ -288,7 +288,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
 
         value = beestat.temperature({
           'temperature': value,
-          'convert': false,
+          'input_temperature_unit': beestat.setting('temperature_unit'),
           'units': true
         });
       } else if (point.series_code.includes('humidity') === true) {
