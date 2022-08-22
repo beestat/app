@@ -275,20 +275,6 @@ beestat.component.card.air_quality_summary.prototype.decorate_chart_ = function(
 
         // I am normalizing Air Quality between 0 and 100.
         const max_average = 100;
-        // const colors = [
-        //   beestat.style.color.green.light,
-        //   beestat.style.color.green.base,
-        //   beestat.style.color.green.dark,
-        //   beestat.style.color.yellow.light,
-        //   beestat.style.color.yellow.base,
-        //   beestat.style.color.yellow.dark,
-        //   beestat.style.color.orange.light,
-        //   beestat.style.color.orange.base,
-        //   beestat.style.color.orange.dark,
-        //   beestat.style.color.red.light,
-        //   beestat.style.color.red.base,
-        //   beestat.style.color.red.dark
-        // ];
         if (average < 1) {
           background = beestat.style.color.bluegray.light;
         } else if (average <= max_average) {
