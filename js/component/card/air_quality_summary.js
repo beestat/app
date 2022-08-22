@@ -193,6 +193,15 @@ beestat.component.card.air_quality_summary.prototype.decorate_contents_ = functi
  * @param {rocket.Elements} parent
  */
 beestat.component.card.air_quality_summary.prototype.decorate_chart_ = function(parent) {
+  const gradient = beestat.style.generate_gradient(
+    [
+      beestat.style.hex_to_rgb(beestat.style.color.green.base),
+      beestat.style.hex_to_rgb(beestat.style.color.yellow.base),
+      beestat.style.hex_to_rgb(beestat.style.color.red.base)
+    ],
+    100
+  );
+
   var grid_data = {};
   for (var runtime_sensor_id in beestat.cache.data.air_quality_summary) {
     var runtime_sensor = beestat.cache.data.air_quality_summary[runtime_sensor_id];
@@ -266,28 +275,28 @@ beestat.component.card.air_quality_summary.prototype.decorate_chart_ = function(
 
         // I am normalizing Air Quality between 0 and 100.
         const max_average = 100;
-        const colors = [
-          beestat.style.color.green.light,
-          beestat.style.color.green.base,
-          beestat.style.color.green.dark,
-          beestat.style.color.yellow.light,
-          beestat.style.color.yellow.base,
-          beestat.style.color.yellow.dark,
-          beestat.style.color.orange.light,
-          beestat.style.color.orange.base,
-          beestat.style.color.orange.dark,
-          beestat.style.color.red.light,
-          beestat.style.color.red.base,
-          beestat.style.color.red.dark
-        ];
+        // const colors = [
+        //   beestat.style.color.green.light,
+        //   beestat.style.color.green.base,
+        //   beestat.style.color.green.dark,
+        //   beestat.style.color.yellow.light,
+        //   beestat.style.color.yellow.base,
+        //   beestat.style.color.yellow.dark,
+        //   beestat.style.color.orange.light,
+        //   beestat.style.color.orange.base,
+        //   beestat.style.color.orange.dark,
+        //   beestat.style.color.red.light,
+        //   beestat.style.color.red.base,
+        //   beestat.style.color.red.dark
+        // ];
         if (average < 1) {
           background = beestat.style.color.bluegray.light;
         } else if (average <= max_average) {
-          background = colors[
-            Math.floor(average / (max_average / colors.length))
-          ];
+          background = beestat.style.rgb_to_hex(gradient[
+            Math.floor(average / (max_average / gradient.length))
+          ]);
         } else {
-          background = colors[colors.length - 1];
+          background = beestat.style.rgb_to_hex(gradient[gradient.length - 1]);
         }
       }
 
