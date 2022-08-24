@@ -76,7 +76,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   const self = this;
 
   this.debug_ = {
-    'axes': true,
+    'axes': false,
     // 'directional_light_moon_helper': false,
     // 'directional_light_sun_helper': false,
     'directional_light_top_helper': false,
