@@ -76,13 +76,12 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
       .format('MM/DD/YYYY'),
     'visualize.range_static.end': moment()
       .format('MM/DD/YYYY'),
-    'visualize.floor_plan_id': null,
     'visualize.heat_map_type': 'relative',
     'visualize.heat_map_absolute.temperature.min': 70,
     'visualize.heat_map_absolute.temperature.max': 80,
     'visualize.heat_map_absolute.occupancy.min': 0,
-    'visualize.heat_map_absolute.occupancy.max': 100
-
+    'visualize.heat_map_absolute.occupancy.max': 100,
+    'visualize.hide_affiliate': false
   };
 
   // Figure out what we're trying to do.

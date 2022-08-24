@@ -12,24 +12,35 @@ beestat.component.scene = function(floor_plan_id, data) {
 };
 beestat.extend(beestat.component.scene, beestat.component);
 
-beestat.component.scene.sun_light_intensity = 1;
-beestat.component.scene.moon_light_intensity = 0.3;
+// beestat.component.scene.sun_light_intensity = 1;
+// beestat.component.scene.moon_light_intensity = 0.3;
 
-beestat.component.scene.ambient_light_intensity_base = 1.5;
-beestat.component.scene.ambient_light_intensity_sky = 0.4;
-beestat.component.scene.moon_opacity = 0.9;
+/**
+ * Brightness of the top-down light. This gives definition to the sides of
+ * meshes by lighting the tops. Increase this for more edge definition.
+ */
+beestat.component.scene.directional_light_top_intensity = 0.25;
 
-beestat.component.scene.turbidity = 10;
-beestat.component.scene.rayleigh = 0.5;
-beestat.component.scene.mie_coefficient = 0.001;
-beestat.component.scene.mie_directional_g = 0.95;
+/**
+ * Brightness of the ambient light. Works with the top light to provide a base
+ * level of light to the scene.
+ */
+beestat.component.scene.ambient_light_intensity = 0.3;
+
+// beestat.component.scene.ambient_light_intensity_sky = 0.4;
+// beestat.component.scene.moon_opacity = 0.9;
+
+// beestat.component.scene.turbidity = 10;
+// beestat.component.scene.rayleigh = 0.5;
+// beestat.component.scene.mie_coefficient = 0.001;
+// beestat.component.scene.mie_directional_g = 0.95;
 
 // beestat.component.scene.turbidity = 14;
 // beestat.component.scene.rayleigh = 0.7;
 // beestat.component.scene.mie_coefficient = 0.008;
 // beestat.component.scene.mie_directional_g = 0.9;
 
-beestat.component.scene.shadow_map_size = 4096;
+// beestat.component.scene.shadow_map_size = 4096;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -65,10 +76,11 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   const self = this;
 
   this.debug_ = {
-    'axes': false,
-    'moon_light_helper': false,
-    'sun_light_helper': false,
-    'grid': false,
+    'axes': true,
+    // 'directional_light_moon_helper': false,
+    // 'directional_light_sun_helper': false,
+    'directional_light_top_helper': false,
+    // 'grid': false,
     'watcher': false
   };
 
@@ -82,9 +94,10 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_controls_(parent);
   // this.add_sky_();
   // this.add_moon_();
-  // this.add_moon_light_();
-  this.add_sun_light_();
+  // this.add_directional_light_moon_();
+  // this.add_directional_light_sun_();
   this.add_ambient_light_();
+  this.add_directional_light_top_();
   // this.add_ground_();
   // this.add_ground_limited_();
 
@@ -163,17 +176,17 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
   this.renderer_ = new THREE.WebGLRenderer({
     'antialias': true
   });
-  this.renderer_.setSize(window.innerWidth /1.1, window.innerHeight / 1.1);
-  this.renderer_.shadowMap.enabled = true;
-  this.renderer_.shadowMap.autoUpdate = false;
+  // this.renderer_.setSize(window.innerWidth, window.innerHeight);
+  // this.renderer_.shadowMap.enabled = true;
+  // this.renderer_.shadowMap.autoUpdate = false;
 
   /*
    * Added these to make the sky not look like crap.
    * https://threejs.org/examples/webgl_shaders_sky.html
    */
-  this.renderer_.toneMapping = THREE.ACESFilmicToneMapping;
+  // this.renderer_.toneMapping = THREE.ACESFilmicToneMapping;
   // this.renderer_.toneMappingExposure = 0.5;
-  this.renderer_.toneMappingExposure = 0.2;
+  // this.renderer_.toneMappingExposure = 0.2;
 
   parent[0].appendChild(this.renderer_.domElement);
 };
@@ -221,7 +234,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
  * The sky material uniforms are configured to make the sky look generally
  * nice. They are tweaked for the eclipse simulation to darken the sky.
  */
-beestat.component.scene.prototype.add_sky_ = function() {
+/*beestat.component.scene.prototype.add_sky_ = function() {
   this.sky_ = new THREE.Sky();
 
   // Makes the sky box really big.
@@ -240,13 +253,13 @@ beestat.component.scene.prototype.add_sky_ = function() {
     beestat.component.scene.mie_directional_g;
 
   this.scene_.add(this.sky_);
-};
+};*/
 
 /**
  * Adds a moon sprite to the scene. The scale is set arbitrarily to make it
  * roughly the size of the sun.
  */
-beestat.component.scene.prototype.add_moon_ = function() {
+/*beestat.component.scene.prototype.add_moon_ = function() {
   const map = new THREE.TextureLoader().load('img/moon.png');
   const material = new THREE.SpriteMaterial({'map': map});
   const scale = 700;
@@ -254,12 +267,12 @@ beestat.component.scene.prototype.add_moon_ = function() {
   this.moon_ = new THREE.Sprite(material);
   this.moon_.scale.set(scale, scale, scale);
   // this.scene_.add(this.moon_);
-};
+};*/
 
 /**
  * Adds a faint moon light so the moon can cast shadows at night.
  */
-beestat.component.scene.prototype.add_moon_light_ = function() {
+/*beestat.component.scene.prototype.add_directional_light_moon_ = function() {
   this.directional_light_moon_ = new THREE.DirectionalLight(
     0xfffbab,
     0.2
@@ -274,7 +287,7 @@ beestat.component.scene.prototype.add_moon_light_ = function() {
   this.directional_light_moon_.shadow.camera.far = 10000;
   // this.scene_.add(this.directional_light_moon_);
 
-  if (this.debug_.moon_light_helper === true) {
+  if (this.debug_.directional_light_moon_helper === true) {
     this.directional_light_moon_helper_ = new THREE.DirectionalLightHelper(
       this.directional_light_moon_
     );
@@ -285,12 +298,12 @@ beestat.component.scene.prototype.add_moon_light_ = function() {
     );
     this.scene_.add(this.directional_light_moon_camera_helper_);
   }
-};
+};*/
 
 /**
  * Add a strong sun light to the scene.
  */
-beestat.component.scene.prototype.add_sun_light_ = function() {
+/*beestat.component.scene.prototype.add_directional_light_sun_ = function() {
   // Directional light to cast shadows.
   this.directional_light_sun_ = new THREE.DirectionalLight(
     0xffffff,
@@ -308,7 +321,7 @@ beestat.component.scene.prototype.add_sun_light_ = function() {
   this.directional_light_sun_.shadow.camera.far = 10000;
   this.scene_.add(this.directional_light_sun_);
 
-  if (this.debug_.sun_light_helper === true) {
+  if (this.debug_.directional_light_sun_helper === true) {
     this.directional_light_sun_helper_ = new THREE.DirectionalLightHelper(
       this.directional_light_sun_
     );
@@ -319,10 +332,31 @@ beestat.component.scene.prototype.add_sun_light_ = function() {
     );
     this.scene_.add(this.directional_light_sun_camera_helper_);
   }
+};*/
+
+/**
+ * Consistent directional light that provides definition to the edge of meshes
+ * by lighting the top.
+ */
+beestat.component.scene.prototype.add_directional_light_top_ = function() {
+  this.directional_light_top_ = new THREE.DirectionalLight(
+    0xffffff,
+    beestat.component.scene.directional_light_top_intensity
+  );
+  this.directional_light_top_.position.set(0, 1000, 0);
+  this.scene_.add(this.directional_light_top_);
+
+  if (this.debug_.directional_light_top_helper === true) {
+    this.directional_light_top_helper_ = new THREE.DirectionalLightHelper(
+      this.directional_light_top_,
+      500
+    );
+    this.scene_.add(this.directional_light_top_helper_);
+  }
 };
 
 /**
- * Add ambient lighting so everything is always somewhat visible.
+ * Ambient lighting so nothing is shrouded in darkness.
  */
 beestat.component.scene.prototype.add_ambient_light_ = function() {
   /**
@@ -331,18 +365,8 @@ beestat.component.scene.prototype.add_ambient_light_ = function() {
    */
   this.scene_.add(new THREE.AmbientLight(
     0xffffff,
-    beestat.component.scene.ambient_light_intensity_base
+    beestat.component.scene.ambient_light_intensity
   ));
-
-  /**
-   * Ambient light from the sun/moon. Ths intensity of this light changes
-   * based on the time of day.
-   */
-  this.ambient_light_sky_ = new THREE.AmbientLight(
-    0xffffff,
-    beestat.component.scene.ambient_light_intensity_sky
-  );
-  this.scene_.add(this.ambient_light_sky_);
 };
 
 /**
@@ -423,7 +447,7 @@ beestat.component.scene.prototype.update_ = function() {
   // TODO TEMP TO KEEP LIGHTING CONSISTENT
   // const date = new Date('2022-08-16 12:00:00');
   // const date = this.date_.toDate();
-  const date = moment()
+  /*const date = moment()
     .hour(12)
     .minute(0)
     .second(0)
@@ -477,7 +501,7 @@ beestat.component.scene.prototype.update_ = function() {
   const eclipse_percentage = Math.max(
     0,
     (1 - (sun_moon_distance / eclipse_begins_distance))
-  );
+  );*/
 
   /*
    * this.ambient_light_sky_.intensity =
@@ -490,10 +514,10 @@ beestat.component.scene.prototype.update_ = function() {
    */
 
   // Set light intensities by altitude and eclipse percentage.
-  this.ambient_light_sky_.intensity = Math.max(
+/*  this.ambient_light_sky_.intensity = Math.max(
     0,
     beestat.component.scene.ambient_light_intensity_sky * Math.sin(sun_position.altitude) * (1 - eclipse_percentage)
-  );
+  );*/
 
   // this.moon_.material.opacity = 0.2;
 
@@ -502,7 +526,7 @@ beestat.component.scene.prototype.update_ = function() {
    */
 
   // Turn down to 0
-  if (this.sky_ !== undefined) {
+  /*if (this.sky_ !== undefined) {
     this.sky_.material.uniforms.rayleigh.value =
       beestat.component.scene.rayleigh * (1 - eclipse_percentage);
 
@@ -521,7 +545,7 @@ beestat.component.scene.prototype.update_ = function() {
       );
 
     this.sky_.material.uniforms.sunPosition.value.copy(sun_object_vector);
-  }
+  }*/
 
   /*
    *  this.renderer_.toneMappingExposure = Math.max(
@@ -531,11 +555,10 @@ beestat.component.scene.prototype.update_ = function() {
    */
 
   // Set the brightness of the sun
-  if (this.directional_light_sun_ !== undefined) {
+  /*if (this.directional_light_sun_ !== undefined) {
     this.directional_light_sun_.intensity =
       beestat.component.scene.sun_light_intensity * Math.sin(sun_position.altitude) * (1 - eclipse_percentage);
     this.directional_light_sun_.position.copy(sun_light_vector);
-
   }
 
   // Set the brightness of the moon
@@ -547,7 +570,7 @@ beestat.component.scene.prototype.update_ = function() {
 
   if (this.moon_ !== undefined) {
     this.moon_.position.copy(moon_object_vector);
-  }
+  }*/
 
   // TODO size of moon based on distance? Might not be worth it haha.
 
@@ -562,23 +585,26 @@ beestat.component.scene.prototype.update_ = function() {
   // this.sky2_.material.uniforms.sunPosition.value.copy(moon_object_vector);
 
   // Update shadows
-  this.renderer_.shadowMap.needsUpdate = true;
+  /*this.renderer_.shadowMap.needsUpdate = true;
 
-  if (this.debug_.moon_light_helper === true) {
+  if (this.debug_.directional_light_moon_helper === true) {
     this.directional_light_moon_helper_.update();
     this.directional_light_moon_camera_helper_.update();
   }
 
-  if (this.debug_.sun_light_helper === true) {
+  if (this.debug_.directional_light_sun_helper === true) {
     this.directional_light_sun_helper_.update();
     this.directional_light_sun_camera_helper_.update();
+  }*/
+
+  if (this.debug_.directional_light_top_helper === true) {
+    this.directional_light_top_helper_.update();
+    // this.directional_light_top_camera_helper_.update();
   }
-
-
 
   // Update debug watcher
   if (this.debug_.watcher === true) {
-    this.debug_info_.date = date;
+    // this.debug_info_.date = date;
     this.update_debug_();
   }
 };
@@ -586,7 +612,7 @@ beestat.component.scene.prototype.update_ = function() {
 /**
  * Add some type of ground for the house to sit on.
  */
-beestat.component.scene.prototype.add_ground_ = function() {
+/*beestat.component.scene.prototype.add_ground_ = function() {
   const size = 40000;
 
   const texture = new THREE.TextureLoader().load('img/grass.jpg');
@@ -620,7 +646,8 @@ beestat.component.scene.prototype.add_ground_ = function() {
     this.scene_.add(grid_helper);
   }
 };
-beestat.component.scene.prototype.add_ground_limited_ = function() {
+*/
+/*beestat.component.scene.prototype.add_ground_limited_ = function() {
   const height = 24;
 
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
@@ -658,7 +685,7 @@ beestat.component.scene.prototype.add_ground_limited_ = function() {
     );
     this.scene_.add(grid_helper);
   }
-};
+};*/
 
 
 
@@ -685,7 +712,7 @@ beestat.component.scene.prototype.add_background_ = function() {
  * @param {object} room The room to add.
  */
 beestat.component.scene.prototype.add_room_ = function(group, room) {
-  const color = beestat.style.color.gray.base;
+  const color = beestat.style.color.gray.dark;
 
   var clipper_offset = new ClipperLib.ClipperOffset();
 
@@ -695,7 +722,7 @@ beestat.component.scene.prototype.add_room_ = function(group, room) {
     ClipperLib.EndType.etClosedPolygon
   );
   var clipper_hole = new ClipperLib.Path();
-  clipper_offset.Execute(clipper_hole, -3);
+  clipper_offset.Execute(clipper_hole, -1.5);
 
   // Full height
   // const extrude_height = (room.height || group.height) - 3;
@@ -717,11 +744,11 @@ beestat.component.scene.prototype.add_room_ = function(group, room) {
   // Extrude the shape and create the mesh.
   const extrude_settings = {
     'depth': extrude_height,
-    'bevelEnabled': true,
-    'bevelThickness': 1,
-    'bevelSize': 1,
-    'bevelOffset': 1,
-    'bevelSegments': 5
+    'bevelEnabled': false,
+    // 'bevelThickness': 1,
+    // 'bevelSize': 1,
+    // 'bevelOffset': 1,
+    // 'bevelSegments': 5
   };
 
   const geometry = new THREE.ExtrudeGeometry(

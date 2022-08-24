@@ -17,6 +17,13 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
     'padding': '0 ' + beestat.style.size.gutter + 'px'
   });
 
+  beestat.dispatcher.addEventListener([
+    'setting.visualize.floor_plan_id',
+    'setting.visualize.hide_affiliate'
+  ], function() {
+    (new beestat.layer.visualize()).render();
+  });
+
   (new beestat.component.header('visualize')).render(parent);
 
   // All the cards
@@ -31,35 +38,52 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
     ]);
   }
 
-  cards.push([
-    {
-      'card': new beestat.component.card.visualize_settings(),
-      'size': 12
+  if (
+    beestat.setting('visualize.floor_plan_id') !== null &&
+    beestat.setting('visualize.floor_plan_id') !== undefined
+  ) {
+    cards.push([
+      {
+        'card': new beestat.component.card.floor_plan_editor(
+          beestat.setting('thermostat_id')
+        ),
+        'size': 12
+      }
+    ]);
+
+    cards.push([
+      {
+        'card': new beestat.component.card.visualize_settings(),
+        'size': 12
+      }
+    ]);
+
+    if (beestat.setting('visualize.hide_affiliate') === false) {
+      cards.push([
+        {
+          'card': new beestat.component.card.visualize_affiliate(),
+          'size': 12
+        }
+      ]);
     }
-  ]);
 
-  const three_d = new beestat.component.card.three_d()
-    .set_floor_plan_id(beestat.setting('visualize.floor_plan_id'));
-
-  beestat.dispatcher.addEventListener('setting.visualize.floor_plan_id', function() {
-    three_d.set_floor_plan_id(beestat.setting('visualize.floor_plan_id'));
-  });
-
-  cards.push([
-    {
-      'card': three_d,
-      'size': 12
-    }
-  ]);
-
-  cards.push([
-    {
-      'card': new beestat.component.card.floor_plan_editor(
-        beestat.setting('thermostat_id')
-      ),
-      'size': 12
-    }
-  ]);
+    cards.push([
+      {
+        'card': new beestat.component.card.three_d()
+          .set_floor_plan_id(beestat.setting('visualize.floor_plan_id')),
+        'size': 12
+      }
+    ]);
+  } else {
+    cards.push([
+      {
+        'card': new beestat.component.card.visualize_intro(
+          beestat.setting('thermostat_id')
+        ),
+        'size': 12
+      }
+    ]);
+  }
 
   // Footer
   cards.push([

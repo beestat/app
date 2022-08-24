@@ -59,7 +59,6 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
     .set_text_color('#fff')
     .set_text('Delete Floor Plan')
     .addEventListener('click', function() {
-      self.dispose();
       new beestat.api()
         .add_call(
           'floor_plan',
@@ -76,13 +75,14 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
           'floor_plan'
         )
         .set_callback(function(response) {
-          console.log('deleted fp');
-          console.log(response);
+          self.dispose();
+
           if (Object.keys(response.floor_plan).length > 0) {
             beestat.setting('visualize.floor_plan_id', Object.values(response.floor_plan)[0].floor_plan_id);
           } else {
             beestat.setting('visualize.floor_plan_id', null);
           }
+
           beestat.cache.set('floor_plan', response.floor_plan);
         })
         .send();

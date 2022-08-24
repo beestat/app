@@ -14,6 +14,19 @@ beestat.extend(beestat.component.tile, beestat.component);
 beestat.component.tile.prototype.decorate_ = function(parent) {
   const self = this;
 
+  let size_constant;
+  switch (this.get_size_()) {
+  case 'large':
+    size_constant = 48;
+    break;
+  case 'small':
+    size_constant = 24;
+    break;
+  case 'medium':
+  default:
+    size_constant = 32;
+  }
+
   const background_color = this.background_color_ || 'none';
   const text_color = this.text_color_ || '#fff';
   const tabbable = this.tabbable_ || false;
@@ -21,7 +34,7 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   const display = this.display_ === 'block' ? 'flex' : 'inline-flex';
   let border_radius;
   if (this.type_ === 'pill') {
-    border_radius = (this.get_size_() === 'large' ? 48 : 36);
+    border_radius = size_constant;
   } else {
     border_radius = beestat.style.size.border_radius;
   }
@@ -31,7 +44,7 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   Object.assign(this.container_.style, {
     'background': background_color,
     'border-radius': `${border_radius}px`,
-    'height': `${(this.get_size_() === 'large' ? 48 : 36)}px`,
+    'height': `${size_constant}px`,
     'display': display,
     'align-items': 'center',
     'color': text_color,
@@ -52,7 +65,7 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
   // Padding. Basically for icon only make it a nice square button.
   if (this.get_text_() === undefined) {
     Object.assign(this.container_.style, {
-      'width': `${(this.get_size_() === 'large' ? 48 : 36)}px`,
+      'width': `${size_constant}px`,
       'justify-content': 'center'
     });
   } else {
@@ -200,9 +213,9 @@ beestat.component.tile.prototype.set_icon = function(icon) {
 };
 
 /**
- * Set the size. Default is small.
+ * Set the size. Default is medium.
  *
- * @param {string} size large|small
+ * @param {string} size large|medium|small
  *
  * @return {beestat.component.tile} This.
  */

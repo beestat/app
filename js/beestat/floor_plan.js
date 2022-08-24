@@ -58,6 +58,13 @@ beestat.floor_plan.get_area_room = function(room, round = true) {
   return area;
 };
 
+/**
+ * Get the bounding box for an entire floor plan.
+ *
+ * @param {number} floor_plan_id
+ *
+ * @return {object}
+ */
 beestat.floor_plan.get_bounding_box = function(floor_plan_id) {
   const floor_plan = beestat.cache.floor_plan[floor_plan_id];
 
@@ -87,6 +94,13 @@ beestat.floor_plan.get_bounding_box = function(floor_plan_id) {
   };
 };
 
+/**
+ * Get the bounding box for one group of a floor plan.
+ *
+ * @param {object} group
+ *
+ * @return {object}
+ */
 beestat.floor_plan.get_bounding_box_group = function(group) {
   let min_x = Infinity;
   let max_x = -Infinity;
@@ -114,6 +128,13 @@ beestat.floor_plan.get_bounding_box_group = function(group) {
   };
 };
 
+/**
+ * Get the bounding box for one room of a floor plan.
+ *
+ * @param {object} room
+ *
+ * @return {object}
+ */
 beestat.floor_plan.get_bounding_box_room = function(room) {
   let min_x = Infinity;
   let max_x = -Infinity;
@@ -137,4 +158,26 @@ beestat.floor_plan.get_bounding_box_room = function(room) {
     'x': min_x,
     'y': min_y
   };
+};
+
+/**
+ * Get an object of all the sensor_ids included in the current floor plan. Key
+ * is sensor_id, value is true.
+ *
+ * @param {number} floor_plan_id
+ *
+ * @return {object}
+ */
+beestat.floor_plan.get_sensor_ids_map = function(floor_plan_id) {
+  const floor_plan = beestat.cache.floor_plan[floor_plan_id];
+  const sensor_ids_map = {};
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach(function(room) {
+      if (room.sensor_id !== undefined) {
+        sensor_ids_map[room.sensor_id] = true;
+      }
+    });
+  });
+
+  return sensor_ids_map;
 };

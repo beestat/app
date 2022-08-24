@@ -26,28 +26,58 @@ beestat.component.header.prototype.decorate_ = function(parent) {
 
   var pages;
 
-  pages = [
-    {
-      'layer': 'detail',
-      'text': 'Detail',
-      'icon': 'eye_circle'
-    },
-    {
-      'layer': 'analyze',
-      'text': 'Analyze',
-      'icon': 'home_search'
-    },
-    {
-      'layer': 'compare',
-      'text': 'Compare',
-      'icon': 'earth'
-    },
-    {
-      'layer': 'air_quality',
-      'text': 'Air Quality',
-      'icon': 'weather_windy'
-    }
-  ];
+  if (beestat.user.has_early_access() === true) {
+    pages = [
+      {
+        'layer': 'detail',
+        'text': 'Detail',
+        'icon': 'eye_circle'
+      },
+      {
+        'layer': 'analyze',
+        'text': 'Analyze',
+        'icon': 'home_search'
+      },
+      // {
+      //   'layer': 'visualize',
+      //   'text': 'Visualize',
+      //   'icon': 'floor_plan'
+      // },
+      {
+        'layer': 'compare',
+        'text': 'Compare',
+        'icon': 'earth'
+      },
+      {
+        'layer': 'air_quality',
+        'text': 'Air Quality',
+        'icon': 'weather_windy'
+      }
+    ];
+  } else {
+    pages = [
+      {
+        'layer': 'detail',
+        'text': 'Detail',
+        'icon': 'eye_circle'
+      },
+      {
+        'layer': 'analyze',
+        'text': 'Analyze',
+        'icon': 'home_search'
+      },
+      {
+        'layer': 'compare',
+        'text': 'Compare',
+        'icon': 'earth'
+      },
+      {
+        'layer': 'air_quality',
+        'text': 'Air Quality',
+        'icon': 'weather_windy'
+      }
+    ];
+  }
 
   pages.push();
 

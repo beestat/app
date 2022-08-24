@@ -748,6 +748,10 @@ beestat.component.floor_plan.prototype.add_room_ = function(room) {
 beestat.component.floor_plan.prototype.remove_room_ = function() {
   this.save_buffer();
 
+  const old_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+    beestat.setting('visualize.floor_plan_id')
+  ));
+
   const self = this;
 
   const index = this.state_.active_group.rooms.findIndex(function(room) {
@@ -765,6 +769,16 @@ beestat.component.floor_plan.prototype.remove_room_ = function() {
   }
 
   this.state_.active_group.rooms.splice(index, 1);
+
+  const new_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+    beestat.setting('visualize.floor_plan_id')
+  ));
+
+  // Delete data if the overall sensor set changes so it's re-fetched.
+  if (old_sensor_ids.sort().join(' ') !== new_sensor_ids.sort().join(' ')) {
+    beestat.cache.delete('data.three_d__runtime_sensor');
+  }
+
   this.dispatchEvent('remove_room');
 };
 
@@ -954,31 +968,13 @@ beestat.component.floor_plan.prototype.get_group_below = function(group) {
  * Center the view box on the content. Sets zoom and pan.
  */
 beestat.component.floor_plan.prototype.center_content = function() {
-  // const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-
-  // let min_x = Infinity;
-  // let max_x = -Infinity;
-  // let min_y = Infinity;
-  // let max_y = -Infinity;
-
-  // let has_content = false;
-  // floor_plan.data.groups.forEach(function(group) {
-  //   group.rooms.forEach(function(room) {
-  //     room.points.forEach(function(point) {
-  //       has_content = true;
-  //       min_x = Math.min(room.x + point.x, min_x);
-  //       max_x = Math.max(room.x + point.x, max_x);
-  //       min_y = Math.min(room.y + point.y, min_y);
-  //       max_y = Math.max(room.y + point.y, max_y);
-  //     });
-  //   });
-  // });
-
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
 
   this.reset_view_box_();
-  // TODO ADD THIS BACK IN
-  // if (has_content === true) {
+  if (
+    bounding_box.x !== Infinity &&
+    bounding_box.y !== Infinity
+  ) {
     const width = (bounding_box.width) + 50;
     const height = (bounding_box.height) + 50;
     while (
@@ -998,7 +994,7 @@ beestat.component.floor_plan.prototype.center_content = function() {
     this.view_box_.y = center_y - (this.view_box_.height / 2);
 
     this.update_view_box_();
-  // }
+  }
 };
 
 /**
@@ -1048,6 +1044,10 @@ beestat.component.floor_plan.prototype.save_buffer = function(clear = true) {
  */
 beestat.component.floor_plan.prototype.undo_ = function() {
   if (this.can_undo_() === true) {
+    const old_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
     /**
      * When undoing, first save the buffer if the pointer is at the end to
      * capture the current state then shift the buffer pointer back an extra.
@@ -1072,6 +1072,15 @@ beestat.component.floor_plan.prototype.undo_ = function() {
     this.state_.active_group_id =
       this.state_.buffer[this.state_.buffer_pointer].active_group_id;
 
+    // Delete data if the overall sensor set changes so it's re-fetched.
+    const new_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
+    if (old_sensor_ids.sort().join(' ') !== new_sensor_ids.sort().join(' ')) {
+      beestat.cache.delete('data.three_d__runtime_sensor');
+    }
+
     this.update_toolbar();
     this.dispatchEvent('undo');
   }
@@ -1091,6 +1100,10 @@ beestat.component.floor_plan.prototype.can_undo_ = function() {
  */
 beestat.component.floor_plan.prototype.redo_ = function() {
   if (this.can_redo_() === true) {
+    const old_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
     this.state_.buffer_pointer++;
     // Restore the floor plan.
     beestat.cache.floor_plan[this.floor_plan_id_] =
@@ -1103,6 +1116,15 @@ beestat.component.floor_plan.prototype.redo_ = function() {
     // Restore any active group.
     this.state_.active_group_id =
       this.state_.buffer[this.state_.buffer_pointer].active_group_id;
+
+    // Delete data if the overall sensor set changes so it's re-fetched.
+    const new_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
+    if (old_sensor_ids.sort().join(' ') !== new_sensor_ids.sort().join(' ')) {
+      beestat.cache.delete('data.three_d__runtime_sensor');
+    }
 
     this.update_toolbar();
     this.dispatchEvent('redo');

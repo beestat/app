@@ -1,5 +1,5 @@
 beestat.component = function() {
-  var self = this;
+  const self = this;
 
   this.rendered_ = false;
 

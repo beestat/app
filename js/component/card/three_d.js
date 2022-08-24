@@ -108,20 +108,33 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   let required_begin;
   let required_end;
   if (beestat.setting('visualize.range_type') === 'dynamic') {
-    required_begin = moment()
-      .subtract(
-        beestat.setting('visualize.range_dynamic'),
-        'day'
-      )
-      .hour(0)
-      .minute(0)
-      .second(0);
+    if (
+      beestat.setting('visualize.range_dynamic') === 0 ||
+      beestat.setting('visualize.range_dynamic') === 1
+    ) {
+      // Rig "today" and "yesterday" to behave differently.
+      required_begin = moment()
+        .subtract(
+          beestat.setting('visualize.range_dynamic'),
+          'day'
+        )
+        .hour(0)
+        .minute(0)
+        .second(0);
 
-    required_end = required_begin
-      .clone()
-      .hour(23)
-      .minute(59)
-      .second(59);
+      required_end = required_begin
+        .clone()
+        .hour(23)
+        .minute(59)
+        .second(59);
+    } else {
+      required_begin = moment()
+        .subtract(
+          beestat.setting('visualize.range_dynamic'),
+          'day'
+        );
+      required_end = moment();
+    }
   } else {
     required_begin = moment(
       beestat.setting('visualize.range_static_begin') + ' 00:00:00'
@@ -150,7 +163,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
    */
   // TODO somewhat problematic because I need to check if data is synced from multiple thermostats now
   // if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
-  const sensor_ids = Object.keys(this.get_sensor_ids_map_());
+  const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
   if (sensor_ids.length > 0) {
     if (true) {
       if (beestat.cache.data.three_d__runtime_sensor === undefined) {
@@ -163,7 +176,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
         ];
         const operator = 'between';
 
-        const sensor_ids = Object.keys(this.get_sensor_ids_map_());
+        const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
         // if (sensor_ids.length > 0) {
           const api_call = new beestat.api();
           sensor_ids.forEach(function(sensor_id) {
@@ -252,29 +265,26 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   );
 
   // Set the initial date.
-  if (this.has_data_() === true) {
-    this.update_scene_();
-    this.scene_.render($(parent));
+  // if (this.has_data_() === true) {
+  this.update_scene_();
+  this.scene_.render($(parent));
 
-    if (beestat.setting('visualize.range_type') === 'dynamic') {
-      this.date_m_ = moment()
-        .subtract(
-          beestat.setting('visualize.range_dynamic'),
-          'day'
-        )
-        .hour(0)
-        .minute(0)
-        .second(0);
-    } else {
-      this.date_m_ = moment(
-        beestat.setting('visualize.range_static_begin') + ' 00:00:00'
-      );
-    }
-
-    this.scene_.set_date(this.date_m_);
+  if (beestat.setting('visualize.range_type') === 'dynamic') {
+    this.date_m_ = moment()
+      .subtract(
+        beestat.setting('visualize.range_dynamic'),
+        'day'
+      )
+      .hour(0)
+      .minute(0)
+      .second(0);
   } else {
-    this.scene_.render($(parent));
+    this.date_m_ = moment(
+      beestat.setting('visualize.range_static_begin') + ' 00:00:00'
+    );
   }
+
+  this.scene_.set_date(this.date_m_);
 
   // Manage width of the scene.
   setTimeout(function() {
@@ -386,7 +396,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
 beestat.component.card.three_d.prototype.get_data_ = function(force) {
   const self = this;
   if (this.data_ === undefined || force === true) {
-    const sensor_ids_map = this.get_sensor_ids_map_();
+    const sensor_ids_map = beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_);
 
     this.data_ = {
       'metadata': {
@@ -460,7 +470,6 @@ beestat.component.card.three_d.prototype.get_data_ = function(force) {
       }
     }
   }
-  // console.log(this.data_);
   return this.data_;
 };
 
@@ -480,32 +489,6 @@ beestat.component.card.three_d.prototype.has_data_ = function() {
   }
 
   return false;
-};
-
-/**
- * Get the title of the card.
- *
- * @return {string} The title.
- */
-beestat.component.card.three_d.prototype.get_title_ = function() {
-  return '3D View';
-};
-
-/**
- * Decorate the menu.
- *
- * @param {rocket.Elements} parent
- */
-beestat.component.card.three_d.prototype.decorate_top_right_ = function(parent) {
-  const menu = (new beestat.component.menu()).render(parent);
-
-  menu.add_menu_item(new beestat.component.menu_item()
-    .set_text('Help')
-    .set_icon('help_circle')
-    .set_callback(function() {
-      // TODO
-      // window.open('https://doc.beestat.io/???');
-    }));
 };
 
 /**
@@ -558,24 +541,4 @@ beestat.component.card.three_d.prototype.set_floor_plan_id = function(floor_plan
   }
 
   return this;
-};
-
-/**
- * Get an object of all the sensor_ids included in the current floor plan. Key
- * is sensor_id, value is true.
- *
- * @return {object}
- */
-beestat.component.card.three_d.prototype.get_sensor_ids_map_ = function() {
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  const sensor_ids_map = [];
-  floor_plan.data.groups.forEach(function(group) {
-    group.rooms.forEach(function(room) {
-      if (room.sensor_id !== undefined) {
-        sensor_ids_map[room.sensor_id] = true;
-      }
-    });
-  });
-
-  return sensor_ids_map;
 };

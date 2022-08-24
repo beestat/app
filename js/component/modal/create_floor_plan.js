@@ -232,7 +232,6 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
         elevation += (self.state_.height * 12);
       }
 
-      self.dispose();
       new beestat.api()
         .add_call(
           'floor_plan',
@@ -249,8 +248,8 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
           'floor_plan'
         )
         .set_callback(function(response) {
-          beestat.setting('visualize.floor_plan_id', response.new_floor_plan.floor_plan_id);
           beestat.cache.set('floor_plan', response.floor_plan);
+          beestat.setting('visualize.floor_plan_id', response.new_floor_plan.floor_plan_id);
         })
         .send();
     });

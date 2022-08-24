@@ -440,6 +440,8 @@ input[type=radio] {
 .icon.chart_bar_stacked:before { content: "\F076A"; }
 .icon.chart_line:before { content: "\F012A"; }
 .icon.check:before { content: "\F012C"; }
+.icon.chevron_down:before { content: "\F0140"; }
+.icon.chevron_up:before { content: "\F0143"; }
 .icon.clock_outline:before { content: "\F0150"; }
 .icon.close:before { content: "\F0156"; }
 .icon.close_network:before { content: "\F015B"; }
@@ -467,6 +469,7 @@ input[type=radio] {
 .icon.home:before { content: "\F02DC"; }
 .icon.home_floor_a:before { content: "\F0D83"; }
 .icon.home_search:before { content: "\F13B0"; }
+.icon.home_switch:before { content: "\F1794"; }
 .icon.information:before { content: "\F02FC"; }
 .icon.key:before { content: "\F0306"; }
 .icon.label:before { content: "\F0315"; }

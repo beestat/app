@@ -8,7 +8,12 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
 
   this.thermostat_id_ = thermostat_id;
 
-  const change_function = beestat.debounce(function() {
+  // Whether or not to show the editor when loading.
+  this.show_editor_ = beestat.floor_plan.get_bounding_box(
+    beestat.setting('visualize.floor_plan_id')
+  ).x === Infinity;
+
+/*  const change_function = beestat.debounce(function() {
     // todo replace these with (if entity set active false?)
     delete self.state_.active_group;
 
@@ -23,7 +28,7 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   beestat.dispatcher.addEventListener(
     'setting.visualize.floor_plan_id',
     change_function
-  );
+  );*/
 
   beestat.component.card.apply(this, arguments);
 
@@ -50,63 +55,60 @@ beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card)
 beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function(parent) {
   const self = this;
 
-  if (Object.keys(beestat.cache.floor_plan).length === 0) {
-    const center_container = $.createElement('div').style('text-align', 'center');
-    parent.appendChild(center_container);
+  const floor_plan = beestat.cache.floor_plan[beestat.setting('visualize.floor_plan_id')];
 
-    const get_started_button = new beestat.component.tile()
-      .set_icon('plus')
-      .set_text('Create my first floor plan')
-      .set_size('large')
-      .set_background_color(beestat.style.color.green.dark)
-      .set_background_hover_color(beestat.style.color.green.light)
-      .render(center_container)
-      .addEventListener('click', function() {
-        new beestat.component.modal.create_floor_plan(
-          self.thermostat_id_
-        ).render();
-      });
-    center_container.appendChild(get_started_button);
-  } else {
-    const floor_plan = beestat.cache.floor_plan[beestat.setting('visualize.floor_plan_id')];
+  // Set group ids if they are not set.
+  floor_plan.data.groups.forEach(function(group) {
+    if (group.group_id === undefined) {
+      group.group_id = window.crypto.randomUUID();
+    }
+  });
 
-    // Set group ids if they are not set.
+  /**
+   * If there is an active_group_id, override whatever the current active
+   * group is. Used for undo/redo.
+   */
+  if (this.state_.active_group_id !== undefined) {
+    for (let i = 0; i < floor_plan.data.groups.length; i++) {
+      if (floor_plan.data.groups[i].group_id === this.state_.active_group_id) {
+        this.state_.active_group = floor_plan.data.groups[i];
+        delete this.state_.active_group_id;
+        break;
+      }
+    }
+  }
+
+  // If there is no active group, set it to best guess of ground floor.
+  if (this.state_.active_group === undefined) {
+    let closest_distance = Infinity;
+    let closest_group;
     floor_plan.data.groups.forEach(function(group) {
-      if (group.group_id === undefined) {
-        group.group_id = window.crypto.randomUUID();
+      if (Math.abs(group.elevation) < closest_distance) {
+        closest_group = group;
+        closest_distance = Math.abs(group.elevation);
       }
     });
+    this.state_.active_group = closest_group;
+  }
 
-    /**
-     * If there is an active_group_id, override whatever the current active
-     * group is. Used for undo/redo.
-     */
-    if (this.state_.active_group_id !== undefined) {
-      for (let i = 0; i < floor_plan.data.groups.length; i++) {
-        if (floor_plan.data.groups[i].group_id === this.state_.active_group_id) {
-          this.state_.active_group = floor_plan.data.groups[i];
-          delete this.state_.active_group_id;
-          break;
-        }
-      }
-    }
+  this.floor_plan_tile_ = new beestat.component.tile.floor_plan(
+    beestat.setting('visualize.floor_plan_id')
+  )
+    .set_background_color(beestat.style.color.lightblue.base)
+    .set_background_hover_color(beestat.style.color.lightblue.base)
+    .set_text_color('#fff')
+    .set_display('block')
+    .addEventListener('click', function() {
+      self.show_editor_ = !self.show_editor_;
+      self.rerender();
+    })
+    .render(parent);
 
-    // If there is no active group, set it to best guess of ground floor.
-    if (this.state_.active_group === undefined) {
-      let closest_distance = Infinity;
-      let closest_group;
-      floor_plan.data.groups.forEach(function(group) {
-        if (Math.abs(group.elevation) < closest_distance) {
-          closest_group = group;
-          closest_distance = Math.abs(group.elevation);
-        }
-      });
-      this.state_.active_group = closest_group;
-    }
-
-    // Decorate everything.
+  // Decorate everything.
+  if (this.show_editor_ === true) {
     const drawing_pane_container = $.createElement('div');
     drawing_pane_container.style({
+      'margin-top': beestat.style.size.gutter,
       'position': 'relative',
       'overflow-x': 'hidden'
     });
@@ -118,6 +120,26 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     parent.appendChild(this.info_pane_container_);
     this.decorate_info_pane_(this.info_pane_container_);
   }
+
+  const expand_container = document.createElement('div');
+  Object.assign(expand_container.style, {
+    'position': 'absolute',
+    'right': '28px',
+    'top': '70px'
+  });
+  parent.appendChild(expand_container);
+
+  new beestat.component.tile()
+    .set_icon(this.show_editor_ === true ? 'chevron_up' : 'chevron_down')
+    .set_size('small')
+    .set_shadow(false)
+    .set_background_hover_color(beestat.style.color.lightblue.base)
+    .set_text_color('#fff')
+    .addEventListener('click', function() {
+      self.show_editor_ = !self.show_editor_;
+      self.rerender();
+    })
+    .render($(expand_container));
 };
 
 /**
@@ -197,6 +219,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     room_entity.addEventListener('update', function() {
       self.floor_plan_.update_infobox();
       self.update_info_pane_();
+      self.update_floor_plan_tile_();
       self.update_floor_plan_();
     });
 
@@ -205,6 +228,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
       self.floor_plan_.update_infobox();
       self.floor_plan_.update_toolbar();
       self.update_info_pane_();
+      self.update_floor_plan_tile_();
     });
 
     // Update GUI when a room is deselected.
@@ -212,6 +236,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
       self.floor_plan_.update_infobox();
       self.floor_plan_.update_toolbar();
       self.update_info_pane_();
+      self.update_floor_plan_tile_();
     });
 
     /**
@@ -495,11 +520,25 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   }
 
   sensor_input.addEventListener('change', function() {
+    const old_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
     if (sensor_input.get_value() === '') {
       delete self.state_.active_room_entity.get_room().sensor_id;
     } else {
       self.state_.active_room_entity.get_room().sensor_id = Number(sensor_input.get_value());
     }
+
+    const new_sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    ));
+
+    // Delete data if the overall sensor set changes so it's re-fetched.
+    if (old_sensor_ids.sort().join(' ') !== new_sensor_ids.sort().join(' ')) {
+      beestat.cache.delete('data.three_d__runtime_sensor');
+    }
+
     self.update_floor_plan_();
   });
 };
@@ -516,6 +555,15 @@ beestat.component.card.floor_plan_editor.prototype.update_info_pane_ = function(
 
   this.decorate_info_pane_(this.info_pane_container_);
   old_parent.parentNode().replaceChild(this.info_pane_container_, old_parent);
+};
+
+/**
+ * Rerender just the top floor pane tile to avoid rerendering the entire SVG
+ * for resizes, drags, etc. This isn't super ideal but without making the info
+ * pane a separate component this is the way.
+ */
+beestat.component.card.floor_plan_editor.prototype.update_floor_plan_tile_ = function() {
+  this.floor_plan_tile_.rerender();
 };
 
 /**
@@ -577,6 +625,15 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
   const menu = (new beestat.component.menu()).render(parent);
 
   if (window.is_demo === false) {
+    if (Object.keys(beestat.cache.floor_plan).length > 1) {
+      menu.add_menu_item(new beestat.component.menu_item()
+        .set_text('Switch')
+        .set_icon('home_switch')
+        .set_callback(function() {
+          (new beestat.component.modal.change_floor_plan()).render();
+        }));
+    }
+
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Add New')
       .set_icon('plus')
@@ -609,11 +666,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
     }
   }
 
-  menu.add_menu_item(new beestat.component.menu_item()
+/*  menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
       // TODO
       // window.open('https://doc.beestat.io/???');
-    }));
+    }));*/
 };

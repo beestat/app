@@ -45,10 +45,6 @@ beestat.component.card.visualize_settings.prototype.decorate_contents_ = functio
   const heat_map_type_container = document.createElement('div');
   this.decorate_heat_map_type_(heat_map_type_container);
   grid_2.appendChild(heat_map_type_container);
-
-  const floor_plan_container = document.createElement('div');
-  this.decorate_floor_plan_(floor_plan_container);
-  grid_2.appendChild(floor_plan_container);
 };
 
 /**
@@ -317,7 +313,7 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     .set_background_hover_color(color)
     .set_text_color('#fff')
     .set_icon('calendar_week')
-    .set_text('Last 7 Days');
+    .set_text('7 Day Average');
 
   if (
     beestat.setting('visualize.range_type') === 'dynamic' &&
@@ -362,45 +358,6 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
 };
 
 /**
- * Decorate the floor plan options.
- *
- * @param {HTMLDivElement} parent
- */
-beestat.component.card.visualize_settings.prototype.decorate_floor_plan_ = function(parent) {
-  const self = this;
-
-  (new beestat.component.title('Floor Plan')).render($(parent));
-
-  var sorted_floor_plans = $.values(beestat.cache.floor_plan)
-    .sort(function(a, b) {
-      return a.name > b.name;
-    });
-
-  const tile_group = new beestat.component.tile_group();
-  sorted_floor_plans.forEach(function(floor_plan) {
-    const tile = new beestat.component.tile.floor_plan(floor_plan.floor_plan_id)
-      .set_text_color('#fff')
-      .set_display('block');
-
-    if (floor_plan.floor_plan_id === beestat.setting('visualize.floor_plan_id')) {
-      tile.set_background_color(beestat.style.color.lightblue.base);
-    } else {
-      tile
-        .set_background_color(beestat.style.color.bluegray.light)
-        .set_background_hover_color(beestat.style.color.lightblue.base)
-        .addEventListener('click', function() {
-          beestat.setting('visualize.floor_plan_id', floor_plan.floor_plan_id);
-          self.rerender();
-        });
-    }
-
-    tile_group.add_tile(tile);
-  });
-
-  tile_group.render($(parent));
-};
-
-/**
  * Get the title of the card.
  *
  * @return {string} The title of the card.
@@ -414,7 +371,7 @@ beestat.component.card.visualize_settings.prototype.get_title_ = function() {
  *
  * @param {rocket.Elements} parent
  */
-beestat.component.card.visualize_settings.prototype.decorate_top_right_ = function(parent) {
+/*beestat.component.card.visualize_settings.prototype.decorate_top_right_ = function(parent) {
   var menu = (new beestat.component.menu()).render(parent);
 
   menu.add_menu_item(new beestat.component.menu_item()
@@ -425,3 +382,4 @@ beestat.component.card.visualize_settings.prototype.decorate_top_right_ = functi
       // window.open('https://doc.beestat.io/596040eadd014928830b4d1d54692761');
     }));
 };
+*/
