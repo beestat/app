@@ -83,6 +83,7 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
  */
 beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   const drawing_pane_container = document.createElement('div');
+  drawing_pane_container.style.overflowX = 'hidden';
 
   parent.appendChild(drawing_pane_container);
   this.decorate_drawing_pane_(drawing_pane_container);
@@ -91,7 +92,6 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   const controls_container = document.createElement('div');
   Object.assign(controls_container.style, {
     'position': 'absolute',
-    // 'margin': 'auto',
     'top': `${beestat.style.size.gutter}px`,
     'left': '50%',
     'width': '300px',

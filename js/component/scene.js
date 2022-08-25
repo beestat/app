@@ -92,6 +92,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
+  this.add_skybox_(parent);
   // this.add_sky_();
   // this.add_moon_();
   // this.add_directional_light_moon_();
@@ -224,6 +225,36 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_.maxDistance = 1000;
   this.controls_.minDistance = 400;
   this.controls_.maxPolarAngle = Math.PI / 2.5;
+};
+
+/**
+ * Add a skybox background. Generated using Spacescape with the Unity export
+ * settings. After export: bottom is rotated CW 90°; top is roted 90°CCW.
+ *
+ * nx -> bk
+ * ny -> dn
+ * nz -> lf
+ * px -> ft
+ * py -> up
+ * pz -> rt
+ *
+ * @link https://www.mapcore.org/topic/24535-online-tools-to-convert-cubemaps-to-panoramas-and-vice-versa/
+ * @link https://jaxry.github.io/panorama-to-cubemap/
+ * @link http://alexcpeterson.com/spacescape/
+ */
+beestat.component.scene.prototype.add_skybox_ = function() {
+  const skybox_name = 'cloudy';
+  const loader = new THREE.CubeTextureLoader();
+  loader.setPath('img/visualize/' + skybox_name + '/');
+  const texture = loader.load([
+    'front.png',
+    'back.png',
+    'up.png',
+    'down.png',
+    'right.png',
+    'left.png'
+  ]);
+  this.scene_.background = texture;
 };
 
 /**
