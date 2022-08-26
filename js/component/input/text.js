@@ -36,15 +36,17 @@ beestat.extend(beestat.component.input.text, beestat.component.input);
  * @param {rocket.Elements} parent
  */
 beestat.component.input.text.prototype.decorate_ = function(parent) {
-  this.input_.style.border = 'none';
-  this.input_.style.background = beestat.style.color.bluegray.light;
-  this.input_.style.borderRadius = beestat.style.size.border_radius + 'px';
-  this.input_.style.padding = (beestat.style.size.gutter / 2) + 'px';
-  this.input_.style.color = '#fff';
-  this.input_.style.outline = 'none';
-  this.input_.style.transition = 'background 200ms ease';
-  this.input_.style.marginBottom = beestat.style.size.gutter + 'px';
-  this.input_.style.borderBottom = '2px solid ' + beestat.style.color.lightblue.base;
+  Object.assign(this.input_.style, {
+    'border': 'none',
+    'background': beestat.style.color.bluegray.light,
+    'border-radius': `${beestat.style.size.border_radius}px`,
+    'padding': `${beestat.style.size.gutter / 2}px`,
+    'color': '#ffffff',
+    'outline': 'none',
+    'transition': 'background 200ms ease',
+    'margin-bottom': `${beestat.style.size.gutter}px`,
+    'border-bottom': `2px solid ${beestat.style.color.lightblue.base}`
+  });
 
   // Set input width; interpret string widths literally (ex: 100%)
   if (this.width_ !== undefined) {
@@ -62,13 +64,19 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
     parent[0].appendChild(label_container);
   }
 
+  if (this.inputmode_ !== undefined) {
+    this.input_.setAttribute('inputmode', this.inputmode_);
+  }
+
   // If we want an icon just drop one on top of the input and add some padding.
   if (this.icon_ !== undefined) {
     const icon_container = document.createElement('div');
 
-    icon_container.style.position = 'absolute';
-    icon_container.style.top = (this.label_ !== undefined) ? '25px' : '7px';
-    icon_container.style.left = '6px';
+    Object.assign(icon_container.style, {
+      'position': 'absolute',
+      'top': (this.label_ !== undefined) ? '25px' : '7px',
+      'left': '6px'
+    });
 
     parent[0].appendChild(icon_container);
 
@@ -167,6 +175,23 @@ beestat.component.input.text.prototype.set_icon = function(icon) {
  */
 beestat.component.input.text.prototype.set_width = function(width) {
   this.width_ = width;
+
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+
+  return this;
+};
+
+/**
+ * Set the inputmode of the input field.
+ *
+ * @param {string} inputmode
+ *
+ * @return {beestat.component.input.text} This.
+ */
+beestat.component.input.text.prototype.set_inputmode = function(inputmode) {
+  this.inputmode_ = inputmode;
 
   if (this.rendered_ === true) {
     this.rerender();

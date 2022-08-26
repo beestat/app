@@ -145,10 +145,21 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
     min_max_container.style.marginTop = `${beestat.style.size.gutter}px`;
     parent.appendChild(min_max_container);
 
+    let type;
+    let inputmode;
+    if (beestat.setting('visualize.data_type') === 'temperature') {
+      type = 'decimal';
+      inputmode = 'decimal';
+    } else {
+      type = 'integer';
+      inputmode = 'numeric';
+    }
+
     const min = new beestat.component.input.text()
       .set_maxlength('5')
+      .set_inputmode(inputmode)
       .set_requirements({
-        'type': 'decimal',
+        'type': type,
         'required': true
       })
       .set_value(
@@ -159,10 +170,14 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
       .set_width(50);
     min.addEventListener('change', function() {
       if (min.meets_requirements() === true) {
+        // Round to one decimal.
+        const value = Math.round(min.get_value() * 10) / 10;
+        min.set_value(value, false);
+
         beestat.setting(
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min',
           beestat.temperature({
-            'temperature': min.get_value(),
+            'temperature': value,
             'input_temperature_unit': beestat.setting('temperature_unit'),
             'output_temperature_unit': '°F'
           })
@@ -171,25 +186,32 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
         min.set_value(
           beestat.temperature(beestat.setting(
             'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
-          ))
+          )),
+          false
         );
       }
     });
 
     const max = new beestat.component.input.text()
       .set_maxlength('5')
+      .set_inputmode(inputmode)
       .set_requirements({
-        'type': 'decimal',
+        'type': type,
         'required': true
       })
       .set_value(
         beestat.temperature(beestat.setting(
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
-        ))
+        )),
+        false
       )
       .set_width(50);
     max.addEventListener('change', function() {
       if (max.meets_requirements() === true) {
+        // Round to one decimal.
+        const value = Math.round(max.get_value() * 10) / 10;
+        max.set_value(value, false);
+
         beestat.setting(
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max',
           beestat.temperature({
@@ -202,7 +224,8 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
         max.set_value(
           beestat.temperature(beestat.setting(
             'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
-          ))
+          )),
+          false
         );
       }
     });
@@ -371,15 +394,14 @@ beestat.component.card.visualize_settings.prototype.get_title_ = function() {
  *
  * @param {rocket.Elements} parent
  */
-/*beestat.component.card.visualize_settings.prototype.decorate_top_right_ = function(parent) {
+beestat.component.card.visualize_settings.prototype.decorate_top_right_ = function(parent) {
   var menu = (new beestat.component.menu()).render(parent);
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      // TODO
-      // window.open('https://doc.beestat.io/596040eadd014928830b4d1d54692761');
+      window.open('https://doc.beestat.io/24f548ddd7fc464d846e113470f80c35');
     }));
 };
-*/
+

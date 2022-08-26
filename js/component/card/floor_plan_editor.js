@@ -666,11 +666,10 @@ beestat.component.card.floor_plan_editor.prototype.decorate_top_right_ = functio
     }
   }
 
-/*  menu.add_menu_item(new beestat.component.menu_item()
+  menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')
     .set_icon('help_circle')
     .set_callback(function() {
-      // TODO
-      // window.open('https://doc.beestat.io/???');
-    }));*/
+      window.open('https://doc.beestat.io/86f6e4c44fc84c3cb4e8fb7b16d3d160');
+    }));
 };

@@ -421,13 +421,26 @@ beestat.component.scene.prototype.update_ = function() {
       ) {
         const value = self.data_.series[self.data_type_][room.sensor_id][time];
 
-        const percentage = Math.min(
-          1,
-          Math.max(
-            0,
-            (value - self.heat_map_min_) / (self.heat_map_max_ - self.heat_map_min_)
-          )
-        );
+        /**
+         * Set the percentage between the min and max. Special case for if min
+         * and max are equal to avoid math issues.
+         */
+        let percentage;
+        if (
+          self.heat_map_min_ === self.heat_map_max_ &&
+          value === self.heat_map_min_
+        ) {
+          percentage = 0.5;
+        } else {
+          percentage = Math.min(
+            1,
+            Math.max(
+              0,
+              (value - self.heat_map_min_) / (self.heat_map_max_ - self.heat_map_min_)
+            )
+          );
+        }
+
         color = beestat.style.rgb_to_hex(
           self.gradient_[Math.floor((self.gradient_.length - 1) * percentage)]
         );

@@ -531,7 +531,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   // Redo
   const redo_button = new beestat.component.tile()
     .set_icon('redo')
-    .set_title('redo [Ctrl+Y]')
+    .set_title('Redo [Ctrl+Y]')
     .set_background_color(beestat.style.color.bluegray.base);
   this.tile_group_.add_tile(redo_button);
 
