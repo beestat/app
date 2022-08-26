@@ -65,6 +65,7 @@ beestat.component.scene.prototype.set_width = function(width) {
   this.camera_.updateProjectionMatrix();
 
   this.renderer_.setSize(this.width_, this.height_);
+  this.renderer_.render(this.scene_, this.camera_);
 };
 
 /**
@@ -74,6 +75,9 @@ beestat.component.scene.prototype.set_width = function(width) {
  */
 beestat.component.scene.prototype.decorate_ = function(parent) {
   const self = this;
+
+  // Dark background to help reduce apparant flicker when resizing
+  parent.style('background', '#202a30');
 
   this.debug_ = {
     'axes': false,
