@@ -148,6 +148,11 @@ beestat.component.modal.update_floor_plan.prototype.get_buttons_ = function() {
     .set_text_color('#fff')
     .set_text('Update Floor Plan')
     .addEventListener('click', function() {
+      this
+        .set_background_color(beestat.style.color.gray.base)
+        .set_background_hover_color()
+        .removeEventListener('click');
+
       // Fail if there are errors.
       if (
         self.state_.error.name === true

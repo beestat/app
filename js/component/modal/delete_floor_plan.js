@@ -59,6 +59,11 @@ beestat.component.modal.delete_floor_plan.prototype.get_buttons_ = function() {
     .set_text_color('#fff')
     .set_text('Delete Floor Plan')
     .addEventListener('click', function() {
+      this
+        .set_background_color(beestat.style.color.gray.base)
+        .set_background_hover_color()
+        .removeEventListener('click');
+
       new beestat.api()
         .add_call(
           'floor_plan',
