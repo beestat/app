@@ -404,7 +404,10 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
 
   // Sunrise/Sunset
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  if (floor_plan.address_id !== undefined) {
+  if (
+    floor_plan.address_id !== undefined &&
+    floor_plan.address_id !== null
+  ) {
     const address = beestat.cache.address[floor_plan.address_id];
 
     const times = SunCalc.getTimes(
