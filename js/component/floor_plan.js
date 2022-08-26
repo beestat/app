@@ -170,6 +170,8 @@ beestat.component.floor_plan.prototype.render = function(parent) {
             entity.set_xy(x, y === null ? null : y + 1, 'update');
             break;
           }
+
+          e.preventDefault();
         }
       }
     }
