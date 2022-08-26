@@ -23,6 +23,7 @@ beestat.component.card.three_d = function() {
   beestat.dispatcher.addEventListener('cache.floor_plan', function() {
     self.scene_.rerender();
     self.update_scene_();
+    self.update_hud_();
   });
 
   beestat.dispatcher.addEventListener('cache.data.three_d__runtime_sensor', function() {
@@ -341,6 +342,12 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   const self = this;
 
+  if (parent !== undefined) {
+    this.controls_container_ = parent;
+  }
+
+  this.controls_container_.innerHTML = '';
+
   window.clearInterval(self.interval_);
 
   // Hoisting
@@ -352,7 +359,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
     'display': 'flex',
     'align-items': 'center'
   });
-  parent.appendChild(container);
+  this.controls_container_.appendChild(container);
 
   const left_container = document.createElement('div');
   container.appendChild(left_container);
@@ -446,7 +453,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
     'margin-top': '-8px',
     'text-align': 'right'
   });
-  parent.appendChild(time_container);
+  this.controls_container_.appendChild(time_container);
 
   range.addEventListener('input', function() {
     play_tile.set_icon('play');
@@ -741,14 +748,17 @@ beestat.component.card.three_d.prototype.has_data_ = function() {
  */
 beestat.component.card.three_d.prototype.update_scene_ = function() {
   this.scene_.set_data_type(beestat.setting('visualize.data_type'));
-
   this.scene_.set_gradient(this.get_gradient_());
   this.scene_.set_heat_map_min(this.get_heat_map_min_());
   this.scene_.set_heat_map_max(this.get_heat_map_max_());
 };
 
+/**
+ * Update the HUD.
+ */
 beestat.component.card.three_d.prototype.update_hud_ = function() {
   this.decorate_legend_();
+  this.decorate_controls_();
 };
 
 /**

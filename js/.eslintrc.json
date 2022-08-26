@@ -11,6 +11,7 @@
     "Highcharts": true,
     "Sentry": true,
     "THREE": true,
+    "SunCalc": true,
     "ClipperLib": true
   },
   "extends": "eslint:all",
