@@ -19,29 +19,16 @@ beestat.component.card.three_d = function() {
       self.update_hud_();
     });
 
+  // Rerender the scene when the floor plan changes.
   beestat.dispatcher.addEventListener('cache.floor_plan', function() {
     self.scene_.rerender();
+    self.update_scene_();
   });
 
-  /*
-   * When a setting is changed clear all of the data. Then rerender which will
-   * trigger the loading state. Also do this when the cache changes.
-   *
-   * Debounce so that multiple setting changes don't re-trigger the same
-   * event. This fires on the trailing edge so that all changes are accounted
-   * for when rerendering.
-   */
-  const change_function = beestat.debounce(function() {
+  beestat.dispatcher.addEventListener('cache.data.three_d__runtime_sensor', function() {
     self.get_data_(true);
     self.rerender();
-  }, 10);
-
-  beestat.dispatcher.addEventListener(
-    [
-      'cache.data.three_d__runtime_sensor'
-    ],
-    change_function
-  );
+  });
 
   beestat.component.card.apply(this, arguments);
 };
