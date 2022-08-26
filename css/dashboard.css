@@ -88,40 +88,6 @@ body {
   src:url("../font/montserrat/montserrat_900.eot?") format("embedded-opentype"),url("../font/montserrat/montserrat_900.woff") format("woff"),url("../font/montserrat/montserrat_900.ttf") format("truetype"),url("../font/montserrat/montserrat_900.svg#Montserrat") format("svg")
 }
 
-
-
-
-
-
-
-
-
-
-
-
-/* Beestat logo */
-.beestat {
-  font-weight: 200;
-  font-size: 40px;
-  font-family: Montserrat;
-}
-
-.beestat > .bee {
-  color: #f7b731;
-}
-
-.beestat > .stat {
-  color: #20bf6b;
-}
-
-
-
-
-
-
-
-
-
 /* Link styles */
 a {
   cursor: pointer;
@@ -311,6 +277,43 @@ input[type=radio] {
   opacity: 0.25;
 }
 
+/* Range input */
+input[type=range]{
+  -webkit-appearance: none;
+  background:transparent;
+  margin-top: 5px;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  background: #37474f;
+  height: 5px;
+  border-radius: 5px;
+}
+
+input[type=range]::-moz-range-track {
+  background: #37474f;
+  height: 5px;
+  border-radius: 5px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ffffff;
+  transform: translateY(-5px);
+}
+
+input[type=range]::-moz-range-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ffffff;
+}
 
 /**
  * This is a stripped down version of https://flexgridlite.elliotdahl.com/
@@ -482,6 +485,7 @@ input[type=radio] {
 .icon.menu_down:before { content: "\F035D"; }
 .icon.menu_up:before { content: "\F0360"; }
 .icon.message:before { content: "\F0361"; }
+.icon.moon_waning_crescent:before { content: "\F0F65"; }
 .icon.network_strength_4:before { content: "\F08FA"; }
 .icon.network_strength_off:before { content: "\F08FC"; }
 .icon.numeric_0:before { content: "\F0B39"; }
@@ -516,6 +520,8 @@ input[type=radio] {
 .icon.redo:before { content: "\F044E"; }
 .icon.refresh:before { content: "\F0450"; }
 .icon.resistor:before { content: "\F0B44"; }
+.icon.restart:before { content: "\F0709"; }
+.icon.restart_off:before { content: "\F0D95"; }
 .icon.snowflake:before { content: "\F0717"; }
 .icon.swap_horizontal:before { content: "\F04E1"; }
 .icon.thermometer:before { content: "\F050F"; }
@@ -542,6 +548,7 @@ input[type=radio] {
 .icon.weather_sunny:before { content: "\F0599"; }
 .icon.weather_tornado:before { content: "\F0F38"; }
 .icon.weather_windy:before { content: "\F059D"; }
+.icon.white_balance_sunny:before { content: "\F05A8"; }
 .icon.wifi_strength_1_alert:before { content: "\F0920"; }
 .icon.wifi_strength_4:before { content: "\F0928"; }
 .icon.zigbee:before { content: "\F0D41"; }

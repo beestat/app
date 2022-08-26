@@ -14,7 +14,10 @@ beestat.component.card.three_d = function() {
       'setting.visualize.heat_map_absolute.temperature.max',
       'setting.visualize.heat_map_absolute.occupancy.min',
       'setting.visualize.heat_map_absolute.occupancy.max'
-    ], self.update_scene_.bind(this));
+    ], function() {
+      self.update_scene_();
+      self.update_hud_();
+    });
 
   beestat.dispatcher.addEventListener('cache.floor_plan', function() {
     self.scene_.rerender();
@@ -88,22 +91,66 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(drawing_pane_container);
   this.decorate_drawing_pane_(drawing_pane_container);
 
-  // Decorate everything.
+  // Watermark
+  const watermark_container = document.createElement('div');
+  Object.assign(watermark_container.style, {
+    'position': 'absolute',
+    'height': '20px',
+    'bottom': `${beestat.style.size.gutter}px`,
+    'right': `${beestat.style.size.gutter}px`
+  });
+  parent.appendChild(watermark_container);
+  this.decorate_watermark_(watermark_container);
+
+  // Toolbar
+  const toolbar_container = document.createElement('div');
+  Object.assign(toolbar_container.style, {
+    'position': 'absolute',
+    'width': '1px',
+    'top': `${beestat.style.size.gutter}px`,
+    'left': `${beestat.style.size.gutter}px`
+  });
+  parent.appendChild(toolbar_container);
+  this.decorate_toolbar_(toolbar_container);
+
+  const top_container = document.createElement('div');
+  Object.assign(top_container.style, {
+    'display': 'flex',
+    'position': 'absolute',
+    'width': '100%',
+    'top': `${beestat.style.size.gutter}px`,
+    'padding-left': '55px',
+    'padding-right': `${beestat.style.size.gutter}px`
+  });
+  parent.appendChild(top_container);
+
+  // Floors
+  const floors_container = document.createElement('div');
+  Object.assign(floors_container.style, {
+    'flex-shrink': '0'
+  });
+  top_container.appendChild(floors_container);
+  this.decorate_floors_(floors_container);
+
+  // Controls
   const controls_container = document.createElement('div');
   Object.assign(controls_container.style, {
-    'position': 'absolute',
-    'top': `${beestat.style.size.gutter}px`,
-    'left': '50%',
-    'width': '300px',
-    'margin-left': '-150px',
-    'background': beestat.style.color.bluegray.base,
-    'padding': `${beestat.style.size.gutter / 2}px`,
-    'border-radius': `${beestat.style.size.border_radius}px`
+    'flex-grow': '1'
   });
-  parent.appendChild(controls_container);
+  top_container.appendChild(controls_container);
   this.decorate_controls_(controls_container);
 
-  // var thermostat = beestat.cache.thermostat[this.thermostat_id_];
+  // Legend
+  const legend_container = document.createElement('div');
+  Object.assign(legend_container.style, {
+    'position': 'absolute',
+    'top': '50%',
+    'margin-top': '-90px',
+    'right': `${beestat.style.size.gutter}px`,
+    'height': '180px'
+  });
+  parent.appendChild(legend_container);
+  this.decorate_legend_(legend_container);
 
   let required_begin;
   let required_end;
@@ -311,7 +358,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
 
   // Hoisting
   const range = new beestat.component.input.range();
-  const right_container = document.createElement('div');
+  const time_container = document.createElement('div');
 
   const container = document.createElement('div');
   Object.assign(container.style, {
@@ -326,13 +373,11 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   const play_tile = new beestat.component.tile()
     .set_icon('play')
     .set_shadow(false)
-    .set_text_hover_color(beestat.style.color.green.base)
+    .set_text_hover_color(beestat.style.color.gray.base)
     .render($(left_container));
   play_tile.addEventListener('click', function() {
     if (self.interval_ === undefined) {
-      play_tile
-        .set_icon('pause')
-        .set_text_hover_color(beestat.style.color.red.base);
+      play_tile.set_icon('pause');
 
       self.interval_ = window.setInterval(function() {
         self.date_m_.add(5, 'minutes');
@@ -340,49 +385,258 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
         range.set_value(
           ((self.date_m_.hours() * 60) + self.date_m_.minutes()) / 1440 * 288
         );
-        right_container.innerText = self.date_m_.format('h:mm a');
+        time_container.innerText = self.date_m_.format('h:mm a');
       }, 100);
     } else {
       play_tile
-        .set_icon('play')
-        .set_text_hover_color(beestat.style.color.green.base);
+        .set_icon('play');
       window.clearInterval(self.interval_);
       delete self.interval_;
     }
   });
 
-  const center_container = document.createElement('div');
-  Object.assign(center_container.style, {
+  const range_container = document.createElement('div');
+  Object.assign(range_container.style, {
+    'position': 'relative',
     'flex-grow': '1'
   });
-  container.appendChild(center_container);
+  container.appendChild(range_container);
 
+  // Sunrise/Sunset
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (floor_plan.address_id !== undefined) {
+    const address = beestat.cache.address[floor_plan.address_id];
+
+    const times = SunCalc.getTimes(
+      self.date_m_.toDate(),
+      address.normalized.metadata.latitude,
+      address.normalized.metadata.longitude
+    );
+
+    const sunrise_m = moment(times.sunrise);
+    const sunrise_percentage = ((sunrise_m.hours() * 60) + sunrise_m.minutes()) / 1440 * 100;
+
+    const sunset_m = moment(times.sunset);
+    const sunset_percentage = ((sunset_m.hours() * 60) + sunset_m.minutes()) / 1440 * 100;
+
+    const sunrise_container = document.createElement('div');
+    Object.assign(sunrise_container.style, {
+      'position': 'absolute',
+      'top': '-10px',
+      'left': `${sunrise_percentage}%`
+    });
+    new beestat.component.icon('white_balance_sunny', 'Sunrise @ ' + sunrise_m.format('h:mm'))
+      .set_size(16)
+      .set_color(beestat.style.color.yellow.base)
+      .render($(sunrise_container));
+    range_container.appendChild(sunrise_container);
+
+    const sunset_container = document.createElement('div');
+    Object.assign(sunset_container.style, {
+      'position': 'absolute',
+      'top': '-10px',
+      'left': `${sunset_percentage}%`
+    });
+    new beestat.component.icon('moon_waning_crescent', 'Sunset @ ' + sunset_m.format('h:mm'))
+      .set_size(16)
+      .set_color(beestat.style.color.purple.base)
+      .render($(sunset_container));
+    range_container.appendChild(sunset_container);
+  }
+
+  // Range input
   range
     .set_min(0)
     .set_max(287)
     .set_value(0)
-    .render($(center_container));
+    .render($(range_container));
 
-  right_container.innerText = '12:00 am';
-  Object.assign(right_container.style, {
-    'width': '70px',
+  time_container.innerText = '12:00 am';
+  Object.assign(time_container.style, {
+    'margin-top': '-8px',
     'text-align': 'right'
   });
-  container.appendChild(right_container);
+  parent.appendChild(time_container);
 
   range.addEventListener('input', function() {
-    play_tile
-      .set_icon('play')
-      .set_text_hover_color(beestat.style.color.green.base);
+    play_tile.set_icon('play');
     window.clearInterval(self.interval_);
     delete self.interval_;
 
     const minute_of_day = range.get_value() * 5;
     self.date_m_.hours(Math.floor(minute_of_day / 60));
     self.date_m_.minutes(Math.floor(minute_of_day % 60));
-    right_container.innerText = self.date_m_.format('h:mm a');
+    time_container.innerText = self.date_m_.format('h:mm a');
     self.scene_.set_date(self.date_m_);
   });
+};
+
+/**
+ * Watermark.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_watermark_ = function(parent) {
+  const img = document.createElement('img');
+  img.setAttribute('src', 'img/logo.png');
+  Object.assign(img.style, {
+    'height': '100%',
+    'opacity': '0.7'
+  });
+  parent.appendChild(img);
+};
+
+/**
+ * Toolbar.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
+  const self = this;
+
+  const tile_group = new beestat.component.tile_group();
+
+  // Add floor
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon('layers')
+    .set_shadow(false)
+    .set_text_color(beestat.style.color.lightblue.base)
+  );
+
+  let auto_rotate = false;
+
+  // Add room
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon('restart_off')
+    .set_title('Auto-Rotate')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      auto_rotate = !auto_rotate;
+      this.set_icon(
+        'restart' + (auto_rotate === false ? '_off' : '')
+      );
+      self.scene_.set_auto_rotate(auto_rotate);
+    })
+  );
+
+  tile_group.render($(parent));
+};
+
+/**
+ * Floors.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_floors_ = function(parent) {
+  const self = this;
+
+  const tile_group = new beestat.component.tile_group();
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  const sorted_groups = Object.values(floor_plan.data.groups)
+    .sort(function(a, b) {
+      return a.elevation > b.elevation;
+    });
+
+  let icon_number = 1;
+  sorted_groups.forEach(function(group, i) {
+    const button = new beestat.component.tile()
+      .set_title(group.name)
+      .set_shadow(false)
+      .set_text_hover_color(beestat.style.color.lightblue.light)
+      .set_text_color(beestat.style.color.lightblue.base);
+
+    let icon;
+    if (group.elevation < 0) {
+      icon = 'alpha_b';
+    } else {
+      icon = 'numeric_' + icon_number++;
+    }
+
+    let layer_visible = true;
+    button
+      .set_icon(icon + '_box')
+      .addEventListener('click', function() {
+        if (layer_visible === true) {
+          self.scene_.set_layer_visible('group_' + i, false);
+          button.set_icon(icon);
+        } else {
+          self.scene_.set_layer_visible('group_' + i, true);
+          button.set_icon(icon + '_box');
+        }
+        layer_visible = !layer_visible;
+      });
+
+    tile_group.add_tile(button);
+  });
+
+  tile_group.render($(parent));
+};
+
+/**
+ * Legend.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
+  if (parent !== undefined) {
+    this.legend_container_ = parent;
+  }
+
+  this.legend_container_.innerHTML = '';
+
+  const gradient = this.get_gradient_();
+  const gradient_parts = [
+    beestat.style.rgb_to_hex(gradient[0]) + ' 0%',
+    beestat.style.rgb_to_hex(gradient[Math.round(gradient.length / 2)]) + ' 50%',
+    beestat.style.rgb_to_hex(gradient[gradient.length - 1]) + ' 100%'
+  ];
+
+  const gradient_container = document.createElement('div');
+  Object.assign(gradient_container.style, {
+    'background': 'linear-gradient(0deg, ' + gradient_parts.join(', ') + ')',
+    'height': '100%',
+    'width': '6px',
+    'border-radius': '6px',
+    'position': 'relative'
+  });
+  this.legend_container_.appendChild(gradient_container);
+
+  let units;
+  let min = this.get_heat_map_min_();
+  let max = this.get_heat_map_max_();
+  if (beestat.setting('visualize.data_type') === 'temperature') {
+    min = beestat.temperature(min);
+    max = beestat.temperature(max);
+    units = beestat.setting('temperature_unit');
+  } else {
+    min *= 100;
+    max *= 100;
+    units = '%';
+  }
+
+  const min_container = document.createElement('div');
+  Object.assign(min_container.style, {
+    'position': 'absolute',
+    'bottom': '0',
+    'right': '10px',
+    'font-size': beestat.style.font_size.small
+  });
+  min_container.innerText = min + units;
+  gradient_container.appendChild(min_container);
+
+  const max_container = document.createElement('div');
+  Object.assign(max_container.style, {
+    'position': 'absolute',
+    'top': '0',
+    'right': '10px',
+    'font-size': beestat.style.font_size.small
+  });
+  max_container.innerText = max + units;
+  gradient_container.appendChild(max_container);
 };
 
 /**
@@ -498,32 +752,13 @@ beestat.component.card.three_d.prototype.has_data_ = function() {
 beestat.component.card.three_d.prototype.update_scene_ = function() {
   this.scene_.set_data_type(beestat.setting('visualize.data_type'));
 
-  switch (beestat.setting('visualize.heat_map_type')) {
-  case 'relative':
-    this.scene_.set_heat_map_min(
-      this.data_.metadata.series[beestat.setting('visualize.data_type')].min
-    );
-    this.scene_.set_heat_map_max(
-      this.data_.metadata.series[beestat.setting('visualize.data_type')].max
-    );
-    break;
-  case 'absolute':
-    this.scene_.set_heat_map_min(
-      beestat.setting(
-        'visualize.heat_map_absolute.' +
-        beestat.setting('visualize.data_type') +
-        '.min'
-      ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1)
-    );
-    this.scene_.set_heat_map_max(
-      beestat.setting(
-        'visualize.heat_map_absolute.' +
-        beestat.setting('visualize.data_type') +
-        '.max'
-      ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1)
-    );
-    break;
-  }
+  this.scene_.set_gradient(this.get_gradient_());
+  this.scene_.set_heat_map_min(this.get_heat_map_min_());
+  this.scene_.set_heat_map_max(this.get_heat_map_max_());
+};
+
+beestat.component.card.three_d.prototype.update_hud_ = function() {
+  this.decorate_legend_();
 };
 
 /**
@@ -541,4 +776,62 @@ beestat.component.card.three_d.prototype.set_floor_plan_id = function(floor_plan
   }
 
   return this;
+};
+
+/**
+ * Get the effective minimum heat map value based on the settings.
+ *
+ * @return {number}
+ */
+beestat.component.card.three_d.prototype.get_heat_map_min_ = function() {
+  if (beestat.setting('visualize.heat_map_type') === 'relative') {
+    return this.data_.metadata.series[beestat.setting('visualize.data_type')].min;
+  }
+  return beestat.setting(
+    'visualize.heat_map_absolute.' +
+    beestat.setting('visualize.data_type') +
+    '.min'
+  ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1);
+};
+
+/**
+ * Get the effective maximum heat map value based on the settings.
+ *
+ * @return {number}
+ */
+beestat.component.card.three_d.prototype.get_heat_map_max_ = function() {
+  if (beestat.setting('visualize.heat_map_type') === 'relative') {
+    return this.data_.metadata.series[beestat.setting('visualize.data_type')].max;
+  }
+  return beestat.setting(
+    'visualize.heat_map_absolute.' +
+    beestat.setting('visualize.data_type') +
+    '.max'
+  ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1);
+};
+
+/**
+ * Get the gradient based on the settings.
+ *
+ * @return {object}
+ */
+beestat.component.card.three_d.prototype.get_gradient_ = function() {
+  if (beestat.setting('visualize.data_type') === 'temperature') {
+    return beestat.style.generate_gradient(
+      [
+        beestat.style.hex_to_rgb(beestat.style.color.blue.dark),
+        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
+        beestat.style.hex_to_rgb(beestat.style.color.red.dark)
+      ],
+      100
+    );
+  } else {
+    return beestat.style.generate_gradient(
+      [
+        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
+        beestat.style.hex_to_rgb(beestat.style.color.orange.dark)
+      ],
+      200
+    );
+  }
 };

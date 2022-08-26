@@ -48,8 +48,8 @@ beestat.component.scene.ambient_light_intensity = 0.3;
  * having to manually save camera info etc.
  */
 beestat.component.scene.prototype.rerender = function() {
-  this.scene_.remove(this.group_);
-  this.add_group_();
+  this.scene_.remove(this.main_group_);
+  this.add_main_group_();
   this.add_floor_plan_();
 };
 
@@ -102,7 +102,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   // this.add_ground_();
   // this.add_ground_limited_();
 
-  this.add_group_();
+  this.add_main_group_();
   this.add_floor_plan_();
 
   /**
@@ -410,27 +410,6 @@ beestat.component.scene.prototype.update_ = function() {
 
   const time = this.date_.format('HH:mm');
 
-  // TODO Memoize this
-  let gradient;
-  if (self.data_type_ === 'temperature') {
-    gradient = beestat.style.generate_gradient(
-      [
-        beestat.style.hex_to_rgb(beestat.style.color.blue.dark),
-        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
-        beestat.style.hex_to_rgb(beestat.style.color.red.dark)
-      ],
-      100
-    );
-  } else if (self.data_type_ === 'occupancy') {
-    gradient = beestat.style.generate_gradient(
-      [
-        beestat.style.hex_to_rgb(beestat.style.color.gray.base),
-        beestat.style.hex_to_rgb(beestat.style.color.orange.dark)
-      ],
-      200
-    );
-  }
-
   // Set the color of each room
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
@@ -449,7 +428,9 @@ beestat.component.scene.prototype.update_ = function() {
             (value - self.heat_map_min_) / (self.heat_map_max_ - self.heat_map_min_)
           )
         );
-        color = beestat.style.rgb_to_hex(gradient[Math.floor((gradient.length - 1) * percentage)]);
+        color = beestat.style.rgb_to_hex(
+          self.gradient_[Math.floor((self.gradient_.length - 1) * percentage)]
+        );
       } else {
         color = beestat.style.color.gray.dark;
       }
@@ -739,10 +720,11 @@ beestat.component.scene.prototype.add_background_ = function() {
 /**
  * Add a room. Room coordinates are absolute.
  *
+ * @param {THREE.Group} layer The layer the room belongs to.
  * @param {object} group The group the room belongs to.
  * @param {object} room The room to add.
  */
-beestat.component.scene.prototype.add_room_ = function(group, room) {
+beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   const color = beestat.style.color.gray.dark;
 
   var clipper_offset = new ClipperLib.ClipperOffset();
@@ -805,13 +787,15 @@ beestat.component.scene.prototype.add_room_ = function(group, room) {
   // mesh.receiveShadow = true;
 
   // Add the mesh to the group.
-  this.group_.add(mesh);
+  this.main_group_.add(mesh);
 
   // Store a reference to the mesh representing each room.
   if (this.rooms_ === undefined) {
     this.rooms_ = {};
   }
   this.rooms_[room.room_id] = mesh;
+
+  layer.add(mesh);
 };
 
 /**
@@ -849,9 +833,10 @@ beestat.component.scene.prototype.update_debug_ = function() {
 };
 
 /**
- * Add a group containing all of the extruded geometry.
+ * Add a group containing all of the extruded geometry that can be transformed
+ * all together.
  */
-beestat.component.scene.prototype.add_group_ = function() {
+beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
   // this.floor_plan_center_x_ = ;
   // this.floor_plan_center_y_ = (bounding_box.bottom + bounding_box.top) / 2;
@@ -859,13 +844,13 @@ beestat.component.scene.prototype.add_group_ = function() {
   // this.view_box_.x = center_x - (this.view_box_.width / 2);
   // this.view_box_.y = center_y - (this.view_box_.height / 2);
 
-  this.group_ = new THREE.Group();
-  this.group_.translateX((bounding_box.right + bounding_box.left) / -2);
-  this.group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
-  // this.group_.rotation.x = -Math.PI / 2;
+  this.main_group_ = new THREE.Group();
+  this.main_group_.translateX((bounding_box.right + bounding_box.left) / -2);
+  this.main_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
+  // this.main_group_.rotation.x = -Math.PI / 2;
   //
-  this.group_.rotation.x = Math.PI / 2;
-  this.scene_.add(this.group_);
+  this.main_group_.rotation.x = Math.PI / 2;
+  this.scene_.add(this.main_group_);
 };
 
 /**
@@ -875,9 +860,13 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   const self = this;
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
-  floor_plan.data.groups.forEach(function(group) {
+  this.layers_ = {};
+  floor_plan.data.groups.forEach(function(group, i) {
+    const layer = new THREE.Group();
+    self.main_group_.add(layer);
+    self.layers_['group_' + i] = layer;
     group.rooms.forEach(function(room) {
-      self.add_room_(group, room);
+      self.add_room_(layer, group, room);
     });
   });
 };
@@ -946,6 +935,46 @@ beestat.component.scene.prototype.set_heat_map_max = function(heat_map_max) {
   if (this.rendered_ === true) {
     this.update_();
   }
+
+  return this;
+};
+
+/**
+ * Set the visibility of a layer.
+ *
+ * @param {string} layer_name
+ * @param {boolean} visible
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_layer_visible = function(layer_name, visible) {
+  this.layers_[layer_name].visible = visible;
+
+  return this;
+};
+
+/**
+ * Set whether or not auto-rotate is enabled.
+ *
+ * @param {boolean} auto_rotate
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_auto_rotate = function(auto_rotate) {
+  this.controls_.autoRotate = auto_rotate;
+
+  return this;
+};
+
+/**
+ * Set the gradient.
+ *
+ * @param {boolean} gradient
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_gradient = function(gradient) {
+  this.gradient_ = gradient;
 
   return this;
 };

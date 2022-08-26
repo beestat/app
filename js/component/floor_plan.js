@@ -78,7 +78,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
   this.floors_container_.style({
     'position': 'absolute',
     'top': beestat.style.size.gutter,
-    'left': 40 + beestat.style.size.gutter + (beestat.style.size.gutter / 2)
+    'left': beestat.style.size.gutter * 4
   });
   parent.appendChild(this.floors_container_);
 

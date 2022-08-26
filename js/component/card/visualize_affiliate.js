@@ -46,7 +46,7 @@ beestat.component.card.visualize_affiliate.prototype.decorate_top_right_ = funct
     .set_shadow(false)
     .set_icon('close')
     .set_text_color('#fff')
-    .set_background_hover_color(beestat.style.color.green.light)
+    .set_background_hover_color('rgba(255, 255, 255, 0.1')
     .addEventListener('click', function() {
       beestat.setting('visualize.hide_affiliate', true);
     })

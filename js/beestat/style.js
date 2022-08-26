@@ -394,6 +394,13 @@ beestat.style.hex_to_rgb = function(hex) {
   } : null;
 };
 
+/**
+ * Convert RGB components to a hex string.
+ *
+ * @param {object} RGB
+ *
+ * @return {string} hex
+ */
 beestat.style.rgb_to_hex = function(rgb) {
   return "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
-}
+};
