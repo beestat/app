@@ -65,7 +65,6 @@ beestat.component.scene.prototype.set_width = function(width) {
   this.camera_.updateProjectionMatrix();
 
   this.renderer_.setSize(this.width_, this.height_);
-  this.renderer_.render(this.scene_, this.camera_);
 };
 
 /**
@@ -92,7 +91,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.height_ = 500;
 
   this.add_scene_(parent);
-  this.add_background_(parent);
+  // this.add_background_(parent);
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
@@ -181,6 +180,9 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
   this.renderer_ = new THREE.WebGLRenderer({
     'antialias': true
   });
+
+  this.renderer_.setSize(this.width_, this.height_);
+
   // this.renderer_.setSize(window.innerWidth, window.innerHeight);
   // this.renderer_.shadowMap.enabled = true;
   // this.renderer_.shadowMap.autoUpdate = false;
@@ -725,9 +727,9 @@ beestat.component.scene.prototype.update_ = function() {
 /**
  * Add a background.
  */
-beestat.component.scene.prototype.add_background_ = function() {
-  this.scene_.background = new THREE.Color(beestat.style.color.bluegray.dark);
-}
+// beestat.component.scene.prototype.add_background_ = function() {
+//   this.scene_.background = new THREE.Color(beestat.style.color.bluegray.dark);
+// }
 
 
 
@@ -994,4 +996,27 @@ beestat.component.scene.prototype.set_gradient = function(gradient) {
   this.gradient_ = gradient;
 
   return this;
+};
+
+/**
+ * Get the state of the camera.
+ *
+ * @return {object}
+ */
+beestat.component.scene.prototype.get_camera_state = function() {
+  return this.camera_.matrix.toArray();
+};
+
+/**
+ * Restore the state of the camera.
+ *
+ * @param {object} camera_state
+ */
+beestat.component.scene.prototype.set_camera_state = function(camera_state) {
+  this.camera_.matrix.fromArray(camera_state);
+  this.camera_.matrix.decompose(
+    this.camera_.position,
+    this.camera_.quaternion,
+    this.camera_.scale
+  );
 };

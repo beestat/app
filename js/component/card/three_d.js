@@ -27,6 +27,7 @@ beestat.component.card.three_d = function() {
   });
 
   beestat.dispatcher.addEventListener('cache.data.three_d__runtime_sensor', function() {
+    self.state_.scene_camera_state = self.scene_.get_camera_state();
     self.get_data_(true);
     self.rerender();
   });
@@ -322,15 +323,25 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.scene_.set_date(this.date_m_);
 
   // Manage width of the scene.
-  setTimeout(function() {
-    if (parent.getBoundingClientRect().width > 0) {
-      self.scene_.set_width(parent.getBoundingClientRect().width);
-    }
-  }, 0);
+  if (this.state_.width === undefined) {
+    setTimeout(function() {
+      if (parent.getBoundingClientRect().width > 0) {
+        self.state_.width = parent.getBoundingClientRect().width;
+        self.scene_.set_width(self.state_.width);
+      }
+    }, 0);
+  } else {
+    this.scene_.set_width(this.state_.width);
+  }
+
+  if (this.state_.scene_camera_state !== undefined) {
+    this.scene_.set_camera_state(this.state_.scene_camera_state);
+  }
 
   beestat.dispatcher.removeEventListener('resize.three_d');
   beestat.dispatcher.addEventListener('resize.three_d', function() {
-    self.scene_.set_width(parent.getBoundingClientRect().width);
+    self.state_.width = parent.getBoundingClientRect().width;
+    self.scene_.set_width(self.state_.width);
   });
 };
 
