@@ -74,6 +74,14 @@ beestat.component.floor_plan.prototype.render = function(parent) {
   });
   parent.appendChild(this.toolbar_container_);
 
+  this.toolbar_helper_container_ = $.createElement('div');
+  this.toolbar_helper_container_.style({
+    'position': 'absolute',
+    'top': 55,
+    'left': beestat.style.size.gutter * 4
+  });
+  parent.appendChild(this.toolbar_helper_container_);
+
   this.floors_container_ = $.createElement('div');
   this.floors_container_.style({
     'position': 'absolute',
@@ -434,6 +442,17 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
       self.add_room_();
     })
   );
+
+  // Helper
+  if (beestat.floor_plan.get_area(this.floor_plan_id_) === 0) {
+    new beestat.component.tile()
+      .set_text('Start by adding a room')
+      .set_shadow(false)
+      .set_background_color(beestat.style.color.green.base)
+      .set_text_color('#fff')
+      .set_type('pill')
+      .render(this.toolbar_helper_container_);
+  }
 
   // Remove room
   const remove_room_button = new beestat.component.tile()

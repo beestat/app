@@ -38,11 +38,11 @@ beestat.component.header.prototype.decorate_ = function(parent) {
         'text': 'Analyze',
         'icon': 'home_search'
       },
-      // {
-      //   'layer': 'visualize',
-      //   'text': 'Visualize',
-      //   'icon': 'floor_plan'
-      // },
+      {
+        'layer': 'visualize',
+        'text': 'Visualize',
+        'icon': 'floor_plan'
+      },
       {
         'layer': 'compare',
         'text': 'Compare',
@@ -127,7 +127,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       .set_shadow(false)
       .set_text_color(beestat.style.color.bluegray.dark);
 
-    if (beestat.width > 800) {
+    if (beestat.width > 850) {
       button.set_text(page.text);
     }
 
@@ -228,15 +228,6 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     .set_callback(function() {
       (new beestat.layer.settings()).render();
     }));
-
-  if (beestat.user.has_early_access() === true) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Visualize (Early Access)')
-      .set_icon('floor_plan')
-      .set_callback(function() {
-        (new beestat.layer.visualize()).render();
-      }));
-  }
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')

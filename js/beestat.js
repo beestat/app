@@ -62,6 +62,7 @@ window.addEventListener('resize', rocket.throttle(100, function() {
     600,
     650,
     800,
+    850,
     1000
   ];
 

@@ -19,7 +19,7 @@ beestat.component.card.visualize_intro.prototype.decorate_contents_ = function(p
   const self = this;
 
   const p1 = document.createElement('p');
-  p1.innerText = 'You now have early access to the new Visualize features. This is a work-in-progress, but you should find it to be mostly stable. More features and improvements are in the works, as well as documentation and videos to help explain the new capabilities.';
+  p1.innerText = 'You now have early access to the new Visualize features. This is a work-in-progress, but you should find it to be mostly stable. More features and improvements are in the works.';
   parent.appendChild(p1);
 
   const p2 = document.createElement('p');

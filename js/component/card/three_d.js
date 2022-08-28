@@ -616,35 +616,41 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
   let units;
   let min = this.get_heat_map_min_();
   let max = this.get_heat_map_max_();
-  if (beestat.setting('visualize.data_type') === 'temperature') {
-    min = beestat.temperature(min);
-    max = beestat.temperature(max);
-    units = beestat.setting('temperature_unit');
-  } else {
-    min *= 100;
-    max *= 100;
-    units = '%';
+
+  if (
+    min !== Infinity &&
+    max !== -Infinity
+  ) {
+    if (beestat.setting('visualize.data_type') === 'temperature') {
+      min = beestat.temperature(min);
+      max = beestat.temperature(max);
+      units = beestat.setting('temperature_unit');
+    } else {
+      min *= 100;
+      max *= 100;
+      units = '%';
+    }
+
+    const min_container = document.createElement('div');
+    Object.assign(min_container.style, {
+      'position': 'absolute',
+      'bottom': '0',
+      'right': '10px',
+      'font-size': beestat.style.font_size.small
+    });
+    min_container.innerText = min + units;
+    gradient_container.appendChild(min_container);
+
+    const max_container = document.createElement('div');
+    Object.assign(max_container.style, {
+      'position': 'absolute',
+      'top': '0',
+      'right': '10px',
+      'font-size': beestat.style.font_size.small
+    });
+    max_container.innerText = max + units;
+    gradient_container.appendChild(max_container);
   }
-
-  const min_container = document.createElement('div');
-  Object.assign(min_container.style, {
-    'position': 'absolute',
-    'bottom': '0',
-    'right': '10px',
-    'font-size': beestat.style.font_size.small
-  });
-  min_container.innerText = min + units;
-  gradient_container.appendChild(min_container);
-
-  const max_container = document.createElement('div');
-  Object.assign(max_container.style, {
-    'position': 'absolute',
-    'top': '0',
-    'right': '10px',
-    'font-size': beestat.style.font_size.small
-  });
-  max_container.innerText = max + units;
-  gradient_container.appendChild(max_container);
 };
 
 /**

@@ -3,7 +3,11 @@
  */
 beestat.component.card.visualize_settings = function() {
   const self = this;
-  beestat.dispatcher.addEventListener('cache.floor_plan', function() {
+  beestat.dispatcher.addEventListener([
+    'cache.floor_plan',
+    'cache.data.three_d__runtime_sensor'
+  ],
+  function() {
     self.rerender();
   });
 
@@ -45,6 +49,16 @@ beestat.component.card.visualize_settings.prototype.decorate_contents_ = functio
   const heat_map_type_container = document.createElement('div');
   this.decorate_heat_map_type_(heat_map_type_container);
   grid_2.appendChild(heat_map_type_container);
+
+  // If at least one sensor is on the floor plan and the data is loading.
+  if (
+    beestat.cache.data.three_d__runtime_sensor === undefined &&
+    Object.keys(beestat.floor_plan.get_sensor_ids_map(
+      beestat.setting('visualize.floor_plan_id')
+    )).length > 0
+  ) {
+    this.show_loading_('Fetching');
+  }
 };
 
 /**
