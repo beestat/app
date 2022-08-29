@@ -119,6 +119,27 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       .style('margin-top', beestat.style.size.gutter / 2);
     parent.appendChild(this.info_pane_container_);
     this.decorate_info_pane_(this.info_pane_container_);
+
+    // Help container
+    if (beestat.floor_plan.get_area(beestat.setting('visualize.floor_plan_id')) === 0) {
+      const help_container = document.createElement('div');
+      Object.assign(help_container.style, {
+        'position': 'absolute',
+        'left': '65px',
+        'top': '59px'
+      });
+      drawing_pane_container.appendChild(help_container);
+
+      this.helper_tile_ = new beestat.component.tile()
+        .set_text('Start by adding a room')
+        .set_shadow(false)
+        .set_background_color(beestat.style.color.green.base)
+        .set_text_color('#fff')
+        .set_type('pill')
+        .set_size('small')
+        .set_icon('arrow_left')
+        .render($(help_container));
+    }
   }
 
   const expand_container = document.createElement('div');
@@ -478,6 +499,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   // Sensor
   div = $.createElement('div');
+  div.style('position', 'relative');
   grid.appendChild(div);
   const sensor_input = new beestat.component.input.select()
     .add_option({
@@ -539,8 +561,37 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
       beestat.cache.delete('data.three_d__runtime_sensor');
     }
 
+    // For the help box
+    self.update_info_pane_();
+
     self.update_floor_plan_();
   });
+
+  // Help container
+  if (
+    Object.keys(beestat.floor_plan.get_sensor_ids_map(beestat.setting('visualize.floor_plan_id'))).length === 0 &&
+    this.state_.active_room_entity !== undefined
+  ) {
+    const help_container = document.createElement('div');
+    Object.assign(help_container.style, {
+      'position': 'absolute',
+      'left': 0,
+      'top': '-9px'
+    });
+    div.appendChild(help_container);
+
+    this.helper_tile_ = new beestat.component.tile()
+      .set_text('Assign a sensor')
+      .set_shadow(false)
+      .set_background_color(beestat.style.color.green.base)
+      .set_text_color('#fff')
+      .set_type('pill')
+      .set_size('small')
+      .set_icon('arrow_down')
+      .render($(help_container));
+
+    sensor_input.set_label('⠀');
+  }
 };
 
 /**

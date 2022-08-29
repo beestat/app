@@ -420,6 +420,7 @@ input[type=range]::-moz-range-thumb {
 .icon.alarm_snooze:before { content: "\F068E"; }
 .icon.alpha_b:before { content: "\F0AEF"; }
 .icon.alpha_b_box:before { content: "\F0B09"; }
+.icon.arrow_down:before { content: "\F0045"; }
 .icon.arrow_expand_horizontal:before { content: "\F084E"; }
 .icon.arrow_expand_vertical:before { content: "\F084F"; }
 .icon.arrow_horizontal_lock:before { content: "\F115B"; }

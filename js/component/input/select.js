@@ -44,6 +44,9 @@ beestat.component.input.select.prototype.decorate_ = function(parent) {
   this.input_.style.marginBottom = beestat.style.size.gutter + 'px';
   this.input_.style.borderBottom = '2px solid ' + beestat.style.color.lightblue.base;
 
+  // Clear any existing option values from the input.
+  this.input_.innerHTML = '';
+
   // Set input width; interpret string widths literally (ex: 100%)
   if (this.width_ !== undefined) {
     if (isNaN(this.width_) === true) {
