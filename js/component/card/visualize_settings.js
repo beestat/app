@@ -313,9 +313,9 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     current_day_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.cache.delete('data.three_d__runtime_sensor');
         beestat.setting('visualize.range_type', 'dynamic');
         beestat.setting('visualize.range_dynamic', 0);
+        beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
@@ -337,9 +337,9 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     yesterday_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.cache.delete('data.three_d__runtime_sensor');
         beestat.setting('visualize.range_type', 'dynamic');
         beestat.setting('visualize.range_dynamic', 1);
+        beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
@@ -361,9 +361,9 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     week_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.cache.delete('data.three_d__runtime_sensor');
         beestat.setting('visualize.range_type', 'dynamic');
         beestat.setting('visualize.range_dynamic', 7);
+        beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
