@@ -28,7 +28,7 @@ beestat.component.card.visualize_affiliate.prototype.decorate_contents_ = functi
     .set_background_color(beestat.style.color.green.dark)
     .set_background_hover_color(beestat.style.color.green.light)
     .addEventListener('click', function() {
-      window.open('https://amzn.to/3SprUVB');
+      window.open(beestat.affiliate.get_link('ecobee_smart_sensor_2_pack'));
     })
   );
 

@@ -17,11 +17,15 @@ beestat.component.card.air_quality_not_supported.prototype.decorate_contents_ = 
 
   new beestat.component.tile()
     .set_icon('open_in_new')
-    .set_text('Buy an ecobee Smart Thermostat Premium on Amazon')
+    .set_text([
+      'Ecobee Smart Thermostat Premium',
+      'Amazon Affiliate'
+    ])
+    .set_size('large')
     .set_background_color(beestat.style.color.green.dark)
     .set_background_hover_color(beestat.style.color.green.light)
     .addEventListener('click', function() {
-      window.open('https://amzn.to/3A7vv3S');
+      window.open(beestat.affiliate.get_link('ecobee_smart_thermostat_premium'));
     })
     .render(parent);
 };

@@ -33,7 +33,8 @@ beestat.address.get_lines = function(address_id) {
 };
 
 /**
- * Get whether or not this address was validated and thus has address components/metadata, is geocoded, etc.
+ * Get whether or not this address was validated and thus has address
+ * components/metadata, is geocoded, etc.
  *
  * @param {number} address_id
  *
