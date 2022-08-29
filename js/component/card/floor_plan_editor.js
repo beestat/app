@@ -361,6 +361,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
     .set_maxlength('5')
     .set_requirements({
       'type': 'integer',
+      'min_value': -50,
+      'max_value': 50,
       'required': true
     })
     .render(div);
@@ -371,7 +373,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
       self.update_floor_plan_();
       self.rerender();
     } else {
-      elevation_input.set_value(self.state_.active_group.elevation);
+      elevation_input.set_value(self.state_.active_group.elevation / 12, false);
+      new beestat.component.modal.floor_plan_elevation_help().render();
     }
   });
 
@@ -396,7 +399,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
       self.state_.active_group.height = height_input.get_value() * 12;
       self.update_floor_plan_();
     } else {
-      height_input.set_value(self.state_.active_group.height);
+      height_input.set_value(self.state_.active_group.height, false);
     }
   });
 
@@ -459,6 +462,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
     .set_width('100%')
     .set_maxlength('5')
     .set_requirements({
+      'min_value': -50,
+      'max_value': 50,
       'type': 'integer'
     })
     .render(div);
@@ -469,7 +474,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
       self.update_floor_plan_();
       self.rerender();
     } else {
-      elevation_input.set_value('');
+      elevation_input.set_value('', false);
+      new beestat.component.modal.floor_plan_elevation_help().render();
     }
   });
 
@@ -493,7 +499,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
       self.state_.active_room_entity.get_room().height = height_input.get_value() * 12;
       self.update_floor_plan_();
     } else {
-      height_input.set_value('');
+      height_input.set_value('', false);
     }
   });
 
