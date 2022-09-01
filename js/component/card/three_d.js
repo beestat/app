@@ -360,6 +360,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   this.controls_container_.innerHTML = '';
 
   window.clearInterval(self.interval_);
+  delete self.interval_;
 
   // Hoisting
   const range = new beestat.component.input.range();
@@ -456,10 +457,10 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   range
     .set_min(0)
     .set_max(287)
-    .set_value(0)
+    .set_value(((self.date_m_.hours() * 60) + self.date_m_.minutes()) / 1440 * 288)
     .render($(range_container));
 
-  time_container.innerText = '12:00 am';
+  time_container.innerText = self.date_m_.format('h:mm a');
   Object.assign(time_container.style, {
     'margin-top': '-8px',
     'text-align': 'right'
