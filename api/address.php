@@ -37,10 +37,11 @@ class address extends cora\crud {
    * @return array The address row.
    */
   public function search($address, $country) {
+    $skip_lookup = false;
+
     /**
-     * If any of these fields are missing, set normalized to an empty array
-     * and skip the SmartyStreets lookup. Also, line_1 must have a number and
-     * text.
+     * If any of these fields are missing, set normalized to null and skip the
+     * SmartyStreets lookup. Also, line_1 must have a number and text.
      */
     foreach(['line_1', 'locality', 'administrative_area', 'postal_code'] as $key) {
       if(
@@ -48,20 +49,23 @@ class address extends cora\crud {
         trim($address[$key]) === '' ||
         $address[$key] === null
       ) {
-        $normalized = [];
+        $skip_lookup = true;
+        $normalized = null;
         break;
       }
     }
 
+    // Don't even bother sending to Smarty if there's no number in address line 1.
     if(
       isset($address['line_1']) === true &&
       preg_match('/\d+ [0-9]*[a-z]+/i', trim(preg_replace('/[^a-z0-9 ]/i', ' ', $address['line_1']))) !== 1
     ) {
-      $normalized = [];
+      $skip_lookup = true;
+      $normalized = null;
     }
 
     // If normalized wasn't overrridden, check with SmartyStreets.
-    if(isset($normalized) === false) {
+    if($skip_lookup === false) {
       $address_string = $address['line_1'] . ', ' . $address['locality'] . ', ' . $address['administrative_area'] . ', ' . $address['postal_code'];
       $normalized = $this->api(
         'smarty_streets',
@@ -85,7 +89,29 @@ class address extends cora\crud {
       ]);
     }
     else {
-      return $existing_address;
+      /**
+       * There was an issue at some point that caused addresses to be inserted
+       * with null/[] as the normalized column even though Smarty returned
+       * actual valid data for the address. I *think* this may have been
+       * caused by addresses that were originally created when a Smarty
+       * subscription was down. Once an address exists, it was then never
+       * updated, so while a successful API call was sent to Smarty, the
+       * actual address was never updated.
+       *
+       * This fixes that by updating the address row with the current Smarty
+       * response. Sometimes Smarty cannot find an address and to fix that I
+       * will manually set the normalized column despite it normally being
+       * null. This won't override that because it will never set normalized
+       * to null.
+       */
+      if ($normalized !== null) {
+        return $this->update([
+          'address_id' => $existing_address['address_id'],
+          'normalized' => $normalized
+        ]);
+      } else {
+        return $existing_address;
+      }
     }
   }
 

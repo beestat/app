@@ -145,7 +145,7 @@ abstract class crud extends api {
    * @param int $id The id of the item to update.
    * @param array $attributes An array of attributes to set for this item.
    *
-   * @return int The number of affected rows.
+   * @return int The updated row.
    */
   public function update($attributes) {
     // Get the item first to see if it exists. The get call will throw an
