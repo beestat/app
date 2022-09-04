@@ -306,14 +306,49 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.scene_.render($(parent));
 
   if (beestat.setting('visualize.range_type') === 'dynamic') {
-    this.date_m_ = moment()
-      .subtract(
-        beestat.setting('visualize.range_dynamic'),
-        'day'
-      )
-      .hour(0)
-      .minute(0)
-      .second(0);
+    const sensor_ids = Object.keys(
+      beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_)
+    );
+    if (
+      beestat.setting('visualize.range_dynamic') === 0 &&
+      sensor_ids.length > 0
+    ) {
+      // Find the most recent date there is data from the participating sensors.
+      let keys = [];
+      sensor_ids.forEach(function(sensor_id) {
+        if (self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id] !== undefined) {
+          keys = keys.concat(Object.keys(
+            self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id]
+          ));
+        }
+      });
+
+      let hour;
+      let minute;
+      if (keys.length > 0) {
+        keys.sort();
+        const key_parts = keys[keys.length - 1].split(':');
+        hour = key_parts[0];
+        minute = key_parts[1];
+      } else {
+        hour = 0;
+        minute = 0;
+      }
+
+      this.date_m_ = moment()
+        .hour(hour)
+        .minute(minute)
+        .second(0);
+    } else {
+      this.date_m_ = moment()
+        .subtract(
+          beestat.setting('visualize.range_dynamic'),
+          'day'
+        )
+        .hour(0)
+        .minute(0)
+        .second(0);
+    }
   } else {
     this.date_m_ = moment(
       beestat.setting('visualize.range_static_begin') + ' 00:00:00'
