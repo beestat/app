@@ -625,7 +625,7 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
     if (beestat.setting('visualize.data_type') === 'temperature') {
       min = beestat.temperature(min);
       max = beestat.temperature(max);
-      units = beestat.setting('temperature_unit');
+      units = beestat.setting('units.temperature');
     } else {
       min *= 100;
       max *= 100;

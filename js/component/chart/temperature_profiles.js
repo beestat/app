@@ -17,7 +17,7 @@ beestat.extend(beestat.component.chart.temperature_profiles, beestat.component.c
  */
 beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_labels_formatter_ = function() {
   return function() {
-    return this.value + beestat.setting('temperature_unit');
+    return this.value + beestat.setting('units.temperature');
   };
 };
 
@@ -261,7 +261,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_yAxis_ = func
       'labels': {
         'style': {'color': beestat.style.color.gray.base},
         'formatter': function() {
-          return this.value + beestat.setting('temperature_unit');
+          return this.value + beestat.setting('units.temperature');
         }
       },
       'min': y_min,
@@ -296,7 +296,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_forma
       var value = beestat.temperature({
         'temperature': point.y,
         'units': true,
-        'input_temperature_unit': beestat.setting('temperature_unit'),
+        'input_temperature_unit': beestat.setting('units.temperature'),
         'delta': true,
         'type': 'string'
       }) + ' / h';
@@ -321,7 +321,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_tooltip_forma
         'temperature': this.x,
         'round': 0,
         'units': true,
-        'input_temperature_unit': beestat.setting('temperature_unit')
+        'input_temperature_unit': beestat.setting('units.temperature')
       }),
       sections
     );
@@ -380,7 +380,7 @@ beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_ = func
           'useHTML': true,
           'text': 'Now: ' + beestat.temperature({
             'temperature': this.data_.metadata.chart.outdoor_temperature,
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'units': true,
             'round': 0
           })

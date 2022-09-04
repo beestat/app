@@ -28,7 +28,13 @@ beestat.component.tile.floor_plan_group.prototype.get_text_ = function() {
   const line_2_parts = [];
   let room_count = this.floor_plan_group_.rooms.length;
   line_2_parts.push(room_count + (room_count === 1 ? ' Room' : ' Rooms'));
-  line_2_parts.push(beestat.floor_plan.get_area_group(this.floor_plan_group_).toLocaleString() + ' sqft');
+  line_2_parts.push(
+    beestat.area({
+      'area': beestat.floor_plan.get_area_group(this.floor_plan_group_),
+      'round': 0,
+      'units': true
+    })
+  );
 
   return [
     this.floor_plan_group_.name,

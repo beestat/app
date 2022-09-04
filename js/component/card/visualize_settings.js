@@ -176,6 +176,10 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
         'type': type,
         'required': true
       })
+      .set_transform({
+        'type': 'round',
+        'decimals': 1
+      })
       .set_value(
         beestat.temperature(beestat.setting(
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
@@ -184,15 +188,11 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
       .set_width(50);
     min.addEventListener('change', function() {
       if (min.meets_requirements() === true) {
-        // Round to one decimal.
-        const value = Math.round(min.get_value() * 10) / 10;
-        min.set_value(value, false);
-
         beestat.setting(
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min',
           beestat.temperature({
-            'temperature': value,
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'temperature': min.get_value(),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'output_temperature_unit': '°F'
           })
         );
@@ -230,7 +230,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
           'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max',
           beestat.temperature({
             'temperature': max.get_value(),
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'output_temperature_unit': '°F'
           })
         );
@@ -268,7 +268,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
     span = document.createElement('span');
     switch (beestat.setting('visualize.data_type')) {
     case 'temperature':
-      span.innerText = beestat.setting('temperature_unit');
+      span.innerText = beestat.setting('units.temperature');
       break;
     case 'occupancy':
       span.innerText = '%';

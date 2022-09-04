@@ -22,7 +22,7 @@ beestat.component.metric.setback.prototype.is_temperature_delta_ = true;
  * @return {string} The units for this metric.
  */
 beestat.component.metric.setback.prototype.get_units_ = function() {
-  return beestat.setting('temperature_unit');
+  return beestat.setting('units.temperature');
 };
 
 /**

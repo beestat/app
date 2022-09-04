@@ -20,7 +20,7 @@ beestat.component.metric.balance_point.prototype.is_temperature_ = true;
  * @return {string} The units for this metric.
  */
 beestat.component.metric.balance_point.prototype.get_units_ = function() {
-  return beestat.setting('temperature_unit');
+  return beestat.setting('units.temperature');
 };
 
 /**

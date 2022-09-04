@@ -62,8 +62,6 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'comparison_region': 'global',
     'comparison_property_type': 'similar',
 
-    'temperature_unit': '°F',
-
     'first_run': true,
 
     'thermostat.#.profile.ignore_solar_gain': false,

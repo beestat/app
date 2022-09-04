@@ -5,7 +5,7 @@ beestat.floor_plan = {};
  *
  * @param {number} floor_plan_id
  *
- * @return {number} The area of the floor plan in sqft.
+ * @return {number} The area of the floor plan as in².
  */
 beestat.floor_plan.get_area = function(floor_plan_id) {
   const floor_plan = beestat.cache.floor_plan[floor_plan_id];
@@ -24,7 +24,7 @@ beestat.floor_plan.get_area = function(floor_plan_id) {
  * @param {object} group The group.
  * @param {boolean} round Whether or not to round the result.
  *
- * @return {number} Area of the group in sqft.
+ * @return {number} Area of the group as in².
  */
 beestat.floor_plan.get_area_group = function(group, round = true) {
   let area = 0;
@@ -46,10 +46,10 @@ beestat.floor_plan.get_area_group = function(group, round = true) {
  * @param {object} room The room.
  * @param {boolean} round Whether or not to round the result.
  *
- * @return {number} Area of the room in sqft.
+ * @return {number} Area of the room as in².
  */
 beestat.floor_plan.get_area_room = function(room, round = true) {
-  let area = Math.abs(ClipperLib.Clipper.Area(room.points) / 144);
+  let area = Math.abs(ClipperLib.Clipper.Area(room.points));
 
   if (round === true) {
     return Math.round(area);

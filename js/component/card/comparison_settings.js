@@ -299,7 +299,7 @@ beestat.component.card.comparison_settings.prototype.decorate_detail_ = function
   }
 
   if (comparison_attributes.property_square_feet !== undefined) {
-    strings.push(this.get_comparison_string_(comparison_attributes.property_square_feet, 'sqft'));
+    strings.push(this.get_comparison_string_(comparison_attributes.property_square_feet, 'ft²'));
   } else {
     strings.push('Any square footage');
   }

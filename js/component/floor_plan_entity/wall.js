@@ -46,9 +46,6 @@ beestat.component.floor_plan_entity.wall.prototype.decorate_line_ = function(par
   this.path_.addEventListener('mousedown', function() {
     self.dispatchEvent('mousedown');
   });
-  // this.path_.addEventListener('touchstart', function() {
-  //   self.dispatchEvent('mousedown');
-  // });
 
   this.decorate_text_(parent);
 
@@ -236,14 +233,24 @@ beestat.component.floor_plan_entity.wall.prototype.update_text_ = function() {
     this.text_.style.fontSize = '11px';
   }
 
-  const length_feet = Math.floor(length / 12);
-  const length_inches = length % 12;
+  let length_string;
+  if (beestat.setting('units.distance') === 'ft') {
+    const length_feet = Math.floor(length / 12);
+    const length_inches = length % 12;
 
-  let length_parts = [];
-  length_parts.push(length_feet + '\'');
-  length_parts.push(length_inches + '"');
+    let length_parts = [];
+    length_parts.push(length_feet + '\'');
+    length_parts.push(length_inches + '"');
 
-  const length_string = length_parts.join(' ');
+    length_string = length_parts.join(' ');
+  } else {
+    length_string = beestat.distance({
+      'distance': length,
+      'units': true,
+      'round': 2
+    });
+  }
+
   this.text_path_.textContent = length_string;
 };
 

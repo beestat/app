@@ -331,7 +331,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
     .set_label('Floor Name')
     .set_placeholder('Unnamed Floor')
     .set_width('100%')
-    .set_maxlength('50')
+    .set_maxlength(50)
     .set_requirements({
       'required': true
     })
@@ -354,26 +354,41 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
   div = $.createElement('div');
   grid.appendChild(div);
   const elevation_input = new beestat.component.input.text()
-    .set_label('Elevation (feet)')
-    .set_placeholder(this.state_.active_group.elevation / 12)
-    .set_value(this.state_.active_group.elevation / 12 || '')
+    .set_label('Elevation (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': this.state_.active_group.elevation,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': this.state_.active_group.elevation,
+      'round': 2
+    }) || '')
     .set_width('100%')
-    .set_maxlength('5')
+    .set_maxlength(5)
     .set_requirements({
-      'type': 'integer',
-      'min_value': -50,
-      'max_value': 50,
+      'type': 'decimal',
+      'min_value': beestat.distance(-600),
+      'max_value': beestat.distance(600),
       'required': true
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
     })
     .render(div);
 
   elevation_input.addEventListener('change', function() {
     if (elevation_input.meets_requirements() === true) {
-      self.state_.active_group.elevation = elevation_input.get_value() * 12;
+      self.state_.active_group.elevation = beestat.distance({
+        'distance': elevation_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
       self.update_floor_plan_();
       self.rerender();
     } else {
-      elevation_input.set_value(self.state_.active_group.elevation / 12, false);
+      elevation_input.set_value(beestat.distance(self.state_.active_group.elevation), false);
       new beestat.component.modal.floor_plan_elevation_help().render();
     }
   });
@@ -382,21 +397,36 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
   div = $.createElement('div');
   grid.appendChild(div);
   const height_input = new beestat.component.input.text()
-    .set_label('Ceiling Height (feet)')
-    .set_placeholder(this.state_.active_group.height / 12)
-    .set_value(this.state_.active_group.height / 12 || '')
+    .set_label('Ceiling Height (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': this.state_.active_group.height,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': this.state_.active_group.height,
+      'round': 2
+    }) || '')
     .set_width('100%')
-    .set_maxlength('4')
+    .set_maxlength(5)
     .set_requirements({
-      'type': 'integer',
-      'min_value': 1,
+      'type': 'decimal',
+      'min_value': beestat.distance(60),
       'required': true
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
     })
     .render(div);
 
   height_input.addEventListener('change', function() {
     if (height_input.meets_requirements() === true) {
-      self.state_.active_group.height = height_input.get_value() * 12;
+      self.state_.active_group.height = beestat.distance({
+        'distance': height_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
       self.update_floor_plan_();
     } else {
       height_input.set_value(self.state_.active_group.height, false);
@@ -433,7 +463,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
     .set_label('Room Name')
     .set_placeholder('Unnamed Room')
     .set_width('100%')
-    .set_maxlength('50')
+    .set_maxlength(50)
     .set_requirements({
       'required': true
     })
@@ -456,21 +486,36 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   div = $.createElement('div');
   grid.appendChild(div);
   const elevation_input = new beestat.component.input.text()
-    .set_label('Elevation (feet)')
-    .set_placeholder(this.state_.active_group.elevation / 12)
-    .set_value(this.state_.active_room_entity.get_room().elevation / 12 || '')
+    .set_label('Elevation (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': this.state_.active_group.elevation,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': this.state_.active_room_entity.get_room().elevation,
+      'round': 2
+    }) || '')
     .set_width('100%')
-    .set_maxlength('5')
+    .set_maxlength(5)
     .set_requirements({
-      'min_value': -50,
-      'max_value': 50,
-      'type': 'integer'
+      'type': 'decimal',
+      'min_value': beestat.distance(-600),
+      'max_value': beestat.distance(600)
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
     })
     .render(div);
 
   elevation_input.addEventListener('change', function() {
     if (elevation_input.meets_requirements() === true) {
-      self.state_.active_room_entity.get_room().elevation = elevation_input.get_value() * 12;
+      self.state_.active_room_entity.get_room().elevation = beestat.distance({
+        'distance': elevation_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
       self.update_floor_plan_();
       self.rerender();
     } else {
@@ -483,20 +528,35 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   div = $.createElement('div');
   grid.appendChild(div);
   const height_input = new beestat.component.input.text()
-    .set_label('Ceiling Height (feet)')
-    .set_placeholder(this.state_.active_group.height / 12)
-    .set_value(this.state_.active_room_entity.get_room().height / 12 || '')
+    .set_label('Ceiling Height (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': this.state_.active_group.height,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': this.state_.active_room_entity.get_room().height,
+      'round': 2
+    }) || '')
     .set_width('100%')
-    .set_maxlength('4')
+    .set_maxlength(5)
     .set_requirements({
-      'type': 'integer',
-      'min_value': 1
+      'type': 'decimal',
+      'min_value': beestat.distance(60)
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
     })
     .render(div);
 
   height_input.addEventListener('change', function() {
     if (height_input.meets_requirements() === true) {
-      self.state_.active_room_entity.get_room().height = height_input.get_value() * 12;
+      self.state_.active_room_entity.get_room().height = beestat.distance({
+        'distance': height_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
       self.update_floor_plan_();
     } else {
       height_input.set_value('', false);

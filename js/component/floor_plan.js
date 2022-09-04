@@ -657,14 +657,20 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
   if (this.state_.active_room_entity !== undefined) {
     parts.push(this.state_.active_room_entity.get_room().name || 'Unnamed Room');
     parts.push(
-      beestat.floor_plan.get_area_room(this.state_.active_room_entity.get_room())
-        .toLocaleString() + ' sqft'
+      beestat.area({
+        'area': beestat.floor_plan.get_area_room(this.state_.active_room_entity.get_room()),
+        'round': 0,
+        'units': true
+      })
     );
   } else {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
     parts.push(
-      beestat.floor_plan.get_area_group(this.state_.active_group)
-        .toLocaleString() + ' sqft'
+      beestat.area({
+        'area': beestat.floor_plan.get_area_group(this.state_.active_group),
+        'round': 0,
+        'units': true
+      })
     );
   }
   this.infobox_container_.innerText(parts.join(' • '));

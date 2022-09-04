@@ -2,6 +2,7 @@
  * A tile representing a floor plan.
  *
  * @param {integer} floor_plan_id
+ *
  */
 beestat.component.tile.floor_plan = function(floor_plan_id) {
   this.floor_plan_id_ = floor_plan_id;
@@ -30,7 +31,13 @@ beestat.component.tile.floor_plan.prototype.get_text_ = function() {
   const line_2_parts = [];
   let floor_count = floor_plan.data.groups.length;
   line_2_parts.push(floor_count + (floor_count === 1 ? ' Floor' : ' Floors'));
-  line_2_parts.push(beestat.floor_plan.get_area(this.floor_plan_id_).toLocaleString() + ' sqft');
+  line_2_parts.push(
+    beestat.area({
+      'area': beestat.floor_plan.get_area(this.floor_plan_id_),
+      'round': 0,
+      'units': true
+    })
+  );
 
   return [
     floor_plan.name,

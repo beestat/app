@@ -144,7 +144,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
          */
         var increment;
         var fixed;
-        if (beestat.setting('temperature_unit') === '°F') {
+        if (beestat.setting('units.temperature') === '°F') {
           increment = 1;
           fixed = 0;
         } else {

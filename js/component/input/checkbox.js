@@ -36,7 +36,7 @@ beestat.component.input.checkbox.prototype.decorate_ = function(parent) {
 
   const span = document.createElement('span');
   span.style.cursor = 'pointer';
-  span.style.marginLeft = (beestat.style.size.gutter / 2) + 'px';
+  span.style.paddingLeft = (beestat.style.size.gutter / 4) + 'px';
   span.innerText = this.label_;
   span.addEventListener('click', function() {
     self.input_.click();

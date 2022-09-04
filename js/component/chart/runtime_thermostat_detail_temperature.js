@@ -131,7 +131,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'labels': {
         'style': {'color': beestat.style.color.gray.base},
         'formatter': function() {
-          return this.value + beestat.setting('temperature_unit');
+          return this.value + beestat.setting('units.temperature');
         }
       }
     },
@@ -288,7 +288,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
 
         value = beestat.temperature({
           'temperature': value,
-          'input_temperature_unit': beestat.setting('temperature_unit'),
+          'input_temperature_unit': beestat.setting('units.temperature'),
           'units': true
         });
       } else if (point.series_code.includes('humidity') === true) {

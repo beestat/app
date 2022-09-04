@@ -80,7 +80,7 @@ beestat.component.input.prototype.meets_requirements = function() {
       this.requirements_.regexp = /^-?\d+$/;
       break;
     case 'decimal':
-      this.requirements_.regexp = /^-?\d+(?:\.\d+)?$/;
+      this.requirements_.regexp = /^-?\d*(?:\.\d+)?$/;
       break;
     }
 

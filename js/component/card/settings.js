@@ -16,6 +16,73 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
     beestat.setting('thermostat_id')
   ];
 
+  /**
+   * Units
+   */
+  parent.appendChild(
+    $.createElement('p')
+      .style('font-weight', '400')
+      .innerText('Units')
+  );
+
+  // Temperature
+  parent.appendChild(
+    $.createElement('p')
+      .innerText('Temperature')
+  );
+
+  const temperature_radio_group = new beestat.component.radio_group()
+    .set_arrangement('horizontal');
+  [
+    '°F',
+    '°C'
+  ].forEach(function(temperature_unit) {
+    temperature_radio_group.add_radio(
+      new beestat.component.input.radio()
+        .set_label(temperature_unit)
+        .set_value(temperature_unit)
+        .set_checked(beestat.setting('units.temperature') === temperature_unit)
+    );
+  });
+
+  temperature_radio_group.addEventListener('change', function() {
+    beestat.setting('units.temperature', temperature_radio_group.get_value());
+  });
+
+  temperature_radio_group.render(parent);
+
+  // Distance
+  parent.appendChild(
+    $.createElement('p')
+      .innerText('Distance / Area')
+  );
+
+  const distance_radio_group = new beestat.component.radio_group()
+    .set_arrangement('horizontal');
+  [
+    'ft',
+    'm'
+  ].forEach(function(distance_unit) {
+    distance_radio_group.add_radio(
+      new beestat.component.input.radio()
+        .set_label(distance_unit + ' / ' + distance_unit + '²')
+        .set_value(distance_unit)
+        .set_checked(beestat.setting('units.distance') === distance_unit)
+    );
+  });
+
+  distance_radio_group.addEventListener('change', function() {
+    beestat.setting({
+      'units.distance': distance_radio_group.get_value(),
+      'units.area': distance_radio_group.get_value() + '²'
+    });
+  });
+
+  distance_radio_group.render(parent);
+
+  /**
+   * Thermosat Summary
+   */
   parent.appendChild(
     $.createElement('p')
       .style('font-weight', '400')
@@ -58,6 +125,9 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
     );
   });
 
+  /**
+   * Temperature Profiles
+   */
   parent.appendChild(
     $.createElement('p')
       .style({

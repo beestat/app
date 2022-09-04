@@ -19,6 +19,22 @@ beestat.component.input.text = function() {
   });
 
   this.input_.addEventListener('change', function() {
+    if (
+      self.transform_ !== undefined &&
+      self.meets_requirements() === true
+    ) {
+      switch (self.transform_.type) {
+      case 'round':
+        // If the value is a number, then round it.
+        if (new RegExp(/^[\d\.]+$/).test(self.input_.value) === true) {
+          self.input_.value = Math.round(
+            self.input_.value * 10 ** self.transform_.decimals
+          ) / 10 ** self.transform_.decimals;
+        }
+        break;
+      }
+    }
+
     self.dispatchEvent('change');
   });
 
@@ -209,6 +225,19 @@ beestat.component.input.text.prototype.set_inputmode = function(inputmode) {
  */
 beestat.component.input.text.prototype.set_maxlength = function(maxlength) {
   this.input_.setAttribute('maxlength', maxlength);
+
+  return this;
+};
+
+/**
+ * Set the auto format properties.
+ *
+ * @param {object} transform
+ *
+ * @return {beestat.component.input.text} This.
+ */
+beestat.component.input.text.prototype.set_transform = function(transform) {
+  this.transform_ = transform;
 
   return this;
 };

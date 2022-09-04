@@ -6,7 +6,7 @@
  * @param {object} args Instructions on how to format:
  *   temperature (required) - Temperature to work with
  *   input_temperature_unit (optional, default °F) - Input temperature unit
- *   output_temperature_unit (optional, default °F|°C) - Input temperature unit; default matches setting.
+ *   output_temperature_unit (optional, default current setting) - Output temperature unit; default matches setting.
  *   convert (optional, default true) - Whether or not to convert to Celcius if necessary
  *   delta (optional, default false) - Whether or not the convert action is for a delta instead of a normal value
  *   round (optional, default 1) - Number of decimal points to round to
@@ -29,7 +29,7 @@ beestat.temperature = function(args) {
   );
   var output_temperature_unit = beestat.default_value(
     args.output_temperature_unit,
-    beestat.setting('temperature_unit')
+    beestat.setting('units.temperature')
   );
   var delta = beestat.default_value(args.delta, false);
   var round = beestat.default_value(args.round, 1);

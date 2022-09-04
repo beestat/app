@@ -170,8 +170,38 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       document.title = 'beestat';
     }
 
-    // Set the active temperature unit.
-    beestat.setting('temperature_unit', thermostat.temperature_unit);
+    // Set the temperature unit if it hasn't been set before.
+    if (beestat.setting('units.temperature') === undefined) {
+      beestat.setting('units.temperature', thermostat.temperature_unit);
+    }
+
+    // Set the distance/area units if they hasn't been set before.
+    const imperial_countries = [
+      'USA',
+      'CAN'
+    ];
+    if (
+      beestat.setting('units.distance') === undefined &&
+      thermostat.address_id !== null &&
+      beestat.address.is_valid(thermostat.address_id) === true
+    ) {
+      const address = beestat.cache.address[thermostat.address_id];
+      beestat.setting(
+        'units.distance',
+        imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft' : 'm'
+      );
+    }
+    if (
+      beestat.setting('units.area') === undefined &&
+      thermostat.address_id !== null &&
+      beestat.address.is_valid(thermostat.address_id) === true
+    ) {
+      const address = beestat.cache.address[thermostat.address_id];
+      beestat.setting(
+        'units.area',
+        imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft²' : 'm²'
+      );
+    }
 
     // Rename series if there are multiple stages.
     if (beestat.thermostat.get_stages(thermostat.thermostat_id, 'heat') > 1) {

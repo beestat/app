@@ -3,7 +3,7 @@
  */
 beestat.component.radio_group = function() {
   this.radios_ = [];
-  this.name_ = Math.random();
+  this.name_ = window.crypto.randomUUID();
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.radio_group, beestat.component);
@@ -16,33 +16,42 @@ beestat.extend(beestat.component.radio_group, beestat.component);
 beestat.component.radio_group.prototype.decorate_ = function(parent) {
   const self = this;
 
-  const container = $.createElement('div');
-  container.style('margin-bottom', beestat.style.size.gutter);
+  // Outer container
+  const container = document.createElement('div');
+  if (this.arrangement_ === 'horizontal') {
+    Object.assign(container.style, {
+      'display': 'flex',
+      'grid-gap': `${beestat.style.size.gutter}px`
+    });
+  }
+  parent.appendChild(container);
 
+  // Radios
   this.radios_.forEach(function(radio) {
-    radio.set_name('name', this.name_);
+    radio.set_name(self.name_);
 
     radio.addEventListener('change', function() {
       self.value_ = radio.get_value();
       self.dispatchEvent('change');
     });
 
-    radio.render(container);
+    radio.render($(container));
   });
-
-  parent.appendChild(container);
 };
 
 /**
  * Add a radio to this group.
  *
  * @param {beestat.component.radio} radio The radio to add.
+ *
+ * @return {beestat.component.radio_group}
  */
 beestat.component.radio_group.prototype.add_radio = function(radio) {
   this.radios_.push(radio);
   if (this.rendered_ === true) {
     this.rerender();
   }
+  return this;
 };
 
 /**
@@ -68,4 +77,17 @@ beestat.component.radio_group.prototype.get_value = function() {
   }
 
   return null;
+};
+
+/**
+ * Set the arrangement of the radio buttons in the group.
+ *
+ * @param {string} arrangement horizontal|vertical
+ *
+ * @return {beestat.component.radio_group}
+ */
+beestat.component.radio_group.prototype.set_arrangement = function(arrangement) {
+  this.arrangement_ = arrangement;
+
+  return this;
 };

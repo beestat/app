@@ -187,7 +187,7 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ 
           'color': beestat.style.color.gray.base
         },
         'formatter': function() {
-          return this.value + beestat.setting('temperature_unit');
+          return this.value + beestat.setting('units.temperature');
         }
       }
     }
@@ -234,14 +234,14 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
         ) {
           value = beestat.temperature({
             'temperature': values.min_outdoor_temperature,
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'units': true,
             'round': 0
           });
           value += ' to ';
           value += beestat.temperature({
             'temperature': values.max_outdoor_temperature,
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'units': true,
             'round': 0
           });
@@ -252,7 +252,7 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
         color = point.series.color;
         value = beestat.temperature({
           'temperature': values.avg_outdoor_temperature,
-          'input_temperature_unit': beestat.setting('temperature_unit'),
+          'input_temperature_unit': beestat.setting('units.temperature'),
           'units': true,
           'round': 0
         });

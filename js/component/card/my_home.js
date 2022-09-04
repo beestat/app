@@ -186,7 +186,7 @@ beestat.component.card.my_home.prototype.decorate_property_ = function(parent) {
       .set_background_color(beestat.style.color.purple.base)
       .set_text_color('#fff')
       .set_icon('view_quilt')
-      .set_text(Number(thermostat.property.square_feet).toLocaleString() + ' sqft'));
+      .set_text(Number(thermostat.property.square_feet).toLocaleString() + ' ft²'));
   }
 
   if (thermostat.property.age !== null) {

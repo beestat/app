@@ -118,7 +118,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       'labels': {
         'style': {'color': beestat.style.color.gray.base},
         'formatter': function() {
-          return this.value + beestat.setting('temperature_unit');
+          return this.value + beestat.setting('units.temperature');
         }
       }
     }
@@ -230,7 +230,7 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
         } else {
           value = beestat.temperature({
             'temperature': point.value,
-            'input_temperature_unit': beestat.setting('temperature_unit'),
+            'input_temperature_unit': beestat.setting('units.temperature'),
             'units': true
           });
           point_value = point.value;

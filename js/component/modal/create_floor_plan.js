@@ -92,27 +92,34 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
   }
 
   // Ceiling height
-  (new beestat.component.title('How tall are your ceilings (feet)?')).render(parent);
+  (new beestat.component.title('How tall are your ceilings (' + beestat.setting('units.distance') + ')?')).render(parent);
 
-  const height_input = new beestat.component.input.text()
+  const ceiling_height_input = new beestat.component.input.text()
     .set_icon('arrow_expand_vertical')
-    .set_maxlength(2)
+    .set_maxlength(5)
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
     .set_requirements({
-      'min_value': 1,
-      'type': 'integer',
+      'min_value': beestat.distance(60),
+      'type': 'decimal',
       'required': true
     })
     .render(parent);
 
-  height_input.addEventListener('change', function() {
-    self.state_.height = height_input.get_value();
-    self.state_.error.height = !height_input.meets_requirements();
+  ceiling_height_input.addEventListener('change', function() {
+    self.state_.ceiling_height = ceiling_height_input.get_value();
+    self.state_.error.height = !ceiling_height_input.meets_requirements();
   });
 
-  if (self.state_.height !== undefined) {
-    height_input.set_value(self.state_.height);
+  if (self.state_.ceiling_height !== undefined) {
+    ceiling_height_input.set_value(self.state_.ceiling_height);
   } else if (self.state_.error.height !== true) {
-    height_input.set_value(8);
+    ceiling_height_input.set_value(beestat.distance({
+      'distance': 96,
+      'round': 2
+    }));
   }
 
   // Address
@@ -203,6 +210,13 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
         return;
       }
 
+      const ceiling_height = beestat.distance({
+        'distance': self.state_.ceiling_height,
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+
       const attributes = {
         'name': self.state_.name
       };
@@ -212,7 +226,7 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
       attributes.data = {
         'groups': []
       };
-      let elevation = (self.state_.basement === true) ? (self.state_.height * -12) : 0;
+      let elevation = (self.state_.basement === true) ? (ceiling_height * -1) : 0;
       let floor = (self.state_.basement === true) ? 0 : 1;
       const ordinals = [
         'First',
@@ -229,12 +243,12 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
         attributes.data.groups.push({
           'name': floor === 0 ? 'Basement' : (ordinals[floor - 1] + ' Floor'),
           'elevation': elevation,
-          'height': self.state_.height * 12,
+          'height': ceiling_height,
           'rooms': []
         });
 
         floor++;
-        elevation += (self.state_.height * 12);
+        elevation += (ceiling_height);
       }
 
       new beestat.api()

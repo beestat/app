@@ -36,7 +36,7 @@ beestat.comparisons.get_attributes = function() {
       };
     }
 
-    // Always a 1000sqft size delta on both sides (total 2000 sqft).
+    // Always a 1000ft² size delta on both sides (total 2000 ft²).
     if (thermostat.property.square_feet !== null) {
       var property_square_feet_delta = 1000;
       var min_property_square_feet = Math.max(
