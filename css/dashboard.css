@@ -553,6 +553,8 @@ input[type=range]::-moz-range-thumb {
 .icon.wifi_strength_1_alert:before { content: "\F0920"; }
 .icon.wifi_strength_4:before { content: "\F0928"; }
 .icon.zigbee:before { content: "\F0D41"; }
+.icon.label:before { content: "\F0315"; }
+.icon.label_off:before { content: "\F0ACB"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }

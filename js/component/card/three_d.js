@@ -547,6 +547,24 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     .set_text_color(beestat.style.color.lightblue.base)
   );
 
+  let labels = false;
+
+  // Add room
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon('label_off')
+    .set_title('Auto-Rotate')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      labels = !labels;
+      this.set_icon(
+        'label' + (labels === false ? '_off' : '')
+      );
+      self.scene_.set_labels(labels);
+    })
+  );
+
   let auto_rotate = false;
 
   // Add room

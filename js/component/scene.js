@@ -8,6 +8,8 @@ beestat.component.scene = function(floor_plan_id, data) {
   this.floor_plan_id_ = floor_plan_id;
   this.data_ = data;
 
+  this.label_material_memo_ = [];
+
   beestat.component.apply(this, arguments);
 };
 beestat.extend(beestat.component.scene, beestat.component);
@@ -107,6 +109,13 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
 
   this.add_main_group_();
   this.add_floor_plan_();
+
+
+
+
+
+
+
 
   /**
    * Example of how to do a roof
@@ -450,11 +459,26 @@ beestat.component.scene.prototype.update_ = function() {
         color = beestat.style.rgb_to_hex(
           self.gradient_[Math.floor((self.gradient_.length - 1) * percentage)]
         );
+
+        // Labels
+        const label_sprite = self.rooms_[room.room_id].userData.label_sprite;
+        if (self.labels_ === true) {
+          label_sprite.material = self.get_label_material_(
+            beestat.temperature({
+              'temperature': value,
+              'units': true
+            })
+          );
+        } else {
+          label_sprite.material = self.get_label_material_();
+        }
       } else {
         color = beestat.style.color.gray.dark;
       }
 
       self.rooms_[room.room_id].material.color.setHex(color.replace('#', '0x'));
+
+
     });
   });
 
@@ -815,6 +839,48 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   this.rooms_[room.room_id] = mesh;
 
   layer.add(mesh);
+
+  /**
+   * LABEL
+   */
+  const label_material = this.get_label_material_();
+  const label_sprite = new THREE.Sprite(label_material);
+
+  // Scale to an appropriate-looking size.
+  const scale_x = 0.16;
+  const scale_y = scale_x * label_material.map.source.data.height / label_material.map.source.data.width;
+  label_sprite.scale.set(scale_x, scale_y, 1);
+
+  // Set center of sprite to bottom middle.
+  label_sprite.center.set(0.5, 0);
+
+  // Determine where the sprite will go.
+  const geojson_polygon = [];
+  room.points.forEach(function(point) {
+    geojson_polygon.push([
+      point.x,
+      point.y
+    ]);
+  });
+  const label_point = polylabel([geojson_polygon]);
+
+  /**
+   * Some arbitrary small number so the sprite is *just* above the room or
+   * when you view from directly above sometimes they disappear.
+   */
+  const z_offset = 1;
+
+  label_sprite.position.set(
+    room.x + label_point[0],
+    room.y + label_point[1],
+    mesh.position.z - z_offset
+  );
+  layer.add(label_sprite);
+
+  mesh.userData.label_sprite = label_sprite;
+  /**
+   * LABEL
+   */
 };
 
 /**
@@ -986,6 +1052,19 @@ beestat.component.scene.prototype.set_auto_rotate = function(auto_rotate) {
 };
 
 /**
+ * Set whether or not labels are enabled.
+ *
+ * @param {boolean} labels
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_labels = function(labels) {
+  this.labels_ = labels;
+
+  return this;
+};
+
+/**
  * Set the gradient.
  *
  * @param {boolean} gradient
@@ -1019,4 +1098,52 @@ beestat.component.scene.prototype.set_camera_state = function(camera_state) {
     this.camera_.quaternion,
     this.camera_.scale
   );
+};
+
+/**
+ * Get a material representing a label. Memoizes the result so the material
+ * can be re-used.
+ *
+ * @param {string} text
+ *
+ * @return {THREE.Material}
+ */
+beestat.component.scene.prototype.get_label_material_ = function(text = '') {
+  if (this.label_material_memo_[text] === undefined) {
+    /**
+     * Increasing the size of the canvas increases the resolution of the texture
+     * and thus makes it less blurry.
+     */
+    const canvas = document.createElement('canvas');
+    canvas.width = 120;
+    canvas.height = 30;
+
+    const context = canvas.getContext('2d');
+
+    // Debug red background
+    // context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    // context.fillRect(0, 0, canvas.width, canvas.height);
+
+    const font_size = canvas.height;
+    context.font = 'bold ' + font_size + 'px Montserrat';
+    context.fillStyle = '#fff';
+    context.textAlign = 'center';
+    context.fillText(
+      text,
+      canvas.width / 2,
+      canvas.height
+    );
+
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+
+    const material = new THREE.SpriteMaterial({
+      'map': texture,
+      'sizeAttenuation': false
+    });
+
+    this.label_material_memo_[text] = material;
+  }
+
+  return this.label_material_memo_[text];
 };

@@ -12,7 +12,8 @@
     "Sentry": true,
     "THREE": true,
     "SunCalc": true,
-    "ClipperLib": true
+    "ClipperLib": true,
+    "polylabel": true
   },
   "extends": "eslint:all",
   "rules": {
