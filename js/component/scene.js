@@ -1061,6 +1061,8 @@ beestat.component.scene.prototype.set_auto_rotate = function(auto_rotate) {
 beestat.component.scene.prototype.set_labels = function(labels) {
   this.labels_ = labels;
 
+  this.update_();
+
   return this;
 };
 
