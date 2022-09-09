@@ -26,11 +26,19 @@ beestat.component.card.three_d = function() {
     self.update_hud_();
   });
 
-  beestat.dispatcher.addEventListener('cache.data.three_d__runtime_sensor', function() {
+  const change_function = beestat.debounce(function() {
     self.state_.scene_camera_state = self.scene_.get_camera_state();
     self.get_data_(true);
     self.rerender();
-  });
+  }, 10);
+
+  beestat.dispatcher.addEventListener(
+    [
+      'cache.data.three_d__runtime_sensor',
+      'cache.data.three_d__runtime_thermostat'
+    ],
+    change_function
+  );
 
   beestat.component.card.apply(this, arguments);
 };
@@ -202,7 +210,10 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
   if (sensor_ids.length > 0) {
     if (true) {
-      if (beestat.cache.data.three_d__runtime_sensor === undefined) {
+      if (
+        beestat.cache.data.three_d__runtime_sensor === undefined ||
+        beestat.cache.data.three_d__runtime_thermostat === undefined
+      ) {
         // console.log('data is undefined need to load it');
         this.show_loading_('Fetching');
 
@@ -213,8 +224,11 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
         const operator = 'between';
 
         const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
+        const thermostat_ids = Object.keys(beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_));
         // if (sensor_ids.length > 0) {
           const api_call = new beestat.api();
+
+          // Sensor data
           sensor_ids.forEach(function(sensor_id) {
             api_call.add_call(
               'runtime_sensor',
@@ -232,13 +246,36 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
             );
           });
 
+          // Thermostat data
+          thermostat_ids.forEach(function(thermostat_id) {
+            api_call.add_call(
+              'runtime_thermostat',
+              'read',
+              {
+                'attributes': {
+                  'thermostat_id': thermostat_id,
+                  'timestamp': {
+                    'value': value,
+                    'operator': operator
+                  }
+                }
+              },
+              'runtime_thermostat_' + thermostat_id
+            );
+          });
+
           api_call.set_callback(function(response) {
-            var runtime_sensors = [];
-            for (var alias in response) {
-              var r = response[alias];
-              runtime_sensors = runtime_sensors.concat(r);
+            let runtime_sensors = [];
+            let runtime_thermostats = [];
+            for (let alias in response) {
+              if (alias.includes('runtime_sensor_') === true) {
+                runtime_sensors = runtime_sensors.concat(response[alias]);
+              } else {
+                runtime_thermostats = runtime_thermostats.concat(response[alias]);
+              }
             }
             beestat.cache.set('data.three_d__runtime_sensor', runtime_sensors);
+            beestat.cache.set('data.three_d__runtime_thermostat', runtime_thermostats);
           });
 
           api_call.send();
@@ -295,6 +332,9 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   const self = this;
 
   // Create the scene
+  if (this.scene_ !== undefined) {
+    this.scene_.dispose();
+  }
   this.scene_ = new beestat.component.scene(
     beestat.setting('visualize.floor_plan_id'),
     this.get_data_()
@@ -552,11 +592,12 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   // Add room
   tile_group.add_tile(new beestat.component.tile()
     .set_icon('label_off')
-    .set_title('Auto-Rotate')
+    .set_title('Labels')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function() {
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
       labels = !labels;
       this.set_icon(
         'label' + (labels === false ? '_off' : '')
@@ -574,7 +615,8 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function() {
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
       auto_rotate = !auto_rotate;
       this.set_icon(
         'restart' + (auto_rotate === false ? '_off' : '')
@@ -680,8 +722,6 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
       max = beestat.temperature(max);
       units = beestat.setting('units.temperature');
     } else {
-      min *= 100;
-      max *= 100;
       units = '%';
     }
 
@@ -719,6 +759,7 @@ beestat.component.card.three_d.prototype.get_data_ = function(force) {
   const self = this;
   if (this.data_ === undefined || force === true) {
     const sensor_ids_map = beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_);
+    const thermostat_ids_map = beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_);
 
     this.data_ = {
       'metadata': {
@@ -730,15 +771,51 @@ beestat.component.card.three_d.prototype.get_data_ = function(force) {
           'occupancy': {
             'min': Infinity,
             'max': -Infinity
+          },
+          'fan': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'compressor_heat_1': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'compressor_heat_2': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'auxiliary_heat_1': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'auxiliary_heat_2': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'compressor_cool_1': {
+            'min': Infinity,
+            'max': -Infinity
+          },
+          'compressor_cool_2': {
+            'min': Infinity,
+            'max': -Infinity
           }
         }
       },
       'series': {
         'temperature': {},
-        'occupancy': {}
+        'occupancy': {},
+        'fan': {},
+        'compressor_heat_1': {},
+        'compressor_heat_2': {},
+        'auxiliary_heat_1': {},
+        'auxiliary_heat_2': {},
+        'compressor_cool_1': {},
+        'compressor_cool_2': {}
       }
     };
 
+    // Sensors
     if (beestat.cache.data.three_d__runtime_sensor !== undefined) {
       // Add to data
       beestat.cache.data.three_d__runtime_sensor.forEach(function(runtime_sensor) {
@@ -765,33 +842,88 @@ beestat.component.card.three_d.prototype.get_data_ = function(force) {
             if (self.data_.series.occupancy[runtime_sensor.sensor_id][time] === undefined) {
               self.data_.series.occupancy[runtime_sensor.sensor_id][time] = [];
             }
-            self.data_.series.occupancy[runtime_sensor.sensor_id][time].push(runtime_sensor.occupancy === true ? 1 : 0);
+            self.data_.series.occupancy[runtime_sensor.sensor_id][time].push(runtime_sensor.occupancy === true ? 100 : 0);
           }
         }
       });
+    }
 
-      // Average data
-      for (let key in this.data_.series) {
-        for (let sensor_id in this.data_.series[key]) {
-          for (let time in this.data_.series[key][sensor_id]) {
-            this.data_.series[key][sensor_id][time] = this.data_.series[key][sensor_id][time].reduce(function(a, b) {
-              return a + b;
-            }) / this.data_.series[key][sensor_id][time].length;
+    // Thermostats
+    if (beestat.cache.data.three_d__runtime_thermostat !== undefined) {
+      // Add to data
+      beestat.cache.data.three_d__runtime_thermostat.forEach(function(runtime_thermostat) {
+        if (thermostat_ids_map[runtime_thermostat.thermostat_id] !== undefined) {
+          const timestamp_m = moment(runtime_thermostat.timestamp);
+          const time = timestamp_m.format('HH:mm');
+          [
+            'compressor_heat_1',
+            'compressor_heat_2',
+            'compressor_cool_1',
+            'compressor_cool_2'
+          ].forEach(function(series_key) {
+            const runtime_key = series_key.replace(
+              /compressor_(?:heat|cool)/,
+              'compressor'
+            );
+            if (
+              runtime_thermostat[runtime_key] !== null
+            ) {
+              if (self.data_.series[series_key][runtime_thermostat.thermostat_id] === undefined) {
+                self.data_.series[series_key][runtime_thermostat.thermostat_id] = {};
+              }
+              if (self.data_.series[series_key][runtime_thermostat.thermostat_id][time] === undefined) {
+                self.data_.series[series_key][runtime_thermostat.thermostat_id][time] = [];
+              }
+              self.data_.series[series_key][runtime_thermostat.thermostat_id][time].push(
+                (
+                  runtime_thermostat[runtime_key] > 0 &&
+                  runtime_thermostat.compressor_mode === series_key.substring(11, 15)
+                ) ? 1 : 0
+              );
+            }
+          });
 
-            // Set min/max
-            this.data_.metadata.series[key].min = Math.min(
-              this.data_.series[key][sensor_id][time],
-              this.data_.metadata.series[key].min
-            );
-            this.data_.metadata.series[key].max = Math.max(
-              this.data_.series[key][sensor_id][time],
-              this.data_.metadata.series[key].max
-            );
-          }
+          [
+            'auxiliary_heat_1',
+            'auxiliary_heat_2',
+            'fan'
+          ].forEach(function(key) {
+            if (runtime_thermostat[key] !== null) {
+              if (self.data_.series[key][runtime_thermostat.thermostat_id] === undefined) {
+                self.data_.series[key][runtime_thermostat.thermostat_id] = {};
+              }
+              if (self.data_.series[key][runtime_thermostat.thermostat_id][time] === undefined) {
+                self.data_.series[key][runtime_thermostat.thermostat_id][time] = [];
+              }
+              self.data_.series[key][runtime_thermostat.thermostat_id][time].push(runtime_thermostat[key] > 0 ? 1 : 0);
+            }
+          });
+        }
+      });
+    }
+
+    // Average data
+    for (let key in this.data_.series) {
+      for (let sensor_id in this.data_.series[key]) {
+        for (let time in this.data_.series[key][sensor_id]) {
+          this.data_.series[key][sensor_id][time] = this.data_.series[key][sensor_id][time].reduce(function(a, b) {
+            return a + b;
+          }) / this.data_.series[key][sensor_id][time].length;
+
+          // Set min/max
+          this.data_.metadata.series[key].min = Math.min(
+            this.data_.series[key][sensor_id][time],
+            this.data_.metadata.series[key].min
+          );
+          this.data_.metadata.series[key].max = Math.max(
+            this.data_.series[key][sensor_id][time],
+            this.data_.metadata.series[key].max
+          );
         }
       }
     }
   }
+
   return this.data_;
 };
 

@@ -14,8 +14,9 @@ beestat.component.scene = function(floor_plan_id, data) {
 };
 beestat.extend(beestat.component.scene, beestat.component);
 
-// beestat.component.scene.sun_light_intensity = 1;
-// beestat.component.scene.moon_light_intensity = 0.3;
+beestat.component.scene.layer_visible = 0;
+beestat.component.scene.layer_hidden = 1;
+beestat.component.scene.layer_outline = 2;
 
 /**
  * Brightness of the top-down light. This gives definition to the sides of
@@ -28,21 +29,6 @@ beestat.component.scene.directional_light_top_intensity = 0.25;
  * level of light to the scene.
  */
 beestat.component.scene.ambient_light_intensity = 0.3;
-
-// beestat.component.scene.ambient_light_intensity_sky = 0.4;
-// beestat.component.scene.moon_opacity = 0.9;
-
-// beestat.component.scene.turbidity = 10;
-// beestat.component.scene.rayleigh = 0.5;
-// beestat.component.scene.mie_coefficient = 0.001;
-// beestat.component.scene.mie_directional_g = 0.95;
-
-// beestat.component.scene.turbidity = 14;
-// beestat.component.scene.rayleigh = 0.7;
-// beestat.component.scene.mie_coefficient = 0.008;
-// beestat.component.scene.mie_directional_g = 0.9;
-
-// beestat.component.scene.shadow_map_size = 4096;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -82,8 +68,6 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
 
   this.debug_ = {
     'axes': false,
-    // 'directional_light_moon_helper': false,
-    // 'directional_light_sun_helper': false,
     'directional_light_top_helper': false,
     // 'grid': false,
     'watcher': false
@@ -93,53 +77,21 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.height_ = 500;
 
   this.add_scene_(parent);
-  // this.add_background_(parent);
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
+  this.add_raycaster_(parent);
   this.add_skybox_(parent);
-  // this.add_sky_();
-  // this.add_moon_();
-  // this.add_directional_light_moon_();
-  // this.add_directional_light_sun_();
   this.add_ambient_light_();
   this.add_directional_light_top_();
-  // this.add_ground_();
-  // this.add_ground_limited_();
 
   this.add_main_group_();
   this.add_floor_plan_();
 
-
-
-
-
-
-
-
-  /**
-   * Example of how to do a roof
-   *
-   * const geometry = new THREE.ConeGeometry(1.5, 1, 4, 1, false, Math.PI/4);
-   * const material = new THREE.MeshPhongMaterial({
-   *   'color': new THREE.Color(beestat.style.color.gray.dark)
-   * });
-   * const roof = new THREE.Mesh(
-   *   geometry,
-   *   material
-   * );
-   * roof.position.set(
-   *   1, 2.5, 1
-   * );
-   * roof.castShadow = true;
-   * roof.receiveShadow = true;
-   *
-   * this.scene_.add(roof);
-   */
-
   const animate = function() {
-    requestAnimationFrame(animate);
+    self.animation_frame_ = window.requestAnimationFrame(animate);
     self.controls_.update();
+    self.update_raycaster_();
     self.renderer_.render(self.scene_, self.camera_);
   };
   animate();
@@ -190,19 +142,8 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
     'antialias': true
   });
 
+  this.renderer_.setPixelRatio(window.devicePixelRatio);
   this.renderer_.setSize(this.width_, this.height_);
-
-  // this.renderer_.setSize(window.innerWidth, window.innerHeight);
-  // this.renderer_.shadowMap.enabled = true;
-  // this.renderer_.shadowMap.autoUpdate = false;
-
-  /*
-   * Added these to make the sky not look like crap.
-   * https://threejs.org/examples/webgl_shaders_sky.html
-   */
-  // this.renderer_.toneMapping = THREE.ACESFilmicToneMapping;
-  // this.renderer_.toneMappingExposure = 0.5;
-  // this.renderer_.toneMappingExposure = 0.2;
 
   parent[0].appendChild(this.renderer_.domElement);
 };
@@ -223,6 +164,9 @@ beestat.component.scene.prototype.add_camera_ = function() {
     far_plane
   );
 
+  this.camera_.layers.enable(beestat.component.scene.layer_visible);
+  this.camera_.layers.enable(beestat.component.scene.layer_outline);
+
   this.camera_.position.x = 400;
   this.camera_.position.y = 400;
   this.camera_.position.z = 400;
@@ -240,6 +184,110 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_.maxDistance = 1000;
   this.controls_.minDistance = 400;
   this.controls_.maxPolarAngle = Math.PI / 2.5;
+};
+
+/**
+ * Initialize a click.
+ *
+ * @param {Event} e
+ */
+beestat.component.scene.prototype.mousedown_handler_ = function(e) {
+  // Don't propagate to things under me.
+  e.stopPropagation();
+
+  this.mousemove_handler_ = this.mousemove_handler_.bind(this);
+  window.addEventListener('mousemove', this.mousemove_handler_);
+  window.addEventListener('touchmove', this.mousemove_handler_);
+
+  this.mouseup_handler_ = this.mouseup_handler_.bind(this);
+  window.addEventListener('mouseup', this.mouseup_handler_);
+  window.addEventListener('touchend', this.mouseup_handler_);
+
+  this.dragged_ = false;
+};
+
+/**
+ * Added after mousedown, so when the mouse moves just set dragged = true.
+ */
+beestat.component.scene.prototype.mousemove_handler_ = function() {
+  this.dragged_ = true;
+};
+
+/**
+ * Set an active mesh if it wasn't a drag.
+ */
+beestat.component.scene.prototype.mouseup_handler_ = function() {
+  window.removeEventListener('mousemove', this.mousemove_handler_);
+  window.removeEventListener('touchmove', this.mousemove_handler_);
+  window.removeEventListener('mouseup', this.mouseup_handler_);
+  window.removeEventListener('touchend', this.mouseup_handler_);
+
+  if (this.dragged_ === false) {
+    // Clear any active state
+    // if (this.active_mesh_ !== undefined) {
+    //   this.active_mesh_.userData.outline.visible = false;
+    // }
+
+    this.active_mesh_ = this.intersected_mesh_;
+    this.update_();
+  }
+};
+
+/**
+ * Add the raycaster.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.scene.prototype.add_raycaster_ = function() {
+  const self = this;
+
+  this.raycaster_ = new THREE.Raycaster();
+  this.raycaster_.layers.set(beestat.component.scene.layer_visible);
+  this.raycaster_pointer_ = new THREE.Vector2();
+
+  // TODO remove event listener on dispose
+  document.addEventListener('mousemove', function(e) {
+    const rect = self.renderer_.domElement.getBoundingClientRect();
+    self.raycaster_pointer_.x = ( ( e.clientX - rect.left ) / ( rect.right - rect.left ) ) * 2 - 1;
+    self.raycaster_pointer_.y = - ( ( e.clientY - rect.top ) / ( rect.bottom - rect.top) ) * 2 + 1;
+  });
+  // TODO remove event listener on dispose
+  this.renderer_.domElement.addEventListener('mousedown', this.mousedown_handler_.bind(this));
+  this.renderer_.domElement.addEventListener('touchstart', this.mousedown_handler_.bind(this));
+};
+
+/**
+ * Update the raycaster.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.scene.prototype.update_raycaster_ = function() {
+  if (this.raycaster_ !== undefined) {
+    this.raycaster_.setFromCamera(this.raycaster_pointer_, this.camera_);
+    const intersects = this.raycaster_.intersectObject(this.scene_);
+
+    // Clear any existing intersects.
+    if (this.intersected_mesh_ !== undefined) {
+      document.body.style.cursor = '';
+      this.intersected_mesh_.material.emissive.setHex(0x000000);
+      delete this.intersected_mesh_;
+    }
+
+    // Set intersect.
+    for (let i = 0; i < intersects.length; i++) {
+      if (intersects[i].object.type === 'Mesh') {
+        this.intersected_mesh_ = intersects[i].object;
+        break;
+      }
+    }
+
+    // Style intersect.
+    if (this.intersected_mesh_ !== undefined) {
+      this.intersected_mesh_.material.emissive.setHex(0xffffff);
+      this.intersected_mesh_.material.emissiveIntensity = 0.1;
+      document.body.style.cursor = 'pointer';
+    }
+  }
 };
 
 /**
@@ -273,114 +321,6 @@ beestat.component.scene.prototype.add_skybox_ = function() {
 };
 
 /**
- * Add the sky to the scene. This is a shader that draws on the inside of a
- * box really far away. The size of the sun can be tweaked with the
- * sunAngularDiameterCos shader parameter in threejs.js.
- *
- * The sky material uniforms are configured to make the sky look generally
- * nice. They are tweaked for the eclipse simulation to darken the sky.
- */
-/*beestat.component.scene.prototype.add_sky_ = function() {
-  this.sky_ = new THREE.Sky();
-
-  // Makes the sky box really big.
-  this.sky_.scale.setScalar(4500000);
-
-  this.sky_.material.uniforms.turbidity.value =
-    beestat.component.scene.turbidity;
-
-  this.sky_.material.uniforms.rayleigh.value =
-    beestat.component.scene.rayleigh;
-
-  this.sky_.material.uniforms.mieCoefficient.value =
-    beestat.component.scene.mie_coefficient;
-
-  this.sky_.material.uniforms.mieDirectionalG.value =
-    beestat.component.scene.mie_directional_g;
-
-  this.scene_.add(this.sky_);
-};*/
-
-/**
- * Adds a moon sprite to the scene. The scale is set arbitrarily to make it
- * roughly the size of the sun.
- */
-/*beestat.component.scene.prototype.add_moon_ = function() {
-  const map = new THREE.TextureLoader().load('img/moon.png');
-  const material = new THREE.SpriteMaterial({'map': map});
-  const scale = 700;
-
-  this.moon_ = new THREE.Sprite(material);
-  this.moon_.scale.set(scale, scale, scale);
-  // this.scene_.add(this.moon_);
-};*/
-
-/**
- * Adds a faint moon light so the moon can cast shadows at night.
- */
-/*beestat.component.scene.prototype.add_directional_light_moon_ = function() {
-  this.directional_light_moon_ = new THREE.DirectionalLight(
-    0xfffbab,
-    0.2
-  );
-  this.directional_light_moon_.castShadow = true;
-  this.directional_light_moon_.shadow.mapSize.width = beestat.component.scene.shadow_map_size;
-  this.directional_light_moon_.shadow.mapSize.height = beestat.component.scene.shadow_map_size;
-  this.directional_light_moon_.shadow.camera.left = -1000;
-  this.directional_light_moon_.shadow.camera.right = 1000;
-  this.directional_light_moon_.shadow.camera.top = 1000;
-  this.directional_light_moon_.shadow.camera.bottom = -1000;
-  this.directional_light_moon_.shadow.camera.far = 10000;
-  // this.scene_.add(this.directional_light_moon_);
-
-  if (this.debug_.directional_light_moon_helper === true) {
-    this.directional_light_moon_helper_ = new THREE.DirectionalLightHelper(
-      this.directional_light_moon_
-    );
-    this.scene_.add(this.directional_light_moon_helper_);
-
-    this.directional_light_moon_camera_helper_ = new THREE.CameraHelper(
-      this.directional_light_moon_.shadow.camera
-    );
-    this.scene_.add(this.directional_light_moon_camera_helper_);
-  }
-};*/
-
-/**
- * Add a strong sun light to the scene.
- */
-/*beestat.component.scene.prototype.add_directional_light_sun_ = function() {
-  // Directional light to cast shadows.
-  this.directional_light_sun_ = new THREE.DirectionalLight(
-    0xffffff,
-    beestat.component.scene.sun_light_intensity
-  );
-  this.directional_light_sun_.castShadow = true;
-  // this.directional_light_sun_.shadow.bias = -0.00009;
-  // this.directional_light_sun_.shadow.radius = 32;
-  this.directional_light_sun_.shadow.mapSize.width = beestat.component.scene.shadow_map_size;
-  this.directional_light_sun_.shadow.mapSize.height = beestat.component.scene.shadow_map_size;
-  this.directional_light_sun_.shadow.camera.left = -1000;
-  this.directional_light_sun_.shadow.camera.right = 1000;
-  this.directional_light_sun_.shadow.camera.top = 1000;
-  this.directional_light_sun_.shadow.camera.bottom = -1000;
-  this.directional_light_sun_.shadow.camera.far = 10000;
-  this.scene_.add(this.directional_light_sun_);
-
-  if (this.debug_.directional_light_sun_helper === true) {
-    this.directional_light_sun_helper_ = new THREE.DirectionalLightHelper(
-      this.directional_light_sun_
-    );
-    this.scene_.add(this.directional_light_sun_helper_);
-
-    this.directional_light_sun_camera_helper_ = new THREE.CameraHelper(
-      this.directional_light_sun_.shadow.camera
-    );
-    this.scene_.add(this.directional_light_sun_camera_helper_);
-  }
-};*/
-
-/**
  * Consistent directional light that provides definition to the edge of meshes
  * by lighting the top.
  */
@@ -405,10 +345,6 @@ beestat.component.scene.prototype.add_directional_light_top_ = function() {
  * Ambient lighting so nothing is shrouded in darkness.
  */
 beestat.component.scene.prototype.add_ambient_light_ = function() {
-  /**
-   * Base ambient light to keep everything visible (mostly at night). The
-   * intensity of this light does not change.
-   */
   this.scene_.add(new THREE.AmbientLight(
     0xffffff,
     beestat.component.scene.ambient_light_intensity
@@ -416,7 +352,7 @@ beestat.component.scene.prototype.add_ambient_light_ = function() {
 };
 
 /**
- * Set the date and thus the position of the sun/moon.
+ * Update the scene based on the currently set date.
  */
 beestat.component.scene.prototype.update_ = function() {
   const self = this;
@@ -428,6 +364,16 @@ beestat.component.scene.prototype.update_ = function() {
   // Set the color of each room
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
+      const value_sprite = self.rooms_[room.room_id].userData.sprites.value;
+      const icon_sprite = self.rooms_[room.room_id].userData.sprites.icon;
+
+      // Room outline
+      if (self.rooms_[room.room_id] === self.active_mesh_) {
+        self.rooms_[room.room_id].userData.outline.visible = true;
+      } else {
+        self.rooms_[room.room_id].userData.outline.visible = false;
+      }
+
       let color;
       if (
         room.sensor_id !== undefined &&
@@ -460,305 +406,107 @@ beestat.component.scene.prototype.update_ = function() {
           self.gradient_[Math.floor((self.gradient_.length - 1) * percentage)]
         );
 
+        // TODO this technically doesn't handle if both heating and cooling is active in a range
+        const sensor = beestat.cache.sensor[room.sensor_id];
+        let icon;
+        let icon_opacity;
+        if (
+          self.data_.series.compressor_cool_1[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.compressor_cool_1[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'snowflake';
+          icon_opacity = self.data_.series.compressor_cool_1[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.compressor_cool_2[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.compressor_cool_2[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'snowflake';
+          icon_opacity = self.data_.series.compressor_cool_2[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.compressor_heat_1[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.compressor_heat_1[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'fire';
+          icon_opacity = self.data_.series.compressor_heat_1[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.compressor_heat_2[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.compressor_heat_2[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'fire';
+          icon_opacity = self.data_.series.compressor_heat_2[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'fire';
+          icon_opacity = self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'fire';
+          icon_opacity = self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time];
+        } else if (
+          self.data_.series.fan[sensor.thermostat_id][time] !== undefined &&
+          self.data_.series.fan[sensor.thermostat_id][time] > 0
+        ) {
+          icon = 'fan';
+          icon_opacity = self.data_.series.fan[sensor.thermostat_id][time];
+        }
+        icon_opacity = Math.round(icon_opacity * 10) / 10;
+
         // Labels
-        const label_sprite = self.rooms_[room.room_id].userData.label_sprite;
-        if (self.labels_ === true) {
-          label_sprite.material = self.get_label_material_(
-            beestat.temperature({
-              'temperature': value,
-              'units': true
-            })
-          );
+        if (
+          self.labels_ === true ||
+          self.rooms_[room.room_id] === self.active_mesh_
+        ) {
+          switch (self.data_type_) {
+          case 'temperature':
+            value_sprite.material = self.get_label_material_({
+              'type': 'value',
+              'value': beestat.temperature({
+                'temperature': value,
+                'type': 'string',
+                'units': true
+              })
+            });
+            icon_sprite.material = self.get_label_material_({
+              'type': 'icon',
+              'icon': icon,
+              'color': 'rgba(255, 255, 255, ' + icon_opacity + ')'
+            });
+            break;
+          case 'occupancy':
+            value_sprite.material = self.get_label_material_({
+              'type': 'value',
+              'value': Math.round(value) + '%'
+            });
+            icon_sprite.material = self.get_blank_label_material_();
+            break;
+          }
         } else {
-          label_sprite.material = self.get_label_material_();
+          value_sprite.material = self.get_blank_label_material_();
+          icon_sprite.material = self.get_blank_label_material_();
         }
       } else {
         color = beestat.style.color.gray.dark;
+        value_sprite.material = self.get_blank_label_material_();
+        icon_sprite.material = self.get_blank_label_material_();
       }
 
       self.rooms_[room.room_id].material.color.setHex(color.replace('#', '0x'));
-
-
     });
   });
 
-  let address;
-  if (floor_plan.address_id !== null) { // todo should be undefined?
-    address = beestat.cache.address[floor_plan.address_id];
-  } else {
-    address = {
-      'normalized': {
-        'metadata': {
-          'latitude': 0,
-          'longitude': 0
-        }
-      }
-    };
-  }
-
-
-  // After sunset may need to hide the sun light source...or maybe wean it's brightness off or something.
-
-  // TODO TEMP TO KEEP LIGHTING CONSISTENT
-  // const date = new Date('2022-08-16 12:00:00');
-  // const date = this.date_.toDate();
-  /*const date = moment()
-    .hour(12)
-    .minute(0)
-    .second(0)
-    .toDate();
-
-  const sun_object_vector = new THREE.Vector3();
-  const moon_object_vector = new THREE.Vector3();
-
-  const sun_light_vector = new THREE.Vector3();
-  const moon_light_vector = new THREE.Vector3();
-
-  // Get sun and moon positions.
-  const sun_position = SunCalc.getPosition(
-    date,
-    address.normalized.metadata.latitude,
-    address.normalized.metadata.longitude
-  );
-  const moon_position = SunCalc.getMoonPosition(
-    date,
-    address.normalized.metadata.latitude,
-    address.normalized.metadata.longitude
-  );
-  const moon_illumination = SunCalc.getMoonIllumination(date);
-
-  // Set the position of the vectors.
-  sun_object_vector.setFromSphericalCoords(
-    10000,
-    sun_position.altitude - (Math.PI / 2),
-    sun_position.azimuth
-  );
-  moon_object_vector.setFromSphericalCoords(
-    10000,
-    moon_position.altitude - (Math.PI / 2),
-    moon_position.azimuth
-  );
-  // Set the position of the vectors.
-  sun_light_vector.setFromSphericalCoords(
-    5000,
-    sun_position.altitude - (Math.PI / 2),
-    sun_position.azimuth
-  );
-  moon_light_vector.setFromSphericalCoords(
-    5000,
-    moon_position.altitude - (Math.PI / 2),
-    moon_position.azimuth
-  );
-
-  // TODO This will change based on size distance etc
-  const eclipse_begins_distance = 660;
-  const sun_moon_distance = sun_object_vector.distanceTo(moon_object_vector);
-  const eclipse_percentage = Math.max(
-    0,
-    (1 - (sun_moon_distance / eclipse_begins_distance))
-  );*/
-
-  /*
-   * this.ambient_light_sky_.intensity =
-   *   beestat.component.scene.ambient_light_intensity_sky * eclipse_multiplier;
-   */
-
-  /*
-   * this.directional_light_sun_.intensity =
-   *   this.directional_light_sun_.intensity * eclipse_multiplier;
-   */
-
-  // Set light intensities by altitude and eclipse percentage.
-/*  this.ambient_light_sky_.intensity = Math.max(
-    0,
-    beestat.component.scene.ambient_light_intensity_sky * Math.sin(sun_position.altitude) * (1 - eclipse_percentage)
-  );*/
-
-  // this.moon_.material.opacity = 0.2;
-
-  /**
-   * Mess up the sky during an eclipse
-   */
-
-  // Turn down to 0
-  /*if (this.sky_ !== undefined) {
-    this.sky_.material.uniforms.rayleigh.value =
-      beestat.component.scene.rayleigh * (1 - eclipse_percentage);
-
-    // Turn down to almost 0
-    this.sky_.material.uniforms.mieCoefficient.value =
-      Math.max(
-        0.00001,
-        beestat.component.scene.mie_coefficient * (1 - eclipse_percentage)
-      );
-
-    // Increase to almost 1
-    this.sky_.material.uniforms.mieDirectionalG.value =
-      Math.max(
-        beestat.component.scene.mie_directional_g,
-        0.9999 * eclipse_percentage
-      );
-
-    this.sky_.material.uniforms.sunPosition.value.copy(sun_object_vector);
-  }*/
-
-  /*
-   *  this.renderer_.toneMappingExposure = Math.max(
-   *  0.1, // Minimum exposure
-   *  beestat.component.scene.tone_mapping_exposure * eclipse_multiplier
-   *  );
-   */
-
-  // Set the brightness of the sun
-  /*if (this.directional_light_sun_ !== undefined) {
-    this.directional_light_sun_.intensity =
-      beestat.component.scene.sun_light_intensity * Math.sin(sun_position.altitude) * (1 - eclipse_percentage);
-    this.directional_light_sun_.position.copy(sun_light_vector);
-  }
-
-  // Set the brightness of the moon
-  if (this.directional_light_moon_ !== undefined) {
-    this.directional_light_moon_.intensity =
-      beestat.component.scene.moon_light_intensity * moon_illumination.fraction;
-    this.directional_light_moon_.position.copy(moon_light_vector);
-  }
-
-  if (this.moon_ !== undefined) {
-    this.moon_.position.copy(moon_object_vector);
-  }*/
-
-  // TODO size of moon based on distance? Might not be worth it haha.
-
-  /*
-   * this.directional_light_moon_.intensity = 0;
-   * this.directional_light_sun_.intensity = 0;
-   */
-
-  // Update the directional light positions
-
-  // Update the position of the sun and moon in the sky
-  // this.sky2_.material.uniforms.sunPosition.value.copy(moon_object_vector);
-
-  // Update shadows
-  /*this.renderer_.shadowMap.needsUpdate = true;
-
-  if (this.debug_.directional_light_moon_helper === true) {
-    this.directional_light_moon_helper_.update();
-    this.directional_light_moon_camera_helper_.update();
-  }
-
-  if (this.debug_.directional_light_sun_helper === true) {
-    this.directional_light_sun_helper_.update();
-    this.directional_light_sun_camera_helper_.update();
-  }*/
-
   if (this.debug_.directional_light_top_helper === true) {
     this.directional_light_top_helper_.update();
-    // this.directional_light_top_camera_helper_.update();
   }
 
   // Update debug watcher
   if (this.debug_.watcher === true) {
-    // this.debug_info_.date = date;
     this.update_debug_();
   }
 };
-
-/**
- * Add some type of ground for the house to sit on.
- */
-/*beestat.component.scene.prototype.add_ground_ = function() {
-  const size = 40000;
-
-  const texture = new THREE.TextureLoader().load('img/grass.jpg');
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1000, 1000);
-
-  const geometry = new THREE.PlaneGeometry(size, size);
-  const material = new THREE.MeshLambertMaterial({
-    // 'map': texture,
-    'color': new THREE.Color(beestat.style.color.green.dark),
-    'side': THREE.DoubleSide
-  });
-  const plane = new THREE.Mesh(geometry, material);
-  plane.rotation.x += Math.PI / 2;
-  plane.receiveShadow = true;
-
-  this.scene_.add(plane);
-
-  if (this.debug_.grid === true) {
-    const grid_size = 100;
-    const grid_divisions = grid_size;
-    const grid_color_center_line = new THREE.Color(beestat.style.color.lightblue.base);
-    const grid_color_grid = new THREE.Color(beestat.style.color.green.base);
-    const grid_helper = new THREE.GridHelper(
-      grid_size,
-      grid_divisions,
-      grid_color_center_line,
-      grid_color_grid
-    );
-    this.scene_.add(grid_helper);
-  }
-};
-*/
-/*beestat.component.scene.prototype.add_ground_limited_ = function() {
-  const height = 24;
-
-  const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
-
-  const size = Math.max(bounding_box.width, bounding_box.height) + 120;
-
-  // const texture = new THREE.TextureLoader().load('img/grass.jpg');
-  // texture.wrapS = THREE.RepeatWrapping;
-  // texture.wrapT = THREE.RepeatWrapping;
-  // texture.repeat.set(1000, 1000);
-
-  const geometry = new THREE.BoxGeometry(size, size, height);
-  const material = new THREE.MeshLambertMaterial({
-    // 'map': texture,
-    'color': new THREE.Color(beestat.style.color.green.dark),
-    'side': THREE.DoubleSide
-  });
-  const box = new THREE.Mesh(geometry, material);
-  box.translateY(height / -2);
-  box.rotation.x += Math.PI / 2;
-  // box.receiveShadow = true;
-
-  this.scene_.add(box);
-
-  if (this.debug_.grid === true) {
-    const grid_size = 100;
-    const grid_divisions = grid_size;
-    const grid_color_center_line = new THREE.Color(beestat.style.color.lightblue.base);
-    const grid_color_grid = new THREE.Color(beestat.style.color.green.base);
-    const grid_helper = new THREE.GridHelper(
-      grid_size,
-      grid_divisions,
-      grid_color_center_line,
-      grid_color_grid
-    );
-    this.scene_.add(grid_helper);
-  }
-};*/
-
-
-
-
-
-
-
-/**
- * Add a background.
- */
-// beestat.component.scene.prototype.add_background_ = function() {
-//   this.scene_.background = new THREE.Color(beestat.style.color.bluegray.dark);
-// }
-
-
-
-
-
 
 /**
  * Add a room. Room coordinates are absolute.
@@ -768,6 +516,8 @@ beestat.component.scene.prototype.update_ = function() {
  * @param {object} room The room to add.
  */
 beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
+  const self = this;
+
   const color = beestat.style.color.gray.dark;
 
   var clipper_offset = new ClipperLib.ClipperOffset();
@@ -800,24 +550,16 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   // Extrude the shape and create the mesh.
   const extrude_settings = {
     'depth': extrude_height,
-    'bevelEnabled': false,
-    // 'bevelThickness': 1,
-    // 'bevelSize': 1,
-    // 'bevelOffset': 1,
-    // 'bevelSegments': 5
+    'bevelEnabled': false
   };
 
   const geometry = new THREE.ExtrudeGeometry(
     shape,
     extrude_settings
   );
-  // const material = new THREE.MeshBasicMaterial({
   const material = new THREE.MeshPhongMaterial({
-    'color': color,
-    // 'transparent': true,
-    // 'opacity': 0.5
+    'color': color
   });
-  // material.opacity = 0.5;
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = -extrude_height - (room.elevation || group.elevation);
 
@@ -825,36 +567,37 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   mesh.translateX(room.x);
   mesh.translateY(room.y);
 
-  // Shadows are neat.
-  mesh.castShadow = true;
-  // mesh.receiveShadow = true;
-
-  // Add the mesh to the group.
-  this.main_group_.add(mesh);
-
   // Store a reference to the mesh representing each room.
   if (this.rooms_ === undefined) {
     this.rooms_ = {};
   }
+
+  // TODO Do I need both these?
   this.rooms_[room.room_id] = mesh;
+  // mesh.userData.room_id = room.room_id;
 
   layer.add(mesh);
 
-  /**
-   * LABEL
-   */
-  const label_material = this.get_label_material_();
-  const label_sprite = new THREE.Sprite(label_material);
+  // Label
+  mesh.userData.sprites = {};
 
-  // Scale to an appropriate-looking size.
-  const scale_x = 0.16;
-  const scale_y = scale_x * label_material.map.source.data.height / label_material.map.source.data.width;
-  label_sprite.scale.set(scale_x, scale_y, 1);
+  // Outline
+  const edges_geometry = new THREE.EdgesGeometry(geometry);
+  const outline = new THREE.LineSegments(
+    edges_geometry,
+    new THREE.LineBasicMaterial({
+      'color': '#ffffff'
+    })
+  );
+  outline.translateX(room.x);
+  outline.translateY(room.y);
+  outline.position.z = -extrude_height - (room.elevation || group.elevation);
+  outline.visible = false;
+  outline.layers.set(beestat.component.scene.layer_outline);
+  mesh.userData.outline = outline;
+  layer.add(outline);
 
-  // Set center of sprite to bottom middle.
-  label_sprite.center.set(0.5, 0);
-
-  // Determine where the sprite will go.
+  // Determine where the sprites will go.
   const geojson_polygon = [];
   room.points.forEach(function(point) {
     geojson_polygon.push([
@@ -864,23 +607,36 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   });
   const label_point = polylabel([geojson_polygon]);
 
-  /**
-   * Some arbitrary small number so the sprite is *just* above the room or
-   * when you view from directly above sometimes they disappear.
-   */
-  const z_offset = 1;
+  [
+    'value',
+    'icon'
+  ].forEach(function(sprite_type) {
+    const sprite_material = self.get_blank_label_material_();
+    const sprite = new THREE.Sprite(sprite_material);
 
-  label_sprite.position.set(
-    room.x + label_point[0],
-    room.y + label_point[1],
-    mesh.position.z - z_offset
-  );
-  layer.add(label_sprite);
+    // Scale to an appropriate-looking size.
+    const scale_x = 0.14;
+    const scale_y = scale_x * sprite_material.map.source.data.height / sprite_material.map.source.data.width;
+    sprite.scale.set(scale_x, scale_y, 1);
 
-  mesh.userData.label_sprite = label_sprite;
-  /**
-   * LABEL
-   */
+    // Set center of sprite to bottom middle.
+    sprite.center.set(0.5, 0);
+
+    /**
+     * Some arbitrary small number so the sprite is *just* above the room or
+     * when you view from directly above sometimes they disappear.
+     */
+    const z_offset = 1;
+
+    sprite.position.set(
+      room.x + label_point[0],
+      room.y + label_point[1],
+      mesh.position.z - z_offset
+    );
+    layer.add(sprite);
+
+    mesh.userData.sprites[sprite_type] = sprite;
+  });
 };
 
 /**
@@ -923,17 +679,10 @@ beestat.component.scene.prototype.update_debug_ = function() {
  */
 beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
-  // this.floor_plan_center_x_ = ;
-  // this.floor_plan_center_y_ = (bounding_box.bottom + bounding_box.top) / 2;
-
-  // this.view_box_.x = center_x - (this.view_box_.width / 2);
-  // this.view_box_.y = center_y - (this.view_box_.height / 2);
 
   this.main_group_ = new THREE.Group();
   this.main_group_.translateX((bounding_box.right + bounding_box.left) / -2);
   this.main_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
-  // this.main_group_.rotation.x = -Math.PI / 2;
-  //
   this.main_group_.rotation.x = Math.PI / 2;
   this.scene_.add(this.main_group_);
 };
@@ -1033,7 +782,13 @@ beestat.component.scene.prototype.set_heat_map_max = function(heat_map_max) {
  * @return {beestat.component.scene}
  */
 beestat.component.scene.prototype.set_layer_visible = function(layer_name, visible) {
-  this.layers_[layer_name].visible = visible;
+  this.layers_[layer_name].traverse(function(child) {
+    child.layers.set(
+      visible === true
+        ? beestat.component.scene.layer_visible
+        : beestat.component.scene.layer_hidden
+    );
+  });
 
   return this;
 };
@@ -1106,46 +861,124 @@ beestat.component.scene.prototype.set_camera_state = function(camera_state) {
  * Get a material representing a label. Memoizes the result so the material
  * can be re-used.
  *
- * @param {string} text
+ * @param {object} args
  *
  * @return {THREE.Material}
  */
-beestat.component.scene.prototype.get_label_material_ = function(text = '') {
-  if (this.label_material_memo_[text] === undefined) {
+beestat.component.scene.prototype.get_label_material_ = function(args) {
+  let memo_key;
+
+  switch (args.type) {
+  case 'value':
+    memo_key = [
+      args.type,
+      args.value
+    ].join('|');
+    break;
+  case 'icon':
+    memo_key = [
+      args.type,
+      args.icon,
+      args.color
+    ].join('|');
+    break;
+  }
+
+  if (this.label_material_memo_[memo_key] === undefined) {
     /**
      * Increasing the size of the canvas increases the resolution of the texture
      * and thus makes it less blurry.
      */
+    const scale = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = 120;
-    canvas.height = 30;
+    canvas.width = 100 * scale;
+    canvas.height = 55 * scale;
 
     const context = canvas.getContext('2d');
 
     // Debug red background
-    // context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    // context.fillStyle = 'rgba(255, 0, 0, 0.2)';
     // context.fillRect(0, 0, canvas.width, canvas.height);
 
-    const font_size = canvas.height;
-    context.font = 'bold ' + font_size + 'px Montserrat';
-    context.fillStyle = '#fff';
-    context.textAlign = 'center';
-    context.fillText(
-      text,
-      canvas.width / 2,
-      canvas.height
-    );
+    const font_size = canvas.height / 2;
+    switch (args.type) {
+    case 'value': {
+      context.font = '700 ' + font_size + 'px Montserrat';
+      context.fillStyle = '#fff';
+      context.textAlign = 'center';
+      context.fillText(
+        args.value,
+        canvas.width / 2,
+        canvas.height
+      );
+      break;
+    }
+    case 'icon': {
+      const icon_scale = 2.5;
+      const icon_size = 24 * icon_scale;
+
+      context.fillStyle = args.color;
+      context.translate((canvas.width / 2) - (icon_size / 2), 0);
+      context.fill(this.get_icon_path_(args.icon, icon_scale));
+      break;
+    }
+    }
 
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
+    texture.anisotropy = this.renderer_.capabilities.getMaxAnisotropy();
 
     const material = new THREE.SpriteMaterial({
       'map': texture,
       'sizeAttenuation': false
     });
 
-    this.label_material_memo_[text] = material;
+    this.label_material_memo_[memo_key] = material;
   }
 
-  return this.label_material_memo_[text];
+  return this.label_material_memo_[memo_key];
+};
+
+/**
+ * Get a blank label.
+ *
+ * @return {THREE.Material}
+ */
+beestat.component.scene.prototype.get_blank_label_material_ = function() {
+  return this.get_label_material_({
+    'type': 'value',
+    'value': ''
+  });
+};
+
+/**
+ * Get an icon path for placing on a canvas texture.
+ *
+ * @param {string} icon
+ * @param {int} scale
+ *
+ * @return {Path2D}
+ */
+beestat.component.scene.prototype.get_icon_path_ = function(icon, scale = 4) {
+  const icons = {
+    'snowflake': 'M20.79,13.95L18.46,14.57L16.46,13.44V10.56L18.46,9.43L20.79,10.05L21.31,8.12L19.54,7.65L20,5.88L18.07,5.36L17.45,7.69L15.45,8.82L13,7.38V5.12L14.71,3.41L13.29,2L12,3.29L10.71,2L9.29,3.41L11,5.12V7.38L8.5,8.82L6.5,7.69L5.92,5.36L4,5.88L4.47,7.65L2.7,8.12L3.22,10.05L5.55,9.43L7.55,10.56V13.45L5.55,14.58L3.22,13.96L2.7,15.89L4.47,16.36L4,18.12L5.93,18.64L6.55,16.31L8.55,15.18L11,16.62V18.88L9.29,20.59L10.71,22L12,20.71L13.29,22L14.7,20.59L13,18.88V16.62L15.5,15.17L17.5,16.3L18.12,18.63L20,18.12L19.53,16.35L21.3,15.88L20.79,13.95M9.5,10.56L12,9.11L14.5,10.56V13.44L12,14.89L9.5,13.44V10.56Z',
+    'fire': 'M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2M14.5 17.5C14.22 17.74 13.76 18 13.4 18.1C12.28 18.5 11.16 17.94 10.5 17.28C11.69 17 12.4 16.12 12.61 15.23C12.78 14.43 12.46 13.77 12.33 13C12.21 12.26 12.23 11.63 12.5 10.94C12.69 11.32 12.89 11.7 13.13 12C13.9 13 15.11 13.44 15.37 14.8C15.41 14.94 15.43 15.08 15.43 15.23C15.46 16.05 15.1 16.95 14.5 17.5H14.5Z',
+    'fan': 'M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z'
+  };
+
+  const icon_path = new Path2D(icons[icon]);
+  const svg_matrix = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'svg'
+  ).createSVGMatrix();
+  const transform = svg_matrix.scale(scale);
+  const scaled_path = new Path2D();
+  scaled_path.addPath(icon_path, transform);
+
+  return scaled_path;
+};
+
+beestat.component.scene.prototype.dispose = function() {
+  window.cancelAnimationFrame(this.animation_frame_);
+  beestat.component.prototype.dispose.apply(this, arguments);
 };

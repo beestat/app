@@ -181,3 +181,26 @@ beestat.floor_plan.get_sensor_ids_map = function(floor_plan_id) {
 
   return sensor_ids_map;
 };
+
+/**
+ * Get an object of all the thermostat_ids included in the current floor plan.
+ * Key is thermostat_id, value is true.
+ *
+ * @param {number} floor_plan_id
+ *
+ * @return {object}
+ */
+beestat.floor_plan.get_thermostat_ids_map = function(floor_plan_id) {
+  const floor_plan = beestat.cache.floor_plan[floor_plan_id];
+  const thermostat_ids_map = {};
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach(function(room) {
+      if (room.sensor_id !== undefined) {
+        const sensor = beestat.cache.sensor[room.sensor_id];
+        thermostat_ids_map[sensor.thermostat_id] = true;
+      }
+    });
+  });
+
+  return thermostat_ids_map;
+};
