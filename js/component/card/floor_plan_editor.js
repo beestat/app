@@ -578,7 +578,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
   const sensors = {};
   Object.values(beestat.cache.thermostat).forEach(function(thermostat) {
     const thermostat_sensors = Object.values(beestat.cache.sensor).filter(function(sensor) {
-      return sensor.thermostat_id === self.thermostat_id_;
+      return sensor.thermostat_id === thermostat.thermostat_id;
     })
       .sort(function(a, b) {
         return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});

@@ -223,12 +223,8 @@ beestat.component.scene.prototype.mouseup_handler_ = function() {
   window.removeEventListener('touchend', this.mouseup_handler_);
 
   if (this.dragged_ === false) {
-    // Clear any active state
-    // if (this.active_mesh_ !== undefined) {
-    //   this.active_mesh_.userData.outline.visible = false;
-    // }
-
     this.active_mesh_ = this.intersected_mesh_;
+    this.dispatchEvent('change_active_room');
     this.update_();
   }
 };
@@ -364,14 +360,14 @@ beestat.component.scene.prototype.update_ = function() {
   // Set the color of each room
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
-      const value_sprite = self.rooms_[room.room_id].userData.sprites.value;
-      const icon_sprite = self.rooms_[room.room_id].userData.sprites.icon;
+      const value_sprite = self.meshes_[room.room_id].userData.sprites.value;
+      const icon_sprite = self.meshes_[room.room_id].userData.sprites.icon;
 
       // Room outline
-      if (self.rooms_[room.room_id] === self.active_mesh_) {
-        self.rooms_[room.room_id].userData.outline.visible = true;
+      if (self.meshes_[room.room_id] === self.active_mesh_) {
+        self.meshes_[room.room_id].userData.outline.visible = true;
       } else {
-        self.rooms_[room.room_id].userData.outline.visible = false;
+        self.meshes_[room.room_id].userData.outline.visible = false;
       }
 
       let color;
@@ -458,7 +454,7 @@ beestat.component.scene.prototype.update_ = function() {
         // Labels
         if (
           self.labels_ === true ||
-          self.rooms_[room.room_id] === self.active_mesh_
+          self.meshes_[room.room_id] === self.active_mesh_
         ) {
           switch (self.data_type_) {
           case 'temperature':
@@ -494,7 +490,7 @@ beestat.component.scene.prototype.update_ = function() {
         icon_sprite.material = self.get_blank_label_material_();
       }
 
-      self.rooms_[room.room_id].material.color.setHex(color.replace('#', '0x'));
+      self.meshes_[room.room_id].material.color.setHex(color.replace('#', '0x'));
     });
   });
 
@@ -568,13 +564,14 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   mesh.translateY(room.y);
 
   // Store a reference to the mesh representing each room.
-  if (this.rooms_ === undefined) {
-    this.rooms_ = {};
+  if (this.meshes_ === undefined) {
+    this.meshes_ = {};
   }
 
-  // TODO Do I need both these?
-  this.rooms_[room.room_id] = mesh;
+  // Allow me to go from room -> mesh and mesh -> room
+  this.meshes_[room.room_id] = mesh;
   // mesh.userData.room_id = room.room_id;
+  mesh.userData.room = room;
 
   layer.add(mesh);
 
@@ -981,4 +978,17 @@ beestat.component.scene.prototype.get_icon_path_ = function(icon, scale = 4) {
 beestat.component.scene.prototype.dispose = function() {
   window.cancelAnimationFrame(this.animation_frame_);
   beestat.component.prototype.dispose.apply(this, arguments);
+};
+
+/**
+ * Get the currently active room.
+ *
+ * @return {object}
+ */
+beestat.component.scene.prototype.get_active_room_ = function() {
+  if (this.active_mesh_ !== undefined) {
+    return this.active_mesh_.userData.room;
+  }
+
+  return null;
 };

@@ -340,6 +340,10 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     this.get_data_()
   );
 
+  this.scene_.addEventListener('change_active_room', function() {
+    self.update_hud_();
+  });
+
   // Set the initial date.
   // if (this.has_data_() === true) {
   this.update_scene_();
@@ -428,6 +432,19 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   const self = this;
 
+  const active_room = this.scene_.get_active_room_();
+  let thermostat_ids;
+  if (
+    active_room !== null &&
+    active_room.sensor_id !== undefined
+  ) {
+    thermostat_ids = [beestat.cache.sensor[active_room.sensor_id].thermostat_id];
+  } else {
+    thermostat_ids = Object.keys(
+      beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_)
+    );
+  }
+
   if (parent !== undefined) {
     this.controls_container_ = parent;
   }
@@ -440,6 +457,8 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   // Hoisting
   const range = new beestat.component.input.range();
   const time_container = document.createElement('div');
+
+  range.set_background(this.get_chart_gradient_(thermostat_ids));
 
   const container = document.createElement('div');
   Object.assign(container.style, {
@@ -556,6 +575,108 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
 };
 
 /**
+ * Get a CSS linear gradient style that represents the runtime chart.
+ *
+ * @param {array} thermostat_ids Which thermostat_ids to include data from.
+ *
+ * @return {string}
+ */
+beestat.component.card.three_d.prototype.get_chart_gradient_ = function(thermostat_ids) {
+  const data = this.get_data_();
+
+  const background_color_rgb = beestat.style.hex_to_rgb(beestat.style.color.bluegray.base);
+  const background_color = 'rgba(' + background_color_rgb.r + ',' + background_color_rgb.g + ',' + background_color_rgb.b + ',1)';
+
+  let current_color = background_color;
+  const gradient = [
+    {
+      'color': current_color,
+      'position': 0
+    }
+  ];
+
+  const date_m = moment();
+  for (let i = 0; i < 287; i++) {
+    const minute_of_day = i * 5;
+    date_m.hours(Math.floor(minute_of_day / 60));
+    date_m.minutes(Math.floor(minute_of_day % 60));
+    const time = date_m.format('HH:mm');
+
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    let alpha = 0;
+    let count = 0;
+
+    let this_color = background_color;
+    [
+      'fan',
+      'compressor_heat_1',
+      'compressor_heat_2',
+      'auxiliary_heat_1',
+      'auxiliary_heat_2',
+      'compressor_cool_1',
+      'compressor_cool_2'
+    ].forEach(function(series_code) {
+      thermostat_ids.forEach(function(thermostat_id) {
+        if (
+          data.series[series_code][thermostat_id] !== undefined &&
+          data.series[series_code][thermostat_id][time] !== undefined &&
+          data.series[series_code][thermostat_id][time] > 0
+        ) {
+          // Only resets these if there is data to override it.
+          if (count > 0) {
+            red = 0;
+            green = 0;
+            blue = 0;
+            alpha = 0;
+            count = 0;
+          }
+
+          const color = beestat.style.hex_to_rgb(beestat.series[series_code].color);
+          red += color.r;
+          green += color.g;
+          blue += color.b;
+          alpha += data.series[series_code][thermostat_id][time] / thermostat_ids.length;
+          count++;
+        }
+      });
+
+      let rgb;
+      if (count > 0) {
+        rgb = {
+          'r': red / count,
+          'g': green / count,
+          'b': blue / count
+        };
+        alpha /= count;
+        this_color = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + alpha + ')';
+      } else {
+        this_color = background_color;
+      }
+    });
+
+    if (this_color !== current_color) {
+      gradient.push({
+        'color': this_color,
+        'position': Math.round(i / 288 * 100 * 10) / 10
+      });
+      current_color = this_color;
+    }
+  }
+
+  let gradient_string = ['90deg'];
+
+  for (let i = 0; i < gradient.length; i++) {
+    const start = gradient[i].position + '%';
+    const end = gradient[i + 1] !== undefined ? gradient[i + 1].position + '%' : '100%';
+    gradient_string.push(gradient[i].color + ' ' + start + ' ' + end);
+  }
+
+  return 'linear-gradient(' + gradient_string.join(', ') + ')';
+};
+
+/**
  * Watermark.
  *
  * @param {HTMLDivElement} parent
@@ -592,7 +713,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   // Add room
   tile_group.add_tile(new beestat.component.tile()
     .set_icon('label_off')
-    .set_title('Labels')
+    .set_title('Toggle Labels')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
@@ -611,7 +732,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   // Add room
   tile_group.add_tile(new beestat.component.tile()
     .set_icon('restart_off')
-    .set_title('Auto-Rotate')
+    .set_title('Toggle Auto-Rotate')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)

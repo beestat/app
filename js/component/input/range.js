@@ -79,3 +79,16 @@ beestat.component.input.range.prototype.set_max = function(max) {
 
   return this;
 };
+
+/**
+ * Set the background value of the range input.
+ *
+ * @param {string} background
+ *
+ * @return {beestat.component.input.range} This.
+ */
+beestat.component.input.range.prototype.set_background = function(background) {
+  this.input_.style.setProperty('--background', background);
+
+  return this;
+};

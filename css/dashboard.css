@@ -282,16 +282,17 @@ input[type=range]{
   -webkit-appearance: none;
   background:transparent;
   margin-top: 5px;
+  --background: #37474f;
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  background: #37474f;
+  background: var(--background);
   height: 5px;
   border-radius: 5px;
 }
 
 input[type=range]::-moz-range-track {
-  background: #37474f;
+  background: var(--background);
   height: 5px;
   border-radius: 5px;
 }
