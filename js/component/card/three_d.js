@@ -9,7 +9,7 @@ beestat.component.card.three_d = function() {
   beestat.dispatcher.addEventListener(
     [
       'setting.visualize.data_type',
-      'setting.visualize.heat_map_type',
+      'setting.visualize.heat_map_values',
       'setting.visualize.heat_map_absolute.temperature.min',
       'setting.visualize.heat_map_absolute.temperature.max',
       'setting.visualize.heat_map_absolute.occupancy.min',
@@ -1108,7 +1108,7 @@ beestat.component.card.three_d.prototype.set_floor_plan_id = function(floor_plan
  * @return {number}
  */
 beestat.component.card.three_d.prototype.get_heat_map_min_ = function() {
-  if (beestat.setting('visualize.heat_map_type') === 'relative') {
+  if (beestat.setting('visualize.heat_map_values') === 'relative') {
     return this.data_.metadata.series[beestat.setting('visualize.data_type')].min;
   }
   return beestat.setting(
@@ -1124,7 +1124,7 @@ beestat.component.card.three_d.prototype.get_heat_map_min_ = function() {
  * @return {number}
  */
 beestat.component.card.three_d.prototype.get_heat_map_max_ = function() {
-  if (beestat.setting('visualize.heat_map_type') === 'relative') {
+  if (beestat.setting('visualize.heat_map_values') === 'relative') {
     return this.data_.metadata.series[beestat.setting('visualize.data_type')].max;
   }
   return beestat.setting(

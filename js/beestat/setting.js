@@ -74,7 +74,7 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
       .format('MM/DD/YYYY'),
     'visualize.range_static.end': moment()
       .format('MM/DD/YYYY'),
-    'visualize.heat_map_type': 'relative',
+    'visualize.heat_map_values': 'relative',
     'visualize.heat_map_absolute.temperature.min': 70,
     'visualize.heat_map_absolute.temperature.max': 80,
     'visualize.heat_map_absolute.occupancy.min': 0,

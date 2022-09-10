@@ -46,9 +46,9 @@ beestat.component.card.visualize_settings.prototype.decorate_contents_ = functio
   });
   parent.appendChild(grid_2);
 
-  const heat_map_type_container = document.createElement('div');
-  this.decorate_heat_map_type_(heat_map_type_container);
-  grid_2.appendChild(heat_map_type_container);
+  const heat_map_values_container = document.createElement('div');
+  this.decorate_heat_map_values_(heat_map_values_container);
+  grid_2.appendChild(heat_map_values_container);
 
   // If at least one sensor is on the floor plan and the data is loading.
   if (
@@ -113,10 +113,10 @@ beestat.component.card.visualize_settings.prototype.decorate_data_type_ = functi
  *
  * @param {HTMLDivElement} parent
  */
-beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = function(parent) {
+beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = function(parent) {
   const self = this;
 
-  (new beestat.component.title('Heat Map Type')).render($(parent));
+  (new beestat.component.title('Heat Map Values')).render($(parent));
 
   const types = [
     {
@@ -140,13 +140,13 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
       .set_icon(type.icon)
       .set_text(type.name);
 
-    if (beestat.setting('visualize.heat_map_type') === type.code) {
+    if (beestat.setting('visualize.heat_map_values') === type.code) {
       tile.set_background_color(color);
     } else {
       tile
         .set_background_color(beestat.style.color.bluegray.light)
         .addEventListener('click', function() {
-          beestat.setting('visualize.heat_map_type', type.code);
+          beestat.setting('visualize.heat_map_values', type.code);
           self.rerender();
         });
     }
@@ -154,7 +154,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_type_ = fu
   });
   tile_group.render($(parent));
 
-  if (beestat.setting('visualize.heat_map_type') === 'absolute') {
+  if (beestat.setting('visualize.heat_map_values') === 'absolute') {
     const min_max_container = document.createElement('div');
     min_max_container.style.marginTop = `${beestat.style.size.gutter}px`;
     parent.appendChild(min_max_container);
