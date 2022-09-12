@@ -550,20 +550,21 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
     extrude_settings
   );
 
-  let material;
+  const material = new THREE.MeshPhongMaterial({
+    'color': color
+  });
   if (room.sensor_id === undefined) {
-    const texture = new THREE.TextureLoader().load('img/visualize/stripe.png');
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(0.005, 0.005);
-
-    material = new THREE.MeshPhongMaterial({
-      'map': texture
-    });
-  } else {
-    material = new THREE.MeshPhongMaterial({
-      'color': color
-    });
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      'img/visualize/stripe.png',
+      function(texture) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(0.005, 0.005);
+        material.map = texture;
+        material.needsUpdate = true;
+      }
+    );
   }
 
   const mesh = new THREE.Mesh(geometry, material);
