@@ -357,32 +357,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
       beestat.setting('visualize.range_dynamic') === 0 &&
       sensor_ids.length > 0
     ) {
-      // Find the most recent date there is data from the participating sensors.
-      let keys = [];
-      sensor_ids.forEach(function(sensor_id) {
-        if (self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id] !== undefined) {
-          keys = keys.concat(Object.keys(
-            self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id]
-          ));
-        }
-      });
-
-      let hour;
-      let minute;
-      if (keys.length > 0) {
-        keys.sort();
-        const key_parts = keys[keys.length - 1].split(':');
-        hour = key_parts[0];
-        minute = key_parts[1];
-      } else {
-        hour = 0;
-        minute = 0;
-      }
-
-      this.date_m_ = moment()
-        .hour(hour)
-        .minute(minute)
-        .second(0);
+      this.date_m_ = this.get_most_recent_time_with_data_();
     } else {
       this.date_m_ = moment()
         .subtract(
@@ -585,7 +560,9 @@ beestat.component.card.three_d.prototype.get_chart_gradient_ = function(thermost
   const data = this.get_data_();
 
   const background_color_rgb = beestat.style.hex_to_rgb(beestat.style.color.bluegray.base);
+  const no_data_color_rgb = beestat.style.hex_to_rgb(beestat.style.color.bluegray.dark);
   const background_color = 'rgba(' + background_color_rgb.r + ',' + background_color_rgb.g + ',' + background_color_rgb.b + ',1)';
+  const no_data_color = 'rgba(' + no_data_color_rgb.r + ',' + no_data_color_rgb.g + ',' + no_data_color_rgb.b + ',1)';
 
   let current_color = background_color;
   const gradient = [
@@ -595,66 +572,74 @@ beestat.component.card.three_d.prototype.get_chart_gradient_ = function(thermost
     }
   ];
 
+  const last_data_m = this.get_most_recent_time_with_data_();
+
   const date_m = moment();
   for (let i = 0; i < 287; i++) {
     const minute_of_day = i * 5;
     date_m.hours(Math.floor(minute_of_day / 60));
     date_m.minutes(Math.floor(minute_of_day % 60));
-    const time = date_m.format('HH:mm');
-
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-    let alpha = 0;
-    let count = 0;
 
     let this_color = background_color;
-    [
-      'fan',
-      'compressor_heat_1',
-      'compressor_heat_2',
-      'auxiliary_heat_1',
-      'auxiliary_heat_2',
-      'compressor_cool_1',
-      'compressor_cool_2'
-    ].forEach(function(series_code) {
-      thermostat_ids.forEach(function(thermostat_id) {
-        if (
-          data.series[series_code][thermostat_id] !== undefined &&
-          data.series[series_code][thermostat_id][time] !== undefined &&
-          data.series[series_code][thermostat_id][time] > 0
-        ) {
-          // Only resets these if there is data to override it.
-          if (count > 0) {
-            red = 0;
-            green = 0;
-            blue = 0;
-            alpha = 0;
-            count = 0;
-          }
 
-          const color = beestat.style.hex_to_rgb(beestat.series[series_code].color);
-          red += color.r;
-          green += color.g;
-          blue += color.b;
-          alpha += data.series[series_code][thermostat_id][time] / thermostat_ids.length;
-          count++;
+    if (last_data_m === null || date_m.isAfter(last_data_m) === false) {
+      const time = date_m.format('HH:mm');
+
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let alpha = 0;
+      let count = 0;
+
+      [
+        'fan',
+        'compressor_heat_1',
+        'compressor_heat_2',
+        'auxiliary_heat_1',
+        'auxiliary_heat_2',
+        'compressor_cool_1',
+        'compressor_cool_2'
+      ].forEach(function(series_code) {
+        thermostat_ids.forEach(function(thermostat_id) {
+          if (
+            data.series[series_code][thermostat_id] !== undefined &&
+            data.series[series_code][thermostat_id][time] !== undefined &&
+            data.series[series_code][thermostat_id][time] > 0
+          ) {
+            // Only resets these if there is data to override it.
+            if (count > 0) {
+              red = 0;
+              green = 0;
+              blue = 0;
+              alpha = 0;
+              count = 0;
+            }
+
+            const color = beestat.style.hex_to_rgb(beestat.series[series_code].color);
+            red += color.r;
+            green += color.g;
+            blue += color.b;
+            alpha += data.series[series_code][thermostat_id][time] / thermostat_ids.length;
+            count++;
+          }
+        });
+
+        let rgb;
+        if (count > 0) {
+          rgb = {
+            'r': red / count,
+            'g': green / count,
+            'b': blue / count
+          };
+          alpha /= count;
+          this_color = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + alpha + ')';
+        } else {
+          this_color = background_color;
         }
       });
-
-      let rgb;
-      if (count > 0) {
-        rgb = {
-          'r': red / count,
-          'g': green / count,
-          'b': blue / count
-        };
-        alpha /= count;
-        this_color = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + alpha + ')';
-      } else {
-        this_color = background_color;
-      }
-    });
+    } else {
+      this_color = no_data_color;
+    }
 
     if (this_color !== current_color) {
       gradient.push({
@@ -1158,4 +1143,41 @@ beestat.component.card.three_d.prototype.get_gradient_ = function() {
       200
     );
   }
+};
+
+beestat.component.card.three_d.prototype.get_most_recent_time_with_data_ = function() {
+  const self = this;
+
+  const sensor_ids = Object.keys(
+    beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_)
+  );
+  if (sensor_ids.length > 0) {
+    let keys = [];
+    sensor_ids.forEach(function(sensor_id) {
+      if (self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id] !== undefined) {
+        keys = keys.concat(Object.keys(
+          self.get_data_().series[beestat.setting('visualize.data_type')][sensor_id]
+        ));
+      }
+    });
+
+    let hour;
+    let minute;
+    if (keys.length > 0) {
+      keys.sort();
+      const key_parts = keys[keys.length - 1].split(':');
+      hour = key_parts[0];
+      minute = key_parts[1];
+    } else {
+      hour = 0;
+      minute = 0;
+    }
+
+    return moment()
+      .hour(hour)
+      .minute(minute)
+      .second(0);
+  }
+
+  return null;
 };
