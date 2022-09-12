@@ -302,9 +302,8 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
  * @link http://alexcpeterson.com/spacescape/
  */
 beestat.component.scene.prototype.add_skybox_ = function() {
-  const skybox_name = 'cloudy';
   const loader = new THREE.CubeTextureLoader();
-  loader.setPath('img/visualize/' + skybox_name + '/');
+  loader.setPath('img/visualize/skybox/');
   const texture = loader.load([
     'front.png',
     'back.png',
@@ -532,9 +531,6 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   // Just the floor plan
   const extrude_height = 6;
 
-
-
-
   // Create a shape using the points of the room.
   const shape = new THREE.Shape();
   const first_point = clipper_hole[0].shift();
@@ -553,9 +549,23 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
     shape,
     extrude_settings
   );
-  const material = new THREE.MeshPhongMaterial({
-    'color': color
-  });
+
+  let material;
+  if (room.sensor_id === undefined) {
+    const texture = new THREE.TextureLoader().load('img/visualize/stripe.png');
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(0.005, 0.005);
+
+    material = new THREE.MeshPhongMaterial({
+      'map': texture
+    });
+  } else {
+    material = new THREE.MeshPhongMaterial({
+      'color': color
+    });
+  }
+
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = -extrude_height - (room.elevation || group.elevation);
 
