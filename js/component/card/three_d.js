@@ -176,8 +176,17 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
         .subtract(
           beestat.setting('visualize.range_dynamic'),
           'day'
-        );
-      required_end = moment();
+        )
+        .hour(0)
+        .minute(0)
+        .second(0);
+
+      required_end = moment()
+        .subtract(1, 'day')
+        .clone()
+        .hour(23)
+        .minute(59)
+        .second(59);
     }
   } else {
     required_begin = moment(
