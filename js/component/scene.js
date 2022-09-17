@@ -239,7 +239,13 @@ beestat.component.scene.prototype.add_raycaster_ = function() {
 
   this.raycaster_ = new THREE.Raycaster();
   this.raycaster_.layers.set(beestat.component.scene.layer_visible);
-  this.raycaster_pointer_ = new THREE.Vector2();
+
+  /**
+   * Initialize a pointer representing the raycaster. Initialize it pointing
+   * way off screen instead of 0,0 so nothing starts thinking the mouse is
+   * over it.
+   */
+  this.raycaster_pointer_ = new THREE.Vector2(10000, 10000);
 
   // TODO remove event listener on dispose
   document.addEventListener('mousemove', function(e) {
