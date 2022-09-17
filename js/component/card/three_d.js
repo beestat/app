@@ -383,7 +383,17 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     );
   }
 
+  // Set some defaults on the scene.
   this.scene_.set_date(this.date_m_);
+  this.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
+  this.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  const groups = Object.values(floor_plan.data.groups);
+  groups.forEach(function(group) {
+    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
+    self.scene_.set_layer_visible(group.group_id, beestat.setting(setting_key) !== false);
+  });
 
   // Manage width of the scene.
   if (this.state_.width === undefined) {
@@ -702,41 +712,43 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     .set_text_color(beestat.style.color.lightblue.base)
   );
 
-  let labels = false;
-
   // Add room
   tile_group.add_tile(new beestat.component.tile()
-    .set_icon('label_off')
+    .set_icon(beestat.setting('visualize.three_d.show_labels') === false ? 'label_off' : 'label')
     .set_title('Toggle Labels')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
     .addEventListener('click', function(e) {
       e.stopPropagation();
-      labels = !labels;
-      this.set_icon(
-        'label' + (labels === false ? '_off' : '')
+      beestat.setting(
+        'visualize.three_d.show_labels',
+        !beestat.setting('visualize.three_d.show_labels')
       );
-      self.scene_.set_labels(labels);
+      this.set_icon(
+        'label' + (beestat.setting('visualize.three_d.show_labels') === false ? '_off' : '')
+      );
+      self.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
     })
   );
 
-  let auto_rotate = false;
-
   // Add room
   tile_group.add_tile(new beestat.component.tile()
-    .set_icon('restart_off')
+    .set_icon(beestat.setting('visualize.three_d.auto_rotate') === false ? 'restart_off' : 'restart')
     .set_title('Toggle Auto-Rotate')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
     .addEventListener('click', function(e) {
       e.stopPropagation();
-      auto_rotate = !auto_rotate;
-      this.set_icon(
-        'restart' + (auto_rotate === false ? '_off' : '')
+      beestat.setting(
+        'visualize.three_d.auto_rotate',
+        !beestat.setting('visualize.three_d.auto_rotate')
       );
-      self.scene_.set_auto_rotate(auto_rotate);
+      this.set_icon(
+        'restart' + (beestat.setting('visualize.three_d.auto_rotate') === false ? '_off' : '')
+      );
+      self.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
     })
   );
 
@@ -761,7 +773,7 @@ beestat.component.card.three_d.prototype.decorate_floors_ = function(parent) {
     });
 
   let icon_number = 1;
-  sorted_groups.forEach(function(group, i) {
+  sorted_groups.forEach(function(group) {
     const button = new beestat.component.tile()
       .set_title(group.name)
       .set_shadow(false)
@@ -775,18 +787,18 @@ beestat.component.card.three_d.prototype.decorate_floors_ = function(parent) {
       icon = 'numeric_' + icon_number++;
     }
 
-    let layer_visible = true;
+    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
     button
-      .set_icon(icon + '_box')
+      .set_icon(icon + (beestat.setting(setting_key) === false ? '' : '_box'))
       .addEventListener('click', function() {
-        if (layer_visible === true) {
-          self.scene_.set_layer_visible('group_' + i, false);
-          button.set_icon(icon);
-        } else {
-          self.scene_.set_layer_visible('group_' + i, true);
-          button.set_icon(icon + '_box');
-        }
-        layer_visible = !layer_visible;
+        beestat.setting(
+          setting_key,
+          beestat.setting(setting_key) === false
+        );
+        self.scene_.set_layer_visible(group.group_id, beestat.setting(setting_key));
+        this.set_icon(
+          icon + (beestat.setting(setting_key) === false ? '' : '_box')
+        );
       });
 
     tile_group.add_tile(button);

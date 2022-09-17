@@ -709,10 +709,10 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
   this.layers_ = {};
-  floor_plan.data.groups.forEach(function(group, i) {
+  floor_plan.data.groups.forEach(function(group) {
     const layer = new THREE.Group();
     self.main_group_.add(layer);
-    self.layers_['group_' + i] = layer;
+    self.layers_[group.group_id] = layer;
     group.rooms.forEach(function(room) {
       self.add_room_(layer, group, room);
     });

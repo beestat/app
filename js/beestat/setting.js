@@ -79,7 +79,9 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'visualize.heat_map_absolute.temperature.max': 80,
     'visualize.heat_map_absolute.occupancy.min': 0,
     'visualize.heat_map_absolute.occupancy.max': 100,
-    'visualize.hide_affiliate': false
+    'visualize.hide_affiliate': false,
+    'visualize.three_d.show_labels': false,
+    'visualize.three_d.auto_rotate': false
   };
 
   // Figure out what we're trying to do.
