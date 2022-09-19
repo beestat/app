@@ -13,7 +13,8 @@ class user extends cora\crud {
       'read_id',
       'update_setting',
       'log_out',
-      'sync_patreon_status'
+      'sync_patreon_status',
+      'unlink_patreon_account',
     ],
     'public' => []
   ];
@@ -343,6 +344,29 @@ class user extends cora\crud {
 
     $this->update_sync_status('patreon');
     $this->database->release_lock($lock_name);
+  }
+
+  /**
+   * Unlink the Patreon account for the current user.
+   */
+  public function unlink_patreon_account() {
+    $patreon_tokens = $this->api('patreon_token', 'read_id');
+    foreach($patreon_tokens as $patreon_token) {
+      $this->api(
+        'patreon_token',
+        'delete',
+        [
+          'id' => $patreon_token['patreon_token_id']
+        ]
+      );
+    }
+
+    $this->update(
+      [
+        'user_id' => $this->session->get_user_id(),
+        'patreon_status' => null
+      ]
+    );
   }
 
 }

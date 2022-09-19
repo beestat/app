@@ -480,6 +480,7 @@ input[type=range]::-moz-range-thumb {
 .icon.label:before { content: "\F0315"; }
 .icon.layers:before { content: "\F0328"; }
 .icon.layers_plus:before { content: "\F0E4D"; }
+.icon.link_off:before { content: "\F0338"; }
 .icon.magnify_close:before { content: "\F0980"; }
 .icon.magnify_minus_outline:before { content: "\F06EC"; }
 .icon.magnify_plus_outline:before { content: "\F06ED"; }

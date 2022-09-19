@@ -199,7 +199,34 @@ beestat.component.modal.patreon_status.prototype.get_title_ = function() {
  */
 beestat.component.modal.patreon_status.prototype.get_buttons_ = function() {
   if (beestat.user.patreon_is_connected() === true) {
-    var refresh = new beestat.component.tile()
+    const unlink = new beestat.component.tile()
+      .set_text('Unlink')
+      .set_icon('link_off')
+      .set_shadow(false)
+      .set_background_color('#fff')
+      .set_text_color(beestat.style.color.gray.base)
+      .set_text_hover_color(beestat.style.color.red.base)
+      .addEventListener('click', function() {
+        this
+          .removeEventListener('click');
+
+        new beestat.api()
+          .add_call(
+            'user',
+            'unlink_patreon_account',
+            {},
+            'unlink_patreon_account'
+          )
+          .add_call('user', 'read_id', {}, 'user')
+          .set_callback(function(response) {
+            // Update the cache.
+            self.dispose();
+            beestat.cache.set('user', response.user);
+          })
+          .send();
+      });
+
+    const refresh = new beestat.component.tile()
       .set_text('Refresh Status')
       .set_icon('refresh')
       .set_background_color(beestat.style.color.green.base)
@@ -226,7 +253,10 @@ beestat.component.modal.patreon_status.prototype.get_buttons_ = function() {
           .send();
       });
 
-    return [refresh];
+    return [
+      unlink,
+      refresh
+    ];
   }
 
   return [];

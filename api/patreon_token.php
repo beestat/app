@@ -42,17 +42,25 @@ class patreon_token extends cora\crud {
 
     $new_patreon_token = [
       'access_token' => $response['access_token'],
-      'refresh_token' => $response['refresh_token']
+      'refresh_token' => $response['refresh_token'],
+      'deleted' => false
     ];
 
-    $existing_patreon_tokens = $this->read();
-    if(count($existing_patreon_tokens) > 0) {
-      $new_patreon_token['patreon_token_id'] = $existing_patreon_tokens[0]['patreon_token_id'];
-      $this->update(
+    /**
+     * Look for existing tokens (in case access was revoked and then
+     * re-granted). Include deleted tokens and revive that row since each user
+     * is limited to one token row.
+     */
+    $existing_patreon_token = $this->read([
+      'deleted' => [0, 1]
+    ]);
+
+    if (count($existing_patreon_token) > 0) {
+      $this->update(array_merge(
+        ['patreon_token_id' => $existing_patreon_token[0]['patreon_token_id']],
         $new_patreon_token
-      );
-    }
-    else {
+      ));
+    } else {
       $this->create($new_patreon_token);
     }
 
