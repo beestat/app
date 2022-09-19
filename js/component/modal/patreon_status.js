@@ -198,6 +198,8 @@ beestat.component.modal.patreon_status.prototype.get_title_ = function() {
  * @return {[beestat.component.button]} The buttons.
  */
 beestat.component.modal.patreon_status.prototype.get_buttons_ = function() {
+  const self = this;
+
   if (beestat.user.patreon_is_connected() === true) {
     const unlink = new beestat.component.tile()
       .set_text('Unlink')
