@@ -5,7 +5,7 @@
  *   area (required) - area to work with
  *   output_area_unit (optional, default ft) - Output area unit; default matches setting.
  *   convert (optional, default true) - Whether or not to convert to Celcius if necessary
- *   round (optional, default 1) - Number of decimal points to round to
+ *   round (optional, default 0) - Number of decimal points to round to
  *   units (optional, default false) - Whether or not to include units in the result
  *   type (optional, default number) - Type of value to return (string|number)
  *
@@ -19,12 +19,15 @@ beestat.area = function(args) {
     };
   }
 
-  const input_area_unit = 'in²';
+  var input_area_unit = beestat.default_value(
+    args.input_area_unit,
+    'ft²'
+  );
   var output_area_unit = beestat.default_value(
     args.output_area_unit,
     beestat.setting('units.area')
   );
-  var round = beestat.default_value(args.round, 1);
+  var round = beestat.default_value(args.round, 0);
   var units = beestat.default_value(args.units, false);
   var type = beestat.default_value(args.type, 'number');
 
@@ -39,6 +42,10 @@ beestat.area = function(args) {
     'in²': {
       'ft²': 0.00694444,
       'm²': 0.00064516
+    },
+    'ft²': {
+      'in²': 144,
+      'm²': 0.092903
     }
   };
 

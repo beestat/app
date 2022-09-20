@@ -7,6 +7,14 @@ beestat.component.metric = function() {
 beestat.extend(beestat.component.metric, beestat.component);
 
 /**
+ * Whether or not this is an area value. If so, do the appropriate conversion
+ * on display.
+ *
+ * @type {boolean}
+ */
+beestat.component.metric.prototype.is_area_ = false;
+
+/**
  * Whether or not this is a temperature value. If so, do the appropriate
  * conversion on display.
  *
@@ -248,6 +256,10 @@ beestat.component.metric.prototype.get_formatter_ = function() {
       return_value = beestat.temperature({
         'temperature': value,
         'delta': self.is_temperature_delta_
+      });
+    } else if (self.is_area_ === true) {
+      return_value = beestat.area({
+        'area': value
       });
     }
     return return_value.toFixed(self.get_precision_()) + self.get_units_();

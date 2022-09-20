@@ -658,6 +658,7 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
     parts.push(this.state_.active_room_entity.get_room().name || 'Unnamed Room');
     parts.push(
       beestat.area({
+        'input_area_unit': 'in²',
         'area': beestat.floor_plan.get_area_room(this.state_.active_room_entity.get_room()),
         'round': 0,
         'units': true
@@ -667,6 +668,7 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
     parts.push(
       beestat.area({
+        'input_area_unit': 'in²',
         'area': beestat.floor_plan.get_area_group(this.state_.active_group),
         'round': 0,
         'units': true

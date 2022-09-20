@@ -12,13 +12,15 @@ beestat.extend(beestat.component.metric.property.square_feet, beestat.component.
 
 beestat.component.metric.property.square_feet.prototype.child_metric_name_ = 'square_feet';
 
+beestat.component.metric.property.square_feet.prototype.is_area_ = true;
+
 /**
  * Get the units for this metric.
  *
  * @return {string} The units for this metric.
  */
 beestat.component.metric.property.square_feet.prototype.get_units_ = function() {
-  return 'ft²';
+  return beestat.setting('units.area');
 };
 
 /**
@@ -27,10 +29,11 @@ beestat.component.metric.property.square_feet.prototype.get_units_ = function() 
  * @return {mixed} A function that formats the string.
  */
 beestat.component.metric.property.square_feet.prototype.get_formatter_ = function() {
-  var self = this;
-
-  return function(value, precision) {
-    return value.toLocaleString() + self.get_units_();
+  return function(value) {
+    return beestat.area({
+      'area': value,
+      'units': true
+    });
   };
 };
 
@@ -40,7 +43,7 @@ beestat.component.metric.property.square_feet.prototype.get_formatter_ = functio
  * @return {string} The title of this metric.
  */
 beestat.component.metric.property.square_feet.prototype.get_title_ = function() {
-  return 'Square Feet';
+  return 'Area';
 };
 
 /**
@@ -59,7 +62,7 @@ beestat.component.metric.property.square_feet.prototype.get_icon_ = function() {
  * @return {object} The cutoff value.
  */
 beestat.component.metric.property.square_feet.prototype.get_cutoff_min_ = function() {
-  return 500;
+  return beestat.setting('units.area') === 'ft²' ? 500 : 50;
 };
 
 /**
@@ -68,5 +71,5 @@ beestat.component.metric.property.square_feet.prototype.get_cutoff_min_ = functi
  * @return {number} The interval.
  */
 beestat.component.metric.property.square_feet.prototype.get_interval_ = function() {
-  return 500;
+  return beestat.setting('units.area') === 'ft²' ? 500 : 50;
 };

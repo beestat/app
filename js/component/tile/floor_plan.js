@@ -33,6 +33,7 @@ beestat.component.tile.floor_plan.prototype.get_text_ = function() {
   line_2_parts.push(floor_count + (floor_count === 1 ? ' Floor' : ' Floors'));
   line_2_parts.push(
     beestat.area({
+      'input_area_unit': 'in²',
       'area': beestat.floor_plan.get_area(this.floor_plan_id_),
       'round': 0,
       'units': true
