@@ -685,8 +685,17 @@ beestat.component.chart.prototype.sync_crosshair = function(source_chart) {
     source_chart.get_chart().container.addEventListener(
       event_type,
       function(e) {
-        var point = self.get_chart().series[0].searchPoint(
-          source_chart.get_chart().pointer.normalize(e),
+        // https://github.com/highcharts/highcharts/issues/17756
+        let first_visible_series;
+        for (let i = 0; i < self.get_chart().series.length; i++) {
+          if (self.get_chart().series[i].visible === true) {
+            first_visible_series = self.get_chart().series[i];
+            break;
+          }
+        }
+
+        var point = first_visible_series.searchPoint(
+          self.get_chart().pointer.normalize(e),
           true
         );
         if (point !== undefined) {
