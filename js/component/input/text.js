@@ -32,6 +32,11 @@ beestat.component.input.text = function() {
           ) / 10 ** self.transform_.decimals;
         }
         break;
+      case 'date':
+        self.input_.value = moment(self.input_.value).format(
+          beestat.setting('date_format')
+        )
+      break;
       }
     }
 
@@ -59,9 +64,7 @@ beestat.component.input.text.prototype.decorate_ = function(parent) {
     'padding': `${beestat.style.size.gutter / 2}px`,
     'color': '#ffffff',
     'outline': 'none',
-    'transition': 'background 200ms ease',
-    'margin-bottom': `${beestat.style.size.gutter}px`,
-    'border-bottom': `2px solid ${beestat.style.color.lightblue.base}`
+    'transition': 'background 200ms ease'
   });
 
   // Set input width; interpret string widths literally (ex: 100%)

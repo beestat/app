@@ -65,6 +65,7 @@
     "vars-on-top": "off",
     "operator-assignment": "off",
     "no-else-return": "off",
+    "prefer-object-spread": "off",
 
     // Node.js and CommonJS
     "callback-return": "off",

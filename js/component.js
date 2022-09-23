@@ -30,8 +30,13 @@ beestat.component.prototype.render = function(parent) {
     var self = this;
 
     if (parent !== undefined) {
-      this.component_container_ = $.createElement('div')
-        .style('position', 'relative');
+      this.component_container_ = $.createElement('div');
+      Object.assign(this.component_container_[0].style, Object.assign(
+        {
+          'position': 'relative'
+        },
+        this.style_
+      ));
       this.decorate_(this.component_container_);
       parent.appendChild(this.component_container_);
     } else {
@@ -92,4 +97,17 @@ beestat.component.prototype.dispose = function() {
 
 beestat.component.prototype.decorate_ = function() {
   // Left for the subclass to implement.
+};
+
+/**
+ * Add custom styling to a component container. Mostly useful for when a
+ * component needs margins, etc applied depending on the context.
+ *
+ * @param {object} style
+ *
+ * @return {beestat.component} This
+ */
+beestat.component.prototype.style = function(style) {
+  this.style_ = style;
+  return this.rerender();
 };

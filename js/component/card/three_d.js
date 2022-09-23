@@ -190,10 +190,10 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
     }
   } else {
     required_begin = moment(
-      beestat.setting('visualize.range_static_begin') + ' 00:00:00'
+      beestat.setting('visualize.range_static.begin') + ' 00:00:00'
     );
     required_end = moment(
-      beestat.setting('visualize.range_static_end') + ' 23:59:59'
+      beestat.setting('visualize.range_static.end') + ' 23:59:59'
     );
   }
 
@@ -379,7 +379,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     }
   } else {
     this.date_m_ = moment(
-      beestat.setting('visualize.range_static_begin') + ' 00:00:00'
+      beestat.setting('visualize.range_static.begin') + ' 00:00:00'
     );
   }
 

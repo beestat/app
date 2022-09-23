@@ -21,34 +21,34 @@ beestat.extend(beestat.component.card.visualize_settings, beestat.component.card
  * @param {rocket.Elements} parent
  */
 beestat.component.card.visualize_settings.prototype.decorate_contents_ = function(parent) {
-  const grid_1 = document.createElement('div');
-  Object.assign(grid_1.style, {
+  const grid = document.createElement('div');
+  Object.assign(grid.style, {
     'display': 'grid',
     'grid-template-columns': 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
     'grid-gap': `${beestat.style.size.gutter}px`,
     'margin-bottom': `${beestat.style.size.gutter}px`
   });
-  parent.appendChild(grid_1);
+  parent.appendChild(grid);
 
-  const type_container = document.createElement('div');
-  this.decorate_data_type_(type_container);
-  grid_1.appendChild(type_container);
+  const left_container = document.createElement('div');
+  grid.appendChild(left_container);
+  const right_container = document.createElement('div');
+  grid.appendChild(right_container);
 
-  const time_period_container = document.createElement('div');
-  this.decorate_time_period_(time_period_container);
-  grid_1.appendChild(time_period_container);
-
-  const grid_2 = document.createElement('div');
-  Object.assign(grid_2.style, {
-    'display': 'grid',
-    'grid-template-columns': 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))',
-    'grid-gap': `${beestat.style.size.gutter}px`
+  const data_type_container = document.createElement('div');
+  Object.assign(data_type_container.style, {
+    'margin-bottom': `${beestat.style.size.gutter}px`
   });
-  parent.appendChild(grid_2);
+  this.decorate_data_type_(data_type_container);
+  left_container.appendChild(data_type_container);
 
   const heat_map_values_container = document.createElement('div');
   this.decorate_heat_map_values_(heat_map_values_container);
-  grid_2.appendChild(heat_map_values_container);
+  left_container.appendChild(heat_map_values_container);
+
+  const time_period_container = document.createElement('div');
+  this.decorate_time_period_(time_period_container);
+  right_container.appendChild(time_period_container);
 
   // If at least one sensor is on the floor plan and the data is loading.
   if (
@@ -121,18 +121,27 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
   const types = [
     {
       'code': 'relative',
-      'name': 'Relative',
+      'name': 'Dynamic',
       'icon': 'arrow_expand_horizontal'
     },
     {
       'code': 'absolute',
-      'name': 'Absolute',
+      'name': 'Static',
       'icon': 'arrow_horizontal_lock'
     }
   ];
 
+  const container = document.createElement('div');
+  Object.assign(container.style, {
+    'display': 'flex',
+    'flex-wrap': 'wrap',
+    'grid-gap': `${beestat.style.size.gutter}px`
+  });
+  parent.appendChild(container);
+
   const color = beestat.style.color.orange.base;
   const tile_group = new beestat.component.tile_group();
+
   types.forEach(function(type) {
     const tile = new beestat.component.tile()
       .set_background_hover_color(color)
@@ -152,12 +161,11 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
     }
     tile_group.add_tile(tile);
   });
-  tile_group.render($(parent));
+  tile_group.render($(container));
 
   if (beestat.setting('visualize.heat_map_values') === 'absolute') {
     const min_max_container = document.createElement('div');
-    min_max_container.style.marginTop = `${beestat.style.size.gutter}px`;
-    parent.appendChild(min_max_container);
+    container.appendChild(min_max_container);
 
     let type;
     let inputmode;
@@ -249,7 +257,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
     span = document.createElement('span');
     span.style.display = 'inline-block';
     min.render($(span));
-    parent.appendChild(span);
+    min_max_container.appendChild(span);
 
     span = document.createElement('span');
     span.innerText = 'to';
@@ -258,12 +266,12 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       'margin-left': `${beestat.style.size.gutter}px`,
       'margin-right': `${beestat.style.size.gutter}px`
     });
-    parent.appendChild(span);
+    min_max_container.appendChild(span);
 
     span = document.createElement('span');
     span.style.display = 'inline-block';
     max.render($(span));
-    parent.appendChild(span);
+    min_max_container.appendChild(span);
 
     span = document.createElement('span');
     switch (beestat.setting('visualize.data_type')) {
@@ -279,7 +287,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       'display': 'inline-block',
       'margin-left': `${beestat.style.size.gutter}px`
     });
-    parent.appendChild(span);
+    min_max_container.appendChild(span);
   }
 };
 
@@ -295,7 +303,7 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
 
   const color = beestat.style.color.purple.base;
 
-  const tile_group = new beestat.component.tile_group();
+  const tile_group_dynamic = new beestat.component.tile_group();
 
   // Current Day
   const current_day_tile = new beestat.component.tile()
@@ -313,13 +321,15 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     current_day_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.setting('visualize.range_type', 'dynamic');
-        beestat.setting('visualize.range_dynamic', 0);
+        beestat.setting({
+          'visualize.range_type': 'dynamic',
+          'visualize.range_dynamic': 0
+        });
         beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
-  tile_group.add_tile(current_day_tile);
+  tile_group_dynamic.add_tile(current_day_tile);
 
   // Yesterday
   const yesterday_tile = new beestat.component.tile()
@@ -337,13 +347,15 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     yesterday_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.setting('visualize.range_type', 'dynamic');
-        beestat.setting('visualize.range_dynamic', 1);
+        beestat.setting({
+          'visualize.range_type': 'dynamic',
+          'visualize.range_dynamic': 1
+        });
         beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
-  tile_group.add_tile(yesterday_tile);
+  tile_group_dynamic.add_tile(yesterday_tile);
 
   // Current Week
   const week_tile = new beestat.component.tile()
@@ -361,37 +373,65 @@ beestat.component.card.visualize_settings.prototype.decorate_time_period_ = func
     week_tile
       .set_background_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        beestat.setting('visualize.range_type', 'dynamic');
-        beestat.setting('visualize.range_dynamic', 7);
+        beestat.setting({
+          'visualize.range_type': 'dynamic',
+          'visualize.range_dynamic': 7
+        });
         beestat.cache.delete('data.three_d__runtime_sensor');
         self.rerender();
       });
   }
-  tile_group.add_tile(week_tile);
+  tile_group_dynamic.add_tile(week_tile);
 
   // Custom
-/*  const custom_tile = new beestat.component.tile()
+  const tile_group_static = new beestat.component.tile_group();
+  const custom_tile = new beestat.component.tile()
     .set_background_hover_color(color)
     .set_text_color('#fff')
     .set_icon('calendar_edit')
     .set_text('Custom');
 
-  if (
-    beestat.setting('visualize.range_type') === 'static'
-  ) {
+  custom_tile
+    .addEventListener('click', function() {
+      new beestat.component.modal.visualize_custom().render();
+    });
+
+  if (beestat.setting('visualize.range_type') === 'static') {
     custom_tile.set_background_color(color);
   } else {
-    custom_tile
-      .set_background_color(beestat.style.color.bluegray.light)
-      .addEventListener('click', function() {
-        // TODO MODAL
-        beestat.setting('visualize.range_type', 'static');
-        self.rerender();
-      });
+    custom_tile.set_background_color(beestat.style.color.bluegray.light);
   }
-  tile_group.add_tile(custom_tile);*/
+  tile_group_static.add_tile(custom_tile);
 
-  tile_group.render($(parent));
+  // Static range
+  if (beestat.setting('visualize.range_type') === 'static') {
+    const static_range_tile = new beestat.component.tile()
+      .set_shadow(false)
+      .set_text(
+        beestat.date(beestat.setting('visualize.range_static.begin')) +
+        ' to ' +
+        beestat.date(beestat.setting('visualize.range_static.end'))
+      );
+    tile_group_static.add_tile(static_range_tile);
+
+    const static_range_edit_tile = new beestat.component.tile()
+      .set_background_color(beestat.style.color.bluegray.light)
+      .set_background_hover_color(color)
+      .set_text_color('#fff')
+      .set_icon('pencil');
+    static_range_edit_tile
+      .addEventListener('click', function() {
+        new beestat.component.modal.visualize_custom().render();
+      });
+    tile_group_static.add_tile(static_range_edit_tile);
+  }
+
+  tile_group_dynamic
+    .style({
+      'margin-bottom': `${beestat.style.size.gutter}px`
+    })
+    .render($(parent));
+  tile_group_static.render($(parent));
 };
 
 /**

@@ -22,7 +22,7 @@ beestat.extend(beestat.component.modal.runtime_sensor_detail_custom, beestat.com
  * @param {rocket.Elements} parent
  */
 beestat.component.modal.runtime_sensor_detail_custom.prototype.decorate_contents_ = function(parent) {
-  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Sensor Detail chart. Max range is 7 days at a time and 30 days in the past. This limit will be raised in the future.'));
+  parent.appendChild($.createElement('p').innerHTML('Choose a custom range to display on the Sensor Detail chart. Max range is 7 days at a time and 3 months in the past.'));
 
   this.decorate_range_type_(parent);
 
@@ -99,7 +99,7 @@ beestat.component.modal.runtime_sensor_detail_custom.prototype.decorate_range_st
     var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
     var min = moment.max(
       moment(thermostat.sync_begin),
-      moment().subtract(1, 'month')
+      moment().subtract(3, 'month')
     );
     var max = moment(thermostat.sync_end);
 

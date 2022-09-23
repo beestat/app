@@ -47,6 +47,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/address.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/affiliate.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/date.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -127,6 +128,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/delete_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/change_floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/floor_plan_elevation_help.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/visualize_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;

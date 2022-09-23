@@ -287,7 +287,7 @@ beestat.component.modal.create_floor_plan.prototype.get_buttons_ = function() {
 beestat.component.modal.create_floor_plan.prototype.decorate_error_ = function(parent) {
   let has_error = false;
 
-  var div = $.createElement('div').style({
+  const div = $.createElement('div').style({
     'background': beestat.style.color.red.base,
     'color': '#fff',
     'border-radius': beestat.style.size.border_radius,
