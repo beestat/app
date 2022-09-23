@@ -163,7 +163,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
   });
   tile_group.render($(container));
 
-  if (beestat.setting('visualize.heat_map_values') === 'absolute') {
+  if (beestat.setting('visualize.heat_map_values') === 'static') {
     const min_max_container = document.createElement('div');
     container.appendChild(min_max_container);
 
@@ -190,14 +190,14 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       })
       .set_value(
         beestat.temperature(beestat.setting(
-          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
+          'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.min'
         ))
       )
       .set_width(50);
     min.addEventListener('change', function() {
       if (min.meets_requirements() === true) {
         beestat.setting(
-          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min',
+          'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.min',
           beestat.temperature({
             'temperature': min.get_value(),
             'input_temperature_unit': beestat.setting('units.temperature'),
@@ -207,7 +207,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       } else {
         min.set_value(
           beestat.temperature(beestat.setting(
-            'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.min'
+            'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.min'
           )),
           false
         );
@@ -223,7 +223,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       })
       .set_value(
         beestat.temperature(beestat.setting(
-          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
+          'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.max'
         )),
         false
       )
@@ -235,7 +235,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
         max.set_value(value, false);
 
         beestat.setting(
-          'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max',
+          'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.max',
           beestat.temperature({
             'temperature': max.get_value(),
             'input_temperature_unit': beestat.setting('units.temperature'),
@@ -245,7 +245,7 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
       } else {
         max.set_value(
           beestat.temperature(beestat.setting(
-            'visualize.heat_map_absolute.' + beestat.setting('visualize.data_type') + '.max'
+            'visualize.heat_map_static.' + beestat.setting('visualize.data_type') + '.max'
           )),
           false
         );

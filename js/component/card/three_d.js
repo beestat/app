@@ -10,10 +10,10 @@ beestat.component.card.three_d = function() {
     [
       'setting.visualize.data_type',
       'setting.visualize.heat_map_values',
-      'setting.visualize.heat_map_absolute.temperature.min',
-      'setting.visualize.heat_map_absolute.temperature.max',
-      'setting.visualize.heat_map_absolute.occupancy.min',
-      'setting.visualize.heat_map_absolute.occupancy.max'
+      'setting.visualize.heat_map_static.temperature.min',
+      'setting.visualize.heat_map_static.temperature.max',
+      'setting.visualize.heat_map_static.occupancy.min',
+      'setting.visualize.heat_map_static.occupancy.max'
     ], function() {
       self.update_scene_();
       self.update_hud_();
@@ -1114,11 +1114,11 @@ beestat.component.card.three_d.prototype.set_floor_plan_id = function(floor_plan
  * @return {number}
  */
 beestat.component.card.three_d.prototype.get_heat_map_min_ = function() {
-  if (beestat.setting('visualize.heat_map_values') === 'relative') {
+  if (beestat.setting('visualize.heat_map_values') === 'dynamic') {
     return this.data_.metadata.series[beestat.setting('visualize.data_type')].min;
   }
   return beestat.setting(
-    'visualize.heat_map_absolute.' +
+    'visualize.heat_map_static.' +
     beestat.setting('visualize.data_type') +
     '.min'
   ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1);
@@ -1130,11 +1130,11 @@ beestat.component.card.three_d.prototype.get_heat_map_min_ = function() {
  * @return {number}
  */
 beestat.component.card.three_d.prototype.get_heat_map_max_ = function() {
-  if (beestat.setting('visualize.heat_map_values') === 'relative') {
+  if (beestat.setting('visualize.heat_map_values') === 'dynamic') {
     return this.data_.metadata.series[beestat.setting('visualize.data_type')].max;
   }
   return beestat.setting(
-    'visualize.heat_map_absolute.' +
+    'visualize.heat_map_static.' +
     beestat.setting('visualize.data_type') +
     '.max'
   ) / (beestat.setting('visualize.data_type') === 'occupancy' ? 100 : 1);
