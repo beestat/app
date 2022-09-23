@@ -120,12 +120,12 @@ beestat.component.card.visualize_settings.prototype.decorate_heat_map_values_ = 
 
   const types = [
     {
-      'code': 'relative',
+      'code': 'dynamic',
       'name': 'Dynamic',
       'icon': 'arrow_expand_horizontal'
     },
     {
-      'code': 'absolute',
+      'code': 'static',
       'name': 'Static',
       'icon': 'arrow_horizontal_lock'
     }
