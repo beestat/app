@@ -194,7 +194,10 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
 
     var occupancy = {};
     self.get_chart().series.forEach(function(series) {
-      if (series.name.substring(0, 12) === 'temperature_') {
+      if (
+        series.name.substring(0, 12) === 'temperature_' &&
+        visible_series.includes(series.name) === true
+      ) {
         points.push({
           'series_code': series.name,
           'value': self.data_.metadata.series[series.name].data[x.valueOf()],
