@@ -52,37 +52,11 @@ class ecobee extends external_api {
         die();
       }
 
-      // Get the thermostat list from ecobee.
-      $response = $this->ecobee_api(
-        'GET',
-        'thermostat',
+      $existing_user = $this->database->read(
+        'user',
         [
-          'body' => json_encode([
-            'selection' => [
-              'selectionType' => 'registered',
-              'selectionMatch' => '',
-              'includeRuntime' => true,
-              'includeNotificationSettings' => true
-            ]
-          ])
-        ],
-        false,
-        $ecobee_token
-      );
-
-      $identifiers = [];
-      foreach($response['thermostatList'] as $thermostat) {
-        $runtime = $thermostat['runtime'];
-        $identifiers[] = $thermostat['identifier'];
-      }
-
-      // Look to see if any of the returned thermostats exist. This does not use
-      // CRUD because it needs to bypass the user_id restriction (also I don't
-      // think you're logged in yet)
-      $existing_ecobee_thermostats = $this->database->read(
-        'ecobee_thermostat',
-        [
-          'identifier' => $identifiers
+          'ecobee_account_id' => $ecobee_token['ecobee_account_id'],
+          'deleted' => false
         ]
       );
 
@@ -90,13 +64,12 @@ class ecobee extends external_api {
       // exists and all of them have matching user_ids, log in as that user.
       // Otherwise create a new user and save the tokens to it.
       if(
-        count($existing_ecobee_thermostats) > 0 &&
-        count(array_unique(array_column($existing_ecobee_thermostats, 'user_id'))) === 1
+        count($existing_user) > 0
       ) {
         $this->api(
           'user',
           'force_log_in',
-          ['user_id' => $existing_ecobee_thermostats[0]['user_id']]
+          ['user_id' => $existing_user[count($existing_user) - 1]['user_id']]
         );
 
         // Look for existing tokens (in case access was revoked and then re-

@@ -75,6 +75,7 @@ beestat.component.modal.newsletter.prototype.get_buttons_ = function() {
       .set_background_color('#fff')
       .set_text_color(beestat.style.color.gray.base)
       .set_text_hover_color(beestat.style.color.red.base)
+      .set_shadow(false)
       .set_text('No Thanks')
       .addEventListener('click', function() {
         self.dispose();
