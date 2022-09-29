@@ -24,60 +24,33 @@ beestat.component.header.prototype.rerender_on_breakpoint_ = true;
 beestat.component.header.prototype.decorate_ = function(parent) {
   var self = this;
 
-  var pages;
-
-  if (beestat.user.has_early_access() === true) {
-    pages = [
-      {
-        'layer': 'detail',
-        'text': 'Detail',
-        'icon': 'eye_circle'
-      },
-      {
-        'layer': 'analyze',
-        'text': 'Analyze',
-        'icon': 'home_search'
-      },
-      {
-        'layer': 'visualize',
-        'text': 'Visualize',
-        'icon': 'floor_plan'
-      },
-      {
-        'layer': 'compare',
-        'text': 'Compare',
-        'icon': 'earth'
-      },
-      {
-        'layer': 'air_quality',
-        'text': 'Air Quality',
-        'icon': 'weather_windy'
-      }
-    ];
-  } else {
-    pages = [
-      {
-        'layer': 'detail',
-        'text': 'Detail',
-        'icon': 'eye_circle'
-      },
-      {
-        'layer': 'analyze',
-        'text': 'Analyze',
-        'icon': 'home_search'
-      },
-      {
-        'layer': 'compare',
-        'text': 'Compare',
-        'icon': 'earth'
-      },
-      {
-        'layer': 'air_quality',
-        'text': 'Air Quality',
-        'icon': 'weather_windy'
-      }
-    ];
-  }
+  var pages = [
+    {
+      'layer': 'detail',
+      'text': 'Detail',
+      'icon': 'eye_circle'
+    },
+    {
+      'layer': 'analyze',
+      'text': 'Analyze',
+      'icon': 'home_search'
+    },
+    {
+      'layer': 'visualize',
+      'text': 'Visualize',
+      'icon': 'floor_plan'
+    },
+    {
+      'layer': 'compare',
+      'text': 'Compare',
+      'icon': 'earth'
+    },
+    {
+      'layer': 'air_quality',
+      'text': 'Air Quality',
+      'icon': 'weather_windy'
+    }
+  ];
 
   pages.push();
 

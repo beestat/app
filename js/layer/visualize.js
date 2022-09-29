@@ -83,6 +83,12 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
         'size': 12
       }
     ]);
+    cards.push([
+      {
+        'card': new beestat.component.card.visualize_video(),
+        'size': 12
+      }
+    ]);
   }
 
   // Footer
