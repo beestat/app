@@ -58,6 +58,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/settings.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/air_quality.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/visualize.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/contribute.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
@@ -87,6 +88,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/floor_plan_editor.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/visualize_intro.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/visualize_affiliate.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/contribute.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;

@@ -15,7 +15,7 @@ beestat.extend(beestat.component.input, beestat.component);
  */
 beestat.component.input.prototype.focus = function() {
   this.input_.focus();
-  this.input_.setSelectionRange(0, this.input_.value().length);
+  this.input_.setSelectionRange(0, this.input_.value.length);
 
   return this;
 };

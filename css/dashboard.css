@@ -453,6 +453,8 @@ input[type=range]::-moz-range-thumb {
 .icon.cloud_question:before { content: "\F0A39"; }
 .icon.code_tags:before { content: "\F0174"; }
 .icon.cog:before { content: "\F0493"; }
+.icon.credit_card_lock:before { content: "\F18E7"; }
+.icon.currency_usd:before { content: "\F01C1"; }
 .icon.delete:before { content: "\F01B4"; }
 .icon.dots_vertical:before { content: "\F01D9"; }
 .icon.download:before { content: "\F01DA"; }
@@ -466,6 +468,7 @@ input[type=range]::-moz-range-thumb {
 .icon.fast_forward:before { content: "\F0211"; }
 .icon.fire:before { content: "\F0238"; }
 .icon.floor_plan:before { content: "\F0821"; }
+.icon.gift:before { content: "\F0E44"; }
 .icon.google_play:before { content: "\F02BC"; }
 .icon.grid:before { content: "\F02C1"; }
 .icon.grid_off:before { content: "\F02C2"; }
