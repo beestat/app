@@ -77,7 +77,10 @@ class runtime extends cora\api {
             strtotime($thermostat['sync_begin']) <= strtotime('-1 year')
           ) ||
           // For when merging thermostats and sync_begin is less than first_connected
-          strtotime($thermostat['sync_begin']) <= strtotime($thermostat['first_connected'])
+          (
+            $thermostat['sync_begin'] !== null &&
+            strtotime($thermostat['sync_begin']) <= strtotime($thermostat['first_connected'])
+          )
         ) {
           $this->sync_forwards($thermostat_id);
 
