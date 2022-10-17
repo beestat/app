@@ -21,7 +21,7 @@ beestat.extend(beestat.component.card.contribute, beestat.component.card);
 beestat.component.card.contribute.prototype.decorate_contents_ = function(parent) {
   const self = this;
 
-  if (beestat.user.has_early_access() === true) {
+  if (beestat.user.contribution_is_active() === true) {
     const p1 = document.createElement('p');
     p1.innerText = 'Thank you so much for your support! Your contribution goes a long way towards keeping beestat running and enabling me to create a rich and useful application. My hope is that you are able to use beestat to save money and improve the efficiency of your home.';
     parent.appendChild(p1);
@@ -290,7 +290,7 @@ beestat.component.card.contribute.prototype.get_title_ = function() {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.contribute.prototype.decorate_top_right_ = function(parent) {
-  if (beestat.user.has_early_access() === false) {
+  if (beestat.user.contribution_is_active() === false) {
     const menu = (new beestat.component.menu()).render(parent);
 
     menu.add_menu_item(new beestat.component.menu_item()

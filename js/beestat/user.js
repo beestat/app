@@ -3,7 +3,7 @@ beestat.user = {};
 /**
  * Determine whether or not the current user is an active Patron.
  *
- * @return {boolean} true if yes, false if no.
+ * @return {boolean}
  */
 beestat.user.patreon_is_active = function() {
   const user = beestat.user.get();
@@ -16,7 +16,7 @@ beestat.user.patreon_is_active = function() {
 /**
  * Determine whether or not the current user is an active Stripe giver.
  *
- * @return {boolean} true if yes, false if no.
+ * @return {boolean}
  */
 beestat.user.stripe_is_active = function() {
   const stripe_events = Object.values(beestat.cache.stripe_event);
@@ -30,6 +30,16 @@ beestat.user.stripe_is_active = function() {
   }
 
   return false;
+};
+
+/**
+ * Determine whether or not hte current user is an active contributor.
+ *
+ * @return {boolean}
+ */
+beestat.user.contribution_is_active = function() {
+  return beestat.user.patreon_is_active() === true ||
+    beestat.user.stripe_is_active() === true;
 };
 
 /**
@@ -49,8 +59,7 @@ beestat.user.patreon_is_connected = function() {
 beestat.user.has_early_access = function() {
   const user = beestat.user.get();
   return user.user_id === 1 ||
-    beestat.user.stripe_is_active() === true ||
-    beestat.user.patreon_is_active() === true;
+    beestat.user.contribution_is_active() === true;
 };
 
 /**
