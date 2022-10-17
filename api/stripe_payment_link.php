@@ -9,7 +9,6 @@ class stripe_payment_link extends cora\crud {
 
   public static $exposed = [
     'private' => [
-      'get',
       'open'
     ],
     'public' => []
