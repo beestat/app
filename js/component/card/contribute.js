@@ -63,7 +63,11 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
       .set_icon('gift')
       .set_text('Make a One-Time Gift');
     one_time_gift_tile.addEventListener('click', function() {
-      window.open('https://donate.stripe.com/7sIcPp4Gt6APais144');
+      window.open(
+        'https://donate.stripe.com/7sIcPp4Gt6APais144' +
+        '?prefilled_email=' + beestat.user.get().email_address +
+        '&client_reference_id=' + beestat.user.get().user_id
+      );
     });
 
     one_time_gift_tile.render(parent);
@@ -297,7 +301,12 @@ beestat.component.card.contribute.prototype.decorate_top_right_ = function(paren
       .set_text('One-Time Gift')
       .set_icon('gift')
       .set_callback(function() {
-        window.open('https://donate.stripe.com/7sIcPp4Gt6APais144');
+        window.open(
+          'https://donate.stripe.com/7sIcPp4Gt6APais144' +
+          '?prefilled_email=' + beestat.user.get().email_address +
+          '&client_reference_id=' + beestat.user.get().user_id
+
+        );
       }));
 
     menu.add_menu_item(new beestat.component.menu_item()
