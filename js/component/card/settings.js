@@ -80,6 +80,39 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
 
   distance_radio_group.render(parent);
 
+  // Currency
+  parent.appendChild(
+    $.createElement('p')
+      .innerText('Currency')
+  );
+  const currency_select = new beestat.component.input.select()
+    .add_option({
+      'label': 'USD',
+      'value': 'usd'
+    })
+    .add_option({
+      'label': 'CAD',
+      'value': 'cad'
+    })
+    .add_option({
+      'label': 'AUD',
+      'value': 'aud'
+    })
+    .add_option({
+      'label': 'GBP',
+      'value': 'gpb'
+    });
+
+  currency_select.render(parent);
+
+  currency_select.set_value(beestat.setting('units.currency'));
+
+  currency_select.addEventListener('change', function() {
+    beestat.setting({
+      'units.currency': currency_select.get_value()
+    });
+  });
+
   /**
    * Thermosat Summary
    */

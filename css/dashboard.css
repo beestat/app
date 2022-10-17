@@ -454,6 +454,7 @@ input[type=range]::-moz-range-thumb {
 .icon.code_tags:before { content: "\F0174"; }
 .icon.cog:before { content: "\F0493"; }
 .icon.credit_card_lock:before { content: "\F18E7"; }
+.icon.credit_card_settings:before { content: "\F0FF5"; }
 .icon.currency_usd:before { content: "\F01C1"; }
 .icon.delete:before { content: "\F01B4"; }
 .icon.dots_vertical:before { content: "\F01D9"; }
@@ -468,6 +469,7 @@ input[type=range]::-moz-range-thumb {
 .icon.fast_forward:before { content: "\F0211"; }
 .icon.fire:before { content: "\F0238"; }
 .icon.floor_plan:before { content: "\F0821"; }
+.icon.forum:before { content: "\F028C"; }
 .icon.gift:before { content: "\F0E44"; }
 .icon.google_play:before { content: "\F02BC"; }
 .icon.grid:before { content: "\F02C1"; }
@@ -481,6 +483,8 @@ input[type=range]::-moz-range-thumb {
 .icon.information:before { content: "\F02FC"; }
 .icon.key:before { content: "\F0306"; }
 .icon.label:before { content: "\F0315"; }
+.icon.label:before { content: "\F0315"; }
+.icon.label_off:before { content: "\F0ACB"; }
 .icon.layers:before { content: "\F0328"; }
 .icon.layers_plus:before { content: "\F0E4D"; }
 .icon.link_off:before { content: "\F0338"; }
@@ -516,6 +520,7 @@ input[type=range]::-moz-range-thumb {
 .icon.numeric_8_box:before { content: "\F03B9"; }
 .icon.numeric_9:before { content: "\F0B42"; }
 .icon.numeric_9_box:before { content: "\F03BC"; }
+.icon.octagram:before { content: "\F06F9"; }
 .icon.open_in_new:before { content: "\F03CC"; }
 .icon.patreon:before { content: "\F0882"; }
 .icon.pause:before { content: "\F03E4"; }
@@ -529,6 +534,7 @@ input[type=range]::-moz-range-thumb {
 .icon.restart:before { content: "\F0709"; }
 .icon.restart_off:before { content: "\F0D95"; }
 .icon.snowflake:before { content: "\F0717"; }
+.icon.sticker_emoji:before { content: "\F0785"; }
 .icon.swap_horizontal:before { content: "\F04E1"; }
 .icon.thermometer:before { content: "\F050F"; }
 .icon.thermostat:before { content: "\F0393"; }
@@ -558,8 +564,6 @@ input[type=range]::-moz-range-thumb {
 .icon.wifi_strength_1_alert:before { content: "\F0920"; }
 .icon.wifi_strength_4:before { content: "\F0928"; }
 .icon.zigbee:before { content: "\F0D41"; }
-.icon.label:before { content: "\F0315"; }
-.icon.label_off:before { content: "\F0ACB"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }

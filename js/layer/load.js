@@ -127,6 +127,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     'runtime_thermostat_summary'
   );
 
+  api.add_call(
+    'stripe_event',
+    'read_id',
+    {},
+    'stripe_event'
+  );
+
   api.set_callback(function(response) {
     beestat.cache.set('user', response.user);
 
@@ -145,6 +152,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('floor_plan', response.floor_plan);
     beestat.cache.set('announcement', response.announcement);
     beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
+    beestat.cache.set('stripe_event', response.stripe_event);
 
     // Set the active thermostat_id if this is your first time visiting.
     if (beestat.setting('thermostat_id') === undefined) {
@@ -201,6 +209,26 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
         'units.area',
         imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft²' : 'm²'
       );
+    }
+
+    // Currency (USD is default)
+    const currency_map = {
+      'CAN': 'cad',
+      'AUS': 'aud',
+      'GBR': 'gbp'
+    };
+    if (
+      beestat.setting('units.currency') === undefined &&
+      thermostat.address_id !== null &&
+      beestat.address.is_valid(thermostat.address_id) === true
+    ) {
+      const address = beestat.cache.address[thermostat.address_id];
+      if (currency_map[address.normalized.components.country_iso_3] !== undefined) {
+        beestat.setting(
+          'units.currency',
+          currency_map[address.normalized.components.country_iso_3]
+        );
+      }
     }
 
     // Rename series if there are multiple stages.

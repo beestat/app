@@ -34,11 +34,27 @@ beestat.layer.contribute.prototype.decorate_ = function(parent) {
   cards.push([
     {
       'card': new beestat.component.card.contribute(),
-      'size': 9
+      'size': 8
     },
     {
-      'card': new beestat.component.card.contribute(),
-      'size': 3
+      'card': new beestat.component.card.contribute_benefits(),
+      'size': 4
+    }
+  ]);
+
+  // History
+  cards.push([
+    {
+      'card': new beestat.component.card.contribute_status(),
+      'size': 12
+    }
+  ]);
+
+  // Merchandise
+  cards.push([
+    {
+      'card': new beestat.component.card.merchandise(),
+      'size': 12
     }
   ]);
 

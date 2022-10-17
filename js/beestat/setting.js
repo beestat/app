@@ -83,7 +83,9 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'visualize.three_d.show_labels': false,
     'visualize.three_d.auto_rotate': false,
 
-    'date_format': 'M/D/YYYY'
+    'date_format': 'M/D/YYYY',
+
+    'units.currency': 'usd'
   };
 
   // Figure out what we're trying to do.
