@@ -718,6 +718,11 @@ class runtime extends cora\api {
             ],
             'operator' => 'between'
           ]
+        ],
+        [
+          'runtime_sensor_id',
+          'sensor_id',
+          'timestamp'
         ]
       );
 
