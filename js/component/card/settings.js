@@ -336,4 +336,11 @@ beestat.component.card.settings.prototype.decorate_top_right_ = function(parent)
     .set_callback(function() {
       window.open('https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d');
     }));
+
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Contribute (New)')
+    .set_icon('credit_card_lock')
+    .set_callback(function() {
+      new beestat.layer.contribute().render();
+    }));
 };
