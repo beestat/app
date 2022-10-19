@@ -324,12 +324,31 @@ beestat.component.card.contribute.prototype.decorate_top_right_ = function(paren
   if (beestat.user.contribution_is_active() === false) {
     const menu = (new beestat.component.menu()).render(parent);
 
+    const pay_links = {
+      'usd': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/7sIcPp4Gt6APais144'
+      },
+      'cad': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/28obLl4Gte3hfCMdR4'
+      },
+      'aud': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/dR66r12ylcZd3U4aER'
+      },
+      'gbp': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/4gwbLl3Cpe3hais3cs'
+      }
+    };
+
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('One-Time Gift')
       .set_icon('gift')
       .set_callback(function() {
         window.open(
-          'https://donate.stripe.com/7sIcPp4Gt6APais144' +
+          pay_links[beestat.setting('units.currency')][window.environment] +
           '?prefilled_email=' + beestat.user.get().email_address +
           '&client_reference_id=' + beestat.user.get().user_id
 
