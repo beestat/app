@@ -4,7 +4,10 @@
 beestat.component.card.contribute = function() {
   beestat.component.card.apply(this, arguments);
 
-  this.state_.currency_multiplier = beestat.setting('units.currency') === 'usd' ? 1 : 1.5;
+  this.state_.currency_multiplier = [
+    'usd',
+    'gbp'
+  ].includes(beestat.setting('units.currency')) === true ? 1 : 1.5;
   this.state_.contribute_type = 'recurring';
   this.state_.contribute_interval = 'year';
   this.state_.contribute_amount = 2 * this.state_.currency_multiplier;
@@ -56,6 +59,25 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
     p2.innerText = 'Looking for a way to contribute more but don\'t want to change your recurring support amount?';
     parent.appendChild(p2);
 
+    const pay_links = {
+      'usd': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/7sIcPp4Gt6APais144'
+      },
+      'cad': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/28obLl4Gte3hfCMdR4'
+      },
+      'aud': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/dR66r12ylcZd3U4aER'
+      },
+      'gbp': {
+        'dev': 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG',
+        'live': 'https://donate.stripe.com/4gwbLl3Cpe3hais3cs'
+      }
+    };
+
     const one_time_gift_tile = new beestat.component.tile()
       .set_background_color(beestat.style.color.green.base)
       .set_background_hover_color(beestat.style.color.green.light)
@@ -64,7 +86,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
       .set_text('Make a One-Time Gift');
     one_time_gift_tile.addEventListener('click', function() {
       window.open(
-        'https://donate.stripe.com/7sIcPp4Gt6APais144' +
+        pay_links[beestat.setting('units.currency')][window.environment] +
         '?prefilled_email=' + beestat.user.get().email_address +
         '&client_reference_id=' + beestat.user.get().user_id
       );
@@ -98,11 +120,16 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
       3 * this.state_.currency_multiplier
     ];
     amounts.forEach(function(amount) {
+      const amount_formatted = new Intl.NumberFormat('en-US', {
+        'style': 'currency',
+        'currency': beestat.setting('units.currency')
+      }).format(amount);
+
       const tile_amount = new beestat.component.tile()
         .set_background_color(beestat.style.color.bluegray.light)
         .set_background_hover_color(beestat.style.color.green.base)
         .set_text_color('#fff')
-        .set_text('$' + amount + ' / month');
+        .set_text(amount_formatted + ' / month');
       tile_group_amount.add_tile(tile_amount);
 
       if (

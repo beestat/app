@@ -100,7 +100,7 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
     })
     .add_option({
       'label': 'GBP',
-      'value': 'gpb'
+      'value': 'gbp'
     });
 
   currency_select.render(parent);
