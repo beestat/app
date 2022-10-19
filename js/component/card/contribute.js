@@ -2,6 +2,18 @@
  * Main contribute card.
  */
 beestat.component.card.contribute = function() {
+  const self = this;
+
+  beestat.dispatcher.addEventListener(
+    [
+      'cache.user',
+      'cache.stripe_event'
+    ],
+    function() {
+      self.rerender();
+    }
+  );
+
   beestat.component.card.apply(this, arguments);
 
   this.state_.currency_multiplier = [
