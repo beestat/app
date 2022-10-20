@@ -222,7 +222,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
         .set_background_color(beestat.style.color.bluegray.light)
         .set_background_hover_color(beestat.style.color.lightblue.base)
         .set_text_color('#fff')
-        .set_text('Pay ' + frequency.charAt(0).toUpperCase() + frequency.slice(1) + 'ly');
+        .set_text('Give ' + frequency.charAt(0).toUpperCase() + frequency.slice(1) + 'ly');
       tile_group_frequency.add_tile(tile_frequency);
 
       if (frequency === self.state_.contribute_interval) {

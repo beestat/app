@@ -33,7 +33,7 @@ beestat.user.stripe_is_active = function() {
 };
 
 /**
- * Determine whether or not hte current user is an active contributor.
+ * Determine whether or not the current user is an active contributor.
  *
  * @return {boolean}
  */

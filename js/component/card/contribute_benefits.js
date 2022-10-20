@@ -26,7 +26,8 @@ beestat.component.card.contribute_benefits.prototype.decorate_contents_ = functi
   const benefits = [
     'Early access to new features',
     'Private Discord membership',
-    'More frequent data syncing'
+    'More frequent data syncing',
+    'Removed contribute banner'
   ];
   benefits.forEach(function(benefit) {
     new beestat.component.tile()
@@ -35,7 +36,7 @@ beestat.component.card.contribute_benefits.prototype.decorate_contents_ = functi
       .set_icon('octagram')
       .set_text(benefit)
       .style({
-        'margin-bottom': `${beestat.style.size.gutter}px`
+        'margin-bottom': `${beestat.style.size.gutter / 2}px`
       })
       .render($(benefit_container));
   });

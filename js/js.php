@@ -72,7 +72,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/demo.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/footer.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/my_home.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/patreon.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/contribute_reminder.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/runtime_thermostat_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/runtime_sensor_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/sensors.js"></script>' . PHP_EOL;
@@ -126,7 +126,6 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/runtime_sensor_detail_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/thermostat_info.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/weather.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/modal/patreon_status.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/newsletter.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/air_quality_detail_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/create_floor_plan.js"></script>' . PHP_EOL;

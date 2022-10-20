@@ -54,13 +54,13 @@ beestat.component.card.visualize_intro.prototype.decorate_contents_ = function(p
       .set_icon('heart')
       .set_size('large')
       .set_text([
-        'Support this project on Patreon!',
+        'Support this project!',
         'Your contribution matters'
       ])
       .set_background_color(beestat.style.color.green.dark)
       .set_background_hover_color(beestat.style.color.green.light)
       .addEventListener('click', function() {
-        window.open('https://www.patreon.com/beestat');
+        new beestat.layer.contribute().render();
       })
       .render(parent);
   }

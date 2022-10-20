@@ -48,10 +48,10 @@ beestat.layer.detail.prototype.decorate_ = function(parent) {
     }
   ]);
 
-  if (beestat.component.card.patreon.should_show() === true) {
+  if (beestat.component.card.contribute_reminder.should_show() === true) {
     cards.push([
       {
-        'card': new beestat.component.card.patreon(),
+        'card': new beestat.component.card.contribute_reminder(),
         'size': 12
       }
     ]);
