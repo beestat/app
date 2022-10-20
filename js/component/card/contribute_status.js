@@ -129,9 +129,7 @@ beestat.component.card.contribute_status.prototype.decorate_patreon_ = function(
   if (beestat.user.patreon_is_connected() === true) {
     self.state_.patreon_connecting = false;
 
-    const user = beestat.user.get();
-
-    if (user.patreon_status.patron_status === 'active_patron') {
+    if (beestat.user.patreon_is_active() === true) {
       status_tile
         .set_icon('check')
         .set_text_color(beestat.style.color.green.base)
