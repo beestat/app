@@ -304,7 +304,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       beestat.setting('first_run', false);
       (new beestat.component.modal.newsletter()).render();
     } else if (
-      beestat.cache.announcement.length > 0 &&
+      $.keys(beestat.cache.announcement).length > 0 &&
       (
         last_read_announcement_id === undefined ||
         (
