@@ -601,7 +601,10 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   sensor_input.render(div);
 
-  if (self.state_.active_room_entity.get_room().sensor_id !== undefined) {
+  if (
+    self.state_.active_room_entity.get_room().sensor_id !== undefined &&
+    beestat.cache.sensor[self.state_.active_room_entity.get_room().sensor_id] !== undefined
+  ) {
     sensor_input.set_value(self.state_.active_room_entity.get_room().sensor_id);
   } else {
     sensor_input.set_value('');

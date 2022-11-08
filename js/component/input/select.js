@@ -41,7 +41,6 @@ beestat.component.input.select.prototype.decorate_ = function(parent) {
   this.input_.style.color = '#fff';
   this.input_.style.outline = 'none';
   this.input_.style.transition = 'background 200ms ease';
-  this.input_.style.marginBottom = beestat.style.size.gutter + 'px';
   this.input_.style.borderBottom = '2px solid ' + beestat.style.color.lightblue.base;
 
   // Clear any existing option values from the input.

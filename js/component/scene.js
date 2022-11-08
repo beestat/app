@@ -411,50 +411,52 @@ beestat.component.scene.prototype.update_ = function() {
         const sensor = beestat.cache.sensor[room.sensor_id];
         let icon;
         let icon_opacity;
-        if (
-          self.data_.series.compressor_cool_1[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.compressor_cool_1[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'snowflake';
-          icon_opacity = self.data_.series.compressor_cool_1[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.compressor_cool_2[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.compressor_cool_2[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'snowflake';
-          icon_opacity = self.data_.series.compressor_cool_2[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.compressor_heat_1[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.compressor_heat_1[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'fire';
-          icon_opacity = self.data_.series.compressor_heat_1[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.compressor_heat_2[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.compressor_heat_2[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'fire';
-          icon_opacity = self.data_.series.compressor_heat_2[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'fire';
-          icon_opacity = self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'fire';
-          icon_opacity = self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time];
-        } else if (
-          self.data_.series.fan[sensor.thermostat_id][time] !== undefined &&
-          self.data_.series.fan[sensor.thermostat_id][time] > 0
-        ) {
-          icon = 'fan';
-          icon_opacity = self.data_.series.fan[sensor.thermostat_id][time];
+        if (sensor !== undefined) {
+          if (
+            self.data_.series.compressor_cool_1[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.compressor_cool_1[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'snowflake';
+            icon_opacity = self.data_.series.compressor_cool_1[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.compressor_cool_2[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.compressor_cool_2[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'snowflake';
+            icon_opacity = self.data_.series.compressor_cool_2[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.compressor_heat_1[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.compressor_heat_1[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'fire';
+            icon_opacity = self.data_.series.compressor_heat_1[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.compressor_heat_2[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.compressor_heat_2[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'fire';
+            icon_opacity = self.data_.series.compressor_heat_2[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'fire';
+            icon_opacity = self.data_.series.auxiliary_heat_1[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'fire';
+            icon_opacity = self.data_.series.auxiliary_heat_2[sensor.thermostat_id][time];
+          } else if (
+            self.data_.series.fan[sensor.thermostat_id][time] !== undefined &&
+            self.data_.series.fan[sensor.thermostat_id][time] > 0
+          ) {
+            icon = 'fan';
+            icon_opacity = self.data_.series.fan[sensor.thermostat_id][time];
+          }
+          icon_opacity = Math.round(icon_opacity * 10) / 10;
         }
-        icon_opacity = Math.round(icon_opacity * 10) / 10;
 
         // Labels
         if (
@@ -559,7 +561,10 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   const material = new THREE.MeshPhongMaterial({
     'color': color
   });
-  if (room.sensor_id === undefined) {
+  if (
+    room.sensor_id === undefined ||
+    beestat.cache.sensor[room.sensor_id] === undefined
+  ) {
     const loader = new THREE.TextureLoader();
     loader.load(
       'img/visualize/stripe.png',

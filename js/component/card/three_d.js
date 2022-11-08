@@ -430,7 +430,8 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   let thermostat_ids;
   if (
     active_room !== null &&
-    active_room.sensor_id !== undefined
+    active_room.sensor_id !== undefined &&
+    beestat.cache.sensor[active_room.sensor_id] !== undefined
   ) {
     thermostat_ids = [beestat.cache.sensor[active_room.sensor_id].thermostat_id];
   } else {

@@ -173,7 +173,10 @@ beestat.floor_plan.get_sensor_ids_map = function(floor_plan_id) {
   const sensor_ids_map = {};
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
-      if (room.sensor_id !== undefined) {
+      if (
+        room.sensor_id !== undefined &&
+        beestat.cache.sensor[room.sensor_id] !== undefined
+      ) {
         sensor_ids_map[room.sensor_id] = true;
       }
     });
@@ -195,7 +198,10 @@ beestat.floor_plan.get_thermostat_ids_map = function(floor_plan_id) {
   const thermostat_ids_map = {};
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
-      if (room.sensor_id !== undefined) {
+      if (
+        room.sensor_id !== undefined &&
+        beestat.cache.sensor[room.sensor_id] !== undefined
+      ) {
         const sensor = beestat.cache.sensor[room.sensor_id];
         thermostat_ids_map[sensor.thermostat_id] = true;
       }
