@@ -203,4 +203,8 @@ beestat.component.header.prototype.decorate_ = function(parent) {
         .add_call('user', 'log_out')
         .send();
     }));
+
+  const contribute_banner = new beestat.component.card.contribute_banner();
+  contribute_banner.style({'margin-bottom': `${beestat.style.size.gutter}px`});
+  contribute_banner.render(parent);
 };

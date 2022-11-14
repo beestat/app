@@ -363,7 +363,6 @@ beestat.component.card.contribute.prototype.decorate_top_right_ = function(paren
           pay_links[beestat.setting('units.currency')][window.environment] +
           '?prefilled_email=' + beestat.user.get().email_address +
           '&client_reference_id=' + beestat.user.get().user_id
-
         );
       }));
 

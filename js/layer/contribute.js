@@ -17,7 +17,7 @@ beestat.layer.contribute.prototype.decorate_ = function(parent) {
     'padding': '0 ' + beestat.style.size.gutter + 'px'
   });
 
-  (new beestat.component.header()).render(parent);
+  (new beestat.component.header('contribute')).render(parent);
 
   // All the cards
   var cards = [];
