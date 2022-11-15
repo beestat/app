@@ -204,7 +204,9 @@ beestat.component.header.prototype.decorate_ = function(parent) {
         .send();
     }));
 
-  const contribute_banner = new beestat.component.card.contribute_banner();
-  contribute_banner.style({'margin-bottom': `${beestat.style.size.gutter}px`});
-  contribute_banner.render(parent);
+  if (beestat.setting('hide_contribute_banner') === false) {
+    const contribute_banner = new beestat.component.card.contribute_banner();
+    contribute_banner.style({'margin-bottom': `${beestat.style.size.gutter}px`});
+    contribute_banner.render(parent);
+  }
 };

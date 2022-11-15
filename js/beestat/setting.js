@@ -85,7 +85,9 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
 
     'date_format': 'M/D/YYYY',
 
-    'units.currency': 'usd'
+    'units.currency': 'usd',
+
+    'hide_contribute_banner': false
   };
 
   // Figure out what we're trying to do.

@@ -44,6 +44,23 @@ beestat.component.card.contribute_banner.prototype.decorate_contents_ = function
   });
   tile_group.add_tile(watch_tile);
 
+  // Allow dismiss if you are a supporter or if you have given via Stripe.
+  if (
+    beestat.user.contribution_is_active() === true ||
+    Object.keys(beestat.cache.stripe_event).length > 0
+  ) {
+    const dismiss_tile = new beestat.component.tile()
+      .set_icon('close')
+      .set_shadow(false)
+      .set_text_color(beestat.style.color.purple.dark)
+      .set_text_hover_color(beestat.style.color.purple.light);
+    dismiss_tile.addEventListener('click', function() {
+      beestat.setting('hide_contribute_banner', true);
+      beestat.current_layer.render();
+    });
+    tile_group.add_tile(dismiss_tile);
+  }
+
   tile_group.render($(center));
 
   container.appendChild(center);
