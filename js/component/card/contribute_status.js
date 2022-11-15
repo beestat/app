@@ -61,9 +61,6 @@ beestat.component.card.contribute_status.prototype.decorate_direct_ = function(p
   const status_tile = new beestat.component.tile()
     .set_shadow(false);
 
-  const button_container = document.createElement('div');
-  container.appendChild(button_container);
-
   if (beestat.user.stripe_is_active() === true) {
     status_tile
       .set_icon('check')
@@ -77,20 +74,26 @@ beestat.component.card.contribute_status.prototype.decorate_direct_ = function(p
   }
   status_tile.render($(status_container));
 
-  const manage_tile = new beestat.component.tile()
-    .set_text('Manage Support')
-    .set_icon('credit_card_settings')
-    .set_background_color(beestat.style.color.red.base)
-    .set_background_hover_color(beestat.style.color.red.light)
-    .set_text_color('#fff')
-    .addEventListener('click', function() {
-      window.open(
-        window.environment === 'dev'
-          ? 'https://billing.stripe.com/p/login/test_14k8zD2vwb8g6ZO8ww'
-          : 'https://billing.stripe.com/p/login/7sI5kEetRfHP6g8fYY'
-      );
-    });
-  manage_tile.render($(button_container));
+  // If you have at least one Stripe event, show the Manage Support button.
+  if (Object.keys(beestat.cache.stripe_event).length > 0) {
+    const button_container = document.createElement('div');
+    container.appendChild(button_container);
+
+    const manage_tile = new beestat.component.tile()
+      .set_text('Manage Support')
+      .set_icon('credit_card_settings')
+      .set_background_color(beestat.style.color.red.base)
+      .set_background_hover_color(beestat.style.color.red.light)
+      .set_text_color('#fff')
+      .addEventListener('click', function() {
+        window.open(
+          window.environment === 'dev'
+            ? 'https://billing.stripe.com/p/login/test_14k8zD2vwb8g6ZO8ww'
+            : 'https://billing.stripe.com/p/login/7sI5kEetRfHP6g8fYY'
+        );
+      });
+    manage_tile.render($(button_container));
+  }
 };
 
 /**
