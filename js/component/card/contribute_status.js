@@ -25,7 +25,7 @@ beestat.extend(beestat.component.card.contribute_status, beestat.component.card)
  */
 beestat.component.card.contribute_status.prototype.decorate_contents_ = function(parent) {
   const p = document.createElement('p');
-  p.innerText = 'Use this area to view, update, or cancel your support of beestat.';
+  p.innerText = 'Use this area to view, update, or cancel your recurring support of beestat. If you have made a one-time direct donation, use the Manage Support button to view payment history.';
   parent.appendChild(p);
 
   this.decorate_direct_(parent);
@@ -70,7 +70,7 @@ beestat.component.card.contribute_status.prototype.decorate_direct_ = function(p
     status_tile
       .set_icon('close')
       .set_text_color(beestat.style.color.gray.base)
-      .set_text('Not a Supporter');
+      .set_text('Not a recurring supporter');
   }
   status_tile.render($(status_container));
 
@@ -186,7 +186,7 @@ beestat.component.card.contribute_status.prototype.decorate_patreon_ = function(
     status_tile
       .set_icon('cloud_question')
       .set_text_color(beestat.style.color.gray.base)
-      .set_text('Account Not Connected')
+      .set_text('Account not connected')
       .render($(status_container));
 
     if (this.state_.patreon_connecting === true) {
@@ -234,5 +234,5 @@ beestat.component.card.contribute_status.prototype.decorate_patreon_ = function(
  * @return {string} The title.
  */
 beestat.component.card.contribute_status.prototype.get_title_ = function() {
-  return 'Contribution Status';
+  return 'Recurring Contribution Status';
 };
