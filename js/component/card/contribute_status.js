@@ -226,6 +226,15 @@ beestat.component.card.contribute_status.prototype.decorate_patreon_ = function(
       link_button.render($(button_container));
     }
   }
+
+  if (beestat.user.patreon_is_active() === true) {
+    const p = document.createElement('p');
+    Object.assign(p.style, {
+      'font-style': 'italic'
+    });
+    p.innerText = 'Want to switch to direct giving? First cancel your Patreon subscription and unlink your account.';
+    parent.appendChild(p);
+  }
 };
 
 /**
