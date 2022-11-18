@@ -90,7 +90,7 @@ function array_standard_deviation($array) {
     $variance += pow(($i - $mean), 2);
   }
 
-  return round(sqrt($variance / $count), 1);
+  return round(sqrt($variance / $count), 2);
 }
 
 /**
