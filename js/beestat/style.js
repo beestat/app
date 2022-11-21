@@ -4,12 +4,12 @@ beestat.style.color = {
   'red': {
     'light': '#fc5c65',
     'base': '#eb3b5a',
-    'dark': '#d63652'
+    'dark': '#c82844'
   },
   'orange': {
     'light': '#fd9644',
     'base': '#fa8231',
-    'dark': '#f97218'
+    'dark': '#ef6306'
   },
   'yellow': {
     'light': '#fed330',
