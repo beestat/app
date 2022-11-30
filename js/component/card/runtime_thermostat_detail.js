@@ -142,6 +142,11 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
     moment().subtract(1, 'hour')
   );
 
+  required_end = moment.max(
+    required_end,
+    moment(thermostat.data_begin)
+  );
+
   /**
    * If the needed data exists in the database and the runtime_thermostat
    * cache is empty, then query the data. If the needed data does not exist in
