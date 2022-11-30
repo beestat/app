@@ -82,7 +82,7 @@ beestat.component.card.air_quality_summary.prototype.decorate_contents_ = functi
   // Don't go before there's data.
   required_begin = moment.max(
     required_begin,
-    moment.utc(thermostat.data_begin)
+    moment(thermostat.data_begin)
   );
 
   // Don't go after now.

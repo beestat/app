@@ -114,7 +114,7 @@ beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = func
   // Don't go before there's data.
   required_begin = moment.max(
     required_begin,
-    moment.utc(thermostat.data_begin)
+    moment(thermostat.data_begin)
   );
 
   // Don't go after now.
