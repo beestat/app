@@ -93,7 +93,6 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/contribute_status.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/merchandise.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/visualize_video.js"></script>' . PHP_EOL;
-  echo '<script src="/js/component/card/contribute_banner.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;
