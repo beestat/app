@@ -254,7 +254,10 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
 
   temperature_profiles_range_begin.addEventListener('change', function() {
     var temperature_profiles_range_begin_value;
-    if (temperature_profiles_range_begin.meets_requirements() === true) {
+    if (
+      temperature_profiles_range_begin.meets_requirements() === true &&
+      this.get_value() !== undefined
+    ) {
       temperature_profiles_range_begin_value = this.get_value();
     } else {
       this.set_value('', false);
