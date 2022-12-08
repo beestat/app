@@ -32,6 +32,9 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
     .set_requirements({
       'required': true
     })
+    .style({
+      'margin-bottom': `${beestat.style.size.gutter}px`
+    })
     .render(parent);
 
   name_input.addEventListener('change', function() {
@@ -61,6 +64,9 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
       'max_value': 8,
       'type': 'integer',
       'required': true
+    })
+    .style({
+      'margin-bottom': `${beestat.style.size.gutter}px`
     })
     .render($(floor_container));
 
@@ -105,6 +111,9 @@ beestat.component.modal.create_floor_plan.prototype.decorate_contents_ = functio
       'min_value': beestat.distance(60),
       'type': 'decimal',
       'required': true
+    })
+    .style({
+      'margin-bottom': `${beestat.style.size.gutter}px`
     })
     .render(parent);
 

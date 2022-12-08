@@ -95,6 +95,9 @@ beestat.component.modal.change_system_type.prototype.decorate_contents_ = functi
 
       tile_group.add_tile(button);
     });
+    tile_group.style({
+      'margin-bottom': `${beestat.style.size.gutter}px`
+    });
     tile_group.render(parent);
   }
 };
