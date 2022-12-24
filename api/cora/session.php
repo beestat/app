@@ -232,7 +232,11 @@ final class session {
    * @return int The current user_id.
    */
   public function get_user_id() {
-    return $this->session['user_id'];
+    if ($this->session !== null) {
+      return $this->session['user_id'];
+    }
+
+    return null;
   }
 
   /**

@@ -47,7 +47,7 @@ class external_api extends cora\api {
    */
   protected function curl($arguments) {
     $user = $this->api('user', 'get', $this->session->get_user_id());
-    if ($user['debug'] === true) {
+    if ($user === null || $user['debug'] === true) {
       $this::$log_mysql = 'all';
       $this::$log_mysql_verbose = true;
     }
