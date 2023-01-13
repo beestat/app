@@ -606,16 +606,26 @@ class runtime extends cora\api {
       $data['outdoor_temperature'] = $columns['outdoorTemp'] * 10;
       $data['outdoor_humidity'] = round($columns['outdoorHumidity']);
 
-      $data['event_runtime_thermostat_text_id'] = $this->api(
+
+      $event_runtime_thermostat_text = $this->api(
         'runtime_thermostat_text',
         'get_create',
         $columns['zoneCalendarEvent']
-      )['runtime_thermostat_text_id'];
-      $data['climate_runtime_thermostat_text_id'] = $this->api(
+      );
+      $data['event_runtime_thermostat_text_id'] =
+        $event_runtime_thermostat_text === null ?
+        null :
+        $event_runtime_thermostat_text['runtime_thermostat_text_id'];
+
+      $climate_runtime_thermostat_text = $this->api(
         'runtime_thermostat_text',
         'get_create',
         $columns['zoneClimate']
-      )['runtime_thermostat_text_id'];
+      );
+      $data['event_runtime_thermostat_text_id'] =
+        $climate_runtime_thermostat_text === null ?
+        null :
+        $climate_runtime_thermostat_text['runtime_thermostat_text_id'];
 
       if (isset($columns['zoneCoolTemp']) === true) {
         $data['setpoint_cool'] = $columns['zoneCoolTemp'] * 10;
