@@ -606,7 +606,7 @@ class runtime extends cora\api {
       $data['outdoor_temperature'] = $columns['outdoorTemp'] * 10;
       $data['outdoor_humidity'] = round($columns['outdoorHumidity']);
 
-
+      // Event
       $event_runtime_thermostat_text = $this->api(
         'runtime_thermostat_text',
         'get_create',
@@ -617,12 +617,14 @@ class runtime extends cora\api {
         null :
         $event_runtime_thermostat_text['runtime_thermostat_text_id'];
 
+      // Climate
       $climate_runtime_thermostat_text = $this->api(
         'runtime_thermostat_text',
         'get_create',
         $columns['zoneClimate']
       );
-      $data['event_runtime_thermostat_text_id'] =
+
+      $data['climate_runtime_thermostat_text_id'] =
         $climate_runtime_thermostat_text === null ?
         null :
         $climate_runtime_thermostat_text['runtime_thermostat_text_id'];
