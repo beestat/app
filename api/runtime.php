@@ -939,6 +939,8 @@ class runtime extends cora\api {
 
     $this->user_lock($thermostat_id);
 
+    $user = $this->api('user', 'get', $this->session->get_user_id());
+
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
     $ecobee_thermostat = $this->api(
       'ecobee_thermostat',
@@ -1023,8 +1025,9 @@ class runtime extends cora\api {
           if($runtime_sensor['temperature'] !== null) {
             $runtime_sensor['temperature'] /= 10;
             if(
-              isset($thermostat['setting']['temperature_unit']) === true &&
-              $thermostat['setting']['temperature_unit'] === '°C'
+              isset($user['settings']['units']) === true &&
+              isset($user['settings']['units']['temperature']) === true &&
+              $user['settings']['units']['temperature'] === '°C'
             ) {
               $runtime_sensor['temperature'] =
                 round(($runtime_sensor['temperature'] - 32) * (5 / 9), 1);
@@ -1089,8 +1092,9 @@ class runtime extends cora\api {
           if($runtime_thermostat[$key] !== null) {
             $runtime_thermostat[$key] /= 10;
             if(
-              isset($thermostat['setting']['temperature_unit']) === true &&
-              $thermostat['setting']['temperature_unit'] === '°C'
+              isset($user['settings']['units']) === true &&
+              isset($user['settings']['units']['temperature']) === true &&
+              $user['settings']['units']['temperature'] === '°C'
             ) {
               $runtime_thermostat[$key] =
                 round(($runtime_thermostat[$key] - 32) * (5 / 9), 1);
