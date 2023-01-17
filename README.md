@@ -13,14 +13,6 @@
 
 > Beestat connects with your thermostat and provides you with useful charts and analytics so that you can make informed decisions and see how the changes you make lower your energy footprint.
 
-## Sponsors
-
-<a href="https://www.browserstack.com/" target="_blank"><img src="https://marker.io/vendor/img/logo/browserstack-logo.svg" height="32px"/></a><br/>
-I use BrowserStack to help me test and debug in devices that I do not have physical access to. They provide free access to their tools for open source projects.
-
-<a href="https://smartystreets.com/" target="_blank"><img src="https://d79i1fxsrar4t.cloudfront.net/assets/img/company/brand/smartystreets.b24876d8.png" height="32px"/></a><br/>
-SmartyStreets powers real time address lookup and normalization. This gives beestat accurate location information for home comparisons. SmartyStreets provided a free year of US address lookups.
-
 
 ## Demo
 
