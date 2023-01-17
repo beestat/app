@@ -1,4 +1,7 @@
 -- mysqldump -u root -p --opt beestat -d --single-transaction | sed 's/ AUTO_INCREMENT=[0-9]*//g' > beestat.sql
+-- Note: Removed partitions
+
+
 
 -- MySQL dump 10.13  Distrib 8.0.29, for Linux (x86_64)
 --
