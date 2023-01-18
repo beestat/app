@@ -57,6 +57,13 @@ final class setting {
     'commit' => null,
 
     /**
+     * The beestat API key for the main beestat API user.
+     *
+     * Example: ert90ujrt5yifhkfgml4ert90ujrt5yifhkf9g6a
+     */
+    'beestat_api_key_local' => '',
+
+    /**
      * The beestat API key for when ecobee makes an API call to beestat.
      *
      * Example: 2hFpGKrsS586hHaU9g6vZZdQS586hHaUwY9kdctx
@@ -84,7 +91,7 @@ final class setting {
      *
      * Example: 2hFpGKrsS586hHaA9g6vZZdQS586hHaUwY9kdctx
      */
-    'ecobee_api_key_local' => '',
+    'patreon_api_key_local' => '',
 
     /**
      * Your Patreon Client ID; provided to you when you create an app as a
@@ -145,6 +152,27 @@ final class setting {
      * Example: gGS5k7vuw3NSzkRMSWNP
      */
     'smarty_streets_auth_token' => '',
+
+    /**
+     * Secret key for Stripe
+     *
+     * Example: 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
+     */
+    'stripe_secret_key' => '',
+
+    /**
+     * Stripe base URL.
+     *
+     * Example: https://api.stripe.com/v1/
+     */
+    'stripe_base_url' => '',
+
+    /**
+     * Stripe Product ID.
+     *
+     * Example: prod_0NXlpZmhrZmdtb
+     */
+    'stripe_product_id' => '',
 
     /**
      * Whether or not debugging is enabled. Debugging will produce additional
@@ -221,4 +249,3 @@ final class setting {
   }
 
 }
-
