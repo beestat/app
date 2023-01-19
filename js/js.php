@@ -4,6 +4,7 @@ require_once 'api/cora/setting.php';
 $setting = cora\setting::get_instance();
 
 // Make the environment accessible to JavaScript.
+echo '<script>window.beestat_api_key_local = \'' . $setting->get('beestat_api_key_local') . '\';</script>';
 echo '<script>window.environment = \'' . $setting->get('environment') . '\';</script>';
 echo '<script>window.is_demo = ' . ($setting->is_demo() === true ? 'true' : 'false') . ';</script>';
 

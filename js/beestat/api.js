@@ -10,13 +10,6 @@ beestat.api = function() {
 beestat.api.cache = {};
 
 /**
- * Beestat's local API key.
- *
- * @type {string}
- */
-beestat.api.api_key = 'ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2';
-
-/**
  * Send an API call. If the api_call parameter is specified it will send that.
  * If not, it will check the cache, then construct and send the appropriate
  * API call if necessary.
@@ -33,7 +26,7 @@ beestat.api.prototype.send = function(opt_api_call) {
   // If passing an actual API call, fire it off!
   if (opt_api_call !== undefined) {
     // Add in the API key
-    opt_api_call.api_key = beestat.api.api_key;
+    opt_api_call.api_key = window.beestat_api_key_local;
 
     this.xhr_.addEventListener('load', function() {
       self.load_(this.responseText);

@@ -219,7 +219,7 @@ beestat.component.card.contribute_status.prototype.decorate_patreon_ = function(
         .set_background_hover_color(beestat.style.color.red.light)
         .set_text_color('#fff')
         .addEventListener('click', function() {
-          window.open('../api/?resource=patreon&method=authorize&arguments={}&api_key=ER9Dz8t05qUdui0cvfWi5GiVVyHP6OB8KPuSisP2');
+          window.open('../api/?resource=patreon&method=authorize&arguments={}&api_key=' + window.beestat_api_key_local);
           self.state_.patreon_connecting = true;
           self.rerender();
         });
