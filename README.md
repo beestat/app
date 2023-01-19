@@ -21,7 +21,7 @@ See a demo of the app at <a href="https://demo.beestat.io" target="_blank">demo.
 
 ## Run your own instance
 
-This is possible but untested and unsupported. Clone the code, throw it on a web server, and see what happens. The most help I can offer at the moment is to rename `api/cora/setting.example.php` to `api/cora/setting.php` and use the comments to help configure the installation.
+See <a href="https://doc.beestat.io/4b40cf56c0424692a65461a7a6ffdb1e" target="_blank">Self-Hosting Instructions</a>.
 
 
 ## Contributing
