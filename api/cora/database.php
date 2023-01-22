@@ -354,8 +354,7 @@ final class database extends \mysqli {
    *
    * @return mixed The result directly from $mysqli->query.
    */
-  public function query($query, $resultmode = null) {
-  // public function query($query, $result_mode = \MYSQLI_STORE_RESULT): \mysqli_result|bool {
+  public function query($query, $result_mode = \MYSQLI_STORE_RESULT): \mysqli_result|bool {
     // If this was an insert, update or delete, start a transaction
     $query_type = substr(trim($query), 0, 6);
     if(
