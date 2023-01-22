@@ -237,7 +237,6 @@ final class setting {
       throw new \Exception('Setting does not exist.', 1300);
     }
   }
-  }
 
   /**
    * Whether or not the current configuration is running the demo.
