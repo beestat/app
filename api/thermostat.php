@@ -521,6 +521,7 @@ class thermostat extends cora\crud {
         // Only use profiles with at least a year of data
         // Only use profiles generated in the past year
         if(
+          $other_thermostat['profile']['metadata']['duration'] !== null &&
           $other_thermostat['profile']['metadata']['duration'] >= 365 &&
           strtotime($other_thermostat['profile']['metadata']['generated_at']) > strtotime('-1 year') &&
           $other_thermostat['thermostat_id'] !== $thermostat_id
