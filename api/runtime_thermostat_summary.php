@@ -115,7 +115,11 @@ class runtime_thermostat_summary extends cora\crud {
     $row = $result->fetch_assoc();
 
     if($row['max_date'] === null) {
-      $populate_begin = strtotime($thermostat['data_begin']); // Just grab everything
+      if($thermostat['data_begin'] === null) {
+        $populate_begin = strtotime($thermostat['first_connected']);
+      } else {
+        $populate_begin = strtotime($thermostat['data_begin']); // Just grab everything
+      }
     } else {
       $populate_begin = strtotime($row['max_date']);
     }
