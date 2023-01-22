@@ -963,7 +963,7 @@ class profile extends cora\crud {
       ],
       'metadata' => [
         'generated_at' => date('c'),
-        'duration' => round((time() - strtotime($first_timestamp)) / 86400),
+        'duration' => $first_timestamp === null ? null : round((time() - strtotime($first_timestamp)) / 86400),
       ]
     ];
 
