@@ -302,7 +302,7 @@ final class request {
         'user_id'      => $session->get_user_id(),
         'api_user_id'  => $this->api_user['api_user_id'],
         'ip_address'   => ip2long($_SERVER['REMOTE_ADDR']),
-        'timestamp'    => date('Y-m-d H:i:s', $this->begin_timestamp),
+        'timestamp'    => date('Y-m-d H:i:s', intval($this->begin_timestamp)),
         'request'      => $this->request,
         'response'     => $this->response,
         'error_code'   => $this->response['data']['error_code'],
@@ -320,7 +320,7 @@ final class request {
         'user_id' => $session->get_user_id(),
         'api_user_id' => $this->api_user['api_user_id'],
         'ip_address' => ip2long($_SERVER['REMOTE_ADDR']),
-        'timestamp' => date('Y-m-d H:i:s', $this->begin_timestamp),
+        'timestamp' => date('Y-m-d H:i:s', intval($this->begin_timestamp)),
         'request' => $this->request,
         'response' => ($user['debug'] === true) ? $this->response : null,
         'total_time' => $this->total_time,
@@ -522,7 +522,12 @@ final class request {
 
     // Send data to Sentry for error logging.
     // https://docs.sentry.io/development/sdk-dev/event-payloads/
-    $api_user_id = $this->api_user['api_user_id'];
+    if($this->api_user !== null) {
+      $api_user_id = $this->api_user['api_user_id'];
+    } else {
+      $api_user_id = null;
+    }
+
     if (
       $reportable === true &&
       $setting->get('sentry_key') !== null &&

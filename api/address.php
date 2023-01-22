@@ -71,7 +71,7 @@ class address extends cora\crud {
         'smarty_streets',
         'smarty_streets_api',
         [
-          'street' => $address_string,
+          'address_string' => $address_string,
           'country' => $country
         ]
       );

@@ -195,7 +195,7 @@ class runtime extends cora\api {
               'Y-m-d H:i:s',
               max(
                 $sync_end,
-                strtotime($thermostat['sync_end'])
+                $thermostat['sync_end'] === null ? null : strtotime($thermostat['sync_end'])
               )
             )
           ]
