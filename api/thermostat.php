@@ -280,6 +280,8 @@ class thermostat extends cora\crud {
 
     $where = [];
 
+    $where[] = '`profile` is not null';
+
     $keys_generated_columns = [
       'system_type_heat',
       'system_type_heat_stages',
