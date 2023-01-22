@@ -375,7 +375,10 @@ class profile extends cora\crud {
         // List of thermostat_ids that have data for this timestamp.
         $relevant_thermostat_ids = [];
         foreach($group_thermostats as $possible_relevant_thermostat) {
-          if(strtotime($possible_relevant_thermostat['data_begin']) <= $current_timestamp) {
+          if(
+            $possible_relevant_thermostat['data_begin'] === null ||
+            strtotime($possible_relevant_thermostat['data_begin']) <= $current_timestamp
+          ) {
             $relevant_thermostat_ids[] = $possible_relevant_thermostat['thermostat_id'];
           }
         }
