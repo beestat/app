@@ -517,7 +517,7 @@ class thermostat extends cora\crud {
 
       // Get all the scores from the other thermostats
       while($other_thermostat = $result->fetch_assoc()) {
-        $other_thermostat['profile'] = json_decode($other_thermostat['profile'], true);
+        $other_thermostat['profile'] = $other_thermostat['profile'] === null ? null : json_decode($other_thermostat['profile'], true);
         // Only use profiles with at least a year of data
         // Only use profiles generated in the past year
         if(
