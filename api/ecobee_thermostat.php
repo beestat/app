@@ -21,81 +21,169 @@ class ecobee_thermostat extends cora\crud {
   public function sync() {
     // Get the thermostat list from ecobee with sensors. Keep this identical to
     // ecobee_sensor->sync() to leverage caching.
-    $response = $this->api(
-      'ecobee',
-      'ecobee_api',
-      [
-        'method' => 'GET',
-        'endpoint' => 'thermostat',
-        'arguments' => [
-          'body' => json_encode([
-            'selection' => [
-              'selectionType' => 'registered',
-              'selectionMatch' => '',
-              'includeRuntime' => true,
-              'includeExtendedRuntime' => true,
-              'includeElectricity' => true,
-              'includeSettings' => true,
-              'includeLocation' => true,
-              'includeProgram' => true,
-              'includeEvents' => true,
-              'includeDevice' => true,
-              'includeTechnician' => true,
-              'includeUtility' => true,
-              'includeManagement' => true,
-              'includeAlerts' => true,
-              'includeWeather' => true,
-              'includeHouseDetails' => true,
-              'includeOemCfg' => true,
-              'includeEquipmentStatus' => true,
-              'includeNotificationSettings' => true,
-              'includeVersion' => true,
-              'includePrivacy' => true,
-              'includeAudio' => true,
-              'includeSensors' => true
+    $include = [
+      'includeRuntime' => true,
+      'includeExtendedRuntime' => true,
+      'includeElectricity' => true,
+      'includeSettings' => true,
+      'includeLocation' => true,
+      'includeProgram' => true,
+      'includeEvents' => true,
+      'includeDevice' => true,
+      'includeTechnician' => true,
+      'includeUtility' => true,
+      'includeManagement' => true,
+      'includeAlerts' => true,
+      'includeWeather' => true,
+      'includeHouseDetails' => true,
+      'includeOemCfg' => true,
+      'includeEquipmentStatus' => true,
+      'includeNotificationSettings' => true,
+      'includeVersion' => true,
+      'includePrivacy' => true,
+      'includeAudio' => true,
+      'includeSensors' => true
 
-              /**
-               * 'includeReminders' => true
-               *
-               * While documented, this is not available for general API use
-               * unless you are a technician user.
-               *
-               * The reminders and the includeReminders flag are something extra
-               * for ecobee Technicians. It allows them to set and receive
-               * reminders with more detail than the usual alert reminder type.
-               * These reminders are only available to Technician users, which
-               * is why you aren't seeing any new information when you set that
-               * flag to true. Thanks for pointing out the lack of documentation
-               * regarding this. We'll get this updated as soon as possible.
-               *
-               *
-               * https://getsatisfaction.com/api/topics/what-does-includereminders-do-when-calling-get-thermostat?rfm=1
-               */
+      /**
+       * 'includeReminders' => true
+       *
+       * While documented, this is not available for general API use unless
+       * you are a technician user.
+       *
+       * The reminders and the includeReminders flag are something extra for
+       * ecobee Technicians. It allows them to set and receive reminders with
+       * more detail than the usual alert reminder type. These reminders are
+       * only available to Technician users, which is why you aren't seeing
+       * any new information when you set that flag to true. Thanks for
+       * pointing out the lack of documentation regarding this. We'll get this
+       * updated as soon as possible.
+       *
+       *
+       * https://getsatisfaction.com/api/topics/what-does-includereminders-do-when-calling-get-thermostat?rfm=1
+       */
 
-              /**
-               * 'includeSecuritySettings' => true
-               *
-               * While documented, this is not made available for general API
-               * use unless you are a utility. If you try to include this an
-               * "Authentication failed" error will be returned.
-               *
-               * Special accounts such as Utilities are permitted an alternate
-               * method of authorization using implicit authorization. This
-               * method permits the Utility application to authorize against
-               * their own specific account without the requirement of a PIN.
-               * This method is limited to special contractual obligations and
-               * is not available for 3rd party applications who are not
-               * Utilities.
-               *
-               * https://www.ecobee.com/home/developer/api/documentation/v1/objects/SecuritySettings.shtml
-               * https://www.ecobee.com/home/developer/api/documentation/v1/auth/auth-intro.shtml
-               *
-               */
-            ]
-          ])
+      /**
+       * 'includeSecuritySettings' => true
+       *
+       * While documented, this is not made available for general API use
+       * unless you are a utility. If you try to include this an
+       * "Authentication failed" error will be returned.
+       *
+       * Special accounts such as Utilities are permitted an alternate method
+       * of authorization using implicit authorization. This method permits
+       * the Utility application to authorize against their own specific
+       * account without the requirement of a PIN. This method is limited to
+       * special contractual obligations and is not available for 3rd party
+       * applications who are not Utilities.
+       *
+       *
+       * https://www.ecobee.com/home/developer/api/documentation/v1/objects/SecuritySettings.shtml
+       * https://www.ecobee.com/home/developer/api/documentation/v1/auth/auth-intro.shtml
+       */
+    ];
+
+    try {
+      $response = $this->api(
+        'ecobee',
+        'ecobee_api',
+        [
+          'method' => 'GET',
+          'endpoint' => 'thermostat',
+          'arguments' => [
+            'body' => json_encode([
+              'selection' => array_merge(
+                [
+                  'selectionType' => 'registered',
+                  'selectionMatch' => ''
+                ],
+                $include
+              )
+            ])
+          ]
         ]
-      ]
-    );
+      );
+      if(count($response['thermostatList']) === 0) {
+        throw new cora\exception('No thermostats found.', 10511, false, null, false);
+      }
+    } catch(cora\exception $e) {
+      // If no thermostats found (ie. not the owner of any homes that contain a thermostat)
+      if($e->getCode() === 10511) {
+        $homes = $this->api(
+          'ecobee',
+          'ecobee_api',
+          [
+            'method' => 'GET',
+            'endpoint' => 'https://home.hm-prod.ecobee.com/homes',
+            'arguments' => [
+            ]
+          ]
+        );
+
+        $home_ids = array_column($homes['homes'], 'homeID');
+
+        $serial_numbers = [];
+        foreach($home_ids as $home_id) {
+          $devices = $this->api(
+            'ecobee',
+            'ecobee_api',
+            [
+              'method' => 'GET',
+              'endpoint' => 'https://home.hm-prod.ecobee.com/home/' . $home_id . '/devices',
+              'arguments' => [
+              ]
+            ]
+          );
+
+          /**
+           * This is a select distinct from ecobee_thermostat. Ideally it
+           * would be possible to send *all* serial numbers from the devices
+           * call to the GET->thermostat API call, but that throws an error if
+           * you include a serial number for something that's not a
+           * thermostat. So I have to keep this array to identify valid serial
+           * numbers.
+           */
+          $model_numbers = [
+            'athenaSmart',
+            'apolloSmart',
+            'idtSmart',
+            'nikeSmart',
+            'siSmart',
+            'corSmart',
+            'vulcanSmart',
+            'aresSmart',
+            'artemisSmart'
+          ];
+
+          foreach($devices['devices'] as $device) {
+            if(in_array($device['modelNumber'], $model_numbers) === true) {
+              $serial_numbers[] = $device['serialNumber'];
+            }
+          }
+        }
+
+        $response = $this->api(
+          'ecobee',
+          'ecobee_api',
+          [
+            'method' => 'GET',
+            'endpoint' => 'thermostat',
+            'arguments' => [
+              'body' => json_encode([
+                'selection' => array_merge(
+                  [
+                    'selectionType' => 'thermostats',
+                    'selectionMatch' => implode(',', $serial_numbers),
+                  ],
+                  $include
+                )
+              ])
+            ]
+          ]
+        );
+      } else {
+        throw $e;
+      }
+    }
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];

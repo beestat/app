@@ -163,6 +163,11 @@ class ecobee extends external_api {
     }
     $curl['url'] = 'https://api.ecobee.com' . $full_endpoint;
 
+    // Allow a completely custom endpoint if desired.
+    if(str_starts_with($endpoint, 'https://') === true) {
+      $curl['url'] = $endpoint;
+    }
+
     if ($method === 'GET') {
       $curl['url'] .= '?' . http_build_query($arguments);
     }
@@ -220,6 +225,13 @@ class ecobee extends external_api {
       }
       $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
       throw new cora\exception('Ecobee access was revoked by user.', 10508, false, null, false);
+    }
+    else if (isset($response['status']) === true && $response['status']['code'] === 9) {
+      // Invalid selection. No thermostats in selection. Ensure permissions and selection.
+      if($this::$log_mysql !== 'all') {
+        $this->log_mysql($curl_response, true);
+      }
+      throw new cora\exception('No thermostats found.', 10511, false, null, false);
     }
     else if (isset($response['status']) === true && $response['status']['code'] === 3) {
       if (
