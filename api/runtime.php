@@ -509,6 +509,7 @@ class runtime extends cora\api {
         $columns['zoneAveTemp'] === null ||
         $columns['zoneHumidity'] === null ||
         $columns['outdoorTemp'] === null ||
+        $columns['outdoorTemp'] < -1000 || // #384
         $columns['outdoorHumidity'] === null ||
         $columns['compHeat1'] === null ||
         $columns['compHeat2'] === null ||
@@ -629,7 +630,10 @@ class runtime extends cora\api {
         null :
         $climate_runtime_thermostat_text['runtime_thermostat_text_id'];
 
-      if (isset($columns['zoneCoolTemp']) === true) {
+      if (
+        isset($columns['zoneCoolTemp']) === true &&
+        $columns['zoneCoolTemp'] > 0 // #384
+      ) {
         $data['setpoint_cool'] = $columns['zoneCoolTemp'] * 10;
       } else {
         $data['setpoint_cool'] = null;
