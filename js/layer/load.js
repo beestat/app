@@ -188,27 +188,27 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       'USA',
       'CAN'
     ];
+
     if (
-      beestat.setting('units.distance') === undefined &&
-      thermostat.address_id !== null &&
-      beestat.address.is_valid(thermostat.address_id) === true
+      beestat.setting('units.distance') === undefined ||
+      beestat.setting('units.area') === undefined
     ) {
-      const address = beestat.cache.address[thermostat.address_id];
-      beestat.setting(
-        'units.distance',
-        imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft' : 'm'
-      );
-    }
-    if (
-      beestat.setting('units.area') === undefined &&
-      thermostat.address_id !== null &&
-      beestat.address.is_valid(thermostat.address_id) === true
-    ) {
-      const address = beestat.cache.address[thermostat.address_id];
-      beestat.setting(
-        'units.area',
-        imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft²' : 'm²'
-      );
+      if (
+        thermostat.address_id !== null &&
+        beestat.address.is_valid(thermostat.address_id) === true
+      ) {
+        const address = beestat.cache.address[thermostat.address_id];
+        beestat.setting({
+          'units.distance': imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft' : 'm',
+          'units.area': imperial_countries.includes(address.normalized.components.country_iso_3) === true ? 'ft²' : 'm²'
+        });
+      } else {
+        // Assume ft/ft² if invalid address.
+        beestat.setting({
+          'units.distance': 'ft',
+          'units.area': 'ft²'
+        });
+      }
     }
 
     // Currency (USD is default)
