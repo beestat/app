@@ -322,7 +322,7 @@ final class request {
         'ip_address' => ip2long($_SERVER['REMOTE_ADDR']),
         'timestamp' => date('Y-m-d H:i:s', intval($this->begin_timestamp)),
         'request' => $this->request,
-        'response' => ($user['debug'] === true) ? $this->response : null,
+        'response' => ($user !== null && $user['debug'] === true) ? $this->response : null,
         'total_time' => $this->total_time,
         'query_count' => $database->get_query_count(),
         'query_time' => $database->get_query_time(),

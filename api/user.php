@@ -138,7 +138,9 @@ class user extends cora\crud {
       return;
     }
 
-    return $this->session->delete();
+    $this->session->delete();
+
+    header('Location: https://auth.ecobee.com/logout?federated&client_id=' . $this->setting->get('ecobee_client_id') . '&returnTo=' . str_replace('app.', '', $this->setting->get('beestat_root_uri')));
   }
 
   /**

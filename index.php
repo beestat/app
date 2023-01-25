@@ -25,7 +25,7 @@
 
   // If you're not logged in, just take you directly to the ecobee login page.
   if(isset($_COOKIE['session_key']) === false) {
-    header('Location: http://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments={}&api_key=' . $setting->get('beestat_api_key_local'));
+    header('Location: https://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments={}&api_key=' . $setting->get('beestat_api_key_local'));
     die();
   }
 

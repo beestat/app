@@ -196,11 +196,10 @@ beestat.component.header.prototype.decorate_ = function(parent) {
     .set_text('Log Out')
     .set_icon('exit_to_app')
     .set_callback(function() {
-      new beestat.api()
-        .set_callback(function() {
-          window.location.href = window.location.href.replace('app.', '');
-        })
-        .add_call('user', 'log_out')
-        .send();
+      window.location.replace(
+        window.location.href +
+        'api/?resource=user&method=log_out&arguments={}&api_key=' +
+        window.beestat_api_key_local
+      );
     }));
 };
