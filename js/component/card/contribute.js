@@ -294,7 +294,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
         .set_background_hover_color()
         .removeEventListener('click');
 
-      window.open('api/?resource=stripe_payment_link&method=open&arguments={"attributes":{"amount":' + (contribute_amount * 100) + ',"currency":"' + beestat.setting('units.currency') + '","interval":"' + contribute_interval + '"}}&api_key=' + beestat.api.api_key);
+      window.open('api/?resource=stripe_payment_link&method=open&arguments={"attributes":{"amount":' + (contribute_amount * 100) + ',"currency":"' + beestat.setting('units.currency') + '","interval":"' + contribute_interval + '"}}&api_key=' + window.beestat_api_key_local);
 
       setTimeout(function() {
         self.rerender();

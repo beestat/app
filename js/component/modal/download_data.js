@@ -275,7 +275,7 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
           .format()
       };
 
-      window.location.href = '/api/?resource=runtime&method=download&arguments=' + encodeURIComponent(JSON.stringify(download_arguments)) + '&api_key=' + beestat.api.api_key;
+      window.location.href = '/api/?resource=runtime&method=download&arguments=' + encodeURIComponent(JSON.stringify(download_arguments)) + '&api_key=' + window.beestat_api_key_local;
 
       self.dispose();
     });
