@@ -89,9 +89,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
       })
       .send();
   } else {
-    // Global x range.
-    var x_min = Infinity;
-    var x_max = -Infinity;
+    const profile_extremes = this.get_profile_extremes_(5);
 
     var y_min = Infinity;
     var y_max = -Infinity;
@@ -118,13 +116,24 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
 
         var min_max_keys = Object.keys(profile.deltas);
 
+        if (type.includes('heat') === true) {
+          min_max_keys.push(beestat.temperature(profile_extremes.heat.min));
+          min_max_keys.push(beestat.temperature(profile_extremes.heat.max));
+        } else if (type.includes('cool') === true) {
+          min_max_keys.push(beestat.temperature(profile_extremes.cool.min));
+          min_max_keys.push(beestat.temperature(profile_extremes.cool.max));
+        } else if (type.includes('resist') === true) {
+          min_max_keys.push(beestat.temperature(profile_extremes.resist.min));
+          min_max_keys.push(beestat.temperature(profile_extremes.heat.min));
+          min_max_keys.push(beestat.temperature(profile_extremes.resist.max));
+          min_max_keys.push(beestat.temperature(profile_extremes.cool.max));
+        }
+        // Filter out nulls
+        min_max_keys = min_max_keys.filter(Boolean);
+
         // This specific trendline x range.
         var this_x_min = Math.min.apply(null, min_max_keys);
         var this_x_max = Math.max.apply(null, min_max_keys);
-
-        // Global x range.
-        x_min = Math.min(x_min, this_x_min);
-        x_max = Math.max(x_max, this_x_max);
 
         data.series['trendline_' + type] = [];
         data.series['raw_' + type] = [];
@@ -253,7 +262,7 @@ beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function()
 
   // How much data was used to generate this.
   const duration_weeks = Math.round(thermostat.profile.metadata.duration / 7);
-  duration_text += ' from the past ';
+  duration_text += ' from the past';
   if (duration_weeks === 0) {
     duration_text += ' few days';
   } else if (duration_weeks === 1) {
@@ -291,4 +300,66 @@ beestat.component.card.temperature_profiles.prototype.decorate_top_right_ = func
     .set_callback(function() {
       window.open('https://doc.beestat.io/9c0fba6793dd4bc68f798c1516f0ea25');
     }));
+};
+
+/**
+ * Get the profile extremes for heat, cool, and resist.
+ *
+ * @param {number} padding How much extra to pad the extremes by.
+ *
+ * @return {object}
+ */
+beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = function(padding) {
+  const thermostat = beestat.cache.thermostat[this.thermostat_id_];
+
+  const extremes = {
+    'heat': {
+      'min': Infinity,
+      'max': -Infinity
+    },
+    'cool': {
+      'min': Infinity,
+      'max': -Infinity
+    },
+    'resist': {
+      'min': Infinity,
+      'max': -Infinity
+    }
+  };
+
+  for (let type in thermostat.profile.temperature) {
+    const profile = thermostat.profile.temperature[type];
+
+    if (profile !== null) {
+      let parent_type;
+      if (type.includes('cool')) {
+        parent_type = 'cool';
+      } else if (type.includes('heat')) {
+        parent_type = 'heat';
+      } else if (type.includes('resist')) {
+        parent_type = 'resist';
+      }
+
+      extremes[parent_type].min = Math.min(
+        extremes[parent_type].min,
+        Math.min.apply(null, Object.keys(profile.deltas)) - 5
+      );
+      extremes[parent_type].max = Math.max(
+        extremes[parent_type].max,
+        Math.max.apply(null, Object.keys(profile.deltas)) + 5
+      );
+    }
+  }
+
+  // Convert +/-Infinity to null
+  for (let parent_type in extremes) {
+    if (extremes[parent_type].min === Infinity) {
+      extremes[parent_type].min = null;
+    }
+    if (extremes[parent_type].max === -Infinity) {
+      extremes[parent_type].max = null;
+    }
+  }
+
+  return extremes;
 };

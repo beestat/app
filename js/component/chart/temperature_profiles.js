@@ -39,8 +39,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_heat_1,
+      this.data_.series.raw_heat_1
+    )
   });
 
   // Trendline data
@@ -53,8 +59,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_heat_2,
+      this.data_.series.raw_heat_2
+    )
   });
 
   // Trendline data
@@ -67,8 +79,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_auxiliary_heat_1,
+      this.data_.series.raw_auxiliary_heat_1
+    )
   });
 
   // Trendline data
@@ -81,8 +99,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_auxiliary_heat_2,
+      this.data_.series.raw_auxiliary_heat_2
+    )
   });
 
   // Trendline data
@@ -95,8 +119,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_cool_1,
+      this.data_.series.raw_cool_1
+    )
   });
 
   // Trendline data
@@ -109,8 +139,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_cool_2,
+      this.data_.series.raw_cool_2
+    )
   });
 
   // Trendline data
@@ -123,8 +159,14 @@ beestat.component.chart.temperature_profiles.prototype.get_options_series_ = fun
       'states': {'hover': {'enabled': false}}
     },
     'type': 'line',
+    'dashStyle': 'ShortDash',
     'lineWidth': 2,
-    'states': {'hover': {'lineWidthPlus': 0}}
+    'states': {'hover': {'lineWidthPlus': 0}},
+    'zoneAxis': 'x',
+    'zones': this.get_zones_(
+      this.data_.series.trendline_resist,
+      this.data_.series.raw_resist
+    )
   });
 
   // Raw data
@@ -408,4 +450,35 @@ beestat.component.chart.temperature_profiles.prototype.get_options_chart_height_
  */
 beestat.component.chart.temperature_profiles.prototype.get_options_plotOptions_series_connectNulls_ = function() {
   return true;
+};
+
+/**
+ * Get zones to make the trendlines dashed outside of where there is raw data.
+ *
+ * @param {object} trendline_data The trendline data.
+ * @param {object} raw_data The raw data.
+ *
+ * @return {object}
+ */
+beestat.component.chart.temperature_profiles.prototype.get_zones_ = function(trendline_data, raw_data) {
+  const zones = [];
+
+  if (
+    trendline_data === undefined ||
+    raw_data === undefined
+  ) {
+    return zones;
+  }
+
+  zones.push({
+    'value': raw_data[0][0],
+    'dashStyle': 'ShortDash'
+  });
+
+  zones.push({
+    'value': raw_data[raw_data.length - 1][0],
+    'dashStyle': 'Solid'
+  });
+
+  return zones;
 };

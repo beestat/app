@@ -128,6 +128,7 @@ class user extends cora\crud {
    */
   public function force_log_in($user_id) {
     $this->session->request(null, null, $user_id);
+    header('Location: ' . $this->setting->get('beestat_root_uri'));
   }
 
   /**
