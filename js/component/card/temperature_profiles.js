@@ -341,11 +341,11 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
 
       extremes[parent_type].min = Math.min(
         extremes[parent_type].min,
-        Math.min.apply(null, Object.keys(profile.deltas)) - 5
+        Math.min.apply(null, Object.keys(profile.deltas)) - padding
       );
       extremes[parent_type].max = Math.max(
         extremes[parent_type].max,
-        Math.max.apply(null, Object.keys(profile.deltas)) + 5
+        Math.max.apply(null, Object.keys(profile.deltas)) + padding
       );
 
       // Extend to weather
@@ -359,7 +359,7 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
         ) {
           extremes[parent_type].min = Math.min(
             extremes[parent_type].min,
-            thermostat.weather.temperature - 5
+            thermostat.weather.temperature - padding
           );
         }
         if (
@@ -368,7 +368,7 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
         ) {
           extremes[parent_type].max = Math.max(
             extremes[parent_type].max,
-            thermostat.weather.temperature + 5
+            thermostat.weather.temperature + padding
           );
         }
       }
