@@ -45,7 +45,6 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
  */
 beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
-
   var data = {
     'x': [],
     'series': {},
@@ -348,6 +347,31 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
         extremes[parent_type].max,
         Math.max.apply(null, Object.keys(profile.deltas)) + 5
       );
+
+      // Extend to weather
+      if (
+        thermostat.weather !== null &&
+        thermostat.weather.temperature !== null
+      ) {
+        if (
+          parent_type === 'resist' ||
+          parent_type === 'heat'
+        ) {
+          extremes[parent_type].min = Math.min(
+            extremes[parent_type].min,
+            thermostat.weather.temperature - 5
+          );
+        }
+        if (
+          parent_type === 'resist' ||
+          parent_type === 'cool'
+        ) {
+          extremes[parent_type].max = Math.max(
+            extremes[parent_type].max,
+            thermostat.weather.temperature + 5
+          );
+        }
+      }
     }
   }
 
