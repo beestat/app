@@ -34,8 +34,30 @@ beestat.extend(beestat.component.card.temperature_profiles, beestat.component.ca
  */
 beestat.component.card.temperature_profiles.prototype.decorate_contents_ = function(parent) {
   var data = this.get_data_();
+
+  var chart_container = $.createElement('div');
+  parent.appendChild(chart_container);
+
+  if (data.x.length === 0) {
+    chart_container.style('filter', 'blur(3px)');
+    var no_data = $.createElement('div');
+    no_data.style({
+      'position': 'absolute',
+      'top': 0,
+      'left': 0,
+      'width': '100%',
+      'height': '100%',
+      'display': 'flex',
+      'flex-direction': 'column',
+      'justify-content': 'center',
+      'text-align': 'center'
+    });
+    no_data.innerHTML('No data to display.<br/><strong><a target="_blank" href="https://www.notion.so/beestat/Temperature-Profiles-9c0fba6793dd4bc68f798c1516f0ea25#a5e176aba4c847acb9e2b773f7aba73b">Why?</a></strong>');
+    parent.appendChild(no_data);
+  }
+
   this.chart_ = new beestat.component.chart.temperature_profiles(data);
-  this.chart_.render(parent);
+  this.chart_.render(chart_container);
 };
 
 /**
