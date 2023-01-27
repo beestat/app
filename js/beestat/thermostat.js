@@ -25,8 +25,8 @@ beestat.thermostat.get_sync_progress = function(thermostat_id) {
     return null;
   }
 
-  var denominator = required_sync_end.diff(required_sync_begin, 'minute');
-  var numerator = current_sync_end.diff(current_sync_begin, 'minute');
+  var denominator = required_sync_end.diff(required_sync_begin, 'day');
+  var numerator = current_sync_end.diff(current_sync_begin, 'day');
 
   return Math.min(100, Math.round(numerator / denominator * 100)) || 0;
 };
