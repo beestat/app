@@ -33,12 +33,17 @@ beestat.extend(beestat.component.card.temperature_profiles, beestat.component.ca
  * @param {rocket.Elements} parent
  */
 beestat.component.card.temperature_profiles.prototype.decorate_contents_ = function(parent) {
+  var container = $.createElement('div').style({
+    'position': 'relative'
+  });
+  parent.appendChild(container);
+
   var data = this.get_data_();
 
   var chart_container = $.createElement('div');
-  parent.appendChild(chart_container);
+  container.appendChild(chart_container);
 
-  if (Object.keys(data.series).length === 0) {
+  if (this.has_data_() === false) {
     chart_container.style('filter', 'blur(3px)');
     var no_data = $.createElement('div');
     no_data.style({
@@ -53,7 +58,7 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
       'text-align': 'center'
     });
     no_data.innerHTML('No data to display.<br/><strong><a target="_blank" href="https://www.notion.so/beestat/Temperature-Profiles-9c0fba6793dd4bc68f798c1516f0ea25#a5e176aba4c847acb9e2b773f7aba73b">Why?</a></strong>');
-    parent.appendChild(no_data);
+    container.appendChild(no_data);
   }
 
   this.chart_ = new beestat.component.chart.temperature_profiles(data);
@@ -315,6 +320,15 @@ beestat.component.card.temperature_profiles.prototype.decorate_top_right_ = func
       self.chart_.export();
     }));
 
+  if (this.has_data_() === true) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('More Info')
+      .set_icon('information')
+      .set_callback(function() {
+        new beestat.component.modal.temperature_profiles_info().render();
+      }));
+  }
+
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')
     .set_icon('help_circle')
@@ -408,4 +422,14 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
   }
 
   return extremes;
+};
+
+/**
+ * Get whether or not there is any data to be displayed.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.temperature_profiles.prototype.has_data_ = function() {
+  const data = this.get_data_();
+  return Object.keys(data.series).length > 0;
 };
