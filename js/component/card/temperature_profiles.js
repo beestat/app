@@ -38,7 +38,7 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
   var chart_container = $.createElement('div');
   parent.appendChild(chart_container);
 
-  if (data.x.length === 0) {
+  if (Object.keys(data.series).length === 0) {
     chart_container.style('filter', 'blur(3px)');
     var no_data = $.createElement('div');
     no_data.style({
