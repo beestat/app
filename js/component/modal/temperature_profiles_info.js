@@ -29,13 +29,29 @@ beestat.component.modal.temperature_profiles_info.prototype.decorate_contents_ =
     'resist'
   ].forEach(function(type) {
     if (thermostat.profile.temperature[type] !== null) {
+      const profile = thermostat.profile.temperature[type];
+
+      // Convert the data to Celsius if necessary
+      const deltas_converted = {};
+      for (let key in profile.deltas) {
+        deltas_converted[beestat.temperature({'temperature': key})] =
+          beestat.temperature({
+            'temperature': (profile.deltas[key]),
+            'delta': true,
+            'round': 3
+          });
+      }
+
+      profile.deltas = deltas_converted;
+      const linear_trendline = beestat.math.get_linear_trendline(profile.deltas);
+
       fields.push({
         'name': beestat.series['indoor_' + type + '_delta'].name,
         'value':
           'Slope = ' +
-          thermostat.profile.temperature[type].linear_trendline.slope +
+          linear_trendline.slope.toFixed(4) +
           '<br/>Intercept = ' +
-          thermostat.profile.temperature[type].linear_trendline.intercept
+          linear_trendline.intercept.toFixed(4) + beestat.setting('units.temperature')
       });
     }
   });

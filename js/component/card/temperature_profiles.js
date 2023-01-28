@@ -138,7 +138,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
         }
 
         profile.deltas = deltas_converted;
-        var linear_trendline = this.get_linear_trendline_(profile.deltas);
+        var linear_trendline = beestat.math.get_linear_trendline(profile.deltas);
 
         var min_max_keys = Object.keys(profile.deltas);
 
@@ -213,49 +213,6 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   }
 
   return data;
-};
-
-/**
- * Get a linear trendline from a set of data.
- *
- * IMPORTANT: This exists in the profile already but it's wrong to use it
- * directly as it's not right for Celsius.
- *
- * @param {Object} data The data; at least two points required.
- *
- * @return {Object} The slope and intercept of the trendline.
- */
-beestat.component.card.temperature_profiles.prototype.get_linear_trendline_ = function(data) {
-  // Requires at least two points.
-  if (Object.keys(data).length < 2) {
-    return null;
-  }
-
-  var sum_x = 0;
-  var sum_y = 0;
-  var sum_xy = 0;
-  var sum_x_squared = 0;
-  var n = 0;
-
-  for (var x in data) {
-    x = parseFloat(x);
-    var y = parseFloat(data[x]);
-
-    sum_x += x;
-    sum_y += y;
-    sum_xy += (x * y);
-    sum_x_squared += Math.pow(x, 2);
-    n++;
-  }
-
-  var slope = ((n * sum_xy) - (sum_x * sum_y)) /
-    ((n * sum_x_squared) - (Math.pow(sum_x, 2)));
-  var intercept = ((sum_y) - (slope * sum_x)) / (n);
-
-  return {
-    'slope': slope,
-    'intercept': intercept
-  };
 };
 
 /**
