@@ -139,10 +139,14 @@ class runtime_thermostat_summary extends cora\crud {
   public function populate_backwards($thermostat_id) {
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
+    // If there's no data do nothing.
+    if ($thermostat['data_begin'] === null) {
+      return;
+    }
+
     $query = '
       select
         min(`date`) `min_date`
-        #"2020-09-25" `min_date`
       from
         `runtime_thermostat_summary`
       where
@@ -163,7 +167,7 @@ class runtime_thermostat_summary extends cora\crud {
     $populate_begin = date('Y-m-d', $populate_begin);
     $populate_end = date('Y-m-d', $populate_end);
 
-    return $this->populate($thermostat_id, $populate_begin, $populate_end);
+    $this->populate($thermostat_id, $populate_begin, $populate_end);
   }
 
   /**
