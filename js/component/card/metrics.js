@@ -195,7 +195,7 @@ beestat.component.card.metrics.prototype.get_subtitle_ = function() {
 
   // How much data was used to generate this.
   const duration_weeks = Math.round(thermostat.profile.metadata.duration / 7);
-  duration_text += ' from the past ';
+  duration_text += ' from the past';
   if (duration_weeks === 0) {
     duration_text += ' few days';
   } else if (duration_weeks === 1) {
@@ -203,7 +203,7 @@ beestat.component.card.metrics.prototype.get_subtitle_ = function() {
   } else if (duration_weeks >= 52) {
     duration_text += ' year';
   } else {
-    duration_text += duration_weeks + ' weeks';
+    duration_text += ' ' + duration_weeks + ' weeks';
   }
   duration_text += ' of data';
 

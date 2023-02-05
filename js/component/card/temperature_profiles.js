@@ -253,7 +253,7 @@ beestat.component.card.temperature_profiles.prototype.get_subtitle_ = function()
   } else if (duration_weeks >= 52) {
     duration_text += ' year';
   } else {
-    duration_text += duration_weeks + ' weeks';
+    duration_text += ' ' + duration_weeks + ' weeks';
   }
   duration_text += ' of data';
 
