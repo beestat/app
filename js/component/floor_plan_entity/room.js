@@ -462,6 +462,12 @@ beestat.component.floor_plan_entity.room.prototype.after_mousedown_handler_ = fu
 beestat.component.floor_plan_entity.room.prototype.after_mousemove_handler_ = function(e) {
   const self = this;
 
+  // Debug/fix for #387
+  if (this.drag_start_entity_ === undefined) {
+    console.error('this.drag_start_entity_ is undefined (room)');
+    return;
+  }
+
   let desired_x = this.drag_start_entity_.x + (((e.clientX || e.touches[0].clientX) - this.drag_start_mouse_.x) * this.floor_plan_.get_scale());
   let desired_y = this.drag_start_entity_.y + (((e.clientY || e.touches[0].clientY) - this.drag_start_mouse_.y) * this.floor_plan_.get_scale());
 
