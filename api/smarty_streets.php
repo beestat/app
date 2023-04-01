@@ -30,7 +30,11 @@ class smarty_streets extends external_api {
    */
   public function smarty_streets_api($address_string, $country) {
     // Smarty doesn't like this.
-    if(trim($address_string) === '') {
+    if(
+      trim($address_string) === '' ||
+      $this->setting->get('smarty_streets_auth_id') === null ||
+      $this->setting->get('smarty_streets_auth_token') === null
+    ) {
       return null;
     }
 
