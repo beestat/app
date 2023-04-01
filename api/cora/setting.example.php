@@ -91,7 +91,7 @@ final class setting {
      *
      * Example: 2hFpGKrsS586hHaA9g6vZZdQS586hHaUwY9kdctx
      */
-    'patreon_api_key_local' => '',
+    'patreon_api_key_local' => null,
 
     /**
      * Your Patreon Client ID; provided to you when you create an app as a
@@ -99,7 +99,7 @@ final class setting {
      *
      * Example: 8HebcS7pD8_d6Fdhw8Heb-ebcS7pD8gKtgMvuczq-tEd6Fdhw8Heb_S7pD8gKtgMv
      */
-    'patreon_client_id' => '',
+    'patreon_client_id' => null,
 
     /**
      * URI to redirect to after you authorize your app to access your ecobee
@@ -107,7 +107,7 @@ final class setting {
      *
      * Example: https://beestat.io/api/patreon_initialize.php
      */
-    'patreon_redirect_uri' => '',
+    'patreon_redirect_uri' => null,
 
     /**
      * Used anytime the API needs to know where the site is at. Don't forget
@@ -122,7 +122,7 @@ final class setting {
      *
      * Example: 4b34e48e768fa45c4a6ac65dd4cf1da9-7e28d3c3-61713777
      */
-    'mailgun_api_key' => '',
+    'mailgun_api_key' => null,
 
     /**
      * API base URL including the sending domain. Make sure to include the
@@ -130,49 +130,49 @@ final class setting {
      *
      * Example: https://api.mailgun.net/v3/
      */
-    'mailgun_base_url' => '',
+    'mailgun_base_url' => null,
 
     /**
      * The specific newsletter to subscribe users to.
      *
      * Example: newsletter@app.beestat.io
      */
-    'mailgun_newsletter' => '',
+    'mailgun_newsletter' => null,
 
     /**
      * Auth ID for Smarty Streets address verification.
      *
      * Example: 7vuw3NSz-TJgG-v8Af-7vuw-4TJgGS5k7vuw
      */
-    'smarty_streets_auth_id' => '',
+    'smarty_streets_auth_id' => null,
 
     /**
      * Auth Token for Smarty Streets address verification.
      *
      * Example: gGS5k7vuw3NSzkRMSWNP
      */
-    'smarty_streets_auth_token' => '',
+    'smarty_streets_auth_token' => null,
 
     /**
      * Secret key for Stripe
      *
      * Example: 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
      */
-    'stripe_secret_key' => '',
+    'stripe_secret_key' => null,
 
     /**
      * Stripe base URL.
      *
      * Example: https://api.stripe.com/v1/
      */
-    'stripe_base_url' => '',
+    'stripe_base_url' => null,
 
     /**
      * Stripe Product ID.
      *
      * Example: prod_0NXlpZmhrZmdtb
      */
-    'stripe_product_id' => '',
+    'stripe_product_id' => null,
 
     /**
      * Whether or not debugging is enabled. Debugging will produce additional
@@ -191,8 +191,8 @@ final class setting {
     /**
      * Key and project id obtained from the Sentry DSN. See sentry.io.
      */
-    'sentry_key' => '',
-    'sentry_project_id' => '',
+    'sentry_key' => null,
+    'sentry_project_id' => null,
 
     /**
      * Whether or not SSL is required.
