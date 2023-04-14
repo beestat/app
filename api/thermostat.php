@@ -171,7 +171,11 @@ class thermostat extends cora\crud {
 
       return true;
     } catch(cora\exception $e) {
-      return false;
+      if($e->getCode() === 10511) {
+        throw $e;
+      } else {
+        return false;
+      }
     }
   }
 

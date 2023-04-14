@@ -161,25 +161,29 @@ class ecobee_thermostat extends cora\crud {
           }
         }
 
-        $response = $this->api(
-          'ecobee',
-          'ecobee_api',
-          [
-            'method' => 'GET',
-            'endpoint' => 'thermostat',
-            'arguments' => [
-              'body' => json_encode([
-                'selection' => array_merge(
-                  [
-                    'selectionType' => 'thermostats',
-                    'selectionMatch' => implode(',', $serial_numbers),
-                  ],
-                  $include
-                )
-              ])
+        if(count($serial_numbers) > 0) {
+          $response = $this->api(
+            'ecobee',
+            'ecobee_api',
+            [
+              'method' => 'GET',
+              'endpoint' => 'thermostat',
+              'arguments' => [
+                'body' => json_encode([
+                  'selection' => array_merge(
+                    [
+                      'selectionType' => 'thermostats',
+                      'selectionMatch' => implode(',', $serial_numbers),
+                    ],
+                    $include
+                  )
+                ])
+              ]
             ]
-          ]
-        );
+          );
+        } else {
+          throw $e;
+        }
       } else {
         throw $e;
       }
