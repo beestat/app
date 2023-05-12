@@ -182,10 +182,10 @@ class ecobee_thermostat extends cora\crud {
             ]
           );
         } else {
-          throw $e;
+          throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
         }
       } else {
-        throw $e;
+        throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
       }
     }
 

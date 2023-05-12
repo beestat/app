@@ -406,7 +406,7 @@ class runtime extends cora\api {
           strtotime('+1 hour', $end)
         );
       } else {
-        throw $e;
+        throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
       }
     }
 

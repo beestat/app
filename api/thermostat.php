@@ -172,7 +172,7 @@ class thermostat extends cora\crud {
       return true;
     } catch(cora\exception $e) {
       if($e->getCode() === 10511) {
-        throw $e;
+        throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
       } else {
         return false;
       }
