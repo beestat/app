@@ -544,9 +544,6 @@ class runtime extends cora\api {
 
       $data = [];
 
-      $data['thermostat_id'] = $thermostat['thermostat_id'];
-      $data['timestamp'] = $timestamp;
-
       if ($columns['compCool1'] > 0 || $columns['compCool2'] > 0) {
         $data['compressor_mode'] = 'cool';
         $data['compressor_1'] = $columns['compCool1'] - $columns['compCool2'];
@@ -656,6 +653,9 @@ class runtime extends cora\api {
         $this->database->update('runtime_thermostat', $data, 'id');
       }
       else {
+        $data['thermostat_id'] = $thermostat['thermostat_id'];
+        $data['timestamp'] = $timestamp;
+
         $existing_timestamps[$timestamp] = $this->database->create('runtime_thermostat', $data, 'id');
       }
     }
