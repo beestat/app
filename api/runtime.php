@@ -1041,10 +1041,7 @@ class runtime extends cora\api {
           }
 
           $strtotime = strtotime($runtime_sensor['timestamp']);
-          $runtime_sensors_by_timestamp[$strtotime][$runtime_sensor['sensor_id']] = [
-            'temperature' => $runtime_sensor['temperature'],
-            'occupancy' => $runtime_sensor['occupancy']
-          ];
+          $runtime_sensors_by_timestamp[$strtotime][$runtime_sensor['sensor_id']] = $runtime_sensor;
         }
       }
 
@@ -1080,6 +1077,13 @@ class runtime extends cora\api {
         }
 
         foreach($sensors as $sensor) {
+          foreach($sensor['capability'] as $capability) {
+            if($capability['type'] === 'airQuality') {
+              $headers[] = 'IAQ';
+              $headers[] = 'TVOC Concentration (ppb)';
+              $headers[] = 'CO2 Concentration (ppm)';
+            }
+          }
           $headers[] = $sensor['name'] . ' - Temperature';
           $headers[] = $sensor['name'] . ' - Occupancy';
         }
@@ -1144,6 +1148,16 @@ class runtime extends cora\api {
               isset($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]) === true
             )
             {
+              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'] !== null) {
+                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'];
+              }
+              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'] !== null) {
+                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'];
+              }
+              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'] !== null) {
+                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'];
+              }
+
               $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['temperature'];
               $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'];
             }
