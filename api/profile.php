@@ -936,7 +936,9 @@ class profile extends cora\crud {
         'heat_1' => null,
         'heat_2' => null,
         'cool_1' => null,
-        'cool_2' => null
+        'cool_2' => null,
+        'auxiliary_heat_1' => null,
+        'auxiliary_heat_2' => null
       ],
       'balance_point' => [
         'heat_1' => null,
@@ -1042,6 +1044,12 @@ class profile extends cora\crud {
         }
         if($profile['runtime']['heat_2'] > 0) {
           $profile['runtime_per_degree_day']['heat_2'] = round($profile['runtime']['heat_2'] / $profile['degree_days']['heat'], 2);
+        }
+        if($profile['runtime']['auxiliary_heat_1'] > 0) {
+          $profile['runtime_per_degree_day']['auxiliary_heat_1'] = round($profile['runtime']['auxiliary_heat_1'] / $profile['degree_days']['heat'], 2);
+        }
+        if($profile['runtime']['auxiliary_heat_2'] > 0) {
+          $profile['runtime_per_degree_day']['auxiliary_heat_2'] = round($profile['runtime']['auxiliary_heat_2'] / $profile['degree_days']['heat'], 2);
         }
       }
     }

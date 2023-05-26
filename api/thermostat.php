@@ -418,6 +418,8 @@ class thermostat extends cora\crud {
       'runtime_per_degree_day' => [
         'heat_1',
         'heat_2',
+        'auxiliary_heat_1',
+        'auxiliary_heat_2',
         'cool_1',
         'cool_2'
       ],
@@ -447,6 +449,8 @@ class thermostat extends cora\crud {
     $intervals['runtime_per_degree_day'] = [
       'heat_1' => 1,
       'heat_2' => 1,
+      'auxiliary_heat_1' => 1,
+      'auxiliary_heat_2' => 1,
       'cool_1' => 1,
       'cool_2' => 1
     ];
