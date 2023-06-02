@@ -165,6 +165,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/metric/runtime_per_degree_day/heat_2.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/runtime_per_degree_day/cool_1.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/runtime_per_degree_day/cool_2.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric/runtime_per_degree_day/auxiliary_heat_1.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/metric/runtime_per_degree_day/auxiliary_heat_2.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/balance_point.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/balance_point/heat_1.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric/balance_point/heat_2.js"></script>' . PHP_EOL;

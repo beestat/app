@@ -20,3 +20,21 @@ beestat.component.metric.runtime_per_degree_day.auxiliary_heat_2.prototype.child
 beestat.component.metric.runtime_per_degree_day.auxiliary_heat_2.prototype.get_icon_ = function() {
   return 'fire';
 };
+
+/**
+ * Get the title of this metric.
+ *
+ * @return {string} The title of this metric.
+ */
+beestat.component.metric.runtime_per_degree_day.auxiliary_heat_2.prototype.get_title_ = function() {
+  return beestat.series[this.child_metric_name_].name;
+};
+
+/**
+ * Get the color of this metric.
+ *
+ * @return {string} The color of this metric.
+ */
+beestat.component.metric.runtime_per_degree_day.auxiliary_heat_2.prototype.get_color_ = function() {
+  return beestat.series[this.child_metric_name_].color;
+};
