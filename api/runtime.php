@@ -1159,7 +1159,7 @@ class runtime extends cora\api {
               }
 
               $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['temperature'];
-              $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'];
+              $csv_row[] = ($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'] === true ? '1' : '0');
             }
           }
         } else {
