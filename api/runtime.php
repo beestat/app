@@ -1148,14 +1148,12 @@ class runtime extends cora\api {
               isset($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]) === true
             )
             {
-              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'] !== null) {
-                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'];
-              }
-              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'] !== null) {
-                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'];
-              }
-              if($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'] !== null) {
-                $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'];
+              foreach($sensor['capability'] as $capability) {
+                if($capability['type'] === 'airQuality') {
+                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'];
+                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'];
+                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'];
+                }
               }
 
               $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['temperature'];
