@@ -423,10 +423,10 @@ CREATE TABLE `runtime_sensor` (
   `temperature` smallint DEFAULT NULL,
   `occupancy` tinyint unsigned DEFAULT NULL,
   `air_pressure` mediumint unsigned DEFAULT NULL,
-  `air_quality` tinyint unsigned DEFAULT NULL,
+  `air_quality` smallint unsigned DEFAULT NULL,
   `air_quality_accuracy` tinyint unsigned DEFAULT NULL,
-  `voc_concentration` smallint unsigned DEFAULT NULL,
-  `co2_concentration` smallint unsigned DEFAULT NULL,
+  `voc_concentration` mediumint unsigned DEFAULT NULL,
+  `co2_concentration` mediumint unsigned DEFAULT NULL,
   PRIMARY KEY (`runtime_sensor_id`,`timestamp`),
   UNIQUE KEY `thermostat_id_timestamp` (`sensor_id`,`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci ROW_FORMAT=COMPRESSED;
