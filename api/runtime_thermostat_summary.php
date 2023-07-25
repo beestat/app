@@ -280,8 +280,13 @@ class runtime_thermostat_summary extends cora\crud {
           $data[$date]['sum_economizer'] += $runtime_thermostat['accessory'];
         }
 
-        $data[$date]['avg_outdoor_temperature'][] = $runtime_thermostat['outdoor_temperature'];
-        $data[$date]['avg_outdoor_humidity'][] = $runtime_thermostat['outdoor_humidity'];
+        if ($runtime_thermostat['outdoor_temperature'] !== null) {
+          $data[$date]['avg_outdoor_temperature'][] = $runtime_thermostat['outdoor_temperature'];
+        }
+        if ($runtime_thermostat['outdoor_humidity'] !== null) {
+          $data[$date]['avg_outdoor_humidity'][] = $runtime_thermostat['outdoor_humidity'];
+        }
+
         $data[$date]['avg_indoor_temperature'][] = $runtime_thermostat['indoor_temperature'];
         $data[$date]['avg_indoor_humidity'][] = $runtime_thermostat['indoor_humidity'];
       }

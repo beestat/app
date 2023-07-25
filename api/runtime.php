@@ -508,9 +508,7 @@ class runtime extends cora\api {
         $columns['HVACmode'] === null ||
         $columns['zoneAveTemp'] === null ||
         $columns['zoneHumidity'] === null ||
-        $columns['outdoorTemp'] === null ||
         $columns['outdoorTemp'] < -1000 || // #384
-        $columns['outdoorHumidity'] === null ||
         $columns['compHeat1'] === null ||
         $columns['compHeat2'] === null ||
         $columns['compCool1'] === null ||
