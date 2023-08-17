@@ -178,6 +178,8 @@ class runtime_thermostat_summary extends cora\crud {
    * @param string $populate_end Local date to end populating, inclusive.
    */
   private function populate($thermostat_id, $populate_begin, $populate_end) {
+    $degree_days_base_temperature = 65;
+
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
     // Convert date strings to timestamps to make them easier to work with.
@@ -245,6 +247,7 @@ class runtime_thermostat_summary extends cora\crud {
             'sum_dehumidifier' => 0,
             'sum_ventilator' => 0,
             'sum_economizer' => 0,
+            'sum_degree_days' => [],
             'avg_outdoor_temperature' => [],
             'avg_outdoor_humidity' => [],
             'avg_indoor_temperature' => [],
@@ -282,6 +285,7 @@ class runtime_thermostat_summary extends cora\crud {
 
         if ($runtime_thermostat['outdoor_temperature'] !== null) {
           $data[$date]['avg_outdoor_temperature'][] = $runtime_thermostat['outdoor_temperature'];
+          $data[$date]['sum_degree_days'][] = $runtime_thermostat['outdoor_temperature'];
         }
         if ($runtime_thermostat['outdoor_humidity'] !== null) {
           $data[$date]['avg_outdoor_humidity'][] = $runtime_thermostat['outdoor_humidity'];
@@ -296,6 +300,7 @@ class runtime_thermostat_summary extends cora\crud {
 
     // Write to the database.
     foreach($data as $date => &$row) {
+      $row['sum_degree_days'] = (array_mean($row['sum_degree_days']) / 10) - $degree_days_base_temperature;
       $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
       $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
       $row['avg_indoor_temperature'] = round(array_sum($row['avg_indoor_temperature']) / count($row['avg_indoor_temperature']));
