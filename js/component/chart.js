@@ -36,6 +36,12 @@ beestat.component.chart.prototype.decorate_ = function(parent) {
   options.chart.renderTo = parent[0];
 
   this.chart_ = Highcharts.chart(options);
+
+  this.docked_tooltip_container_ = $.createElement('div');
+  this.docked_tooltip_container_.style({
+    'margin-top': (beestat.style.size.gutter / 2) + 'px'
+  });
+  parent.appendChild(this.docked_tooltip_container_);
 };
 
 /**
@@ -638,7 +644,25 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
     }
   });
 
-  return tooltip[0].outerHTML;
+  if (this.get_dock_tooltip_() === true) {
+    this.docked_tooltip_container_.innerHTML(tooltip[0].outerHTML);
+    return '';
+  } else {
+    this.docked_tooltip_container_.innerHTML('');
+    return tooltip[0].outerHTML;
+  }
+};
+
+/**
+ * Get whether or not the tooltip should be docked.
+ *
+ * @return {boolean}
+ */
+beestat.component.chart.prototype.get_dock_tooltip_ = function() {
+  return (
+    beestat.setting('ui.always_dock_tooltips') === true ||
+    beestat.width < 600
+  );
 };
 
 /**

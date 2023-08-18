@@ -17,6 +17,33 @@ beestat.component.card.settings.prototype.decorate_contents_ = function(parent) 
   ];
 
   /**
+   * User Interface
+   */
+  parent.appendChild(
+    $.createElement('p')
+      .style('font-weight', '400')
+      .innerText('User Interface')
+  );
+
+  // Always dock tooltips
+  const always_dock_tooltips = new beestat.component.input.checkbox();
+  always_dock_tooltips
+    .set_label('Always Dock Tooltips')
+    .set_checked(beestat.setting('ui.always_dock_tooltips'))
+    .render(parent);
+
+  always_dock_tooltips.addEventListener('change', function() {
+    always_dock_tooltips.set_enabled(false);
+    beestat.setting(
+      'ui.always_dock_tooltips',
+      always_dock_tooltips.get_checked(),
+      function() {
+        always_dock_tooltips.set_enabled(true);
+      }
+    );
+  });
+
+  /**
    * Units
    */
   parent.appendChild(

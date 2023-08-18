@@ -325,3 +325,12 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_c
 beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_crosshair_snap_ = function() {
   return true;
 };
+
+/**
+ * Get the height of the chart.
+ *
+ * @return {number} The height of the chart.
+ */
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_chart_height_ = function() {
+  return 350;
+};

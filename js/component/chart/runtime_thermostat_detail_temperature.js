@@ -405,3 +405,12 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
 beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_options_chart_marginLeft_ = function() {
   return 45;
 };
+
+/**
+ * Get the height of the chart.
+ *
+ * @return {number} The height of the chart.
+ */
+beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_options_chart_height_ = function() {
+  return 350;
+};
