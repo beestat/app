@@ -181,8 +181,12 @@ class ecobee_thermostat extends cora\crud {
               ]
             ]
           );
-        } else {
-          throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
+
+          /**
+           * At this point, $response will either be populated with results,
+           * or have an empty thermostatList attribute. The code can continue
+           * on as it will inactivate any thermostats that were not found.
+           */
         }
       } else {
         throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
@@ -392,14 +396,14 @@ class ecobee_thermostat extends cora\crud {
     }
 
     // Inactivate any ecobee_thermostats that were no longer returned.
-    $thermostats = $this->api('thermostat', 'read');
+    $thermostats = $this->api('thermostat', 'read', ['attributes' => ['inactive' => false]]);
     $ecobee_thermostat_ids_to_return = [];
     foreach($thermostats as $thermostat) {
       if(in_array($thermostat['thermostat_id'], $thermostat_ids_to_keep) === false) {
         $this->update(
           [
             'ecobee_thermostat_id' => $thermostat['ecobee_thermostat_id'],
-            'inactive' => 1
+            'inactive' => true
           ]
         );
 
@@ -409,7 +413,7 @@ class ecobee_thermostat extends cora\crud {
           [
             'attributes' => [
               'thermostat_id' => $thermostat['thermostat_id'],
-              'inactive' => 1
+              'inactive' => true
             ],
           ]
         );
@@ -418,7 +422,11 @@ class ecobee_thermostat extends cora\crud {
       }
     }
 
-    return $this->read_id(['ecobee_thermostat_id' => $ecobee_thermostat_ids_to_return]);
+    if (count($ecobee_thermostat_ids_to_return) === 0) {
+      return [];
+    } else {
+      return $this->read_id(['ecobee_thermostat_id' => $ecobee_thermostat_ids_to_return]);
+    }
   }
 
   /**
