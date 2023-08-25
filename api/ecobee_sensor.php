@@ -218,8 +218,12 @@ class ecobee_sensor extends cora\crud {
               ]
             ]
           );
-        } else {
-          throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
+
+          /**
+           * At this point, $response will either be populated with results,
+           * or have an empty thermostatList attribute. The code can continue
+           * on as it will inactivate any thermostats that were not found.
+           */
         }
       } else {
         throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
@@ -357,14 +361,14 @@ class ecobee_sensor extends cora\crud {
     }
 
     // Inactivate any sensors that were no longer returned.
-    $sensors = $this->api('sensor', 'read');
+    $sensors = $this->api('sensor', 'read', ['attributes' => ['inactive' => false]]);
     $ecobee_sensor_ids_to_return = [];
     foreach($sensors as $sensor) {
       if(in_array($sensor['sensor_id'], $sensor_ids_to_keep) === false) {
         $this->update(
           [
             'ecobee_sensor_id' => $sensor['ecobee_sensor_id'],
-            'inactive' => 1
+            'inactive' => true
           ]
         );
 
@@ -374,7 +378,7 @@ class ecobee_sensor extends cora\crud {
           [
             'attributes' => [
               'sensor_id' => $sensor['sensor_id'],
-              'inactive' => 1
+              'inactive' => true
             ]
           ]
         );
@@ -383,7 +387,11 @@ class ecobee_sensor extends cora\crud {
       }
     }
 
-    return $this->read_id(['ecobee_sensor_id' => $ecobee_sensor_ids_to_return]);
+    if (count($ecobee_sensor_ids_to_return) === 0) {
+      return [];
+    } else {
+      return $this->read_id(['ecobee_sensor_id' => $ecobee_sensor_ids_to_return]);
+    }
   }
 
 }
