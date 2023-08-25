@@ -22,6 +22,17 @@ class ecobee extends external_api {
   protected static $cache_for = null;
 
   /**
+   * If the original API call fails, the ecobee token is updated outside of
+   * the current transaction to ensure it doesn't get rolled back due to an
+   * exception.
+   *
+   * The problem with that is that all subsequent API calls need this
+   * value...so it's stored here statically on the class and used instead of
+   * the old database value.
+   */
+  protected static $ecobee_token = null;
+
+  /**
    * Redirect to ecobee to do the oAuth.
    */
   public function authorize() {
@@ -120,11 +131,10 @@ class ecobee extends external_api {
    * @param array $arguments POST or GET parameters
    * @param boolean $auto_refresh_token Whether or not to automatically get a
    * new token if the old one is expired.
-   * @param string $ecobee_token Force-use a specific token.
    *
    * @return array The response of this API call.
    */
-  public function ecobee_api($method, $endpoint, $arguments, $auto_refresh_token = true, $ecobee_token = null) {
+  public function ecobee_api($method, $endpoint, $arguments, $auto_refresh_token = true) {
     $curl = [
       'method' => $method
     ];
@@ -141,7 +151,7 @@ class ecobee extends external_api {
       // For non-authorization endpoints, add the access_token header. Will use
       // provided token if set, otherwise will get the one for the logged in
       // user.
-      if($ecobee_token === null) {
+      if(self::$ecobee_token === null) {
         $ecobee_tokens = $this->api(
           'ecobee_token',
           'read',
@@ -152,6 +162,8 @@ class ecobee extends external_api {
           throw new cora\exception('No ecobee access for this user.', 10501, false);
         }
         $ecobee_token = $ecobee_tokens[0];
+      } else {
+        $ecobee_token = self::$ecobee_token;
       }
 
       $curl['header'] = [
@@ -200,8 +212,8 @@ class ecobee extends external_api {
     if (isset($response['status']) === true && $response['status']['code'] === 14) {
       // Authentication token has expired. Refresh your tokens.
       if ($auto_refresh_token === true) {
-        $ecobee_token = $this->api('ecobee_token', 'refresh');
-        return $this->ecobee_api($method, $endpoint, $arguments, false, $ecobee_token);
+        self::$ecobee_token = $this->api('ecobee_token', 'refresh');
+        return $this->ecobee_api($method, $endpoint, $arguments, false);
       }
       else {
         if($this::$log_mysql !== 'all') {
