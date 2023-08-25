@@ -111,12 +111,12 @@ function get_utc_datetime($local_datetime, $local_time_zone, $format = 'Y-m-d H:
 }
 
 /**
- * Convert a UTC datetime string to a UTC datetime string.
+ * Convert a UTC datetime string to a local datetime string.
  *
  * @param string $utc_datetime Local datetime string.
  * @param string $local_time_zone The local time zone to convert from.
  *
- * @return string The UTC datetime string.
+ * @return string The local datetime string.
  */
 function get_local_datetime($utc_datetime, $local_time_zone, $format = 'Y-m-d H:i:s') {
   $local_time_zone = new DateTimeZone($local_time_zone);
