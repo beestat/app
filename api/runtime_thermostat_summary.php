@@ -301,6 +301,9 @@ class runtime_thermostat_summary extends cora\crud {
     // Write to the database.
     foreach($data as $date => &$row) {
       // $row['sum_degree_days'] = (array_mean($row['sum_degree_days']) / 10) - $degree_days_base_temperature;
+      $row['sum_heating_degree_days'] = 0;
+      $row['sum_cooling_degree_days'] = 0;
+
       $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
       $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
       $row['avg_indoor_temperature'] = round(array_sum($row['avg_indoor_temperature']) / count($row['avg_indoor_temperature']));
