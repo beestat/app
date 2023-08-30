@@ -21,6 +21,17 @@ class patreon extends external_api {
   protected static $cache_for = null;
 
   /**
+   * If the original API call fails, the patreon token is updated outside of
+   * the current transaction to ensure it doesn't get rolled back due to an
+   * exception.
+   *
+   * The problem with that is that all subsequent API calls need this
+   * value...so it's stored here statically on the class and used instead of
+   * the old database value.
+   */
+  protected static $patreon_token = null;
+
+  /**
    * Redirect to Patreon to do the oAuth. Note: Put a space between scopes and
    * urlencode the whole thing if it includes special characters.
    */
@@ -58,11 +69,10 @@ class patreon extends external_api {
    * @param array $arguments POST or GET parameters
    * @param boolean $auto_refresh_token Whether or not to automatically get a
    * new token if the old one is expired.
-   * @param string $patreon_token Force-use a specific token.
    *
    * @return array The response of this API call.
    */
-  public function patreon_api($method, $endpoint, $arguments, $auto_refresh_token = true, $patreon_token = null) {
+  public function patreon_api($method, $endpoint, $arguments, $auto_refresh_token = true) {
     $curl = [
       'method' => $method
     ];
@@ -76,7 +86,7 @@ class patreon extends external_api {
       // For non-authorization endpoints, add the access_token header. Will use
       // provided token if set, otherwise will get the one for the logged in
       // user.
-      if($patreon_token === null) {
+      if(self::$patreon_token === null) {
         $patreon_tokens = $this->api(
           'patreon_token',
           'read',
@@ -86,6 +96,8 @@ class patreon extends external_api {
           throw new Exception('No token for this user');
         }
         $patreon_token = $patreon_tokens[0];
+      } else {
+        $patreon_token = self::$patreon_token;
       }
 
       $curl['header'] = [
@@ -121,15 +133,13 @@ class patreon extends external_api {
       throw new Exception('Invalid JSON');
     }
 
- // "response": "{\"errors\":[{\"code\":1,\"code_name\":\"Unauthorized\",\"detail\":\"The server could not verify that you are authorized to access the URL requested. You either supplied the wrong credentials (e.g. a bad password), or your browser doesn't understand how to supply the credentials required.\",\"id\":\"f4776cc7-0965-4d24-833a-98c449c8ffc8\",\"status\":\"401\",\"title\":\"Unauthorized\"}]}"
-
     // If the token was expired, refresh it and try again. Trying again sets
     // auto_refresh_token to false to prevent accidental infinite refreshing if
     // something bad happens.
     if (isset($response['errors']) === true && $response['errors'][0]['status'] === '401') {
       // Authentication token has expired. Refresh your tokens.
       if ($auto_refresh_token === true) {
-        $this->api('patreon_token', 'refresh');
+        self::$patreon_token = $this->api('patreon_token', 'refresh');
         return $this->patreon_api($method, $endpoint, $arguments, false);
       }
       else {
