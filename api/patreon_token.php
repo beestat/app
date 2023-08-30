@@ -116,7 +116,7 @@ class patreon_token extends cora\crud {
       throw new cora\exception('Could not refresh Patreon token; Patreon returned no token.', 10102, true, null, false);
     }
 
-    $database->update(
+    $patreon_token = $database->update(
       'patreon_token',
       [
         'patreon_token_id' => $patreon_token['patreon_token_id'],
@@ -127,6 +127,8 @@ class patreon_token extends cora\crud {
     );
 
     $database->release_lock($lock_name);
+
+    return $patreon_token;
   }
 
   /**
