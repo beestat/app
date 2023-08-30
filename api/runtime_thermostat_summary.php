@@ -177,8 +177,9 @@ class runtime_thermostat_summary extends cora\crud {
    * @param string $populate_begin Local date to begin populating, inclusive.
    * @param string $populate_end Local date to end populating, inclusive.
    */
-  private function populate($thermostat_id, $populate_begin, $populate_end) {
-    $degree_days_base_temperature = 65;
+  public function populate($thermostat_id, $populate_begin, $populate_end) {
+    $degree_days_base_temperature = 650; // 65°F * 10 (database storage)
+    $degree_days_base_time_interval = 5 / 1440; // 5 minutes out of 1440 minutes per day.
 
     $thermostat = $this->api('thermostat', 'get', $thermostat_id);
 
@@ -247,7 +248,8 @@ class runtime_thermostat_summary extends cora\crud {
             'sum_dehumidifier' => 0,
             'sum_ventilator' => 0,
             'sum_economizer' => 0,
-            // 'sum_degree_days' => [],
+            'sum_heating_degree_days' => 0,
+            'sum_cooling_degree_days' => 0,
             'avg_outdoor_temperature' => [],
             'avg_outdoor_humidity' => [],
             'avg_indoor_temperature' => [],
@@ -285,7 +287,18 @@ class runtime_thermostat_summary extends cora\crud {
 
         if ($runtime_thermostat['outdoor_temperature'] !== null) {
           $data[$date]['avg_outdoor_temperature'][] = $runtime_thermostat['outdoor_temperature'];
-          // $data[$date]['sum_degree_days'][] = $runtime_thermostat['outdoor_temperature'];
+
+          // CDD
+          if($runtime_thermostat['outdoor_temperature'] > $degree_days_base_temperature) {
+            $data[$date]['sum_cooling_degree_days'] +=
+              (($runtime_thermostat['outdoor_temperature']) - $degree_days_base_temperature) * $degree_days_base_time_interval;
+          }
+
+          // HDD
+          if($runtime_thermostat['outdoor_temperature'] < $degree_days_base_temperature) {
+            $data[$date]['sum_heating_degree_days'] +=
+              ($degree_days_base_temperature - $runtime_thermostat['outdoor_temperature']) * $degree_days_base_time_interval;
+          }
         }
         if ($runtime_thermostat['outdoor_humidity'] !== null) {
           $data[$date]['avg_outdoor_humidity'][] = $runtime_thermostat['outdoor_humidity'];
@@ -293,6 +306,7 @@ class runtime_thermostat_summary extends cora\crud {
 
         $data[$date]['avg_indoor_temperature'][] = $runtime_thermostat['indoor_temperature'];
         $data[$date]['avg_indoor_humidity'][] = $runtime_thermostat['indoor_humidity'];
+
       }
 
       $chunk_begin = strtotime('+5 minute', $chunk_end);
@@ -300,10 +314,6 @@ class runtime_thermostat_summary extends cora\crud {
 
     // Write to the database.
     foreach($data as $date => &$row) {
-      // $row['sum_degree_days'] = (array_mean($row['sum_degree_days']) / 10) - $degree_days_base_temperature;
-      $row['sum_heating_degree_days'] = 0;
-      $row['sum_cooling_degree_days'] = 0;
-
       $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
       $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
       $row['avg_indoor_temperature'] = round(array_sum($row['avg_indoor_temperature']) / count($row['avg_indoor_temperature']));
