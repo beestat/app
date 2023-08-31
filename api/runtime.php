@@ -508,7 +508,7 @@ class runtime extends cora\api {
         $columns['HVACmode'] === null ||
         $columns['zoneAveTemp'] === null ||
         $columns['zoneHumidity'] === null ||
-        $columns['outdoorTemp'] < -1000 || // #384
+        ($columns['outdoorTemp'] !== null && $columns['outdoorTemp'] < -1000) || // #384
         $columns['compHeat1'] === null ||
         $columns['compHeat2'] === null ||
         $columns['compCool1'] === null ||
@@ -599,8 +599,13 @@ class runtime extends cora\api {
       $data['indoor_temperature'] = $columns['zoneAveTemp'] * 10;
       $data['indoor_humidity'] = round($columns['zoneHumidity']);
 
-      $data['outdoor_temperature'] = $columns['outdoorTemp'] * 10;
-      $data['outdoor_humidity'] = round($columns['outdoorHumidity']);
+      if($columns['outdoorTemp'] !== null) {
+        $data['outdoor_temperature'] = $columns['outdoorTemp'] * 10;
+      }
+
+      if($columns['outdoorHumidity'] !== null) {
+        $data['outdoor_humidity'] = round($columns['outdoorHumidity']);
+      }
 
       // Event
       $event_runtime_thermostat_text = $this->api(

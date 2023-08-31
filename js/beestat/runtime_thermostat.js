@@ -139,7 +139,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
 
   // Initialize moving average.
   var moving = [];
-  var moving_count = 15;
+  var moving_count = 5;
 
   var offset;
   for (var i = 0; i < moving_count; i++) {
@@ -169,7 +169,11 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
       var outdoor_temperature_moving = beestat.temperature(
         beestat.runtime_thermostat.get_average_(moving, 'outdoor_temperature')
       );
-      data.series.outdoor_temperature.push(outdoor_temperature_moving);
+      if (runtime_thermostat.outdoor_temperature === null) {
+        data.series.outdoor_temperature.push(null);
+      } else {
+        data.series.outdoor_temperature.push(outdoor_temperature_moving);
+      }
       data.metadata.series.outdoor_temperature.data[current_m.valueOf()] =
         beestat.temperature(runtime_thermostat.outdoor_temperature);
       data.metadata.series.outdoor_temperature.active = true;
@@ -178,7 +182,11 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
         moving,
         'outdoor_humidity'
       );
-      data.series.outdoor_humidity.push(outdoor_humidity_moving);
+      if (runtime_thermostat.outdoor_humidity === null) {
+        data.series.outdoor_humidity.push(null);
+      } else {
+        data.series.outdoor_humidity.push(outdoor_humidity_moving);
+      }
       data.metadata.series.outdoor_humidity.data[current_m.valueOf()] =
         runtime_thermostat.outdoor_humidity;
       data.metadata.series.outdoor_humidity.active = true;
@@ -527,7 +535,10 @@ beestat.runtime_thermostat.get_average_ = function(runtime_thermostats, series_c
   var average = 0;
   var count = 0;
   for (var i = 0; i < runtime_thermostats.length; i++) {
-    if (runtime_thermostats[i] !== undefined) {
+    if (
+      runtime_thermostats[i] !== undefined &&
+      runtime_thermostats[i][series_code] !== null
+    ) {
       average += runtime_thermostats[i][series_code];
       count++;
     }
