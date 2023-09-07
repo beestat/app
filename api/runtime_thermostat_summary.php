@@ -257,13 +257,20 @@ class runtime_thermostat_summary extends cora\crud {
           ];
         }
 
-        $runtime_thermostat['outdoor_temperature'] *= 10;
+        if($runtime_thermostat['outdoor_temperature'] !== null) {
+          $runtime_thermostat['outdoor_temperature'] *= 10;
+        }
+
         $runtime_thermostat['indoor_temperature'] *= 10;
 
         $data[$date]['count']++;
         $data[$date]['sum_fan'] += $runtime_thermostat['fan'];
-        $data[$date]['min_outdoor_temperature'] = min($runtime_thermostat['outdoor_temperature'], $data[$date]['min_outdoor_temperature']);
-        $data[$date]['max_outdoor_temperature'] = max($runtime_thermostat['outdoor_temperature'], $data[$date]['max_outdoor_temperature']);
+
+        if ($runtime_thermostat['outdoor_temperature'] !== null) {
+          $data[$date]['min_outdoor_temperature'] = min($runtime_thermostat['outdoor_temperature'], $data[$date]['min_outdoor_temperature']);
+          $data[$date]['max_outdoor_temperature'] = max($runtime_thermostat['outdoor_temperature'], $data[$date]['max_outdoor_temperature']);
+        }
+
         $data[$date]['sum_auxiliary_heat_1'] += $runtime_thermostat['auxiliary_heat_1'];
         $data[$date]['sum_auxiliary_heat_2'] += $runtime_thermostat['auxiliary_heat_2'];
 
@@ -314,8 +321,26 @@ class runtime_thermostat_summary extends cora\crud {
 
     // Write to the database.
     foreach($data as $date => &$row) {
-      $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
-      $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
+      if (count($row['avg_outdoor_temperature']) > 0) {
+        $row['avg_outdoor_temperature'] = round(array_sum($row['avg_outdoor_temperature']) / count($row['avg_outdoor_temperature']));
+      } else {
+        $row['avg_outdoor_temperature'] = null;
+      }
+
+      if (count($row['avg_outdoor_humidity']) > 0) {
+        $row['avg_outdoor_humidity'] = round(array_sum($row['avg_outdoor_humidity']) / count($row['avg_outdoor_humidity']));
+      } else {
+        $row['avg_outdoor_humidity'] = null;
+      }
+
+      if ($row['min_outdoor_temperature'] === INF) {
+        $row['min_outdoor_temperature'] = null;
+      }
+
+      if ($row['max_outdoor_temperature'] === -INF) {
+        $row['max_outdoor_temperature'] = null;
+      }
+
       $row['avg_indoor_temperature'] = round(array_sum($row['avg_indoor_temperature']) / count($row['avg_indoor_temperature']));
       $row['avg_indoor_humidity'] = round(array_sum($row['avg_indoor_humidity']) / count($row['avg_indoor_humidity']));
 
