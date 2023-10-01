@@ -75,6 +75,17 @@ beestat.runtime_sensor.get_data = function(sensor_ids, range, key) {
     data.metadata.sensors.push(sensor);
   });
 
+  // Sort by name with the thermostat at the top
+  data.metadata.sensors.sort(function(a, b) {
+    if (a.type === 'thermostat') {
+      return -1;
+    } else if (b.type === 'thermostat') {
+      return 1;
+    }
+
+    return a.name.localeCompare(b.name, 'en', {'sensitivity': 'base'});
+  });
+
   series_codes.push('dummy');
 
   // Initialize a bunch of stuff.
