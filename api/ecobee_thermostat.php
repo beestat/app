@@ -162,25 +162,44 @@ class ecobee_thermostat extends cora\crud {
         }
 
         if(count($serial_numbers) > 0) {
-          $response = $this->api(
-            'ecobee',
-            'ecobee_api',
-            [
-              'method' => 'GET',
-              'endpoint' => 'thermostat',
-              'arguments' => [
-                'body' => json_encode([
-                  'selection' => array_merge(
-                    [
-                      'selectionType' => 'thermostats',
-                      'selectionMatch' => implode(',', $serial_numbers),
-                    ],
-                    $include
-                  )
-                ])
+          try {
+            $response = $this->api(
+              'ecobee',
+              'ecobee_api',
+              [
+                'method' => 'GET',
+                'endpoint' => 'thermostat',
+                'arguments' => [
+                  'body' => json_encode([
+                    'selection' => array_merge(
+                      [
+                        'selectionType' => 'thermostats',
+                        'selectionMatch' => implode(',', $serial_numbers),
+                      ],
+                      $include
+                    )
+                  ])
+                ]
               ]
-            ]
-          );
+            );
+          } catch(cora\exception $e) {
+            /**
+             * For some reason, I can get a serial number in the /homes data
+             * and still get no results from the /thermostat endpoint. Likely
+             * due to two data sources not being in sync. Catch that exception
+             * and let the code continue so any existing thermostats still get
+             * inactivated.
+             *
+             * Also have to fabricate the $response a bit.
+             */
+            if($e->getCode() === 10511) {
+              $response = [
+                'thermostatList' => []
+              ];
+            } else {
+              throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
+            }
+          }
 
           /**
            * At this point, $response will either be populated with results,

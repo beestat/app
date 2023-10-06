@@ -266,6 +266,22 @@ class ecobee extends external_api {
           $this->log_mysql($curl_response, true);
         }
         throw new cora\exception('User cannot access thermostat.', 10510, false, null, false);
+      } else if (
+        isset($response['status']['message']) === true &&
+        stripos($response['status']['message'], 'Processing error. Error populating API thermostats.') !== false
+      ) {
+        // Processing error. Error populating API thermostats. ...
+
+        // Appears to happen when specifying "includeNotificationSettings" in
+        // the /thermostat API call when using a thermostat serial number from
+        // the /homes endpoint. I believe the /homes endpoint is out of date
+        // and errornously returning the thermostat, then asking for the
+        // thermostat, specifically the notification settings, breaks the
+        // ecobee API.
+        if($this::$log_mysql !== 'all') {
+          $this->log_mysql($curl_response, true);
+        }
+        throw new cora\exception('No thermostats found.', 10511, false, null, false);
       }
     }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
