@@ -741,7 +741,7 @@ class profile extends cora\crud {
             // Start looking ahead into the next 30 minutes looking for changes
             // to event_runtime_thermostat_text_id and climate_runtime_thermostat_text_id.
             $lookahead = $five_minutes;
-            while($lookahead <= $thirty_minutes) {
+            while($lookahead < $thirty_minutes) {
               if(
                 isset($runtime[$current_timestamp + $lookahead]) === true &&
                 isset($runtime[$current_timestamp + $lookahead][$thermostat_id]) === true &&
