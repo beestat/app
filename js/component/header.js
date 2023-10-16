@@ -192,6 +192,17 @@ beestat.component.header.prototype.decorate_ = function(parent) {
       (new beestat.layer.settings()).render();
     }));
 
+  const url_parameters = new URLSearchParams(window.location.search);
+  const platform = url_parameters.get('platform');
+  if (platform === 'ios' || platform === 'android') {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Open Ecobee App')
+      .set_icon('open_in_app')
+      .set_callback(function() {
+        window.location.replace('ecobee://beestat');
+      }));
+  }
+
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')
     .set_icon('exit_to_app')

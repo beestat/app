@@ -522,6 +522,7 @@ input[type=range]::-moz-range-thumb {
 .icon.numeric_9_box:before { content: "\F03BC"; }
 .icon.octagram:before { content: "\F06F9"; }
 .icon.open_in_new:before { content: "\F03CC"; }
+.icon.open_in_app:before { content: "\F03CB"; }
 .icon.patreon:before { content: "\F0882"; }
 .icon.pause:before { content: "\F03E4"; }
 .icon.pencil:before { content: "\F03EB"; }
