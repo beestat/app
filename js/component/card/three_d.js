@@ -28,7 +28,6 @@ beestat.component.card.three_d = function() {
 
   const change_function = beestat.debounce(function() {
     self.state_.scene_camera_state = self.scene_.get_camera_state();
-    self.get_data_(true);
     self.rerender();
   }, 10);
 
@@ -82,6 +81,8 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
+  delete this.data_;
+
   const drawing_pane_container = document.createElement('div');
   drawing_pane_container.style.overflowX = 'hidden';
 
@@ -883,9 +884,9 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
  *
  * @return {object} The data.
  */
-beestat.component.card.three_d.prototype.get_data_ = function(force) {
+beestat.component.card.three_d.prototype.get_data_ = function() {
   const self = this;
-  if (this.data_ === undefined || force === true) {
+  if (this.data_ === undefined) {
     const sensor_ids_map = beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_);
     const thermostat_ids_map = beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_);
 

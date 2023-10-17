@@ -19,7 +19,6 @@ beestat.component.card.runtime_sensor_detail = function(thermostat_id) {
    * for when rerendering.
    */
   var change_function = beestat.debounce(function() {
-    self.get_data_(true);
     self.rerender();
   }, 10);
 
@@ -42,6 +41,8 @@ beestat.extend(beestat.component.card.runtime_sensor_detail, beestat.component.c
  */
 beestat.component.card.runtime_sensor_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
+
+  delete this.data_;
 
   this.charts_ = {
     'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(
@@ -356,10 +357,10 @@ beestat.component.card.runtime_sensor_detail.prototype.has_data_ = function() {
  *
  * @return {object} The data.
  */
-beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function(force) {
+beestat.component.card.runtime_sensor_detail.prototype.get_data_ = function() {
   const self = this;
 
-  if (this.data_ === undefined || force === true) {
+  if (this.data_ === undefined) {
     var range = {
       'type': beestat.setting('runtime_sensor_detail_range_type'),
       'dynamic': beestat.setting('runtime_sensor_detail_range_dynamic'),

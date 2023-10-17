@@ -276,6 +276,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
 
     // Enable polling for live updates
     beestat.enable_poll();
+    beestat.enable_poll_watcher();
 
     (new beestat.layer.detail()).render();
 

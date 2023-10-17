@@ -19,15 +19,11 @@ beestat.component.card.runtime_thermostat_detail = function(thermostat_id) {
    * for when rerendering.
    */
   var change_function = beestat.debounce(function() {
-    self.get_data_(true);
     self.rerender();
   }, 10);
 
   beestat.dispatcher.addEventListener(
-    [
-      'cache.data.runtime_thermostat_detail__runtime_thermostat',
-      'cache.thermostat'
-    ],
+    'cache.data.runtime_thermostat_detail__runtime_thermostat',
     change_function
   );
 
@@ -42,6 +38,8 @@ beestat.extend(beestat.component.card.runtime_thermostat_detail, beestat.compone
  */
 beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = function(parent) {
   var self = this;
+
+  delete this.data_;
 
   this.charts_ = {
     'equipment': new beestat.component.chart.runtime_thermostat_detail_equipment(
@@ -339,12 +337,10 @@ beestat.component.card.runtime_thermostat_detail.prototype.has_data_ = function(
  * Get data. This doesn't directly or indirectly make any API calls, but it
  * caches the data so it doesn't have to loop over everything more than once.
  *
- * @param {boolean} force Force get the data?
- *
  * @return {object} The data.
  */
-beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function(force) {
-  if (this.data_ === undefined || force === true) {
+beestat.component.card.runtime_thermostat_detail.prototype.get_data_ = function() {
+  if (this.data_ === undefined) {
     var range = {
       'type': beestat.setting('runtime_thermostat_detail_range_type'),
       'dynamic': beestat.setting('runtime_thermostat_detail_range_dynamic'),

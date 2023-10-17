@@ -62,7 +62,7 @@ beestat.api.prototype.send = function(opt_api_call) {
          */
         if (this.callback_ !== undefined) {
           window.setTimeout(function() {
-            self.callback_(self.cached_batch_api_calls_);
+            self.callback_(self.cached_batch_api_calls_, true);
           }, 0);
         }
       } else {
@@ -81,7 +81,7 @@ beestat.api.prototype.send = function(opt_api_call) {
            * problems.
            */
           window.setTimeout(function() {
-            self.callback_(cached.data);
+            self.callback_(cached.data, true);
           }, 0);
         }
       } else {
@@ -262,7 +262,7 @@ beestat.api.prototype.load_ = function(response_text) {
 
   // Callback
   if (this.callback_ !== undefined) {
-    this.callback_(response.data);
+    this.callback_(response.data, false);
   }
 };
 
