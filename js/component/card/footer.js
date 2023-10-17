@@ -58,5 +58,4 @@ beestat.component.card.footer.prototype.decorate_contents_ = function(parent) {
       .setAttribute('href', 'mailto:contact@beestat.io')
       .innerText('Contact')
   );
-
 };

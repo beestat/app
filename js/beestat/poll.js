@@ -11,7 +11,10 @@ beestat.enable_poll = function() {
 /**
  * Poll the database for changes and update the cache.
  */
+window.last_poll = moment();
 beestat.poll = function() {
+  window.last_poll = moment();
+
   var api = new beestat.api();
 
   api.add_call(

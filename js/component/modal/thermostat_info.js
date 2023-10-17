@@ -38,6 +38,10 @@ beestat.component.modal.thermostat_info.prototype.decorate_contents_ = function(
       'name': 'First Connected',
       'value': moment.utc(ecobee_thermostat.runtime.firstConnected).local()
         .format('MMM Do, YYYY')
+    },
+    {
+      'name': '#',
+      'value': window.last_poll.format()
     }
   ];
 
