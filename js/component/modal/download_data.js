@@ -215,7 +215,7 @@ beestat.component.modal.download_data.prototype.decorate_android_ios_disabled_ =
       .set_display('block')
       .set_shadow(false)
       .set_background_color(beestat.style.color.red.base)
-      .set_text('Download Data is only available when using beestat directly in your browser. Sorry! :(')
+      .set_text('Download Data is only available directly in a browser.')
       .set_text_color('#fff')
       .render(parent);
   }
