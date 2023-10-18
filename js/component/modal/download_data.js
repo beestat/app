@@ -20,6 +20,7 @@ beestat.component.modal.download_data.prototype.decorate_contents_ = function(pa
   parent.appendChild($.createElement('p').innerHTML('Beestat stores, at a minimum, the past year of raw thermostat logs. Select a date range to download.'));
   this.decorate_range_(parent);
   this.decorate_presets_(parent);
+  this.decorate_android_ios_disabled_(parent);
   this.decorate_error_(parent);
 
   // Fire off this event once to get everything updated.
@@ -202,6 +203,25 @@ beestat.component.modal.download_data.prototype.decorate_presets_ = function(par
 };
 
 /**
+ * Decorate the disabled notice for Android and iOS.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.modal.download_data.prototype.decorate_android_ios_disabled_ = function(parent) {
+  if (beestat.platform() === 'ios' || beestat.platform() === 'android') {
+    new beestat.component.tile()
+      .set_icon('alert')
+      .set_size('large')
+      .set_display('block')
+      .set_shadow(false)
+      .set_background_color(beestat.style.color.red.base)
+      .set_text('Download Data is only available when using beestat directly in your browser. Sorry! :(')
+      .set_text_color('#fff')
+      .render(parent);
+  }
+};
+
+/**
  * Decorate the error area.
  *
  * @param {rocket.Elements} parent
@@ -253,32 +273,39 @@ beestat.component.modal.download_data.prototype.get_buttons_ = function() {
     });
 
   var save = new beestat.component.tile()
-    .set_background_color(beestat.style.color.green.base)
-    .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')
-    .set_text('Download')
-    .addEventListener('click', function() {
-      var range_begin;
-      var range_end;
-      if (self.state_.range_end.isBefore(self.state_.range_begin) === true) {
-        range_begin = self.state_.range_end;
-        range_end = self.state_.range_begin;
-      } else {
-        range_begin = self.state_.range_begin;
-        range_end = self.state_.range_end;
-      }
+    .set_text('Download');
 
-      var download_arguments = {
-        'thermostat_id': beestat.setting('thermostat_id'),
-        'download_begin': range_begin.format(),
-        'download_end': range_end.hour(23).minute(55)
-          .format()
-      };
+  if (beestat.platform() === 'ios' || beestat.platform() === 'android') {
+    save
+      .set_background_color(beestat.style.color.gray.light);
+  } else {
+    save
+      .set_background_color(beestat.style.color.green.base)
+      .set_background_hover_color(beestat.style.color.green.light)
+      .addEventListener('click', function() {
+        var range_begin;
+        var range_end;
+        if (self.state_.range_end.isBefore(self.state_.range_begin) === true) {
+          range_begin = self.state_.range_end;
+          range_end = self.state_.range_begin;
+        } else {
+          range_begin = self.state_.range_begin;
+          range_end = self.state_.range_end;
+        }
 
-      window.location.href = '/api/?resource=runtime&method=download&arguments=' + encodeURIComponent(JSON.stringify(download_arguments)) + '&api_key=' + window.beestat_api_key_local;
+        var download_arguments = {
+          'thermostat_id': beestat.setting('thermostat_id'),
+          'download_begin': range_begin.format(),
+          'download_end': range_end.hour(23).minute(55)
+            .format()
+        };
 
-      self.dispose();
-    });
+        window.location.href = '/api/?resource=runtime&method=download&arguments=' + encodeURIComponent(JSON.stringify(download_arguments)) + '&api_key=' + window.beestat_api_key_local;
+
+        self.dispose();
+      });
+  }
 
   return [
     cancel,

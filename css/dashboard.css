@@ -419,6 +419,7 @@ input[type=range]::-moz-range-thumb {
 .icon.air_filter:before { content: "\F0D43"; }
 .icon.air_purifier:before { content: "\F0D44"; }
 .icon.alarm_snooze:before { content: "\F068E"; }
+.icon.alert:before { content: "\F0026"; }
 .icon.alpha_b:before { content: "\F0AEF"; }
 .icon.alpha_b_box:before { content: "\F0B09"; }
 .icon.arrow_down:before { content: "\F0045"; }
