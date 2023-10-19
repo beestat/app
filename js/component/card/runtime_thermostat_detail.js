@@ -219,6 +219,7 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
         )
         .set_callback(function(response) {
           beestat.cache.set('thermostat', response);
+          self.rerender();
         })
         .send();
     }, 2000);
