@@ -291,21 +291,19 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_top_right_ =
       (new beestat.component.modal.runtime_thermostat_detail_custom()).render();
     }));
 
-  if (this.has_data_() === true) {
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Download Chart')
-      .set_icon('download')
-      .set_callback(function() {
-        self.charts_.temperature.export();
-      }));
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Download Chart')
+    .set_icon('download')
+    .set_callback(function() {
+      self.charts_.temperature.export();
+    }));
 
-    menu.add_menu_item(new beestat.component.menu_item()
-      .set_text('Reset Zoom')
-      .set_icon('magnify_close')
-      .set_callback(function() {
-        self.charts_.temperature.reset_zoom();
-      }));
-  }
+  menu.add_menu_item(new beestat.component.menu_item()
+    .set_text('Reset Zoom')
+    .set_icon('magnify_close')
+    .set_callback(function() {
+      self.charts_.temperature.reset_zoom();
+    }));
 
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Help')
