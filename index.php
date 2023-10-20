@@ -20,9 +20,6 @@
     $_COOKIE['session_key'] = 'd31d3ef451fe65885928e5e1bdf4af321f702009';
   }
 
-  require_once 'api/cora/setting.php';
-  $setting = cora\setting::get_instance();
-
   // If you're not logged in, just take you directly to the ecobee login page.
   if(isset($_COOKIE['session_key']) === false) {
     header('Location: https://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments={}&api_key=' . $setting->get('beestat_api_key_local'));
