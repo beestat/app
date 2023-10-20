@@ -59,7 +59,7 @@ class ecobee extends external_api {
        * credentials and approve the app.
        */
       if($ecobee_token['ecobee_account_id'] === 'd90d2785-890b-4743-8b51-477020a7f6e9') {
-        header('Location: https://demo.beestat.io');
+        header('Location: https://demo.beestat.io/');
         die();
       }
 
