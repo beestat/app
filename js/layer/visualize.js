@@ -58,7 +58,10 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
       }
     ]);
 
-    if (beestat.setting('visualize.hide_affiliate') === false) {
+    if (
+      beestat.setting('visualize.hide_affiliate') === false &&
+      window.is_demo === false
+    ) {
       cards.push([
         {
           'card': new beestat.component.card.visualize_affiliate(),
