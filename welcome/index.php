@@ -1,11 +1,11 @@
 <?php
 
-  require 'api/cora/setting.php';
+  require '../api/cora/setting.php';
   $setting = cora\setting::get_instance();
 
-  // If you're not logged in, just take you directly to the ecobee login page.
-  if(isset($_COOKIE['session_key']) === false) {
-    header('Location: https://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments={}&api_key=' . $setting->get('beestat_api_key_local'));
+  // If you're already logged in
+  if(isset($_COOKIE['session_key']) === true) {
+    header('Location: https://app.beestat.io/');
     die();
   }
 
@@ -149,7 +149,7 @@
   </head>
   <body>
     <header>
-      <img class="logo" src="../logo.png" height="48" alt="beestat logo"/>
+      <img class="logo" src="../img/logo.png" height="48" alt="beestat logo"/>
     </header>
     <main>
       <div class="inner">
