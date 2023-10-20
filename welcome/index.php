@@ -3,7 +3,10 @@
   require '../api/cora/setting.php';
   $setting = cora\setting::get_instance();
 
-  // If you're already logged in
+  /**
+   * Skip this page if you're already logged. Note for the demo this does not
+   * work as that cookie is set for demo.beestat.io.
+   */
   if(isset($_COOKIE['session_key']) === true) {
     header('Location: https://app.beestat.io/');
     die();
@@ -49,7 +52,7 @@
       body {
         padding: 0;
         margin: 0;
-        background: #2f3d44;
+        background: #37474f;
         font-family: Montserrat;
         overflow-x: hidden;
       }
