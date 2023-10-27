@@ -55,6 +55,13 @@ beestat.layer.detail.prototype.decorate_ = function(parent) {
         'size': 12
       }
     ]);
+  } else if (beestat.component.card.rate_app_reminder.should_show() === true) {
+    cards.push([
+      {
+        'card': new beestat.component.card.rate_app_reminder(),
+        'size': 12
+      }
+    ]);
   }
 
   cards.push([

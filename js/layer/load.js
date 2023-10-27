@@ -162,6 +162,14 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
       );
     }
 
+    // Increment the number of opens if under the threshold.
+    const setting_key = 'meta.opens.' + beestat.platform();
+    if (beestat.setting(setting_key) === undefined) {
+      beestat.setting(setting_key, 1);
+    } else {
+      beestat.setting(setting_key, beestat.setting(setting_key) + 1);
+    }
+
     // Change the active thermostat_id if the one you have is no longer valid.
     if (response.thermostat[beestat.setting('thermostat_id')] === undefined) {
       beestat.setting('thermostat_id', Object.keys(response.thermostat)[0]);

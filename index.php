@@ -38,8 +38,12 @@
     <meta name="theme-color" content="#222222">
     <!-- Icon for pinning on iOS -->
     <link rel="apple-touch-icon" href="/favicon_apple.png">
-    <!-- On iOS, place a banner to download the app -->
-    <meta name="apple-itunes-app" content="app-id=6469190206">
+    <?php
+      if($setting->is_demo() === false) {
+        echo '<!-- On iOS, place a banner to download the app -->';
+        echo '<meta name="apple-itunes-app" content="app-id=6469190206">';
+      }
+    ?>
     <?php
 
       echo '<link rel="manifest" href="/manifest.json?' . $setting->get('commit') . '">';
