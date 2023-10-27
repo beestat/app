@@ -58,6 +58,12 @@ beestat.component.card.rate_app_reminder.prototype.decorate_contents_ = function
     .set_background_color(beestat.style.color.green.dark)
     .set_background_hover_color(beestat.style.color.green.light)
     .addEventListener('click', function() {
+      beestat.setting(
+        'ui.rate_app_reminder_hide_until',
+        moment().utc()
+          .add(1000, 'year')
+          .format('YYYY-MM-DD HH:mm:ss')
+      );
       window.open(store_url);
     })
     .render(parent);
@@ -102,7 +108,6 @@ beestat.component.card.rate_app_reminder.prototype.decorate_top_right_ = functio
  */
 beestat.component.card.rate_app_reminder.should_show = function() {
   return (
-    beestat.user.get().user_id === 1 &&
     (
       beestat.platform() === 'android' ||
       beestat.platform() === 'ios'
