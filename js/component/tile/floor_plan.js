@@ -7,7 +7,7 @@
 beestat.component.tile.floor_plan = function(floor_plan_id) {
   this.floor_plan_id_ = floor_plan_id;
 
-  beestat.component.apply(this, arguments);
+  beestat.component.tile.apply(this, arguments);
 };
 beestat.extend(beestat.component.tile.floor_plan, beestat.component.tile);
 

@@ -661,7 +661,7 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
 beestat.component.chart.prototype.get_dock_tooltip_ = function() {
   return (
     beestat.setting('ui.always_dock_tooltips') === true ||
-    beestat.width < 600
+    window.innerWidth < 600
   );
 };
 

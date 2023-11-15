@@ -75,6 +75,13 @@ beestat.component.tile.prototype.decorate_ = function(parent) {
     });
   }
 
+  // Width override
+  if (this.width_ !== undefined) {
+    Object.assign(this.container_.style, {
+      'width': `${this.width_}px`
+    });
+  }
+
   // Tabbable
   if (tabbable === true) {
     this.container_.setAttribute('tabIndex', '0');
@@ -194,6 +201,9 @@ beestat.component.tile.prototype.decorate_right_ = function(parent) {
     const text_container = document.createElement('div');
     text_container.innerText = this.get_text_();
     text_container.style.fontWeight = beestat.style.font_weight.normal;
+    text_container.style.whiteSpace = 'nowrap';
+    text_container.style.overflow = 'hidden';
+    text_container.style.textOverflow = 'ellipsis';
     parent.appendChild(text_container);
   }
 };
@@ -455,6 +465,21 @@ beestat.component.tile.prototype.set_bubble_text = function(bubble_text) {
  */
 beestat.component.tile.prototype.set_bubble_color = function(bubble_color) {
   this.bubble_color_ = bubble_color;
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+  return this;
+};
+
+/**
+ * Set the width of the button.
+ *
+ * @param {number} width
+ *
+ * @return {beestat.component.tile} This.
+ */
+beestat.component.tile.prototype.set_width = function(width) {
+  this.width_ = width;
   if (this.rendered_ === true) {
     this.rerender();
   }

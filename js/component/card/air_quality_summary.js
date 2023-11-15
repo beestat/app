@@ -35,7 +35,7 @@ beestat.component.card.air_quality_summary = function(thermostat_id) {
 };
 beestat.extend(beestat.component.card.air_quality_summary, beestat.component.card);
 
-beestat.component.card.air_quality_summary.prototype.rerender_on_breakpoint_ = true;
+beestat.component.card.air_quality_summary.prototype.rerender_on_resize_ = true;
 
 /**
  * Decorate
@@ -245,7 +245,7 @@ beestat.component.card.air_quality_summary.prototype.decorate_chart_ = function(
 
     tr.appendChild(
       $.createElement('td')
-        .innerText(new_hour + (beestat.width > 700 ? meridiem : ''))
+        .innerText(new_hour + (window.innerWidth > 700 ? meridiem : ''))
         .style({
           'text-align': 'center',
           'font-size': beestat.style.font_size.small

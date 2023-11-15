@@ -34,6 +34,7 @@ beestat.component.modal.change_thermostat.prototype.decorate_contents_ = functio
     grid.appendChild(div);
 
     const tile = new beestat.component.tile.thermostat(thermostat.thermostat_id)
+      .set_size('large')
       .set_text_color('#fff')
       .set_display('block');
 

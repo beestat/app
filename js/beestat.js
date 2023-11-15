@@ -52,36 +52,9 @@ if ('serviceWorker' in navigator) {
 }
 
 /**
- * Dispatch a breakpoint event every time a browser resize crosses one of the
- * breakpoints. Typically a component will use this event to rerender itself
- * when CSS breakpoints are not feasible or appropriate.
+ * Dispatch the resize event every now and then.
  */
-beestat.width = window.innerWidth;
 window.addEventListener('resize', rocket.throttle(100, function() {
-  var breakpoints = [
-    600,
-    650,
-    800,
-    850,
-    1000
-  ];
-
-  breakpoints.forEach(function(breakpoint) {
-    if (
-      (
-        beestat.width > breakpoint &&
-        window.innerWidth <= breakpoint
-      ) ||
-      (
-        beestat.width < breakpoint &&
-        window.innerWidth >= breakpoint
-      )
-    ) {
-      beestat.width = window.innerWidth;
-      beestat.dispatcher.dispatchEvent('breakpoint');
-    }
-  });
-
   beestat.dispatcher.dispatchEvent('resize');
 }));
 

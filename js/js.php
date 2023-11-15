@@ -50,6 +50,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/date.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/math.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/platform.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/text_dimensions.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -149,6 +150,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/tile/floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile/floor_plan_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/tile/thermostat.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/tile/thermostat/switcher.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity/room.js"></script>' . PHP_EOL;

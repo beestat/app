@@ -1,12 +1,12 @@
 /**
  * A tile representing a thermostat.
  *
- * @param {integer} thermostat_id
+ * @param {number} thermostat_id
  */
 beestat.component.tile.thermostat = function(thermostat_id) {
   this.thermostat_id_ = thermostat_id;
 
-  beestat.component.apply(this, arguments);
+  beestat.component.tile.apply(this, arguments);
 };
 beestat.extend(beestat.component.tile.thermostat, beestat.component.tile);
 

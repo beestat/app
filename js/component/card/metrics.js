@@ -30,7 +30,7 @@ beestat.component.card.metrics = function(thermostat_id) {
 };
 beestat.extend(beestat.component.card.metrics, beestat.component.card);
 
-beestat.component.card.metrics.prototype.rerender_on_breakpoint_ = true;
+beestat.component.card.metrics.prototype.rerender_on_resize_ = true;
 
 /**
  * Decorate
@@ -64,9 +64,9 @@ beestat.component.card.metrics.prototype.decorate_contents_ = function(parent) {
       this.decorate_empty_(parent);
     } else {
       let column_count = 1;
-      if (beestat.width > 1000) {
+      if (window.innerWidth > 1000) {
         column_count = 3;
-      } else if (beestat.width > 800) {
+      } else if (window.innerWidth > 800) {
         column_count = 2;
       }
       const column_span = 12 / column_count;

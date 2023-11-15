@@ -8,8 +8,8 @@ beestat.component = function() {
 
   this.layer_ = beestat.current_layer;
 
-  if (this.rerender_on_breakpoint_ === true) {
-    beestat.dispatcher.addEventListener('breakpoint', function() {
+  if (this.rerender_on_resize_ === true) {
+    beestat.dispatcher.addEventListener('resize', function() {
       self.rerender();
     });
   }
