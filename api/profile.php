@@ -783,7 +783,7 @@ class profile extends cora\crud {
                 'outdoor_temperature' => $begin_runtime[$sample_type]['outdoor_temperature'],
                 'delta' => $delta,
                 'duration' => $duration,
-                'delta_per_hour' => $delta / $duration * 3600,
+                'delta_per_hour' => $delta / $duration * 3600
               ];
 
               if($debug === true) {
@@ -791,7 +791,7 @@ class profile extends cora\crud {
                   $sample +
                   [
                     'begin' => $begin_runtime[$sample_type]['timestamp'],
-                    'end' => $previous_runtime['timestamp']
+                    'end' => $end_runtime['timestamp']
                   ]
                 );
               }
