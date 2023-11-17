@@ -184,6 +184,16 @@ beestat.series.outdoor_temperature = {
   'color': beestat.style.color.gray.light
 };
 
+beestat.series.heating_degree_days = {
+  'name': 'Degree Days',
+  'color': beestat.style.color.red.dark
+};
+
+beestat.series.cooling_degree_days = {
+  'name': 'Degree Days',
+  'color': beestat.style.color.lightblue.dark
+};
+
 beestat.series.indoor_humidity = {
   'name': 'Indoor Humidity',
   'color': beestat.style.color.bluegreen.base
@@ -218,6 +228,8 @@ beestat.series.sum_economizer = beestat.series.economizer;
 beestat.series.sum_ventilator = beestat.series.ventilator;
 beestat.series.avg_indoor_temperature = beestat.series.indoor_temperature;
 beestat.series.avg_outdoor_temperature = beestat.series.outdoor_temperature;
+beestat.series.sum_heating_degree_days = beestat.series.heating_degree_days;
+beestat.series.sum_cooling_degree_days = beestat.series.cooling_degree_days;
 beestat.series.avg_indoor_humidity = beestat.series.indoor_humidity;
 beestat.series.avg_outdoor_humidity = beestat.series.outdoor_humidity;
 

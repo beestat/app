@@ -164,6 +164,8 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
     'min_outdoor_temperature',
     'max_outdoor_temperature',
     'extreme_outdoor_temperature',
+    'sum_heating_degree_days',
+    'sum_cooling_degree_days',
     'avg_indoor_temperature',
     'avg_indoor_humidity'
   ].forEach(function(series_code) {
@@ -279,7 +281,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
 
           data.series[key].push(value);
 
-          var this_active = key.includes('temperature') ? true : (value > 0);
+          var this_active = key.includes('temperature') ? true : (value !== 0);
           data.metadata.series[key].active = data.metadata.series[key].active || this_active;
         }
       }
@@ -342,6 +344,8 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_group_ =
           'avg_outdoor_humidity': [],
           'min_outdoor_temperature': [],
           'max_outdoor_temperature': [],
+          'sum_heating_degree_days': [],
+          'sum_cooling_degree_days': [],
           'avg_indoor_temperature': [],
           'avg_indoor_humidity': []
         };
@@ -394,6 +398,21 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_bucket_key_ = fu
  * @return {object} The combined buckets.
  */
 beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_combined_ = function(buckets) {
+  // Basically just excludes degree_days.
+  const keys_to_convert_from_seconds_to_hours = [
+    'sum_compressor_cool_1',
+    'sum_compressor_cool_2',
+    'sum_compressor_heat_1',
+    'sum_compressor_heat_2',
+    'sum_auxiliary_heat_1',
+    'sum_auxiliary_heat_2',
+    'sum_fan',
+    'sum_humidifier',
+    'sum_dehumidifier',
+    'sum_ventilator',
+    'sum_economizer'
+  ];
+
   for (var bucket_key in buckets) {
     var bucket = buckets[bucket_key];
 
@@ -440,7 +459,9 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_buckets_combined
          */
 
         // Convert seconds to hours.
-        bucket[key] /= 3600;
+        if (keys_to_convert_from_seconds_to_hours.includes(key) === true) {
+          bucket[key] /= 3600;
+        }
         break;
       }
     }

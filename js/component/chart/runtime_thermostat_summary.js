@@ -95,19 +95,30 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_series_
     }
   });
 
-  if (self.data_.metadata.series.avg_outdoor_temperature.active === true) {
+  if (
+    self.data_.metadata.series.avg_outdoor_temperature.active === true ||
+    self.data_.metadata.series.extreme_outdoor_temperature.active === true
+  ) {
     series.push({
       'name': 'avg_outdoor_temperature',
+      'id': 'avg_outdoor_temperature',
       'data': this.data_.series.avg_outdoor_temperature,
       'color': beestat.series.avg_outdoor_temperature.color,
       'yAxis': 1,
       'type': 'spline',
       'dashStyle': 'ShortDash',
-      'lineWidth': 1
-    });
-  }
+      'lineWidth': 1,
+      'events': {
+        'legendItemClick': function() {
+          const outdoor_temperature_visible = this.visible;
 
-  if (self.data_.metadata.series.extreme_outdoor_temperature.active === true) {
+          if (outdoor_temperature_visible === false) {
+            this.chart.get('sum_heating_degree_days').setVisible(false);
+          }
+        }
+      }
+    });
+
     series.push({
       'name': 'extreme_outdoor_temperature',
       'data': this.data_.series.extreme_outdoor_temperature,
@@ -116,6 +127,41 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_series_
       'yAxis': 1,
       'fillOpacity': 0.2,
       'lineWidth': 0,
+      'linkedTo': 'avg_outdoor_temperature'
+    });
+  }
+
+  if (
+    self.data_.metadata.series.sum_heating_degree_days.active === true ||
+    self.data_.metadata.series.sum_cooling_degree_days.active === true
+  ) {
+    series.push({
+      'name': 'sum_heating_degree_days',
+      'id': 'sum_heating_degree_days',
+      'data': this.data_.series.sum_heating_degree_days,
+      'color': beestat.series.sum_heating_degree_days.color,
+      'yAxis': 2,
+      'type': 'spline',
+      'lineWidth': 2,
+      'visible': false,
+      'events': {
+        'legendItemClick': function() {
+          const degree_days_visible = this.visible;
+
+          if (degree_days_visible === false) {
+            this.chart.get('avg_outdoor_temperature').setVisible(false);
+          }
+        }
+      }
+    });
+    series.push({
+      'name': 'sum_cooling_degree_days',
+      'data': this.data_.series.sum_cooling_degree_days,
+      'color': beestat.series.sum_cooling_degree_days.color,
+      'yAxis': 2,
+      'type': 'spline',
+      'lineWidth': 2,
+      'linkedTo': 'sum_heating_degree_days',
       'visible': false
     });
   }
@@ -190,6 +236,24 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ 
           return this.value + beestat.setting('units.temperature');
         }
       }
+    },
+    {
+      'alignTicks': false,
+      'gridLineColor': null,
+      'gridLineDashStyle': 'longdash',
+      'opposite': true,
+      'allowDecimals': false,
+      'title': {
+        'text': ''
+      },
+      'labels': {
+        'style': {
+          'color': beestat.style.color.gray.base
+        },
+        'formatter': function() {
+          return this.value.toLocaleString();
+        }
+      }
     }
   ];
 };
@@ -226,27 +290,7 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
       var color;
       switch (point.series.name) {
       case 'extreme_outdoor_temperature':
-        label = beestat.series.extreme_outdoor_temperature.name;
-        color = point.series.color;
-        if (
-          values.min_outdoor_temperature !== undefined &&
-          values.max_outdoor_temperature !== undefined
-        ) {
-          value = beestat.temperature({
-            'temperature': values.min_outdoor_temperature,
-            'input_temperature_unit': beestat.setting('units.temperature'),
-            'units': true,
-            'round': 0
-          });
-          value += ' to ';
-          value += beestat.temperature({
-            'temperature': values.max_outdoor_temperature,
-            'input_temperature_unit': beestat.setting('units.temperature'),
-            'units': true,
-            'round': 0
-          });
-        }
-        break;
+        return;
       case 'avg_outdoor_temperature':
         label = beestat.series.avg_outdoor_temperature.name;
         color = point.series.color;
@@ -256,6 +300,35 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
           'units': true,
           'round': 0
         });
+
+        value += ' (';
+
+        value += beestat.temperature({
+          'temperature': values.min_outdoor_temperature,
+          'input_temperature_unit': beestat.setting('units.temperature'),
+          'units': true,
+          'round': 0
+        });
+        value += ' to ';
+        value += beestat.temperature({
+          'temperature': values.max_outdoor_temperature,
+          'input_temperature_unit': beestat.setting('units.temperature'),
+          'units': true,
+          'round': 0
+        });
+
+        value += ')';
+
+        break;
+      case 'sum_heating_degree_days':
+        label = beestat.series.sum_heating_degree_days.name;
+        color = point.series.color;
+        value = Math.round(values.sum_heating_degree_days).toLocaleString();
+        break;
+      case 'sum_cooling_degree_days':
+        label = beestat.series.sum_cooling_degree_days.name;
+        color = point.series.color;
+        value = Math.round(values.sum_cooling_degree_days).toLocaleString();
         break;
       default:
         label = beestat.series[point.series.name].name;
