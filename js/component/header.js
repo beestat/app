@@ -121,6 +121,9 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   ) {
     this.dimension_ = 'small';
     this.switcher_enabled_ = false;
+  } else {
+    this.dimension_ = 'small';
+    this.switcher_enabled_ = false;
   }
 
   // Decorate all the parts into a flex row.
