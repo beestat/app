@@ -280,26 +280,35 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
     parent.appendChild($(button_container));
 
     const continue_tile = new beestat.component.tile()
-      .set_background_color(beestat.style.color.green.base)
-      .set_background_hover_color(beestat.style.color.green.light)
-      .set_text_color('#fff')
       .set_size('large')
       .set_icon('credit_card_lock')
       .set_text('Continue to Payment');
-    continue_tile.addEventListener('click', function() {
-      self.state_.stripe_connecting = true;
 
-      this
+    if (this.state_.stripe_connecting === true) {
+      continue_tile
         .set_background_color(beestat.style.color.gray.base)
-        .set_background_hover_color()
-        .removeEventListener('click');
+        .set_background_hover_color();
+    } else {
+      continue_tile
+        .set_background_color(beestat.style.color.green.base)
+        .set_background_hover_color(beestat.style.color.green.light)
+        .set_text_color('#fff');
 
-      window.open('api/?resource=stripe_payment_link&method=open&arguments={"attributes":{"amount":' + (contribute_amount * 100) + ',"currency":"' + beestat.setting('units.currency') + '","interval":"' + contribute_interval + '"}}&api_key=' + window.beestat_api_key_local);
+      continue_tile.addEventListener('click', function() {
+        self.state_.stripe_connecting = true;
 
-      setTimeout(function() {
-        self.rerender();
-      }, 5000);
-    });
+        this
+          .set_background_color(beestat.style.color.gray.base)
+          .set_background_hover_color()
+          .removeEventListener('click');
+
+        window.open('api/?resource=stripe_payment_link&method=open&arguments={"attributes":{"amount":' + (contribute_amount * 100) + ',"currency":"' + beestat.setting('units.currency') + '","interval":"' + contribute_interval + '"}}&api_key=' + window.beestat_api_key_local);
+
+        setTimeout(function() {
+          self.rerender();
+        }, 5000);
+      });
+    }
 
     continue_tile.render($(button_container));
 
@@ -312,7 +321,6 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
 
       window.setTimeout(function() {
         api_call.send();
-        self.rerender();
       }, 5000);
     }
   }
