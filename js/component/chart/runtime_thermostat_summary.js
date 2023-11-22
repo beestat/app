@@ -323,12 +323,12 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_tooltip
       case 'sum_heating_degree_days':
         label = beestat.series.sum_heating_degree_days.name;
         color = point.series.color;
-        value = Math.round(values.sum_heating_degree_days).toLocaleString();
+        value = values.sum_heating_degree_days.toFixed(1).toLocaleString();
         break;
       case 'sum_cooling_degree_days':
         label = beestat.series.sum_cooling_degree_days.name;
         color = point.series.color;
-        value = Math.round(values.sum_cooling_degree_days).toLocaleString();
+        value = values.sum_cooling_degree_days.toFixed(1).toLocaleString();
         break;
       default:
         label = beestat.series[point.series.name].name;

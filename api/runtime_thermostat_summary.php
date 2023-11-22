@@ -88,6 +88,8 @@ class runtime_thermostat_summary extends cora\crud {
       $runtime_thermostat_summary['min_outdoor_temperature'] /= 10;
       $runtime_thermostat_summary['max_outdoor_temperature'] /= 10;
       $runtime_thermostat_summary['avg_indoor_temperature'] /= 10;
+      $runtime_thermostat_summary['sum_heating_degree_days'] /= 10;
+      $runtime_thermostat_summary['sum_cooling_degree_days'] /= 10;
     }
 
     return $runtime_thermostat_summaries;
