@@ -156,6 +156,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
           .set_background_hover_color(beestat.style.color.green.base);
 
         tile_amount.addEventListener('click', function() {
+          self.state_.stripe_connecting = false;
           self.state_.contribute_amount_other_enabled = false;
           self.state_.contribute_amount = amount;
           self.rerender();
@@ -199,6 +200,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
           'decimals': 2
         });
       other_amount_input.addEventListener('blur', function() {
+        self.state_.stripe_connecting = false;
         if (this.meets_requirements() === true) {
           self.state_.contribute_amount_other = this.get_value();
           self.rerender();
@@ -234,6 +236,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
           .set_background_hover_color(beestat.style.color.lightblue.base);
 
         tile_frequency.addEventListener('click', function() {
+          self.state_.stripe_connecting = false;
           self.state_.contribute_interval = frequency;
           self.rerender();
         });
