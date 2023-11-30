@@ -177,6 +177,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
     }
 
     tile_amount_other.addEventListener('click', function() {
+      self.state_.stripe_connecting = false;
       self.state_.contribute_amount_other_enabled = true;
       self.rerender();
     });
