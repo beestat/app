@@ -11,7 +11,7 @@ class profile extends cora\crud {
 
   public static $exposed = [
     'private' => ['generate'],
-    'public' => []
+    'public' => ['read_id']
   ];
 
   public static $cache = [];
