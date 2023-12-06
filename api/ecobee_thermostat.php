@@ -83,6 +83,21 @@ class ecobee_thermostat extends cora\crud {
     ];
 
     try {
+      /**
+       * This will force the device sync to use the secondary method that uses
+       * the undocumented API calls instead of the normal GET "registered"
+       * thermostats. This fixes an issue where beestat never sees shared
+       * thermostats if there is at least one registered thermostat.
+       */
+      $user = $this->api('user', 'get', $this->session->get_user_id());
+      if(
+        isset($user['settings']['app']) === true &&
+        isset($user['settings']['app']['prefer_secondary_device_sync']) === true &&
+        $user['settings']['app']['prefer_secondary_device_sync'] === true
+      ) {
+        throw new cora\exception('No thermostats found.', 10511, false, null, false);
+      }
+
       $response = $this->api(
         'ecobee',
         'ecobee_api',
