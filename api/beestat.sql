@@ -421,7 +421,7 @@ CREATE TABLE `runtime_sensor` (
   `sensor_id` int unsigned NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `temperature` smallint DEFAULT NULL,
-  `occupancy` tinyint unsigned DEFAULT NULL,
+  `occupancy` tinyint(1) DEFAULT NULL,
   `air_pressure` mediumint unsigned DEFAULT NULL,
   `air_quality` smallint unsigned DEFAULT NULL,
   `air_quality_accuracy` tinyint unsigned DEFAULT NULL,
