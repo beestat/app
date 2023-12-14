@@ -4,6 +4,9 @@ beestat.ecobee = {};
  * Check to see if ecobee is down. If so, render the footer component.
  */
 beestat.ecobee.notify_if_down = function() {
+  // Turning this off to review and/or deprecate.
+  return;
+
   if (
     beestat.cache !== undefined &&
     beestat.cache.thermostat !== undefined &&

@@ -548,5 +548,10 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
     subtitle += ' / ' + cool;
   }
 
+  if (beestat.user.has_early_access() === true) {
+    subtitle += ' @ ' + moment.utc(ecobee_thermostat.runtime.lastStatusModified).local()
+      .format('h:mm a');
+  }
+
   return subtitle;
 };
