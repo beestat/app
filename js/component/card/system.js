@@ -529,29 +529,47 @@ beestat.component.card.system.prototype.get_subtitle_ = function() {
 
   if (ecobee_thermostat.settings.hvacMode !== 'off') {
     if (override === true) {
-      subtitle += ' / Overridden';
+      subtitle += ' • Overridden';
     } else {
-      subtitle += ' / Schedule';
+      subtitle += ' • Schedule';
     }
   }
 
   if (ecobee_thermostat.settings.hvacMode === 'auto') {
-    subtitle += ' / ' + heat + ' - ' + cool;
+    subtitle += ' • ' + heat + ' - ' + cool;
   } else if (
     ecobee_thermostat.settings.hvacMode === 'heat' ||
     ecobee_thermostat.settings.hvacMode === 'auxHeatOnly'
   ) {
-    subtitle += ' / ' + heat;
+    subtitle += ' • ' + heat;
   } else if (
     ecobee_thermostat.settings.hvacMode === 'cool'
   ) {
-    subtitle += ' / ' + cool;
+    subtitle += ' • ' + cool;
   }
 
-  if (beestat.user.has_early_access() === true) {
-    subtitle += ' @ ' + moment.utc(ecobee_thermostat.runtime.lastStatusModified).local()
-      .format('h:mm a');
+  const last_synced_on_m =
+    moment.utc(beestat.user.get().sync_status.thermostat).local();
+
+  const data_as_of_m =
+    moment.utc(ecobee_thermostat.runtime.lastStatusModified).local();
+
+  // Include the date if the sync gets more than 3 hours behind.
+  let format;
+  if (moment().diff(data_as_of_m, 'minutes') > 180) {
+    format = 'MMM Do [at] h:mm a';
+  } else {
+    format = 'h:mm a';
   }
+
+  subtitle +=
+    '<br/><span title="Last sync: ' +
+    last_synced_on_m.format(format) +
+    '" style="color: ' +
+    beestat.style.color.gray.dark +
+    '">As of ' +
+    data_as_of_m.format(format) +
+    '</span>';
 
   return subtitle;
 };
