@@ -306,7 +306,21 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
           .set_background_hover_color()
           .removeEventListener('click');
 
-        window.open('api/?resource=stripe_payment_link&method=open&arguments={"attributes":{"amount":' + (contribute_amount * 100) + ',"currency":"' + beestat.setting('units.currency') + '","interval":"' + contribute_interval + '"}}&api_key=' + window.beestat_api_key_local);
+        const stripe_payment_link_arguments = {
+          'attributes': {
+            'amount': (contribute_amount * 100),
+            'currency': beestat.setting('units.currency'),
+            'interval': contribute_interval,
+            'prefilled_email': beestat.user.get().email_address,
+            'client_reference_id': beestat.user.get().user_id
+          }
+        };
+        window.open(
+          'api/?resource=stripe_payment_link&method=open&arguments=' +
+          JSON.stringify(stripe_payment_link_arguments) +
+          '&api_key=' +
+          window.beestat_api_key_local
+        );
 
         setTimeout(function() {
           self.rerender();

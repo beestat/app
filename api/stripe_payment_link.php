@@ -8,10 +8,10 @@
 class stripe_payment_link extends cora\crud {
 
   public static $exposed = [
-    'private' => [
+    'private' => [],
+    'public' => [
       'open'
-    ],
-    'public' => []
+    ]
   ];
 
   public static $user_locked = false;
@@ -81,10 +81,9 @@ class stripe_payment_link extends cora\crud {
   public function open($attributes) {
     $stripe_payment_link = $this->get($attributes);
 
-    $user = $this->api('user', 'get', $this->session->get_user_id());
     $url = $stripe_payment_link['url'] .
-      '?prefilled_email=' . $user['email_address'] .
-      '&client_reference_id=' . $user['user_id'];
+      '?prefilled_email=' . $attributes['prefilled_email'] .
+      '&client_reference_id=' . $attributes['client_reference_id'];
 
     header('Location: ' . $url);
     die();
