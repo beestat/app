@@ -13,13 +13,17 @@ beestat.component.chart = function() {
 };
 beestat.extend(beestat.component.chart, beestat.component);
 
+beestat.component.chart.charts_ = [];
+
 /**
  * Decorate. Calls all the option getters and renders the chart.
  *
  * @param {rocket.Elements} parent
  */
 beestat.component.chart.prototype.decorate_ = function(parent) {
-  var options = {};
+  const self = this;
+
+  const options = {};
 
   options.credits = this.get_options_credits_();
   options.exporting = this.get_options_exporting_();
@@ -36,6 +40,23 @@ beestat.component.chart.prototype.decorate_ = function(parent) {
   options.chart.renderTo = parent[0];
 
   this.chart_ = Highcharts.chart(options);
+
+  this.addEventListener('render', function() {
+    /**
+     * Clean up old charts. Charts only get added to this array once they
+     * actually get rendered to the page, so it's safe to assume that if they
+     * no longer exist in the DOM they can be destroyed.
+     */
+    for (let i = beestat.component.chart.charts_.length - 1; i >= 0; i--) {
+      if (document.body.contains(beestat.component.chart.charts_[i].chart_.container) === false) {
+        beestat.component.chart.charts_[i].chart_.destroy();
+        beestat.component.chart.charts_.splice(i, 1);
+      }
+    }
+
+    // Add this chart to the charts list.
+    beestat.component.chart.charts_.push(self);
+  });
 
   this.docked_tooltip_container_ = $.createElement('div');
   this.docked_tooltip_container_.style({
