@@ -71,6 +71,8 @@ beestat.component.card.temperature_profiles.prototype.decorate_contents_ = funct
  * @return {object} The series data.
  */
 beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
+  const self = this;
+
   var thermostat = beestat.cache.thermostat[this.thermostat_id_];
   var data = {
     'x': [],
@@ -89,8 +91,13 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   };
 
   if (
-    thermostat.profile === null
+    this.fetching_data_ !== true &&
+    (
+      thermostat.profile === null ||
+      moment().diff(moment(thermostat.profile.metadata.generated_at), 'days') >= 7
+    )
   ) {
+    this.fetching_data_ = true;
     this.show_loading_('Fetching');
     new beestat.api()
       .add_call(
@@ -111,6 +118,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
         'thermostat'
       )
       .set_callback(function(response) {
+        self.fetching_data_ = false;
         beestat.cache.set('thermostat', response.thermostat);
       })
       .send();
