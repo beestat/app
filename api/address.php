@@ -77,7 +77,7 @@ class address extends cora\crud {
       );
     }
 
-    $key = $this->generate_key($normalized);
+    $key = $this->generate_key($normalized, $country);
     $existing_address = $this->get([
       'key' => $key
     ]);
@@ -124,16 +124,32 @@ class address extends cora\crud {
    * house, I need to store that as a new address or the actual address will
    * be incorrect.
    *
+   * Update 2024-01-16: The DPBC was removed from the Smarty API around
+   * 2023-12-11. Emailed Smarty and they said it was a bug that it was ever
+   * included in my plan. Updated this to use DPBC when present for old cached
+   * API responses, then fall back to the simple address string.
+   *
    * @link https://smartystreets.com/docs/addresses-have-unique-identifier
    *
    * @param string $normalized Normalized address as returned from
    * SmartyStreets
+   * @param string $country ISO 3 country code
    *
    * @return string
    */
-  private function generate_key($normalized) {
-    if(isset($normalized['delivery_point_barcode']) === true) {
-      return sha1($normalized['delivery_point_barcode']);
+  private function generate_key($normalized, $country) {
+    if($country === 'USA') {
+      if(isset($normalized['delivery_point_barcode']) === true) {
+        $string = $normalized['delivery_point_barcode'];
+      } else {
+        $string = '';
+        if(isset($normalized['delivery_line_1']) === true) {
+          $string .= $normalized['delivery_line_1'];
+        }
+        if(isset($normalized['last_line']) === true) {
+          $string .= $normalized['last_line'];
+        }
+      }
     } else {
       $string = '';
       if(isset($normalized['address1']) === true) {
@@ -145,8 +161,9 @@ class address extends cora\crud {
       if(isset($normalized['address3']) === true) {
         $string .= $normalized['address3'];
       }
-      return sha1($string);
     }
+
+    return sha1($string);
   }
 
 }
