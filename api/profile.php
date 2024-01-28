@@ -1166,11 +1166,7 @@ class profile extends cora\crud {
      */
     $day_of_week = date(
       'w',
-      get_local_datetime(
-        $profile['metadata']['generated_at'],
-        $thermostat['time_zone'],
-        'U'
-      )
+      strtotime($profile['metadata']['generated_at'])
     );
 
     $start_of_week = date('Y-m-d', strtotime('-' . $day_of_week . ' days'));
@@ -1194,10 +1190,9 @@ class profile extends cora\crud {
       $this->create([
         'user_id' => $thermostat['user_id'],
         'thermostat_id' => $thermostat['thermostat_id'],
-        'date' => get_local_datetime(
-          $profile['metadata']['generated_at'],
-          $thermostat['time_zone'],
-          'Y-m-d'
+        'date' => date(
+          'Y-m-d',
+          strtotime($profile['metadata']['generated_at'])
         ),
         'profile' => $profile
       ]);
@@ -1205,10 +1200,9 @@ class profile extends cora\crud {
       $most_recent_profile = end($existing_profiles);
       $this->update([
         'profile_id' => $most_recent_profile['profile_id'],
-        'date' => get_local_datetime(
-          $profile['metadata']['generated_at'],
-          $thermostat['time_zone'],
-          'Y-m-d'
+        'date' => date(
+          'Y-m-d',
+          strtotime($profile['metadata']['generated_at'])
         ),
         'profile' => $profile
       ]);
