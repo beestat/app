@@ -28,8 +28,8 @@ beestat.style.color = {
   },
   'lightblue': {
     'light': '#45aaf2',
-    'base': '#2d98da',
-    'dark': '#147fc1'
+    'base': '#238ac9',
+    'dark': '#1272ae'
   },
   'blue': {
     'light': '#4b7bec',
