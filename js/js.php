@@ -7,6 +7,7 @@ $setting = cora\setting::get_instance();
 echo '<script>window.beestat_api_key_local = \'' . $setting->get('beestat_api_key_local') . '\';</script>';
 echo '<script>window.environment = \'' . $setting->get('environment') . '\';</script>';
 echo '<script>window.is_demo = ' . ($setting->is_demo() === true ? 'true' : 'false') . ';</script>';
+echo '<script>window.commit = \'' . $setting->get('commit') . '\';</script>';
 
 if($setting->get('environment') === 'dev' || $setting->get('environment') === 'dev_live') {
   // External libraries

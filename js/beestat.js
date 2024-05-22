@@ -64,8 +64,17 @@ $.ready(function() {
   moment.suppressDeprecationWarnings = true;
   if (window.environment === 'live') {
     Sentry.init({
+      'release': window.commit,
       'dsn': 'https://af9fd2cf6cda49dcb93dcaf02fe39fc6@sentry.io/3736982',
-      'ignoreErrors': ['window.webkit.messageHandlers']
+      'ignoreErrors': ['window.webkit.messageHandlers'],
+      'integrations': [
+        Sentry.replayIntegration({
+          maskAllText: false,
+          blockAllMedia: false,
+        }),
+      ],
+      'replaysSessionSampleRate': 0.01, // 1%
+      'replaysOnErrorSampleRate': 1.0, // 100%
     });
   }
   (new beestat.layer.load()).render();
