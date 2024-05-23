@@ -130,7 +130,7 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
     console.log('a');
     console.log(thermostat);
     console.log(thermostat.profile);
-    thermostat.profile = null;
+    // thermostat.profile = null;
     for (var type in thermostat.profile.temperature) {
       // Cloned because I mutate this data for temperature conversions.
       var profile = beestat.clone(
