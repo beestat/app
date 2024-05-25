@@ -62,7 +62,7 @@ window.addEventListener('resize', rocket.throttle(100, function() {
 var $ = rocket.extend(rocket.$, rocket);
 $.ready(function() {
   moment.suppressDeprecationWarnings = true;
-  if (window.environment === 'live') {
+  /*if (window.environment === 'live') {
     Sentry.init({
       'release': window.commit,
       'dsn': 'https://af9fd2cf6cda49dcb93dcaf02fe39fc6@sentry.io/3736982',
@@ -76,6 +76,6 @@ $.ready(function() {
       'replaysSessionSampleRate': 0.01, // 1%
       'replaysOnErrorSampleRate': 1.0, // 100%
     });
-  }
+  }*/
   (new beestat.layer.load()).render();
 });
