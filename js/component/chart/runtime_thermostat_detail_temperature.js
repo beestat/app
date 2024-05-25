@@ -129,7 +129,10 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'allowDecimals': false,
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value + beestat.setting('units.temperature');
         }
@@ -143,7 +146,10 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'opposite': true,
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value + '%';
         }

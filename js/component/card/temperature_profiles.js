@@ -127,10 +127,6 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
 
     var y_min = Infinity;
     var y_max = -Infinity;
-    console.log('a');
-    console.log(thermostat);
-    console.log(thermostat.profile);
-    // thermostat.profile = null;
     for (var type in thermostat.profile.temperature) {
       // Cloned because I mutate this data for temperature conversions.
       var profile = beestat.clone(
@@ -330,11 +326,6 @@ beestat.component.card.temperature_profiles.prototype.get_profile_extremes_ = fu
       'max': -Infinity
     }
   };
-
-
-  console.log('b');
-  console.log(thermostat);
-  console.log(thermostat.profile);
 
   for (let type in thermostat.profile.temperature) {
     const profile = thermostat.profile.temperature[type];

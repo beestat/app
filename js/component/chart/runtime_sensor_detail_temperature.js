@@ -116,7 +116,10 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
       'allowDecimals': false,
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value + beestat.setting('units.temperature');
         }

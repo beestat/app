@@ -58,7 +58,10 @@ beestat.component.chart.co2_concentration.prototype.get_options_yAxis_ = functio
       'allowDecimals': false,
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value;
         }

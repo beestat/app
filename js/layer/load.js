@@ -137,11 +137,11 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
   api.set_callback(function(response) {
     beestat.cache.set('user', response.user);
 
-    /*Sentry.configureScope(function(scope) {
+    Sentry.configureScope(function(scope) {
       scope.setUser({
         'id': beestat.user.get().user_id
       });
-    });*/
+    });
 
     beestat.cache.set('thermostat', response.thermostat);
     beestat.cache.set('sensor', response.sensor);

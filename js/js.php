@@ -11,10 +11,13 @@ echo '<script>window.commit = \'' . $setting->get('commit') . '\';</script>';
 
 if($setting->get('environment') === 'dev' || $setting->get('environment') === 'dev_live') {
   // External libraries
-  // echo '<script src="/js/lib/sentry/sentry.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/sentry/sentry.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/rocket/rocket.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/moment/moment.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/highcharts/highcharts.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/highcharts/highcharts-more.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/highcharts/exporting.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/highcharts/offline-exporting.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/threejs/threejs.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/suncalc/suncalc.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;

@@ -151,6 +151,9 @@ beestat.component.chart.prototype.get_options_plotOptions_ = function() {
             self.dispatchEvent('legend_item_click');
           }, 0);
         }
+      },
+      'borderRadius': {
+        'radius': 0
       }
     },
     'column': {
@@ -216,7 +219,9 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     'backgroundColor': beestat.style.color.bluegray.base,
     'resetZoomButton': {
       'theme': {
-        'display': 'none'
+        'style': {
+          'display': 'none'
+        }
       }
     },
     'height': this.get_options_chart_height_(),
@@ -418,7 +423,8 @@ beestat.component.chart.prototype.get_options_xAxis_ = function() {
     'tickLength': 0,
     'labels': {
       'style': {
-        'color': beestat.style.color.gray.base
+        'color': beestat.style.color.gray.base,
+        'font-size': '12px'
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
     },
@@ -642,14 +648,18 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
 
         var td_label = $.createElement('td')
           .style({
-            'font-weight': beestat.style.font_weight.bold
+            'font-weight': beestat.style.font_weight.bold,
+            'font-size': '12px',
+            'line-height': '12px'
           })
           .innerText(item.label);
         tr.appendChild(td_label);
 
         var td_value = $.createElement('td').innerText(item.value)
           .style({
-            'padding-left': beestat.style.size.gutter / 4
+            'padding-left': beestat.style.size.gutter / 4,
+            'font-size': '12px',
+            'line-height': '12px'
           });
         tr.appendChild(td_value);
       });

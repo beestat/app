@@ -301,7 +301,10 @@ beestat.component.chart.temperature_profiles.prototype.get_options_yAxis_ = func
       'gridLineDashStyle': 'longdash',
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value + beestat.setting('units.temperature');
         }
@@ -405,7 +408,8 @@ beestat.component.chart.temperature_profiles.prototype.get_options_xAxis_ = func
     'gridLineDashStyle': 'longdash',
     'labels': {
       'style': {
-        'color': beestat.style.color.gray.base
+        'color': beestat.style.color.gray.base,
+        'font-size': '12px'
       },
       'formatter': this.get_options_xAxis_labels_formatter_()
     },

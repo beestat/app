@@ -212,7 +212,8 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ 
       },
       'labels': {
         'style': {
-          'color': beestat.style.color.gray.base
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
         },
         'formatter': function() {
           return this.value + 'h';
@@ -230,7 +231,8 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_yAxis_ 
       },
       'labels': {
         'style': {
-          'color': beestat.style.color.gray.base
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
         },
         'formatter': function() {
           return this.value + beestat.setting('units.temperature');

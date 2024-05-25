@@ -69,7 +69,10 @@ beestat.component.chart.air_quality.prototype.get_options_yAxis_ = function() {
       'allowDecimals': false,
       'title': {'text': null},
       'labels': {
-        'style': {'color': beestat.style.color.gray.base},
+        'style': {
+          'color': beestat.style.color.gray.base,
+          'fontSize': '11px'
+        },
         'formatter': function() {
           return this.value;
         }
