@@ -18,6 +18,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/lib/highcharts/highcharts-more.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/highcharts/exporting.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/highcharts/offline-exporting.js"></script>' . PHP_EOL;
+  echo '<script src="/js/lib/highcharts/boost.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/threejs/threejs.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/suncalc/suncalc.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;

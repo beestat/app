@@ -420,3 +420,12 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
 beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_options_chart_height_ = function() {
   return 350;
 };
+
+/**
+ * Get the boost enabled option.
+ *
+ * @return {object} The boost enabled option.
+ */
+beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_options_boost_enabled_ = function() {
+  return true;
+};

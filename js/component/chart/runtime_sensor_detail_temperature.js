@@ -314,3 +314,12 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
 beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_chart_marginLeft_ = function() {
   return 45;
 };
+
+/**
+ * Get the boost enabled option.
+ *
+ * @return {object} The boost enabled option.
+ */
+beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_boost_enabled_ = function() {
+  return true;
+};

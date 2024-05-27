@@ -36,6 +36,7 @@ beestat.component.chart.prototype.decorate_ = function(parent) {
   options.yAxis = this.get_options_yAxis_();
   options.series = this.get_options_series_();
   options.tooltip = this.get_options_tooltip_();
+  options.boost = this.get_options_boost_();
 
   options.chart.renderTo = parent[0];
 
@@ -682,6 +683,28 @@ beestat.component.chart.prototype.tooltip_formatter_helper_ = function(title, se
     this.docked_tooltip_container_.innerHTML('');
     return tooltip[0].outerHTML;
   }
+};
+
+/**
+ * Get the boost options.
+ *
+ * @return {object} The boost options.
+ */
+beestat.component.chart.prototype.get_options_boost_ = function() {
+  return {
+    'enabled': this.get_options_boost_enabled_(),
+    'useGPUTranslations': true,
+    'usePreallocated': true
+  };
+};
+
+/**
+ * Get the boost enabled option.
+ *
+ * @return {object} The boost enabled option.
+ */
+beestat.component.chart.prototype.get_options_boost_enabled_ = function() {
+  return false;
 };
 
 /**
