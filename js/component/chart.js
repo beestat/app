@@ -503,6 +503,8 @@ beestat.component.chart.prototype.get_options_series_ = function() {
  * @return {object} The tooltip options.
  */
 beestat.component.chart.prototype.get_options_tooltip_ = function() {
+  // if(beestat.user.get().user_id === 1) return null;
+
   return {
     'shared': true,
     'useHTML': true,
@@ -531,6 +533,7 @@ beestat.component.chart.prototype.get_options_tooltip_formatter_ = function() {
  * @return {Function} The tooltip positioner.
  */
 beestat.component.chart.prototype.get_options_tooltip_positioner_ = function() {
+  if(beestat.user.get().user_id === 1) return null;
   var self = this;
   return function(tooltip_width, tooltip_height, point) {
     return {
@@ -753,6 +756,8 @@ beestat.component.chart.prototype.sync_extremes = function(source_chart) {
  * @param {beestat.component.chart} source_chart The source chart.
  */
 beestat.component.chart.prototype.sync_crosshair = function(source_chart) {
+  if(beestat.user.get().user_id === 1) return null;
+
   var self = this;
 
   [
