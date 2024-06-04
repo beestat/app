@@ -399,15 +399,21 @@ class profile extends cora\crud {
 
         // Log the setpoint.
         if(
-          $current_runtime['system_mode'] === 'heat' ||
-          $current_runtime['system_mode'] === 'auto'
+          (
+            $current_runtime['system_mode'] === 'heat' ||
+            $current_runtime['system_mode'] === 'auto'
+          ) &&
+          $current_runtime['setpoint_cool'] !== null
         ) {
           $setpoints['heat'][] = $current_runtime['setpoint_heat'];
         }
 
         if(
-          $current_runtime['system_mode'] === 'cool' ||
-          $current_runtime['system_mode'] === 'auto'
+          (
+            $current_runtime['system_mode'] === 'cool' ||
+            $current_runtime['system_mode'] === 'auto'
+          ) &&
+          $current_runtime['setpoint_cool'] !== null
         ) {
           $setpoints['cool'][] = $current_runtime['setpoint_cool'];
         }
