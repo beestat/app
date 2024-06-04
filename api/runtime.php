@@ -951,7 +951,8 @@ class runtime extends cora\api {
       'read_id',
       [
         'attributes' => [
-          'thermostat_id' => $thermostat_id
+          'thermostat_id' => $thermostat_id,
+          'inactive' => 0
         ]
       ]
     );
