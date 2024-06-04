@@ -134,8 +134,6 @@ beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_
  * @return {Function} The tooltip formatter.
  */
 beestat.component.chart.runtime_sensor_detail_temperature.prototype.get_options_tooltip_formatter_ = function() {
-  if(beestat.user.get().user_id === 1) return null;
-
   var self = this;
 
   return function() {
