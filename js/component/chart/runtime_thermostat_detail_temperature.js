@@ -179,7 +179,8 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
     var groups = {
       'mode': [],
       'data': [],
-      'equipment': []
+      'equipment': [],
+      'off': []
     };
 
     var visible_series = [];
@@ -379,6 +380,19 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
     });
 
     if (
+      self.data_.metadata.series.off_heat_cool.durations[x.valueOf()] !== undefined &&
+      self.data_.metadata.series.off_heat_cool.durations[x.valueOf()].seconds > 0
+    ) {
+      groups.off.push({
+        'label': beestat.series.off_heat_cool.name,
+        'value': beestat.time(
+          self.data_.metadata.series.off_heat_cool.durations[x.valueOf()]
+        ),
+        'color': beestat.series.off_heat_cool.color
+      });
+    }
+
+    if (
       groups.mode.length === 0 &&
       groups.equipment.length === 0 &&
       groups.data.length === 0
@@ -393,6 +407,10 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
     sections.push(groups.mode);
     sections.push(groups.data);
     sections.push(groups.equipment);
+
+    if(beestat.user.has_early_access() === true) {
+      sections.push(groups.off);
+    }
 
     var title = this.x.format('ddd, MMM D @ h:mma');
 

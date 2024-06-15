@@ -154,6 +154,11 @@ beestat.series.fan = {
   'color': beestat.style.color.gray.base
 };
 
+beestat.series.off_heat_cool = {
+  'name': 'System Off',
+  'color': beestat.style.color.gray.base
+};
+
 beestat.series.humidifier = {
   'name': 'Humidifier',
   'color': beestat.style.color.gray.light

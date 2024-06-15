@@ -82,6 +82,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
     'dehumidifier',
     'ventilator',
     'economizer',
+    'off_heat_cool',
     'dummy'
   ].forEach(function(series_code) {
     data.series[series_code] = [];
@@ -383,6 +384,54 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
         durations.economizer = {'seconds': 0};
       }
 
+      // System off duration
+      if (
+        durations.off_heat_cool.seconds === 0 &&
+        (
+          runtime_thermostat.compressor_1 < 300 &&
+          runtime_thermostat.compressor_2 < 300 &&
+          runtime_thermostat.auxiliary_heat_1 < 300 &&
+          runtime_thermostat.auxiliary_heat_2 < 300 &&
+          runtime_thermostat.fan < 300
+        )
+      ) {
+        // If currently running and it stops.
+        durations.off_heat_cool = {
+          'seconds': 300 - Math.max(
+            runtime_thermostat.compressor_1,
+            runtime_thermostat.compressor_2,
+            runtime_thermostat.auxiliary_heat_1,
+            runtime_thermostat.auxiliary_heat_2
+          )
+        };
+      } else if (
+        durations.off_heat_cool.seconds > 0 &&
+        (
+          runtime_thermostat.compressor_1 > 0 ||
+          runtime_thermostat.compressor_2 > 0 ||
+          runtime_thermostat.auxiliary_heat_1 > 0 ||
+          runtime_thermostat.auxiliary_heat_2 > 0
+        )
+      ) {
+        // If not currently running and it starts
+        durations.off_heat_cool.seconds +=
+          Math.max(
+            runtime_thermostat.compressor_1,
+            runtime_thermostat.compressor_2,
+            runtime_thermostat.auxiliary_heat_1,
+            runtime_thermostat.auxiliary_heat_2
+          );
+
+        durations.off_heat_cool = {'seconds': 0};
+      } else if (
+        durations.off_heat_cool.seconds > 0
+      ) {
+        // If not currently running
+        durations.off_heat_cool.seconds += 300;
+      }
+
+      data.metadata.series.off_heat_cool.durations[current_m.valueOf()] = durations.off_heat_cool;
+
       // Equipment
       [
         'fan',
@@ -505,6 +554,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
       data.series.dehumidifier.push(null);
       data.series.ventilator.push(null);
       data.series.economizer.push(null);
+      data.series.off_heat_cool.push(null);
     }
 
     current_m.add(5, 'minute');
