@@ -507,23 +507,16 @@ class thermostat extends cora\crud {
     $memory_per_thermostat = 0.0054; // mb
 
     $limit_start = 0;
-    $limit_count = round($memory_limit / $memory_per_thermostat);
+    $limit_count = (int) round($memory_limit / $memory_per_thermostat);
 
     /**
      * Selecting lots of rows can eventually run PHP out of memory, so chunk
      * this up into several queries to avoid that.
      */
     do {
-      $result = $this->database->query('
-        select
-          thermostat_id,
-          profile
-        from
-          thermostat
-        where ' .
-          implode(' and ', $where) . '
-        limit ' . $limit_start . ',' . $limit_count . '
-      ');
+      $result = $this->database->query(
+        'select thermostat_id, profile from thermostat where ' . implode(' and ', $where) . ' limit ' . $limit_start . ',' . $limit_count . ''
+      );
 
       // Get all the scores from the other thermostats
       while($other_thermostat = $result->fetch_assoc()) {
