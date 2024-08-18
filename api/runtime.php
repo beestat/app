@@ -578,13 +578,18 @@ class runtime extends cora\api {
 
       // Ecobee does not report fan usage when it does not control the fan, so
       // this will mark the fan as running when certain equipment is on.
+      //
+      // 2024-08-18: Accessory used to be in this list, but there are
+      // situations (setting dehumidifyWithAC) where the accessory runs without
+      // the system fan. Since the ecobee is controlling the accessory anyways,
+      // we should be able to trust the fan value because the ecobee would also
+      // have to control that. Removed accessory because of that and am just trusting ecobee.
       $data['fan'] = max(
         $columns['fan'],
         $data['compressor_1'],
         $data['compressor_2'],
         $data['auxiliary_heat_1'],
-        $data['auxiliary_heat_2'],
-        $data['accessory']
+        $data['auxiliary_heat_2']
       );
 
       $system_modes = [
