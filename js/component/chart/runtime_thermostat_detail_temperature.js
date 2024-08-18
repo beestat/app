@@ -408,9 +408,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
     sections.push(groups.data);
     sections.push(groups.equipment);
 
-    if(beestat.user.has_early_access() === true) {
-      sections.push(groups.off);
-    }
+    sections.push(groups.off);
 
     var title = this.x.format('ddd, MMM D @ h:mma');
 
