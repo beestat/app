@@ -405,6 +405,12 @@ class runtime extends cora\api {
           strtotime('-1 hour', $begin),
           strtotime('+1 hour', $end)
         );
+      } else if($e->getCode() === 10512) {
+        // Processing error. Just pretend it worked and move on.
+        return [
+          'data_begin' => $begin,
+          'data_end' => $end
+        ];
       } else {
         throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
       }

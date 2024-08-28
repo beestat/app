@@ -282,6 +282,17 @@ class ecobee extends external_api {
           $this->log_mysql($curl_response, true);
         }
         throw new cora\exception('No thermostats found.', 10511, false, null, false);
+      } else if (
+        isset($response['status']['message']) === true &&
+        stripos($response['status']['message'], 'Processing error.') !== false
+      ) {
+        // Processing error. Generic error...this started happening in August
+        // 2024 when attempting to sync any date range that included
+        // the "missing hour" from daylight savings.
+        if($this::$log_mysql !== 'all') {
+          $this->log_mysql($curl_response, true);
+        }
+        throw new cora\exception('Generic processing error.', 10512, false, null, false);
       }
     }
     else if (isset($response['status']) === true && $response['status']['code'] !== 0) {
