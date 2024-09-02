@@ -388,10 +388,10 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
       if (
         durations.off_heat_cool.seconds === 0 &&
         (
-          runtime_thermostat.compressor_1 < 300 &&
-          runtime_thermostat.compressor_2 < 300 &&
-          runtime_thermostat.auxiliary_heat_1 < 300 &&
-          runtime_thermostat.auxiliary_heat_2 < 300
+          (runtime_thermostat.compressor_1 +
+          runtime_thermostat.compressor_2) < 300 &&
+          (runtime_thermostat.auxiliary_heat_1 +
+          runtime_thermostat.auxiliary_heat_2) < 300
         )
       ) {
         // If currently running and it stops.
