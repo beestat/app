@@ -288,9 +288,40 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
       } else if (runtime_thermostat.event.match(/^smarthome$/i) !== null) {
         this_calendar_event = 'calendar_event_smarthome';
         this_calendar_event_name = 'Smart Home';
+      } else if (runtime_thermostat.event.match(/^ecohome$/i) !== null) {
+        /**
+         * Runs during any unoccupied event (Away, custom unoccupied periods).
+         *
+         * Once motion is detected it will run for at least 2 hours
+         *
+         * One hour must pass since the start of the unoccupied period.
+         *
+         * If an EcoHome event is dismissed it will not be allowed to run until 2
+         * hours has passed.
+         */
+        this_calendar_event = 'calendar_event_smarthome';
+        this_calendar_event_name = 'Eco Home';
       } else if (runtime_thermostat.event.match(/^smartaway$/i) !== null) {
         this_calendar_event = 'calendar_event_smartaway';
         this_calendar_event_name = 'Smart Away';
+      } else if (runtime_thermostat.event.match(/^ecoaway/i) !== null) {
+        /**
+         * Only runs during the Home schedule.
+         *
+         * Triggers when no motion is detected for at least 2 hours.
+         *
+         * Applies a relative setback from the home comfort setting (1F up to
+         * 4F, allowing the ability to recover within 30 minutes).
+         *
+         * If EcoAway is dismissed by the user, another 2 hours of no motion
+         * must pass before activating it again.
+         *
+         * A special use case for heat pumps: if the thermostat knows it takes
+         * longer than 30 minutes to heat and cool the home up by 1F, it will
+         * not enter EcoAway mode.
+         */
+        this_calendar_event = 'calendar_event_smartaway';
+        this_calendar_event_name = 'Eco Away';
       } else if (
         runtime_thermostat.event.match(/^auto$/i) !== null ||
         runtime_thermostat.event.match(/^today$/i) !== null ||
