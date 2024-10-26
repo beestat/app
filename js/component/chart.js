@@ -211,6 +211,7 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     },
     'spacing': this.get_options_chart_spacing_(),
     // For consistent left spacing on charts with no y-axis values
+    'marginTop': this.get_options_chart_marginTop_(),
     'marginLeft': this.get_options_chart_marginLeft_(),
     'marginRight': this.get_options_chart_marginRight_(),
     'marginBottom': this.get_options_chart_marginBottom_(),
@@ -228,6 +229,15 @@ beestat.component.chart.prototype.get_options_chart_ = function() {
     'height': this.get_options_chart_height_(),
     'events': this.get_options_chart_events_()
   };
+};
+
+/**
+ * Get the top margin for the chart.
+ *
+ * @return {number} The top margin for the chart.
+ */
+beestat.component.chart.prototype.get_options_chart_marginTop_ = function() {
+  return undefined;
 };
 
 /**

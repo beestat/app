@@ -346,7 +346,6 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
   const container = $.createElement('div').style({
     'background': beestat.style.color.bluegray.dark,
     'padding': beestat.style.size.gutter / 2,
-    'text-align': 'center',
     'margin-top': beestat.style.size.gutter,
     'border-radius': beestat.style.size.border_radius
   });
@@ -365,13 +364,13 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
     const outdoor_temperature = thermostat.weather.temperature;
     const degrees_per_hour = (linear_trendline.slope * outdoor_temperature) + linear_trendline.intercept;
 
-    header_text += ' (' +
-      beestat.temperature({
-        'temperature': degrees_per_hour,
-        'delta': true,
-        'units': true
-      }) +
-      ' / h)';
+    // header_text += ' (' +
+    //   beestat.temperature({
+    //     'temperature': degrees_per_hour,
+    //     'delta': true,
+    //     'units': true
+    //   }) +
+    //   ' / h)';
 
     if (
       (
@@ -417,12 +416,55 @@ beestat.component.card.system.prototype.decorate_time_to_temperature_ = function
     }
   }
 
-  container.appendChild(
+  const grid = $.createElement('div')
+    .style({
+      'display': 'grid',
+      'grid-template-columns': '3fr 1fr', // 75% for left, 25% for right
+      'grid-gap': `${beestat.style.size.gutter}px`,
+      'align-items': 'center', // Center content vertically
+    });
+
+  const left = $.createElement('div');
+    // .style({
+    //   'overflow-wrap': 'break-word', // Allow wrapping if the content doesn't fit
+    //   'word-wrap': 'break-word',
+    //   'word-break': 'break-word',
+    // });
+
+  left.appendChild(
     $.createElement('div')
       .style('font-weight', 'bold')
       .innerText(header_text)
   );
-  container.appendChild($.createElement('div').innerText(text));
+  left.appendChild(
+    $.createElement('div')
+      .innerText(text)
+  );
+
+  const right = $.createElement('div')
+    .style({
+      'text-align': 'right', // Right-align the content of the right column
+    });
+
+  var cancel = new beestat.component.tile()
+    .set_icon('chart_line')
+    .set_shadow(false)
+    .set_background_hover_color('#fff')
+    .set_text_hover_color(beestat.style.color.bluegray.dark)
+    .set_text('Detail')
+    .addEventListener('click', function () {
+      (new beestat.component.modal.time_to_detail()).render();
+    })
+    .render(right);
+
+  grid.appendChild(left);
+  grid.appendChild(right);
+
+  container.appendChild(grid);
+
+  // setTimeout(function() {
+  //   (new beestat.component.modal.time_to_detail()).render();
+  // }, 0);
 };
 
 /**

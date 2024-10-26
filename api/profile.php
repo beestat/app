@@ -255,6 +255,9 @@ class profile extends cora\crud {
     $degree_days_base_temperature = 65;
     $degree_days = [];
     $begin_runtime = [];
+    $extreme_times = [
+      'high' => []
+    ];
 
     while($current_timestamp <= $end_timestamp) {
       // Get a new chunk of data.
@@ -290,19 +293,81 @@ class profile extends cora\crud {
         // consistently represented instead of having to do this logic
         // throughout the generator.
         $runtime = [];
-        $degree_days_date = date('Y-m-d', $current_timestamp);
-        $degree_days_temperatures = [];
+
+        // $local_datetime = get_local_datetime(
+        //   date('Y-m-d H:i:s', $current_timestamp),
+        //   $thermostat['time_zone']
+        // );
+
+        // $process_date = date('Y-m-d', $current_timestamp);
+        $process_date = get_local_datetime(
+          date('Y-m-d H:i:s', $current_timestamp),
+          $thermostat['time_zone'],
+          'Y-m-d'
+        );
+        $process_date_temperatures = [];
+
+        // $extreme_times_date = date('Y-m-d', $current_timestamp);
+
         while($row = $result->fetch_assoc()) {
           $timestamp = strtotime($row['timestamp']);
-          $date = date('Y-m-d', $timestamp);
+          // $date = date('Y-m-d', $timestamp);
+          $date = get_local_datetime(
+            date('Y-m-d H:i:s', $timestamp),
+            $thermostat['time_zone'],
+            'Y-m-d'
+          );
 
-          // Degree days
-          if($date !== $degree_days_date) {
-            $degree_days[] = (array_mean($degree_days_temperatures) / 10) - $degree_days_base_temperature;
-            $degree_days_date = $date;
-            $degree_days_temperatures = [];
+          if($date !== $process_date) {
+
+            // Degree days
+            $degree_days[] = (array_mean(array_column($process_date_temperatures, 'outdoor_temperature')) / 10) - $degree_days_base_temperature;
+
+            // Max temp
+            $extreme_times_width = 10;
+
+            // Sort the temperatures in descending order and pick the top
+            usort($process_date_temperatures, function($a, $b) {
+                return $b['outdoor_temperature'] <=> $a['outdoor_temperature'];
+            });
+
+            $highest_temperatures = array_slice($process_date_temperatures, 0, $extreme_times_width);
+            // print_r($highest_temperatures);
+
+            // Calculate the average timestamp
+            $average_timestamp = array_sum(array_column($highest_temperatures, 'timestamp')) / count($highest_temperatures);
+
+            // Save the average timestamp to $extreme_times using the day number of the year
+            $extreme_times['high'][date('z', $timestamp)] = date('H:i', $average_timestamp);
+
+            $process_date = $date;
+            $process_date_temperatures = [];
           }
-          $degree_days_temperatures[] = $row['outdoor_temperature'];
+          $process_date_temperatures[] = [
+            'outdoor_temperature' => $row['outdoor_temperature'],
+            'timestamp' => $timestamp,
+            'tmp_timestamp' => date('c', $timestamp)
+          ];
+
+          // Extreme times
+          // if($date !== $extreme_times_date) {
+            // $degree_days[] = (array_mean($process_date_temperatures) / 10) - $degree_days_base_temperature;
+            // $extreme_times_date = $date;
+            // $process_date_temperatures = [];
+          // }
+          // $extreme_times_temperatures[] = $row['outdoor_temperature'];
+
+          /**
+           * Store an extreme_date just like degree days date (or probably
+           * just use the same value), then put all of the outdoor weather
+           * data into an array. When the date changes, process the data. Note
+           * that I should be storing the past 7 days of data in this array.
+           *
+           * Processing the data should find the top X values and then
+           * calculate the average date of them (not midpoint). Do that for
+           * the past 7 days and average those together, then remove one day
+           * of results from the array.
+           */
 
           if($first_timestamp === null) {
             $first_timestamp = $row['timestamp'];
@@ -968,6 +1033,9 @@ class profile extends cora\crud {
       'address' => [
         'latitude' => $thermostat_database['address_latitude'],
         'longitude' => $thermostat_database['address_longitude']
+      ],
+      'extreme_times' => [
+        'high' => $extreme_times['high']
       ],
       'metadata' => [
         'generated_at' => date('c'),

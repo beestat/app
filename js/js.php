@@ -56,6 +56,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/math.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/platform.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/text_dimensions.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/time_to_detail.js"></script>' . PHP_EOL;
 
   // Layer
   echo '<script src="/js/layer.js"></script>' . PHP_EOL;
@@ -112,6 +113,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/chart/voc_concentration.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/co2_concentration.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/air_quality.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/chart/time_to_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/header.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/icon.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/layout.js"></script>' . PHP_EOL;
@@ -144,6 +146,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/modal/floor_plan_elevation_help.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/visualize_custom.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal/temperature_profiles_info.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/modal/time_to_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/text.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/input/checkbox.js"></script>' . PHP_EOL;

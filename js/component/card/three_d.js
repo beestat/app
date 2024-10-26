@@ -511,6 +511,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
       address.normalized.metadata.latitude,
       address.normalized.metadata.longitude
     );
+    console.info(times);
 
     const sunrise_m = moment(times.sunrise);
     const sunrise_percentage = ((sunrise_m.hours() * 60) + sunrise_m.minutes()) / 1440 * 100;
