@@ -322,6 +322,17 @@ beestat.component.modal.runtime_thermostat_detail_custom.prototype.get_buttons_ 
       .set_text_color('#fff')
       .set_text('Save')
       .addEventListener('click', function() {
+        // Bit of a rig to fix the odd situation where somehow people are
+        // getting these values set to more than 30 days.
+        var runtime_thermostat_detail_range_static_begin_m = moment(self.state_.runtime_thermostat_detail_range_static_begin);
+        var runtime_thermostat_detail_range_static_end_m = moment(self.state_.runtime_thermostat_detail_range_static_end);
+
+        var diff = Math.abs(runtime_thermostat_detail_range_static_begin_m.diff(runtime_thermostat_detail_range_static_end_m, 'day')) + 1;
+        if (diff > 30) {
+          runtime_thermostat_detail_range_static_end_m = runtime_thermostat_detail_range_static_begin_m.clone().add(29, 'days');
+          self.state_.runtime_thermostat_detail_range_static_end = runtime_thermostat_detail_range_static_end_m.format('M/D/YYYY');
+        }
+
         this
           .set_background_color(beestat.style.color.gray.base)
           .set_background_hover_color()
