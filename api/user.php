@@ -16,7 +16,7 @@ class user extends cora\crud {
       'sync_patreon_status',
       'unlink_patreon_account',
     ],
-    'public' => ['force_log_in']
+    'public' => []
   ];
 
   /**
