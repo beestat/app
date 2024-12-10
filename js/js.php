@@ -88,6 +88,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/temperature_profiles.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/metrics.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/settings.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/manage_thermostats.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_detail.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/air_quality_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/three_d.js"></script>' . PHP_EOL;
@@ -102,6 +103,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/merchandise.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/visualize_video.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/rate_app_reminder.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/rookstack_survey_notification.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;

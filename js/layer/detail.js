@@ -33,6 +33,15 @@ beestat.layer.detail.prototype.decorate_ = function(parent) {
     ]);
   }
 
+  // Manage Thermostats
+  cards.push([
+    {
+      // 'card': new beestat.component.card.manage_thermostats(),
+      'card': new beestat.component.card.rookstack_survey_notification(),
+      'size': 12
+    }
+  ]);
+
   cards.push([
     {
       'card': new beestat.component.card.system(thermostat.thermostat_id),

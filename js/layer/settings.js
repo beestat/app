@@ -39,6 +39,14 @@ beestat.layer.settings.prototype.decorate_ = function(parent) {
     }
   ]);
 
+  // Manage Thermostats
+  // cards.push([
+  //   {
+  //     'card': new beestat.component.card.manage_thermostats(),
+  //     'size': 12
+  //   }
+  // ]);
+
   // Footer
   cards.push([
     {

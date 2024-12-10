@@ -497,6 +497,7 @@ input[type=range]::-moz-range-thumb {
 .icon.menu_down:before { content: "\F035D"; }
 .icon.menu_up:before { content: "\F0360"; }
 .icon.message:before { content: "\F0361"; }
+.icon.microscope:before { content: "\F0654"; }
 .icon.moon_waning_crescent:before { content: "\F0F65"; }
 .icon.network_strength_4:before { content: "\F08FA"; }
 .icon.network_strength_off:before { content: "\F08FC"; }
@@ -542,6 +543,7 @@ input[type=range]::-moz-range-thumb {
 .icon.thermometer:before { content: "\F050F"; }
 .icon.thermostat:before { content: "\F0393"; }
 .icon.thumb_up:before { content: "\F0513"; }
+.icon.trash_can:before { content: "\F0A79"; }
 .icon.tune:before { content: "\F062E"; }
 .icon.twitter:before { content: "\F0544"; }
 .icon.undo:before { content: "\F054C"; }
