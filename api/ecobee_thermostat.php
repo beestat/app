@@ -144,9 +144,8 @@ class ecobee_thermostat extends cora\crud {
     );
 
     // For each of the manually added ones, check and see if ecobee gives a
-    // result. If so, store that identifier as good. If not, inactivate the
-    // manually added ecobee_thermostat row.
-    $manual_identifiers = [];
+    // result. If so, do nothing. If not, inactivate the manually added
+    // ecobee_thermostat row.
     foreach($manual_ecobee_thermostats as $manual_ecobee_thermostat) {
       try {
         $response = $this->api(
@@ -168,10 +167,6 @@ class ecobee_thermostat extends cora\crud {
             ]
           ]
         );
-
-        foreach($response['thermostatList'] as $api_thermostat) {
-          $manual_identifiers[] = $api_thermostat['identifier'];
-        }
       } catch(\Exception $e) {
         $this->api(
           'ecobee_thermostat',
@@ -184,6 +179,24 @@ class ecobee_thermostat extends cora\crud {
           ]
         );
       }
+    }
+
+    // Now get everything from the database. This will get already registered
+    // thermostats if they have been synced before, newly manually added
+    // thermostats, and existing manually added thermostats.
+    $ecobee_thermostats = $this->api(
+      'ecobee_thermostat',
+      'read',
+      [
+        'attributes' => [
+          'inactive' => 0
+        ]
+      ]
+    );
+
+    $manual_identifiers = [];
+    foreach($ecobee_thermostats as $ecobee_thermostat) {
+      $manual_identifiers[] = $ecobee_thermostat['identifier'];
     }
 
     // Get a unique list of identifiers.
