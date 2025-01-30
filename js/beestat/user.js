@@ -23,6 +23,7 @@ beestat.user.stripe_is_active = function() {
   for (let i = 0; i < stripe_events.length; i++) {
     if (
       stripe_events[i].type === 'invoice.paid' &&
+      // This is a bug. It counts anyone who has contributed ever via stripe as a supporter.
       moment.unix(stripe_events[i].data.period_end).isAfter(moment()) === false
     ) {
       return true;

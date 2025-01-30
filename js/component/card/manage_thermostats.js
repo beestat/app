@@ -2,6 +2,19 @@
  * Setting
  */
 beestat.component.card.manage_thermostats = function() {
+  const self = this;
+
+  var change_function = beestat.debounce(function() {
+    self.rerender();
+  }, 10);
+
+  beestat.dispatcher.addEventListener(
+    [
+      'cache.ecobee_thermostat'
+    ],
+    change_function
+  );
+
   beestat.component.card.apply(this, arguments);
 };
 beestat.extend(beestat.component.card.manage_thermostats, beestat.component.card);
@@ -12,6 +25,8 @@ beestat.extend(beestat.component.card.manage_thermostats, beestat.component.card
  * @param {rocket.Elements} parent Parent
  */
 beestat.component.card.manage_thermostats.prototype.decorate_contents_ = function(parent) {
+  const self = this;
+
   var p = document.createElement('p');
   p.innerText = 'Thermostats directly connected to your ecobee account are automatically added and synced. In some cases, shared thermostats cannot be automatically detected. Add them here.';
   parent.appendChild(p);
@@ -19,22 +34,21 @@ beestat.component.card.manage_thermostats.prototype.decorate_contents_ = functio
   // Existing
   (new beestat.component.title('Existing Thermostats')).render(parent);
 
-  var sorted_thermostats = $.values(beestat.cache.thermostat)
+  var sorted_ecobee_thermostats = $.values(beestat.cache.ecobee_thermostat)
     .sort(function(a, b) {
       return a.name > b.name;
     });
 
   const table = document.createElement('table');
-  sorted_thermostats.forEach(function(thermostat) {
-    const ecobee_thermostat = beestat.cache.ecobee_thermostat[thermostat.ecobee_thermostat_id];
-
+  sorted_ecobee_thermostats.forEach(function(ecobee_thermostat) {
     const tr = document.createElement('tr');
 
     const td_name = document.createElement('td');
+    td_name.style.paddingRight = `${beestat.style.size.gutter}px`;
     const td_identifier = document.createElement('td');
     const td_delete = document.createElement('td');
 
-    td_name.innerText = thermostat.name;
+    td_name.innerText = ecobee_thermostat.name || '(Sync Queued)';
     td_identifier.innerText = ecobee_thermostat.identifier;
 
     const tile_delete = new beestat.component.tile()
@@ -44,7 +58,34 @@ beestat.component.card.manage_thermostats.prototype.decorate_contents_ = functio
       .render($(td_delete));
 
     tile_delete.addEventListener('click', function() {
-        console.info('delete');
+      self.show_loading_();
+
+      new beestat.api()
+        .add_call(
+          'ecobee_thermostat',
+          'update',
+          {
+            'attributes': {
+              'ecobee_thermostat_id': ecobee_thermostat.ecobee_thermostat_id,
+              'inactive': 1
+            }
+          },
+          'delete'
+        )
+        .add_call(
+          'ecobee_thermostat',
+          'read_id',
+          {
+            'attributes': {
+              'inactive': 0
+            }
+          },
+          'read_id'
+        )
+        .set_callback(function(response) {
+          beestat.cache.set('ecobee_thermostat', response.read_id);
+        })
+        .send();
       })
 
     tr.appendChild(td_name);
@@ -71,9 +112,10 @@ beestat.component.card.manage_thermostats.prototype.decorate_contents_ = functio
   const input_container = document.createElement('div');
   container.appendChild(input_container);
 
-  new_identifier = new beestat.component.input.text()
+  const new_identifier = new beestat.component.input.text()
     .set_width(150)
     .set_maxlength(12)
+    .set_inputmode('numeric')
     .set_placeholder('Serial #')
     .render($(input_container));
 
@@ -85,15 +127,38 @@ beestat.component.card.manage_thermostats.prototype.decorate_contents_ = functio
     .set_background_hover_color(beestat.style.color.green.light)
     .set_text_color('#fff')
     .set_text('Add Thermostat')
-    .render($(button_container));
+    .addEventListener('click', function() {
+      if (new_identifier.get_value()?.length === 12) {
+        self.show_loading_();
 
-  // TODO: Add thermostat button needs to make an API call. That call should
-  // look for an existing inactive thermostat on the account and add it back.
-  // If it doesn't exist, it should do an API call to ecobee to "sync" that
-  // thermostat which should immediately grab all of that data and create the
-  // rows for me using my existing code. Throw a loading spinner over the
-  // manage thermostats card while this happens, then call get thermostats when
-  // that's done to update beestat's cache.
+        new beestat.api()
+          .add_call(
+            'ecobee_thermostat',
+            'create',
+            {
+              'attributes': {
+                'identifier': new_identifier.get_value()
+              }
+            },
+            'create'
+          )
+          .add_call(
+            'ecobee_thermostat',
+            'read_id',
+            {
+              'attributes': {
+                'inactive': 0
+              }
+            },
+            'read_id'
+          )
+          .set_callback(function(response) {
+            beestat.cache.set('ecobee_thermostat', response.read_id);
+          })
+          .send();
+      }
+    })
+    .render($(button_container));
 };
 
 /**

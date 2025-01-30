@@ -12,8 +12,33 @@ class ecobee_thermostat extends cora\crud {
     'private' => [
       'read_id'
     ],
-    'public' => []
+    'public' => ['create', 'update']
   ];
+
+  /**
+   * If an ecobee_thermostat row with the same identifier already exists,
+   * reactivate it. This avoids creating duplicates or fixes if you
+   * accidentally remove your thermostat so it doesn't re-sync.
+   *
+   * @param array $attributes An array of attributes to set for this item
+   *
+   * @return mixed The id of the inserted row.
+   */
+  public function create($attributes) {
+    $existing_ecobee_thermostat = $this->get([
+      'identifier' => $attributes['identifier']
+    ]);
+
+    if($existing_ecobee_thermostat !== null) {
+      return $this->update([
+        'ecobee_thermostat_id' => $existing_ecobee_thermostat['ecobee_thermostat_id'],
+        'inactive' => 0
+      ]);
+    } else {
+      return $this->create($attributes);
+    }
+
+  }
 
   /**
    * Sync thermostats.
@@ -82,150 +107,108 @@ class ecobee_thermostat extends cora\crud {
        */
     ];
 
-    try {
-      /**
-       * This will force the device sync to use the secondary method that uses
-       * the undocumented API calls instead of the normal GET "registered"
-       * thermostats. This fixes an issue where beestat never sees shared
-       * thermostats if there is at least one registered thermostat.
-       */
-      $user = $this->api('user', 'get', $this->session->get_user_id());
-      if(
-        isset($user['settings']['app']) === true &&
-        isset($user['settings']['app']['prefer_secondary_device_sync']) === true &&
-        $user['settings']['app']['prefer_secondary_device_sync'] === true
-      ) {
-        throw new cora\exception('No thermostats found.', 10511, false, null, false);
-      }
-
-      $response = $this->api(
-        'ecobee',
-        'ecobee_api',
-        [
-          'method' => 'GET',
-          'endpoint' => 'thermostat',
-          'arguments' => [
-            'body' => json_encode([
-              'selection' => array_merge(
-                [
-                  'selectionType' => 'registered',
-                  'selectionMatch' => ''
-                ],
-                $include
-              )
-            ])
-          ]
+    // Get a list of all registered thermostats.
+    $response = $this->api(
+      'ecobee',
+      'ecobee_api',
+      [
+        'method' => 'GET',
+        'endpoint' => 'thermostat',
+        'arguments' => [
+          'body' => json_encode([
+            'selection' => array_merge(
+              [
+                'selectionType' => 'registered',
+                'selectionMatch' => ''
+              ],
+              $include
+            )
+          ])
         ]
-      );
-      if(count($response['thermostatList']) === 0) {
-        throw new cora\exception('No thermostats found.', 10511, false, null, false);
-      }
-    } catch(cora\exception $e) {
-      // If no thermostats found (ie. not the owner of any homes that contain a thermostat)
-      if($e->getCode() === 10511) {
-        $homes = $this->api(
+      ]
+    );
+    $registered_identifiers = [];
+    foreach($response['thermostatList'] as $api_thermostat) {
+      $registered_identifiers[] = $api_thermostat['identifier'];
+    }
+
+    // Get a list of manually added thermostats.
+    $manual_ecobee_thermostats = $this->api(
+      'ecobee_thermostat',
+      'read',
+      [
+        'attributes' => [
+          'model_number' => null
+        ]
+      ]
+    );
+
+    // For each of the manually added ones, check and see if ecobee gives a
+    // result. If so, store that identifier as good. If not, inactivate the
+    // manually added ecobee_thermostat row.
+    $manual_identifiers = [];
+    foreach($manual_ecobee_thermostats as $manual_ecobee_thermostat) {
+      try {
+        $response = $this->api(
           'ecobee',
           'ecobee_api',
           [
             'method' => 'GET',
-            'endpoint' => 'https://home.hm-prod.ecobee.com/homes',
+            'endpoint' => 'thermostat',
             'arguments' => [
+              'body' => json_encode([
+                'selection' => array_merge(
+                  [
+                    'selectionType' => 'thermostats',
+                    'selectionMatch' => $manual_ecobee_thermostat['identifier']
+                  ],
+                  $include
+                )
+              ])
             ]
           ]
         );
 
-        $home_ids = array_column($homes['homes'], 'homeID');
-
-        $serial_numbers = [];
-        foreach($home_ids as $home_id) {
-          $devices = $this->api(
-            'ecobee',
-            'ecobee_api',
-            [
-              'method' => 'GET',
-              'endpoint' => 'https://home.hm-prod.ecobee.com/home/' . $home_id . '/devices',
-              'arguments' => [
-              ]
+        foreach($response['thermostatList'] as $api_thermostat) {
+          $manual_identifiers[] = $api_thermostat['identifier'];
+        }
+      } catch(\Exception $e) {
+        $this->api(
+          'ecobee_thermostat',
+          'update',
+          [
+            'attributes' => [
+              'ecobee_thermostat_id' => $manual_ecobee_thermostat['ecobee_thermostat_id'],
+              'inactive' => 1
             ]
-          );
-
-          /**
-           * This is a select distinct from ecobee_thermostat. Ideally it
-           * would be possible to send *all* serial numbers from the devices
-           * call to the GET->thermostat API call, but that throws an error if
-           * you include a serial number for something that's not a
-           * thermostat. So I have to keep this array to identify valid serial
-           * numbers.
-           */
-          $model_numbers = [
-            'athenaSmart',
-            'apolloSmart',
-            'idtSmart',
-            'nikeSmart',
-            'siSmart',
-            'corSmart',
-            'vulcanSmart',
-            'aresSmart',
-            'artemisSmart'
-          ];
-
-          foreach($devices['devices'] as $device) {
-            if(in_array($device['modelNumber'], $model_numbers) === true) {
-              $serial_numbers[] = $device['serialNumber'];
-            }
-          }
-        }
-
-        if(count($serial_numbers) > 0) {
-          try {
-            $response = $this->api(
-              'ecobee',
-              'ecobee_api',
-              [
-                'method' => 'GET',
-                'endpoint' => 'thermostat',
-                'arguments' => [
-                  'body' => json_encode([
-                    'selection' => array_merge(
-                      [
-                        'selectionType' => 'thermostats',
-                        'selectionMatch' => implode(',', $serial_numbers),
-                      ],
-                      $include
-                    )
-                  ])
-                ]
-              ]
-            );
-          } catch(cora\exception $e) {
-            /**
-             * For some reason, I can get a serial number in the /homes data
-             * and still get no results from the /thermostat endpoint. Likely
-             * due to two data sources not being in sync. Catch that exception
-             * and let the code continue so any existing thermostats still get
-             * inactivated.
-             *
-             * Also have to fabricate the $response a bit.
-             */
-            if($e->getCode() === 10511) {
-              $response = [
-                'thermostatList' => []
-              ];
-            } else {
-              throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
-            }
-          }
-
-          /**
-           * At this point, $response will either be populated with results,
-           * or have an empty thermostatList attribute. The code can continue
-           * on as it will inactivate any thermostats that were not found.
-           */
-        }
-      } else {
-        throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
+          ]
+        );
       }
     }
+
+    // Get a unique list of identifiers.
+    $identifiers = array_unique(array_merge($registered_identifiers, $manual_identifiers));
+
+    // Get all of the thermostats from ecobee.
+    $response = $this->api(
+      'ecobee',
+      'ecobee_api',
+      [
+        'method' => 'GET',
+        'endpoint' => 'thermostat',
+        'arguments' => [
+          'body' => json_encode([
+            'selection' => array_merge(
+              [
+                'selectionType' => 'thermostats',
+                'selectionMatch' => implode(',', $identifiers)
+              ],
+              $include
+            )
+          ])
+        ]
+      ]
+    );
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];
