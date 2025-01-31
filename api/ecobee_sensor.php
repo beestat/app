@@ -156,9 +156,8 @@ class ecobee_sensor extends cora\crud {
     );
 
     // For each of the manually added ones, check and see if ecobee gives a
-    // result. If so, store that identifier as good. If not, inactivate the
-    // manually added ecobee_thermostat row.
-    $manual_identifiers = [];
+    // result. If so, do nothing. If not, inactivate the manually added
+    // ecobee_thermostat row.
     foreach($manual_ecobee_thermostats as $manual_ecobee_thermostat) {
       try {
         $response = $this->api(
@@ -180,10 +179,6 @@ class ecobee_sensor extends cora\crud {
             ]
           ]
         );
-
-        foreach($response['thermostatList'] as $api_thermostat) {
-          $manual_identifiers[] = $api_thermostat['identifier'];
-        }
       } catch(\Exception $e) {
         $this->api(
           'ecobee_thermostat',
@@ -196,6 +191,24 @@ class ecobee_sensor extends cora\crud {
           ]
         );
       }
+    }
+
+    // Now get everything from the database. This will get already registered
+    // thermostats if they have been synced before, newly manually added
+    // thermostats, and existing manually added thermostats.
+    $ecobee_thermostats = $this->api(
+      'ecobee_thermostat',
+      'read',
+      [
+        'attributes' => [
+          'inactive' => 0
+        ]
+      ]
+    );
+
+    $manual_identifiers = [];
+    foreach($ecobee_thermostats as $ecobee_thermostat) {
+      $manual_identifiers[] = $ecobee_thermostat['identifier'];
     }
 
     // Get a unique list of identifiers.
@@ -225,13 +238,13 @@ class ecobee_sensor extends cora\crud {
 
     // Loop over the returned sensors and create/update them as necessary.
     $sensor_ids_to_keep = [];
-    foreach($response['thermostatList'] as $thermostat_api) {
+    foreach($response['thermostatList'] as $api_thermostat) {
       $ecobee_thermostat = $this->api(
         'ecobee_thermostat',
         'get',
         [
           'attributes' => [
-            'identifier' => $thermostat_api['identifier']
+            'identifier' => $api_thermostat['identifier']
           ]
         ]
       );
@@ -246,7 +259,7 @@ class ecobee_sensor extends cora\crud {
         ]
       );
 
-      foreach($thermostat_api['remoteSensors'] as $api_sensor) {
+      foreach($api_thermostat['remoteSensors'] as $api_sensor) {
         $ecobee_sensor = $this->get(
           [
             'ecobee_thermostat_id' => $ecobee_thermostat['ecobee_thermostat_id'],
