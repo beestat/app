@@ -119,83 +119,7 @@ class ecobee_sensor extends cora\crud {
        */
     ];
 
-    // Get a list of all registered thermostats.
-    $response = $this->api(
-      'ecobee',
-      'ecobee_api',
-      [
-        'method' => 'GET',
-        'endpoint' => 'thermostat',
-        'arguments' => [
-          'body' => json_encode([
-            'selection' => array_merge(
-              [
-                'selectionType' => 'registered',
-                'selectionMatch' => ''
-              ],
-              $include
-            )
-          ])
-        ]
-      ]
-    );
-    $registered_identifiers = [];
-    foreach($response['thermostatList'] as $api_thermostat) {
-      $registered_identifiers[] = $api_thermostat['identifier'];
-    }
-
-    // Get a list of manually added thermostats.
-    $manual_ecobee_thermostats = $this->api(
-      'ecobee_thermostat',
-      'read',
-      [
-        'attributes' => [
-          'model_number' => null
-        ]
-      ]
-    );
-
-    // For each of the manually added ones, check and see if ecobee gives a
-    // result. If so, do nothing. If not, inactivate the manually added
-    // ecobee_thermostat row.
-    foreach($manual_ecobee_thermostats as $manual_ecobee_thermostat) {
-      try {
-        $response = $this->api(
-          'ecobee',
-          'ecobee_api',
-          [
-            'method' => 'GET',
-            'endpoint' => 'thermostat',
-            'arguments' => [
-              'body' => json_encode([
-                'selection' => array_merge(
-                  [
-                    'selectionType' => 'thermostats',
-                    'selectionMatch' => $manual_ecobee_thermostat['identifier']
-                  ],
-                  $include
-                )
-              ])
-            ]
-          ]
-        );
-      } catch(\Exception $e) {
-        $this->api(
-          'ecobee_thermostat',
-          'update',
-          [
-            'attributes' => [
-              'ecobee_thermostat_id' => $manual_ecobee_thermostat['ecobee_thermostat_id'],
-              'inactive' => 1
-            ]
-          ]
-        );
-      }
-    }
-
-    // Now get everything from the database. This will get already registered
-    // thermostats if they have been synced before, newly manually added
-    // thermostats, and existing manually added thermostats.
+    // Get all active thermostats from the database.
     $ecobee_thermostats = $this->api(
       'ecobee_thermostat',
       'read',
@@ -206,13 +130,17 @@ class ecobee_sensor extends cora\crud {
       ]
     );
 
+    if(count($ecobee_thermostats) === 0) {
+      return [];
+    }
+
     $manual_identifiers = [];
     foreach($ecobee_thermostats as $ecobee_thermostat) {
       $manual_identifiers[] = $ecobee_thermostat['identifier'];
     }
 
     // Get a unique list of identifiers.
-    $identifiers = array_unique(array_merge($registered_identifiers, $manual_identifiers));
+    $identifiers = array_unique(array_merge($manual_identifiers));
 
     // Get all of the thermostats from ecobee.
     $response = $this->api(
@@ -234,7 +162,6 @@ class ecobee_sensor extends cora\crud {
         ]
       ]
     );
-
 
     // Loop over the returned sensors and create/update them as necessary.
     $sensor_ids_to_keep = [];

@@ -30,14 +30,13 @@ class ecobee_thermostat extends cora\crud {
     ]);
 
     if($existing_ecobee_thermostat !== null) {
-      return $this->update([
+      return parent::update([
         'ecobee_thermostat_id' => $existing_ecobee_thermostat['ecobee_thermostat_id'],
         'inactive' => 0
       ]);
     } else {
-      return $this->create($attributes);
+      return parent::create($attributes);
     }
-
   }
 
   /**
@@ -167,6 +166,18 @@ class ecobee_thermostat extends cora\crud {
             ]
           ]
         );
+
+        // Create a paired thermostat row
+        $this->api(
+          'thermostat',
+          'create',
+          [
+            'attributes' => [
+              'ecobee_thermostat_id' => $manual_ecobee_thermostat['ecobee_thermostat_id'],
+              'alerts' => []
+            ]
+          ]
+        );
       } catch(\Exception $e) {
         $this->api(
           'ecobee_thermostat',
@@ -250,6 +261,7 @@ class ecobee_thermostat extends cora\crud {
         $ecobee_thermostat = $this->create([
           'identifier' => $api_thermostat['identifier']
         ]);
+
         $thermostat = $this->api(
           'thermostat',
           'create',
