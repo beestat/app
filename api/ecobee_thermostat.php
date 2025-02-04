@@ -214,25 +214,60 @@ class ecobee_thermostat extends cora\crud {
     $identifiers = array_unique(array_merge($registered_identifiers, $manual_identifiers));
 
     // Get all of the thermostats from ecobee.
-    $response = $this->api(
-      'ecobee',
-      'ecobee_api',
-      [
-        'method' => 'GET',
-        'endpoint' => 'thermostat',
-        'arguments' => [
-          'body' => json_encode([
-            'selection' => array_merge(
-              [
-                'selectionType' => 'thermostats',
-                'selectionMatch' => implode(',', $identifiers)
-              ],
-              $include
-            )
-          ])
+    try {
+      $response = $this->api(
+        'ecobee',
+        'ecobee_api',
+        [
+          'method' => 'GET',
+          'endpoint' => 'thermostat',
+          'arguments' => [
+            'body' => json_encode([
+              'selection' => array_merge(
+                [
+                  'selectionType' => 'thermostats',
+                  'selectionMatch' => implode(',', $identifiers)
+                ],
+                $include
+              )
+            ])
+          ]
         ]
-      ]
-    );
+      );
+    } catch(cora\exception $e) {
+      if($e->getCode() === 10508) {
+        // If there was an authorization failure, remove those identifiers.
+        // These are likely thermostats that have been removed from the account
+        // and are no longer accessible.
+
+        // Use regex to extract numbers
+        preg_match_all('/\d+/', $e->getExtraInfo(), $matches);
+
+        $exclude_identifiers = $matches[0];
+
+        $identifiers = array_diff($identifiers, $exclude_identifiers);
+
+        $response = $this->api(
+          'ecobee',
+          'ecobee_api',
+          [
+            'method' => 'GET',
+            'endpoint' => 'thermostat',
+            'arguments' => [
+              'body' => json_encode([
+                'selection' => array_merge(
+                  [
+                    'selectionType' => 'thermostats',
+                    'selectionMatch' => implode(',', $identifiers)
+                  ],
+                  $include
+                )
+              ])
+            ]
+          ]
+        );
+      }
+    }
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];

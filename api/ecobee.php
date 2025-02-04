@@ -235,8 +235,7 @@ class ecobee extends external_api {
       if($this::$log_mysql !== 'all') {
         $this->log_mysql($curl_response, true);
       }
-      $this->api('ecobee_token', 'delete', $ecobee_token['ecobee_token_id']);
-      throw new cora\exception('Ecobee access was revoked by user.', 10508, false, null, false);
+      throw new cora\exception('Ecobee access was revoked by user.', 10508, false, $response['status']['message'], false);
     }
     else if (isset($response['status']) === true && $response['status']['code'] === 9) {
       // Invalid selection. No thermostats in selection. Ensure permissions and selection.
