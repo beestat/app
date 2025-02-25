@@ -286,11 +286,11 @@ class runtime_thermostat_summary extends cora\crud {
 
         if($runtime_thermostat['accessory_type'] === 'humidifier') {
           $data[$date]['sum_humidifier'] += $runtime_thermostat['accessory'];
-        } else if($runtime_thermostat['compressor_mode'] === 'dehumidifier') {
+        } else if($runtime_thermostat['accessory_type'] === 'dehumidifier') {
           $data[$date]['sum_dehumidifier'] += $runtime_thermostat['accessory'];
-        } else if($runtime_thermostat['compressor_mode'] === 'ventilator') {
+        } else if($runtime_thermostat['accessory_type'] === 'ventilator') {
           $data[$date]['sum_ventilator'] += $runtime_thermostat['accessory'];
-        } else if($runtime_thermostat['compressor_mode'] === 'economizer') {
+        } else if($runtime_thermostat['accessory_type'] === 'economizer') {
           $data[$date]['sum_economizer'] += $runtime_thermostat['accessory'];
         }
 
