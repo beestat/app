@@ -154,6 +154,12 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
     beestat.cache.set('stripe_event', response.stripe_event);
 
+    // Send you to the no thermostats layer if none were returned.
+    if(Object.keys(response.thermostat).length === 0) {
+      (new beestat.layer.no_thermostats()).render();
+      return;
+    }
+
     // Set the active thermostat_id if this is your first time visiting.
     if (beestat.setting('thermostat_id') === undefined) {
       beestat.setting(

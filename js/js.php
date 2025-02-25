@@ -67,6 +67,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/air_quality.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/visualize.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/contribute.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/no_thermostats.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
