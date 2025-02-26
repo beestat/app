@@ -200,8 +200,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'outdoor_humidity'
     ].forEach(function(series_code) {
       if (
-        self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined &&
-        visible_series.includes(series_code) === true
+        self.data_.metadata.series[series_code].data[x.valueOf()] !== undefined
       ) {
         points.push({
           'series_code': series_code,
