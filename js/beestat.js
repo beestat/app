@@ -15,9 +15,11 @@ beestat.ecobee_thermostat_models = {
   'nikeSmart': 'ecobee3 lite',
   'siEms': 'Smart Si EMS',
   'siSmart': 'Smart Si',
-  'vulcanSmart': 'SmartThermostat',
-  'aresSmart': 'SmartThermostat Premium',
-  'artemisSmart': 'SmartThermostat Enhanced'
+  'vulcanSmart': 'Smart Thermostat',
+  'aresSmart': 'Smart Thermostat Premium',
+  'artemisSmart': 'Smart Thermostat Enhanced',
+  'attisPro': 'Smart Thermostat Lite',
+  'attisRetail': 'Smart Thermostat Essential'
 };
 
 /**
