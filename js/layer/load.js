@@ -187,7 +187,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
 
     // Set the document title to include the thermostat name
     if (thermostat.name !== null && thermostat.name.trim() !== '') {
-      document.title = 'beestat | ' + thermostat.name;
+      document.title = 'beestat • ' + thermostat.name;
     } else {
       document.title = 'beestat';
     }
