@@ -231,6 +231,7 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
       'calendar_event_hold',
       'calendar_event_vacation',
       'calendar_event_quicksave',
+      'calendar_event_door_window_open',
       'calendar_event_other',
       'calendar_event_custom'
     ].forEach(function(series_code) {

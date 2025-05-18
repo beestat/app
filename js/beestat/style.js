@@ -288,6 +288,11 @@ beestat.series.calendar_event_quicksave = {
   'color': beestat.style.color.gray.base
 };
 
+beestat.series.calendar_event_door_window_open = {
+  'name': 'Door/Window Open',
+  'color': beestat.style.color.bluegreen.light
+};
+
 beestat.series.calendar_event_other = {
   'name': 'Other',
   'color': beestat.style.color.gray.base

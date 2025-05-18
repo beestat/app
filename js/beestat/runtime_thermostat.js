@@ -37,6 +37,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
     'calendar_event_hold': 3,
     'calendar_event_vacation': 3,
     'calendar_event_quicksave': 3,
+    'calendar_event_door_window_open': 3,
     'calendar_event_other': 3,
     'calendar_event_custom': 3,
     'compressor_heat_1': 16,
@@ -63,6 +64,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
     'calendar_event_hold',
     'calendar_event_vacation',
     'calendar_event_quicksave',
+    'calendar_event_door_window_open',
     'calendar_event_other',
     'calendar_event_custom',
     'outdoor_temperature',
@@ -338,6 +340,9 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
       } else if (runtime_thermostat.event.match(/^quicksave$/i) !== null) {
         this_calendar_event = 'calendar_event_quicksave';
         this_calendar_event_name = 'Quick Save';
+      } else if (runtime_thermostat.event.match(/^dwOpen$/i) !== null) {
+        this_calendar_event = 'calendar_event_door_window_open';
+        this_calendar_event_name = 'Door/Window Open';
       } else {
         this_calendar_event = 'calendar_event_other';
         this_calendar_event_name = 'Other';
@@ -353,6 +358,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
         'calendar_event_hold',
         'calendar_event_vacation',
         'calendar_event_quicksave',
+        'calendar_event_door_window_open',
         'calendar_event_other',
         'calendar_event_custom'
       ].forEach(function(calendar_event) {
