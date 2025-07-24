@@ -42,8 +42,7 @@ beestat.component.modal.temperature_profiles_info.prototype.decorate_contents_ =
           });
       }
 
-      profile.deltas = deltas_converted;
-      const linear_trendline = beestat.math.get_linear_trendline(profile.deltas);
+      const linear_trendline = beestat.math.get_linear_trendline(deltas_converted);
 
       fields.push({
         'name': beestat.series['indoor_' + type + '_delta'].name,
