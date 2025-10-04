@@ -68,6 +68,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/layer/visualize.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/contribute.js"></script>' . PHP_EOL;
   echo '<script src="/js/layer/no_thermostats.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/glenwood_enroll.js"></script>' . PHP_EOL;
+  echo '<script src="/js/layer/glenwood_report.js"></script>' . PHP_EOL;
 
   // Component
   echo '<script src="/js/component.js"></script>' . PHP_EOL;
@@ -105,6 +107,9 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/visualize_video.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/rate_app_reminder.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/rookstack_survey_notification.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/glenwood_terms.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/glenwood_enroll.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/glenwood_report.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;

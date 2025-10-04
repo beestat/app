@@ -10,7 +10,8 @@ class runtime extends cora\api {
   public static $exposed = [
     'private' => [
       'sync',
-      'download'
+      'download',
+      'download_glenwood_report'
     ],
     'public' => []
   ];
@@ -1184,6 +1185,127 @@ class runtime extends cora\api {
       'Content-Type' => 'text/csv',
       'Content-Length' => $bytes,
       'Content-Disposition' => 'attachment; filename="Beestat Export - ' . $ecobee_thermostat['identifier'] . '.csv"',
+      'Pragma' => 'no-cache',
+      'Expires' => '0',
+    ], true);
+  }
+
+  /**
+   * Download the Glenwood report.
+   *
+   * @param string $download_begin The timestamp to begin the download. If a
+   * time zone is not specified, UTC is assumed.
+   * @param string $download_end The timestamp to end the download. If a time
+   * zone is not specified, UTC is assumed.
+   */
+  public function download_glenwood_report($download_begin, $download_end) {
+    $allowed_user_ids = [1, 39285];
+    $current_user_id = $this->session->get_user_id();
+    if (!in_array($this->session->get_user_id(), $allowed_user_ids, true)) {
+      throw new \Exception('Access restricted.', 10204);
+    }
+
+    set_time_limit(300);
+
+    // Parse and clamp dates
+    $download_begin = strtotime($download_begin);
+    $download_end = strtotime($download_end);
+    if ($download_end < $download_begin) {
+      $temp = $download_begin;
+      $download_begin = $download_end;
+      $download_end = $temp;
+    }
+
+    $query = "
+      select
+          date(min(runtime_thermostat.timestamp)) as begin_date,
+          date(max(runtime_thermostat.timestamp)) as end_date,
+          json_unquote(user.settings->'$.glenwood_name') as glenwood_name,
+          json_unquote(user.settings->'$.glenwood_unit') as glenwood_unit,
+          ecobee_thermostat.identifier as thermostat_serial_number,
+          round(avg(runtime_thermostat.outdoor_temperature) / 10, 1) as average_outdoor_temperature,
+          round(avg(runtime_thermostat.indoor_temperature) / 10, 1) as average_indoor_temperature,
+          cast(sum(
+              case when runtime_thermostat.compressor_mode = 'heat' and runtime_thermostat.compressor_1 > 0
+                  then runtime_thermostat.compressor_1 else 0 end
+          ) / 60 as signed) as heat_stage_1_runtime_minutes,
+          cast(sum(
+              case when runtime_thermostat.compressor_mode = 'heat' and runtime_thermostat.compressor_2 > 0
+                  then runtime_thermostat.compressor_2 else 0 end
+          ) / 60 as signed) as heat_stage_2_runtime_minutes,
+          cast(sum(runtime_thermostat.auxiliary_heat_1 + runtime_thermostat.auxiliary_heat_2) / 60
+              as signed) as auxiliary_heat_runtime_minutes,
+              timestampdiff(minute, min(runtime_thermostat.timestamp), max(runtime_thermostat.timestamp)) + 5
+              as minutes_total,
+          count(runtime_thermostat.runtime_thermostat_id) * 5 as minutes_reported,
+          (timestampdiff(minute, min(runtime_thermostat.timestamp), max(runtime_thermostat.timestamp)) + 5)
+              - (count(runtime_thermostat.runtime_thermostat_id) * 5) as minutes_unreported
+      from
+          user
+          join json_table(
+              user.settings->'$.glenwood_thermostat_ids',
+              '$[*]' columns(thermostat_id int path '$')
+          ) as glenwood_thermostat_ids on 1=1
+          join thermostat on thermostat.thermostat_id = glenwood_thermostat_ids.thermostat_id
+          join ecobee_thermostat on ecobee_thermostat.ecobee_thermostat_id = thermostat.ecobee_thermostat_id
+          join runtime_thermostat on runtime_thermostat.thermostat_id = thermostat.thermostat_id
+      where
+          json_unquote(user.settings->'$.glenwood_enrolled') = 'true'
+          and runtime_thermostat.timestamp between '" . date('Y-m-d 00:00:00', $download_begin) . "' and '" . date('Y-m-d 23:59:59', $download_end) . "'      group by
+          user.user_id,
+          glenwood_thermostat_ids.thermostat_id
+      order by
+          glenwood_name,
+          glenwood_unit,
+          thermostat_serial_number
+    ";
+
+    $result = $this->database->query($query);
+
+    // Output CSV
+    $output = fopen('php://output', 'w');
+    $headers = [
+      'Begin Date',
+      'End Date',
+      'Name',
+      'Unit #',
+      'Serial #',
+      'Average Outdoor Temp (°F)',
+      'Average Indoor Temp (°F)',
+      'Heat 1 Runtime (min)',
+      'Heat 2 Runtime (min)',
+      'Auxiliary Heat Runtime (min)',
+      'Minutes Total',
+      'Minutes Reported',
+      'Minutes Unreported'
+    ];
+    fputcsv($output, $headers);
+
+    $bytes = 0;
+    while ($row = $result->fetch_assoc()) {
+      $csv_row = [
+        $row['begin_date'],
+        $row['end_date'],
+        $row['glenwood_name'],
+        $row['glenwood_unit'],
+        $row['thermostat_serial_number'],
+        $row['average_outdoor_temperature'],
+        $row['average_indoor_temperature'],
+        $row['heat_stage_1_runtime_minutes'],
+        $row['heat_stage_2_runtime_minutes'],
+        $row['auxiliary_heat_runtime_minutes'],
+        $row['minutes_total'],
+        $row['minutes_reported'],
+        $row['minutes_unreported']
+      ];
+      $bytes += fputcsv($output, $csv_row);
+    }
+    fclose($output);
+
+    $this->request->set_headers([
+      'Content-Type' => 'text/csv',
+      'Content-Length' => $bytes,
+      'Content-Disposition' => 'attachment; filename="Glenwood Report ' . date('Y-m-d', $download_begin) . ' to ' . date('Y-m-d', $download_end) . '.csv"',
       'Pragma' => 'no-cache',
       'Expires' => '0',
     ], true);

@@ -135,6 +135,7 @@ beestat.component.header.prototype.decorate_ = function(parent) {
   });
 
   this.decorate_logo_(row);
+
   this.decorate_navigation_(row);
   if (this.switcher_enabled_ === true) {
     this.decorate_switcher_(row);
@@ -434,6 +435,28 @@ beestat.component.header.prototype.decorate_menu_ = function(parent) {
       }));
   }
 
+  // Show this if you've ever enrolled before.
+  if (beestat.setting('glenwood_enrolled') !== undefined) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Glenwood Enrollment')
+      .set_icon('domain')
+      .set_callback(function() {
+        (new beestat.layer.glenwood_enroll()).render();
+      }));
+  }
+
+  // Show this if you're one of a few select users
+  const user = beestat.user.get();
+  const glenwood_report_user_ids = [1, 39285];
+  if (glenwood_report_user_ids.includes(user.user_id)) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Glenwood Report')
+      .set_icon('file_chart')
+      .set_callback(function() {
+        (new beestat.layer.glenwood_report()).render();
+      }));
+  }
+
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')
     .set_icon('exit_to_app')
@@ -447,4 +470,3 @@ beestat.component.header.prototype.decorate_menu_ = function(parent) {
 
   parent.appendChild(column);
 };
-

@@ -292,7 +292,11 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.enable_poll();
     beestat.enable_poll_watcher();
 
-    (new beestat.layer.detail()).render();
+    if (window.location.href.indexOf('glenwood') !== -1) {
+      (new beestat.layer.glenwood_enroll()).render();
+    } else {
+      (new beestat.layer.detail()).render();
+    }
 
     beestat.ecobee.notify_if_down();
 
