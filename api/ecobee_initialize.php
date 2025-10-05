@@ -15,6 +15,9 @@ $arguments = [];
 if(isset($_GET['code']) === true) {
   $arguments['code'] = $_GET['code'];
 }
+if(isset($_GET['state']) === true) {
+  $arguments['state'] = $_GET['state'];
+}
 if(isset($_GET['error']) === true) {
   $arguments['error'] = $_GET['error'];
 }

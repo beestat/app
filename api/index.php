@@ -126,3 +126,24 @@ function get_local_datetime($utc_datetime, $local_time_zone, $format = 'Y-m-d H:
 
   return $date_time->format($format);
 }
+
+/**
+ * Encode data with base64url (RFC 4648 §5).
+ *
+ * @param string $data The data to encode.
+ * @return string The base64url encoded string.
+ */
+function base64url_encode($data) {
+  return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+/**
+ * Decode a base64url encoded string (RFC 4648 §5).
+ *
+ * @param string $data The base64url encoded string.
+ * @return string|false The decoded data or false on failure.
+ */
+function base64url_decode($data) {
+  $b64 = strtr($data, '-_', '+/');
+  return base64_decode(str_pad($b64, strlen($b64) % 4 === 0 ? strlen($b64) : strlen($b64) + 4 - strlen($b64) % 4, '=', STR_PAD_RIGHT));
+}

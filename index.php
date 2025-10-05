@@ -22,7 +22,11 @@
 
   // If you're not logged in, just take you directly to the ecobee login page.
   if(isset($_COOKIE['session_key']) === false) {
-    header('Location: https://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments={}&api_key=' . $setting->get('beestat_api_key_local'));
+    $arguments = [];
+    if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/glenwood') !== false) {
+      $arguments['redirect'] = 'glenwood';
+    }
+    header('Location: https://' . $_SERVER['HTTP_HOST'] . '/api/?resource=ecobee&method=authorize&arguments=' . urlencode(json_encode($arguments)) . '&api_key=' . $setting->get('beestat_api_key_local'));
     die();
   }
 

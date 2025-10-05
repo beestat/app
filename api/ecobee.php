@@ -35,18 +35,23 @@ class ecobee extends external_api {
   /**
    * Redirect to ecobee to do the oAuth.
    */
-  public function authorize() {
-    header('Location: https://api.ecobee.com/authorize?response_type=code&client_id=' . $this->setting->get('ecobee_client_id') . '&redirect_uri=' . $this->setting->get('ecobee_redirect_uri') . '&scope=smartRead');
+  public function authorize($redirect = null) {
+    $state = '';
+    if ($redirect !== null) {
+      $state = '&state=' . base64url_encode(json_encode(['redirect' => $redirect]));
+    }
+    header('Location: https://api.ecobee.com/authorize?response_type=code&client_id=' . $this->setting->get('ecobee_client_id') . '&redirect_uri=' . $this->setting->get('ecobee_redirect_uri') . '&scope=smartRead' . $state);
   }
 
   /**
    * Obtain the first set of tokens for an ecobee user.
    *
    * @param string $code The code used to get tokens from ecobee with.
+   * @param string $state The state parameter passed back from ecobee (base64url encoded JSON).
    * @param string $error Error short description.
    * @param string $error_description Error long description.
    */
-  public function initialize($code = null, $error = null, $error_description = null) {
+  public function initialize($code = null, $state = null, $error = null, $error_description = null) {
     if($code !== null) {
       // This is returned, not created in the database because the user may not
       // exist yet.
@@ -113,7 +118,15 @@ class ecobee extends external_api {
       }
 
       // Redirect to the proper location.
-      header('Location: ' . $this->setting->get('beestat_root_uri'));
+      $redirect_uri = $this->setting->get('beestat_root_uri');
+      if ($state !== null) {
+        $decoded_state = base64url_decode($state);
+        $parsed_state = json_decode($decoded_state, true);
+        if (is_array($parsed_state) && isset($parsed_state['redirect']) && !empty($parsed_state['redirect'])) {
+          $redirect_uri .= $parsed_state['redirect'];
+        }
+      }
+      header('Location: ' . $redirect_uri);
     }
     else if(isset($error) === true) {
       throw new cora\exception($error_description, 10506, false);
