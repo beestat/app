@@ -447,7 +447,7 @@ beestat.component.header.prototype.decorate_menu_ = function(parent) {
 
   // Show this if you're one of a few select users
   const user = beestat.user.get();
-  const glenwood_report_user_ids = [1, 39285];
+  const glenwood_report_user_ids = [1, 39285, 50885];
   if (glenwood_report_user_ids.includes(user.user_id)) {
     menu.add_menu_item(new beestat.component.menu_item()
       .set_text('Glenwood Report')
