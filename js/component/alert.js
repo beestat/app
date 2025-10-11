@@ -164,7 +164,7 @@ beestat.component.alert.prototype.decorate_main_ = function(parent) {
   if (thermostat.temperature_unit === '°C') {
     if (this.alert_.code === 100000 || this.alert_.code === 100001) {
       this.alert_.text = this.alert_.text.replace('0.5°F', '0.3°C');
-      this.alert_.text = this.alert_.text.replace('1.0°F', '0.8°C');
+      this.alert_.text = this.alert_.text.replace('1.0°F', '0.6°C');
     }
   }
 
