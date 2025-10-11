@@ -979,11 +979,11 @@ class runtime extends cora\api {
 
     // Clamp
     $download_begin = strtotime($download_begin);
-    $download_begin = max(strtotime($thermostat['first_connected']), $download_begin);
+    $download_begin = max(strtotime($thermostat['data_begin']), $download_begin);
     $download_begin = min(time(), $download_begin);
 
     $download_end = strtotime($download_end);
-    $download_end = max(strtotime($thermostat['first_connected']), $download_end);
+    $download_end = max(strtotime($thermostat['data_begin']), $download_end);
     $download_end = min(time(), $download_end);
 
     // Round begin/end down to the next 5 minutes.
