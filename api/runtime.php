@@ -1223,6 +1223,7 @@ class runtime extends cora\api {
           json_unquote(user.settings->'$.glenwood_name') as glenwood_name,
           json_unquote(user.settings->'$.glenwood_unit') as glenwood_unit,
           ecobee_thermostat.identifier as thermostat_serial_number,
+          thermostat.name as thermostat_name,
           round(avg(runtime_thermostat.outdoor_temperature) / 10, 1) as average_outdoor_temperature,
           round(avg(runtime_thermostat.indoor_temperature) / 10, 1) as average_indoor_temperature,
           cast(sum(
@@ -1270,6 +1271,7 @@ class runtime extends cora\api {
       'Name',
       'Unit #',
       'Serial #',
+      'Thermostat Name',
       'Average Outdoor Temp (°F)',
       'Average Indoor Temp (°F)',
       'Heat 1 Runtime (min)',
@@ -1289,6 +1291,7 @@ class runtime extends cora\api {
         $row['glenwood_name'],
         $row['glenwood_unit'],
         $row['thermostat_serial_number'],
+        $row['thermostat_name'],
         $row['average_outdoor_temperature'],
         $row['average_indoor_temperature'],
         $row['heat_stage_1_runtime_minutes'],
