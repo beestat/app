@@ -12,6 +12,7 @@ beestat.component.card.glenwood_enroll = function() {
     : $.values(beestat.cache.thermostat).map(function(thermostat) { return thermostat.thermostat_id; });
 
   this.is_enrolled = beestat.setting('glenwood_enrolled') === true;
+  this.enrolled_at = beestat.setting('glenwood_enrolled_at') || null;
 };
 beestat.extend(beestat.component.card.glenwood_enroll, beestat.component.card);
 
@@ -29,13 +30,15 @@ beestat.component.card.glenwood_enroll.prototype.decorate_contents_ = function(p
   parent.appendChild(error_message_container);
 
   // Enrollment status line
+  var status_text = self.is_enrolled ? 'You are currently enrolled.' : 'You are not currently enrolled.';
+
   parent.appendChild(
     $.createElement('div')
       .style({
         'margin-bottom': beestat.style.size.gutter + 'px',
         'color': self.is_enrolled ? beestat.style.color.green.base : beestat.style.color.red.base
       })
-      .innerText(self.is_enrolled ? 'You are currently enrolled.' : 'You are not currently enrolled.')
+      .innerText(status_text)
   );
 
   var input_container = $.createElement('div')
@@ -175,13 +178,15 @@ beestat.component.card.glenwood_enroll.prototype.decorate_contents_ = function(p
           'glenwood_enrolled': false,
           'glenwood_name': undefined,
           'glenwood_unit': undefined,
-          'glenwood_thermostat_ids': undefined
+          'glenwood_thermostat_ids': undefined,
+          'glenwood_enrolled_at': undefined
         }, undefined, function() {
           self.is_saving = false;
           self.is_enrolled = false;
           self.name = '';
           self.unit_number = '';
           self.thermostat_ids = $.values(beestat.cache.thermostat).map(function(thermostat) { return thermostat.thermostat_id; });
+          self.enrolled_at = null;
           self.rerender();
         });
       });
@@ -210,14 +215,18 @@ beestat.component.card.glenwood_enroll.prototype.decorate_contents_ = function(p
         self.is_saving = true;
         self.rerender();
 
+        var enrolled_at = new Date().toISOString(); // UTC ISO 8601 timestamp
+
         beestat.setting({
           'glenwood_enrolled': true,
           'glenwood_name': self.name,
           'glenwood_unit': self.unit_number,
-          'glenwood_thermostat_ids': self.thermostat_ids
+          'glenwood_thermostat_ids': self.thermostat_ids,
+          'glenwood_enrolled_at': enrolled_at
         }, undefined, function() {
           self.is_saving = false;
           self.is_enrolled = true; // Update enrollment status
+          self.enrolled_at = enrolled_at;
           self.rerender();
         });
       });
