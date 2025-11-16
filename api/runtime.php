@@ -1199,7 +1199,7 @@ class runtime extends cora\api {
    * zone is not specified, UTC is assumed.
    */
   public function download_glenwood_report($download_begin, $download_end) {
-    $allowed_user_ids = [1, 39285, 50885];
+    $allowed_user_ids = [1, 39285, 50885, 51345];
     $current_user_id = $this->session->get_user_id();
     if (!in_array($this->session->get_user_id(), $allowed_user_ids, true)) {
       throw new \Exception('Access restricted.', 10204);
