@@ -222,8 +222,12 @@ class ecobee extends external_api {
     // If the token was expired, refresh it and try again. Trying again sets
     // auto_refresh_token to false to prevent accidental infinite refreshing if
     // something bad happens.
-    if (isset($response['status']) === true && $response['status']['code'] === 14) {
-      // Authentication token has expired. Refresh your tokens.
+    if (
+      (isset($response['status']) === true && $response['status']['code'] === 14) ||
+      (isset($response['status']) === true && $response['status']['code'] === 1)
+    ) {
+      // Authentication token has expired. Refresh your tokens. (14)
+      // Authentication failed. Unexpected error. Contact support. (1)
       if ($auto_refresh_token === true) {
         self::$ecobee_token = $this->api('ecobee_token', 'refresh');
         return $this->ecobee_api($method, $endpoint, $arguments, false);
