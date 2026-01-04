@@ -17,7 +17,7 @@ beestat.extend(beestat.component.modal.download_data, beestat.component.modal);
  * @param {rocket.Elements} parent
  */
 beestat.component.modal.download_data.prototype.decorate_contents_ = function(parent) {
-  parent.appendChild($.createElement('p').innerHTML('Beestat stores, at a minimum, the past year of raw thermostat logs. Select a date range to download.'));
+  parent.appendChild($.createElement('p').innerHTML('Beestat stores, at a most, the past year of raw thermostat logs. Select a date range to download.'));
   this.decorate_range_(parent);
   this.decorate_presets_(parent);
   this.decorate_android_ios_disabled_(parent);
