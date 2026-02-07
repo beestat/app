@@ -15,6 +15,10 @@ class user extends cora\crud {
       'log_out',
       'sync_patreon_status',
       'unlink_patreon_account',
+      'create_api_key',
+      'recycle_api_key',
+      'delete_api_key',
+      'session_read_id',
     ],
     'public' => []
   ];
@@ -370,6 +374,144 @@ class user extends cora\crud {
         'patreon_status' => null
       ]
     );
+  }
+
+  /**
+   * Get the current user's API session if one exists. Only returns sessions
+   * where api_user_id is not null. Should only ever be one API session per user.
+   *
+   * @return array|null Full session row including session_key (the API key), or null if none exists
+   */
+  public function get_api_session() {
+    $sessions = $this->session_read_id();
+
+    // Return the first API session (should only be one)
+    if(count($sessions) > 0) {
+      return reset($sessions);
+    }
+
+    return null;
+  }
+
+  /**
+   * Create a new API key for the current user. Only one API key allowed per user.
+   * Generates a secure 40-character API key and creates both api_user and session
+   * records. The session_key field contains the API key.
+   *
+   * @return array The created session row
+   * @throws cora\exception if user already has an API key
+   */
+  public function create_api_key() {
+    // Check if user already has an API key
+    $existing = $this->get_api_session();
+    if($existing !== null) {
+      throw new cora\exception('User already has an API key. Use recycle_api_key to generate a new one.', 10001);
+    }
+
+    // Generate secure API key
+    $api_key = bin2hex(random_bytes(20));
+
+    // Create api_user record
+    $api_user_id = $this->database->create(
+      'cora\api_user',
+      [
+        'name' => $this->session->get_user_id(),
+        'api_key' => $api_key,
+        'session_key' => $api_key
+      ],
+      'id'
+    );
+
+    // Create session record linking user to api_user
+    return $this->database->create(
+      'cora\session',
+      [
+        'session_key' => $api_key,
+        'user_id' => $this->session->get_user_id(),
+        'api_user_id' => $api_user_id,
+        'created_by' => ip2long($_SERVER['REMOTE_ADDR'])
+      ]
+    );
+  }
+
+  /**
+   * Regenerate the API key for the current user. If no API key exists, creates
+   * a new one. Generates a new secure 40-character key and updates both the
+   * api_user and session records with the new key.
+   *
+   * @return array The updated session row with the new session_key
+   */
+  public function recycle_api_key() {
+    // Check if user has an API key and get the session
+    $existing = $this->get_api_session();
+    if($existing === null) {
+      return $this->create_api_key();
+    }
+
+    // Generate new API key
+    $new_api_key = bin2hex(random_bytes(20));
+
+    // Update api_user record
+    $this->database->update(
+      'cora\api_user',
+      [
+        'api_user_id' => $existing['api_user_id'],
+        'api_key' => $new_api_key,
+        'session_key' => $new_api_key
+      ]
+    );
+
+    // Update session record with new session_key
+    $this->database->update(
+      'cora\session',
+      [
+        'session_id' => $existing['session_id'],
+        'session_key' => $new_api_key
+      ]
+    );
+
+    // Read back the updated session to return full data
+    return $this->get_api_session();
+  }
+
+  /**
+   * Delete the current user's API key. Soft-deletes both the session and
+   * api_user records (sets deleted = 1). If no API key exists, does nothing.
+   */
+  public function delete_api_key() {
+    // Check if user has an API key and get the session
+    $existing = $this->get_api_session();
+    if($existing !== null) {
+      $this->database->delete('cora\session', $existing['session_id']);
+      $this->database->delete('cora\api_user', $existing['api_user_id']);
+    }
+  }
+
+  /**
+   * Read all API sessions for the current user, indexed by session_id.
+   * Only returns sessions where api_user_id is not null (filters out normal
+   * login sessions). Used by frontend to populate session cache.
+   *
+   * @return array API sessions indexed by session_id (e.g., [123 => [...], 456 => [...]])
+   */
+  public function session_read_id() {
+    $sessions = $this->database->read(
+      'cora\session',
+      [
+        'user_id' => $this->session->get_user_id(),
+        'deleted' => 0
+      ]
+    );
+
+    // Index by session_id, only including API sessions
+    $sessions_indexed = [];
+    foreach($sessions as $session) {
+      if($session['api_user_id'] !== null) {
+        $sessions_indexed[$session['session_id']] = $session;
+      }
+    }
+
+    return $sessions_indexed;
   }
 
 }

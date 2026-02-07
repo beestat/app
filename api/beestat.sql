@@ -124,7 +124,6 @@ CREATE TABLE `api_user` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`api_user_id`),
   UNIQUE KEY `api_key` (`api_key`),
-  UNIQUE KEY `username` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -571,7 +570,7 @@ CREATE TABLE `session` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_by` int unsigned NOT NULL,
   `last_used_at` timestamp NULL DEFAULT NULL,
-  `last_used_by` int unsigned NOT NULL,
+  `last_used_by` int unsigned NULL DEFAULT NULL,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`session_id`),
   UNIQUE KEY `key` (`session_key`),

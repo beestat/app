@@ -110,6 +110,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/card/glenwood_terms.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/glenwood_enroll.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/card/glenwood_report.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/card/manage_api_key.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/runtime_thermostat_summary.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/chart/temperature_profiles.js"></script>' . PHP_EOL;

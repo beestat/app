@@ -455,6 +455,7 @@ input[type=range]::-moz-range-thumb {
 .icon.cloud_question:before { content: "\F0A39"; }
 .icon.code_tags:before { content: "\F0174"; }
 .icon.cog:before { content: "\F0493"; }
+.icon.content_copy:before { content: "\F018F"; }
 .icon.credit_card_lock:before { content: "\F18E7"; }
 .icon.credit_card_settings:before { content: "\F0FF5"; }
 .icon.currency_usd:before { content: "\F01C1"; }

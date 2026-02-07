@@ -47,6 +47,14 @@ beestat.layer.settings.prototype.decorate_ = function(parent) {
     }
   ]);
 
+  // Manage API Key
+  cards.push([
+    {
+      'card': new beestat.component.card.manage_api_key(),
+      'size': 12
+    }
+  ]);
+
   // Footer
   cards.push([
     {
