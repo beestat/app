@@ -277,7 +277,10 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
 
     // Set intersect.
     for (let i = 0; i < intersects.length; i++) {
-      if (intersects[i].object.type === 'Mesh') {
+      if (
+        intersects[i].object.type === 'Mesh' &&
+        intersects[i].object.userData.is_wall !== true
+      ) {
         this.intersected_mesh_ = intersects[i].object;
         break;
       }
@@ -659,6 +662,160 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
 };
 
 /**
+ * Add exterior walls for a group. For each room, the room polygon is offset
+ * outward by wall_thickness, then the union of all rooms is subtracted. This
+ * leaves only exterior wall segments at the correct per-room height.
+ *
+ * @param {THREE.Group} layer The layer to add walls to.
+ * @param {object} group The floor plan group.
+ */
+beestat.component.scene.prototype.add_walls_ = function(layer, group) {
+  const wall_thickness = 4;
+
+  if (group.rooms.length === 0) {
+    return;
+  }
+
+  // Convert all room polygons to absolute coordinates.
+  const absolute_paths = [];
+  group.rooms.forEach(function(room) {
+    const absolute_path = [];
+    room.points.forEach(function(point) {
+      absolute_path.push({
+        'x': room.x + point.x,
+        'y': room.y + point.y
+      });
+    });
+    absolute_paths.push(absolute_path);
+  });
+
+  // Union all room polygons (computed once per group).
+  const union_clipper = new ClipperLib.Clipper();
+  absolute_paths.forEach(function(path) {
+    union_clipper.AddPath(
+      path,
+      ClipperLib.PolyType.ptSubject,
+      true
+    );
+  });
+  const all_rooms_union = new ClipperLib.Paths();
+  union_clipper.Execute(
+    ClipperLib.ClipType.ctUnion,
+    all_rooms_union,
+    ClipperLib.PolyFillType.pftNonZero,
+    ClipperLib.PolyFillType.pftNonZero
+  );
+
+  // For each room, compute exterior-only wall segments.
+  for (var i = 0; i < group.rooms.length; i++) {
+    const room = group.rooms[i];
+    const abs_path = absolute_paths[i];
+
+    // Offset this room's polygon outward by wall_thickness.
+    const clipper_offset = new ClipperLib.ClipperOffset();
+    clipper_offset.AddPath(
+      abs_path,
+      ClipperLib.JoinType.jtSquare,
+      ClipperLib.EndType.etClosedPolygon
+    );
+    const outer = new ClipperLib.Paths();
+    clipper_offset.Execute(outer, wall_thickness);
+
+    // Subtract the all-rooms union from the outer offset.
+    // What remains is only exterior wall segments for this room.
+    const diff_clipper = new ClipperLib.Clipper();
+    outer.forEach(function(path) {
+      diff_clipper.AddPath(path, ClipperLib.PolyType.ptSubject, true);
+    });
+    all_rooms_union.forEach(function(path) {
+      diff_clipper.AddPath(path, ClipperLib.PolyType.ptClip, true);
+    });
+    const wall_paths = new ClipperLib.Paths();
+    diff_clipper.Execute(
+      ClipperLib.ClipType.ctDifference,
+      wall_paths,
+      ClipperLib.PolyFillType.pftNonZero,
+      ClipperLib.PolyFillType.pftNonZero
+    );
+
+    if (wall_paths.length === 0) {
+      continue;
+    }
+
+    const wall_height = room.height || group.height || 96;
+    const elevation = room.elevation || group.elevation || 0;
+
+    // Separate paths into outer boundaries and holes based on area sign.
+    // Clipper returns CCW paths (positive area) as outers and CW paths
+    // (negative area) as holes.
+    const outers = [];
+    const hole_paths = [];
+    for (var j = 0; j < wall_paths.length; j++) {
+      const points = wall_paths[j];
+      if (points.length < 3) {
+        continue;
+      }
+      const area = ClipperLib.Clipper.Area(points);
+      if (Math.abs(area) < 1) {
+        continue;
+      }
+      if (area > 0) {
+        outers.push(points);
+      } else {
+        hole_paths.push(points);
+      }
+    }
+
+    // Create a mesh for each outer boundary, attaching any contained holes.
+    for (var j = 0; j < outers.length; j++) {
+      const outer_points = outers[j];
+
+      const shape = new THREE.Shape();
+      shape.moveTo(outer_points[0].x, outer_points[0].y);
+      for (var k = 1; k < outer_points.length; k++) {
+        shape.lineTo(outer_points[k].x, outer_points[k].y);
+      }
+
+      // Add holes that are inside this outer boundary.
+      for (var h = 0; h < hole_paths.length; h++) {
+        if (
+          ClipperLib.Clipper.PointInPolygon(
+            hole_paths[h][0],
+            outer_points
+          ) !== 0
+        ) {
+          const hole = new THREE.Path();
+          hole.moveTo(hole_paths[h][0].x, hole_paths[h][0].y);
+          for (var m = 1; m < hole_paths[h].length; m++) {
+            hole.lineTo(hole_paths[h][m].x, hole_paths[h][m].y);
+          }
+          shape.holes.push(hole);
+        }
+      }
+
+      const geometry = new THREE.ExtrudeGeometry(
+        shape,
+        {
+          'depth': wall_height,
+          'bevelEnabled': false
+        }
+      );
+
+      const material = new THREE.MeshPhongMaterial({
+        'color': 0x889aaa
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.z = -wall_height - elevation;
+      mesh.userData.is_wall = true;
+      mesh.layers.set(beestat.component.scene.layer_visible);
+
+      layer.add(mesh);
+    }
+  }
+};
+
+/**
  * Add a helpful debug window that can be refreshed with the contents of
  * this.debug_info_.
  *
@@ -714,6 +871,11 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
   this.layers_ = {};
+
+  const walls_layer = new THREE.Group();
+  self.main_group_.add(walls_layer);
+  self.layers_['walls'] = walls_layer;
+
   floor_plan.data.groups.forEach(function(group) {
     const layer = new THREE.Group();
     self.main_group_.add(layer);
@@ -721,6 +883,7 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     group.rooms.forEach(function(room) {
       self.add_room_(layer, group, room);
     });
+    self.add_walls_(walls_layer, group);
   });
 };
 

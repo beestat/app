@@ -396,6 +396,8 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     self.scene_.set_layer_visible(group.group_id, beestat.setting(setting_key) !== false);
   });
 
+  this.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
+
   // Manage width of the scene.
   if (this.state_.width === undefined) {
     setTimeout(function() {
@@ -751,6 +753,26 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
         'restart' + (beestat.setting('visualize.three_d.auto_rotate') === false ? '_off' : '')
       );
       self.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
+    })
+  );
+
+  // Toggle walls
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon(beestat.setting('visualize.three_d.show_walls') === false ? 'border_none_variant' : 'wall')
+    .set_title('Toggle Walls')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
+      beestat.setting(
+        'visualize.three_d.show_walls',
+        !beestat.setting('visualize.three_d.show_walls')
+      );
+      this.set_icon(
+        beestat.setting('visualize.three_d.show_walls') === false ? 'border_none_variant' : 'wall'
+      );
+      self.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
     })
   );
 
