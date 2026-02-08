@@ -279,7 +279,8 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
     for (let i = 0; i < intersects.length; i++) {
       if (
         intersects[i].object.type === 'Mesh' &&
-        intersects[i].object.userData.is_wall !== true
+        intersects[i].object.userData.is_wall !== true &&
+        intersects[i].object.userData.is_environment !== true
       ) {
         this.intersected_mesh_ = intersects[i].object;
         break;
@@ -885,6 +886,63 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     });
     self.add_walls_(walls_layer, group);
   });
+
+  this.add_environment_();
+};
+
+/**
+ * Add environment layers (grass and earth strata) below the house.
+ */
+beestat.component.scene.prototype.add_environment_ = function() {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
+  const center_x = (bounding_box.right + bounding_box.left) / 2;
+  const center_y = (bounding_box.bottom + bounding_box.top) / 2;
+  const plan_width = bounding_box.right - bounding_box.left;
+  const plan_height = bounding_box.bottom - bounding_box.top;
+
+  // Find the minimum elevation to position the ground flush with the lowest floor.
+  let min_elevation = 0;
+  floor_plan.data.groups.forEach(function(group) {
+    const elevation = group.elevation || 0;
+    if (elevation < min_elevation) {
+      min_elevation = elevation;
+    }
+  });
+
+  // Position the ground flush with the base of the house (hides any below-ground structures).
+  let current_z = 0;
+
+  // Ground strata from top to bottom: grass, topsoil, clay, sand, bedrock.
+  const padding = 60;
+  const strata = [
+    {'color': 0x4a7c3f, 'thickness': 8},
+    {'color': 0x3d2b1f, 'thickness': 30},
+    {'color': 0x8b5e3c, 'thickness': 30},
+    {'color': 0x6e6e6e, 'thickness': 50}
+  ];
+
+  const environment_layer = new THREE.Group();
+  this.main_group_.add(environment_layer);
+  this.layers_['environment'] = environment_layer;
+
+  strata.forEach(function(stratum) {
+    const geometry = new THREE.BoxGeometry(
+      plan_width + padding * 2,
+      plan_height + padding * 2,
+      stratum.thickness
+    );
+    const material = new THREE.MeshPhongMaterial({'color': stratum.color});
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.x = center_x;
+    mesh.position.y = center_y;
+    mesh.position.z = current_z + stratum.thickness / 2;
+    mesh.userData.is_environment = true;
+
+    environment_layer.add(mesh);
+    current_z += stratum.thickness;
+  }, this);
 };
 
 /**

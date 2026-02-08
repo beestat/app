@@ -776,6 +776,46 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     })
   );
 
+  // Toggle roof
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon(beestat.setting('visualize.three_d.show_roof') === false ? 'border_none_variant' : 'wall')
+    .set_title('Toggle Roof')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
+      beestat.setting(
+        'visualize.three_d.show_roof',
+        !beestat.setting('visualize.three_d.show_roof')
+      );
+      this.set_icon(
+        beestat.setting('visualize.three_d.show_roof') === false ? 'border_none_variant' : 'wall'
+      );
+      self.scene_.set_layer_visible('roof', beestat.setting('visualize.three_d.show_roof'));
+    })
+  );
+
+  // Toggle environment
+  tile_group.add_tile(new beestat.component.tile()
+    .set_icon(beestat.setting('visualize.three_d.show_environment') === false ? 'border_none_variant' : 'wall')
+    .set_title('Toggle Environment')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
+      beestat.setting(
+        'visualize.three_d.show_environment',
+        !beestat.setting('visualize.three_d.show_environment')
+      );
+      this.set_icon(
+        beestat.setting('visualize.three_d.show_environment') === false ? 'border_none_variant' : 'wall'
+      );
+      self.scene_.set_layer_visible('environment', beestat.setting('visualize.three_d.show_environment'));
+    })
+  );
+
   tile_group.render($(parent));
 };
 
