@@ -55,6 +55,10 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_contents_ = 
   });
   parent.appendChild(container);
 
+  if (this.has_data_() === true) {
+    this.decorate_runtime_chips_(container, this.get_data_());
+  }
+
   var chart_container = $.createElement('div');
   container.appendChild(chart_container);
 
@@ -390,4 +394,135 @@ beestat.component.card.runtime_thermostat_detail.prototype.get_subtitle_ = funct
     .format('MMM D, YYYY');
 
   return begin + ' to ' + end;
+};
+
+/**
+ * Decorate runtime chips above the chart showing totals for the selected
+ * time range.
+ *
+ * @param {rocket.Elements} parent
+ * @param {object} data
+ */
+beestat.component.card.runtime_thermostat_detail.prototype.decorate_runtime_chips_ = function(parent, data) {
+  var totals = data.metadata.totals;
+
+  var radius = beestat.style.size.border_radius + 'px';
+  var has_chips = false;
+
+  var chip_container = $.createElement('div').style({
+    'display': 'flex',
+    'flex-wrap': 'wrap',
+    'margin-bottom': (beestat.style.size.gutter / 2) + 'px'
+  });
+
+  var create_chip = function(label, label_color, segments) {
+    if (segments.length === 0) {
+      return;
+    }
+
+    has_chips = true;
+
+    var chip = $.createElement('span').style({
+      'display': 'inline-flex',
+      'border-radius': radius,
+      'overflow': 'hidden',
+      'font-size': beestat.style.font_size.normal,
+      'margin-right': '8px',
+      'margin-bottom': '4px'
+    });
+
+    var label_el = $.createElement('span').style({
+      'background-color': label_color,
+      'color': '#fff',
+      'padding': '2px 8px',
+      'font-weight': beestat.style.font_weight.bold
+    });
+    label_el.innerText(label);
+    chip.appendChild(label_el);
+
+    segments.forEach(function(segment) {
+      var value = $.createElement('span').style({
+        'background-color': segment.color,
+        'color': '#fff',
+        'padding': '2px 8px'
+      });
+      value.innerText(segment.text);
+      chip.appendChild(value);
+    });
+
+    chip_container.appendChild(chip);
+  };
+
+  // Cool
+  var cool_segments = [];
+  if (totals.compressor_cool_1 > 0) {
+    cool_segments.push({
+      'text': beestat.time(totals.compressor_cool_1),
+      'color': beestat.series.compressor_cool_1.color
+    });
+  }
+  if (totals.compressor_cool_2 > 0) {
+    cool_segments.push({
+      'text': beestat.time(totals.compressor_cool_2),
+      'color': beestat.series.compressor_cool_2.color
+    });
+  }
+  create_chip('Cool', beestat.series.compressor_cool_1.color, cool_segments);
+
+  // Heat
+  var heat_segments = [];
+  if (totals.compressor_heat_1 > 0) {
+    heat_segments.push({
+      'text': beestat.time(totals.compressor_heat_1),
+      'color': beestat.series.compressor_heat_1.color
+    });
+  }
+  if (totals.compressor_heat_2 > 0) {
+    heat_segments.push({
+      'text': beestat.time(totals.compressor_heat_2),
+      'color': beestat.series.compressor_heat_2.color
+    });
+  }
+  create_chip('Heat', beestat.series.compressor_heat_1.color, heat_segments);
+
+  // Aux
+  var aux_segments = [];
+  if (totals.auxiliary_heat_1 > 0) {
+    aux_segments.push({
+      'text': beestat.time(totals.auxiliary_heat_1),
+      'color': beestat.series.auxiliary_heat_1.color
+    });
+  }
+  if (totals.auxiliary_heat_2 > 0) {
+    aux_segments.push({
+      'text': beestat.time(totals.auxiliary_heat_2),
+      'color': beestat.series.auxiliary_heat_2.color
+    });
+  }
+  create_chip('Aux', beestat.series.auxiliary_heat_1.color, aux_segments);
+
+  // Fan
+  if (totals.fan > 0) {
+    create_chip('Fan', beestat.series.fan.color, [{
+      'text': beestat.time(totals.fan),
+      'color': beestat.series.fan.color
+    }]);
+  }
+
+  // Accessory (individual types as segments)
+  var accessory_segments = [];
+  ['humidifier', 'dehumidifier', 'ventilator', 'economizer'].forEach(function(type) {
+    if (totals[type] > 0) {
+      accessory_segments.push({
+        'text': beestat.series[type].name + ' ' + beestat.time(totals[type]),
+        'color': beestat.series[type].color
+      });
+    }
+  });
+  create_chip('Accessory', beestat.series.humidifier.color, accessory_segments);
+
+
+  if (has_chips === true) {
+    parent.appendChild(chip_container);
+  }
 };

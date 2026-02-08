@@ -113,6 +113,20 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
     durations[series_code] = {'seconds': 0};
   });
 
+  data.metadata.totals = {
+    'compressor_cool_1': 0,
+    'compressor_cool_2': 0,
+    'compressor_heat_1': 0,
+    'compressor_heat_2': 0,
+    'auxiliary_heat_1': 0,
+    'auxiliary_heat_2': 0,
+    'fan': 0,
+    'humidifier': 0,
+    'dehumidifier': 0,
+    'ventilator': 0,
+    'economizer': 0
+  };
+
   data.metadata.series.calendar_event_name = {};
   data.metadata.series.system_mode = {};
 
@@ -542,6 +556,7 @@ beestat.runtime_thermostat.get_data = function(thermostat_id, range, key) {
             data.metadata.series[series_code_2].durations[current_m.valueOf()] = durations[series_code_2];
           }
           durations[series_code].seconds += runtime_thermostat[runtime_thermostat_series_code];
+          data.metadata.totals[series_code] += runtime_thermostat[runtime_thermostat_series_code];
 
           /*
            * If heat/cool/aux 2 is on, extend the bar from heat/cool/aux 1
