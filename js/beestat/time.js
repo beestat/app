@@ -13,5 +13,5 @@ beestat.time = function(seconds, opt_unit) {
   var hours = Math.floor(duration.asHours());
   var minutes = duration.get('minutes');
 
-  return hours + 'h ' + minutes + 'm';
+  return hours.toLocaleString() + 'h ' + minutes + 'm';
 };

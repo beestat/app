@@ -409,3 +409,35 @@ beestat.component.chart.runtime_thermostat_summary.prototype.get_options_xAxis_c
 beestat.component.chart.runtime_thermostat_summary.prototype.get_options_chart_height_ = function() {
   return 350;
 };
+
+/**
+ * Override for get_options_exporting_chartOptions_subtitle_text_. Appends
+ * cumulative runtime totals to the export subtitle.
+ *
+ * @return {string} The exported chart subtitle.
+ */
+beestat.component.chart.runtime_thermostat_summary.prototype.get_options_exporting_chartOptions_subtitle_text_ = function() {
+  var self = this;
+  var subtitle = this.data_.metadata.chart.subtitle;
+
+  var total_parts = [];
+  [
+    'sum_compressor_cool_1',
+    'sum_compressor_cool_2',
+    'sum_compressor_heat_1',
+    'sum_compressor_heat_2',
+    'sum_auxiliary_heat_1',
+    'sum_auxiliary_heat_2'
+  ].forEach(function(key) {
+    var series_meta = self.data_.metadata.series[key];
+    if (series_meta.active === true && series_meta.total !== undefined) {
+      total_parts.push(beestat.series[key].name + ': ' + beestat.time(series_meta.total, 'hours'));
+    }
+  });
+
+  if (total_parts.length > 0) {
+    subtitle += '<br/>' + total_parts.join(', ');
+  }
+
+  return subtitle;
+};

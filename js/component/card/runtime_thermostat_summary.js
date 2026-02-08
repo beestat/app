@@ -55,10 +55,13 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ =
   });
   parent.appendChild(container);
 
+  var data = this.get_data_();
+
+  this.decorate_runtime_chips_(container, data);
+
   var chart_container = $.createElement('div');
   container.appendChild(chart_container);
 
-  var data = this.get_data_();
   this.chart_ = new beestat.component.chart.runtime_thermostat_summary(data);
   this.chart_.render(chart_container);
 
@@ -126,6 +129,96 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ =
 
       api.send();
     }, 10000);
+  }
+};
+
+/**
+ * Decorate runtime total chips above the chart.
+ *
+ * @param {rocket.Elements} parent
+ * @param {object} data The chart data.
+ */
+beestat.component.card.runtime_thermostat_summary.prototype.decorate_runtime_chips_ = function(parent, data) {
+  var groups = [
+    {
+      'label': 'Cool',
+      'label_color': beestat.series.sum_compressor_cool_1.color,
+      'keys': ['sum_compressor_cool_1', 'sum_compressor_cool_2']
+    },
+    {
+      'label': 'Heat',
+      'label_color': beestat.series.sum_compressor_heat_1.color,
+      'keys': ['sum_compressor_heat_1', 'sum_compressor_heat_2']
+    },
+    {
+      'label': 'Aux',
+      'label_color': beestat.series.sum_auxiliary_heat_1.color,
+      'keys': ['sum_auxiliary_heat_1', 'sum_auxiliary_heat_2']
+    }
+  ];
+
+  var radius = beestat.style.size.border_radius + 'px';
+  var has_chips = false;
+
+  var chip_container = $.createElement('div').style({
+    'display': 'flex',
+    'flex-wrap': 'wrap',
+    'margin-bottom': (beestat.style.size.gutter / 2) + 'px'
+  });
+
+  groups.forEach(function(group) {
+    var segments = [];
+    group.keys.forEach(function(key) {
+      var series_meta = data.metadata.series[key];
+      if (series_meta.active === true && series_meta.total !== undefined) {
+        segments.push({
+          'text': beestat.time(series_meta.total, 'hours'),
+          'color': beestat.series[key].color
+        });
+      }
+    });
+
+    if (segments.length === 0) {
+      return;
+    }
+
+    has_chips = true;
+
+    var chip = $.createElement('span').style({
+      'display': 'inline-flex',
+      'border-radius': radius,
+      'overflow': 'hidden',
+      'font-size': beestat.style.font_size.normal,
+      'margin-right': '8px',
+      'margin-bottom': '4px'
+    });
+
+    // Label section
+    var label = $.createElement('span').style({
+      'background-color': group.label_color,
+      'color': '#fff',
+      'padding': '2px 8px',
+      'font-weight': beestat.style.font_weight.bold
+    });
+    label.innerText(group.label);
+    chip.appendChild(label);
+
+    // Value sections
+    segments.forEach(function(segment) {
+      var value = $.createElement('span').style({
+        'background-color': segment.color,
+        'color': '#fff',
+        'padding': '2px 8px'
+      });
+      value.innerText(segment.text);
+      chip.appendChild(value);
+    });
+
+    chip_container.appendChild(chip);
+  });
+
+  if (has_chips === true) {
+    parent.appendChild(chip_container);
   }
 };
 
@@ -289,6 +382,22 @@ beestat.component.card.runtime_thermostat_summary.prototype.get_data_ = function
 
     current_m.add(1, beestat.setting('runtime_thermostat_summary_group_by'));
   }
+
+  // Compute cumulative runtime sums for each active heat/cool series.
+  [
+    'sum_compressor_cool_1',
+    'sum_compressor_cool_2',
+    'sum_compressor_heat_1',
+    'sum_compressor_heat_2',
+    'sum_auxiliary_heat_1',
+    'sum_auxiliary_heat_2'
+  ].forEach(function(key) {
+    if (data.metadata.series[key].active === true) {
+      data.metadata.series[key].total = data.series[key].reduce(function(acc, val) {
+        return acc + (val || 0);
+      }, 0);
+    }
+  });
 
   return data;
 };
