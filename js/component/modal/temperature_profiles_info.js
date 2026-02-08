@@ -1,13 +1,38 @@
 /**
  * Temperature Profiles Details
+ *
+ * @param {object} profile The profile object to display info for.
  */
-beestat.component.modal.temperature_profiles_info = function() {
+beestat.component.modal.temperature_profiles_info = function(profile) {
+  this.profile_ = profile;
   beestat.component.modal.apply(this, arguments);
 };
 beestat.extend(beestat.component.modal.temperature_profiles_info, beestat.component.modal);
 
 beestat.component.modal.temperature_profiles_info.prototype.decorate_contents_ = function(parent) {
-  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  var date_container = $.createElement('div')
+    .style({
+      'margin-bottom': '16px',
+      'font-weight': beestat.style.font_weight.light
+    });
+  var generated_at_m = moment(this.profile_.metadata.generated_at);
+  var duration_weeks = Math.round(this.profile_.metadata.duration / 7);
+  var duration_text = ' from the past';
+  if (duration_weeks === 0) {
+    duration_text += ' few days';
+  } else if (duration_weeks === 1) {
+    duration_text += ' week';
+  } else if (duration_weeks >= 52) {
+    duration_text += ' year';
+  } else {
+    duration_text += ' ' + duration_weeks + ' weeks';
+  }
+  duration_text += ' of data';
+
+  date_container.innerText(
+    'Generated ' + generated_at_m.format('MMM Do, YYYY @ h a') + duration_text + ' (updated weekly).'
+  );
+  parent.appendChild(date_container);
 
   const container = $.createElement('div')
     .style({
@@ -18,6 +43,7 @@ beestat.component.modal.temperature_profiles_info.prototype.decorate_contents_ =
   parent.appendChild(container);
 
   const fields = [];
+  var self = this;
 
   [
     'heat_1',
@@ -28,8 +54,8 @@ beestat.component.modal.temperature_profiles_info.prototype.decorate_contents_ =
     'cool_2',
     'resist'
   ].forEach(function(type) {
-    if (thermostat.profile.temperature[type] !== null) {
-      const profile = thermostat.profile.temperature[type];
+    if (self.profile_.temperature[type] !== null) {
+      const profile = self.profile_.temperature[type];
 
       // Convert the data to Celsius if necessary
       const deltas_converted = {};

@@ -141,6 +141,13 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     'session'
   );
 
+  api.add_call(
+    'profile',
+    'read_id',
+    {},
+    'profile'
+  );
+
   api.set_callback(function(response) {
     beestat.cache.set('user', response.user);
 
@@ -161,6 +168,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.cache.set('runtime_thermostat_summary', response.runtime_thermostat_summary);
     beestat.cache.set('stripe_event', response.stripe_event);
     beestat.cache.set('session', response.session);
+    beestat.cache.set('profile', response.profile);
 
     // Send you to the no thermostats layer if none were returned.
     if(Object.keys(response.thermostat).length === 0) {
