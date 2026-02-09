@@ -89,6 +89,9 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_main_group_();
   this.add_floor_plan_();
 
+  // Test SkeletonBuilder
+  this.test_skeleton_builder_();
+
   const animate = function() {
     self.animation_frame_ = window.requestAnimationFrame(animate);
     self.controls_.update();
@@ -1075,6 +1078,47 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   });
 
   this.add_environment_();
+};
+
+/**
+ * Test the SkeletonBuilder library with a simple square polygon.
+ */
+beestat.component.scene.prototype.test_skeleton_builder_ = function() {
+  if (typeof SkeletonBuilder === 'undefined') {
+    console.warn('SkeletonBuilder not yet loaded');
+    return;
+  }
+
+  console.log('Testing SkeletonBuilder...');
+
+  try {
+    // Correct format: number[][][] = array of rings, each ring is array of [x,y] points
+    // First ring is outer boundary, must be closed (first point repeated at end)
+    const square = [
+      [  // Outer ring
+        [0, 0],
+        [100, 0],
+        [100, 100],
+        [0, 100],
+        [0, 0]  // Close the ring by repeating first point
+      ]
+      // Additional rings here would be holes
+    ];
+
+    console.log('Input polygon (correct format):', square);
+    const result = SkeletonBuilder.buildFromPolygon(square);
+
+    if (result) {
+      console.log('✓ SkeletonBuilder test passed!');
+      console.log('  Vertices:', result.vertices.length);
+      console.log('  Polygons:', result.polygons.length);
+      console.log('  Result:', result);
+    } else {
+      console.error('✗ SkeletonBuilder test failed - returned null');
+    }
+  } catch (error) {
+    console.error('✗ SkeletonBuilder test threw error:', error);
+  }
 };
 
 /**

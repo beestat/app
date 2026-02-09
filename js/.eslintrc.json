@@ -13,7 +13,8 @@
     "THREE": true,
     "SunCalc": true,
     "ClipperLib": true,
-    "polylabel": true
+    "polylabel": true,
+    "SkeletonBuilder": true
   },
   "extends": "eslint:all",
   "rules": {
