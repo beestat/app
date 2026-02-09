@@ -67,8 +67,9 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   parent.style('background', '#202a30');
 
   this.debug_ = {
-    'axes': false,
+    'axes': true,
     'directional_light_top_helper': false,
+    'sun_light_helper': true,
     // 'grid': false,
     'watcher': false
   };
@@ -144,6 +145,10 @@ beestat.component.scene.prototype.add_renderer_ = function(parent) {
 
   this.renderer_.setPixelRatio(window.devicePixelRatio);
   this.renderer_.setSize(this.width_, this.height_);
+
+  // Enable shadow maps
+  this.renderer_.shadowMap.enabled = true;
+  this.renderer_.shadowMap.type = THREE.PCFSoftShadowMap;
 
   parent[0].appendChild(this.renderer_.domElement);
 };
@@ -357,6 +362,181 @@ beestat.component.scene.prototype.add_ambient_light_ = function() {
 };
 
 /**
+ * Directional sun and moon lights that provide natural lighting. Only
+ * visible when the environment layer is enabled. Positions are calculated based
+ * on time of day and location.
+ */
+beestat.component.scene.prototype.add_celestial_lights_ = function() {
+  // Create celestial group if it doesn't exist
+  if (this.celestial_group_ === undefined) {
+    this.celestial_group_ = new THREE.Group();
+    this.scene_.add(this.celestial_group_);
+    this.layers_['celestial'] = this.celestial_group_;
+  }
+
+  // Sun light
+  this.sun_light_ = new THREE.DirectionalLight(
+    0xffffdd, // Slightly warm color for sunlight
+    0.6
+  );
+
+  // Initial position (will be updated by update_celestial_lights_)
+  this.sun_light_.position.set(500, 500, -500);
+
+  // Enable shadow casting
+  this.sun_light_.castShadow = true;
+
+  // Configure shadow properties
+  this.sun_light_.shadow.mapSize.width = 2048;
+  this.sun_light_.shadow.mapSize.height = 2048;
+  this.sun_light_.shadow.camera.left = -500;
+  this.sun_light_.shadow.camera.right = 500;
+  this.sun_light_.shadow.camera.top = 500;
+  this.sun_light_.shadow.camera.bottom = -500;
+  this.sun_light_.shadow.camera.near = 0.5;
+  this.sun_light_.shadow.camera.far = 2000;
+  this.sun_light_.shadow.bias = -0.001; // Prevent shadow acne
+
+  // Set target to world origin (0,0,0) so light always points there
+  this.sun_light_.target.position.set(0, 0, 0);
+  this.scene_.add(this.sun_light_.target);
+
+  this.celestial_group_.add(this.sun_light_);
+
+  if (this.debug_.sun_light_helper === true) {
+    this.sun_light_helper_ = new THREE.DirectionalLightHelper(
+      this.sun_light_,
+      100
+    );
+    this.celestial_group_.add(this.sun_light_helper_);
+  }
+
+  // Moon light
+  this.moon_light_ = new THREE.DirectionalLight(
+    0xaaccff, // Cool bluish color for moonlight
+    0.15
+  );
+
+  // Initial position (will be updated by update_celestial_lights_)
+  this.moon_light_.position.set(-500, 500, 500);
+
+  // Moon casts shadows too
+  this.moon_light_.castShadow = true;
+
+  // Configure shadow properties (same as sun)
+  this.moon_light_.shadow.mapSize.width = 2048;
+  this.moon_light_.shadow.mapSize.height = 2048;
+  this.moon_light_.shadow.camera.left = -500;
+  this.moon_light_.shadow.camera.right = 500;
+  this.moon_light_.shadow.camera.top = 500;
+  this.moon_light_.shadow.camera.bottom = -500;
+  this.moon_light_.shadow.camera.near = 0.5;
+  this.moon_light_.shadow.camera.far = 2000;
+  this.moon_light_.shadow.bias = -0.001;
+
+  // Set target to world origin
+  this.moon_light_.target.position.set(0, 0, 0);
+  this.scene_.add(this.moon_light_.target);
+
+  this.celestial_group_.add(this.moon_light_);
+
+  if (this.debug_.sun_light_helper === true) {
+    this.moon_light_helper_ = new THREE.DirectionalLightHelper(
+      this.moon_light_,
+      100
+    );
+    this.celestial_group_.add(this.moon_light_helper_);
+  }
+};
+
+/**
+ * Update sun and moon light positions based on date and location using SunCalc.
+ * Adjusts light intensities based on altitude and moon phase.
+ *
+ * @param {moment} date The date/time to calculate positions for
+ * @param {number} latitude Location latitude
+ * @param {number} longitude Location longitude
+ */
+beestat.component.scene.prototype.update_celestial_lights_ = function(date, latitude, longitude) {
+  if (
+    this.sun_light_ === undefined ||
+    this.moon_light_ === undefined ||
+    date === undefined ||
+    latitude === undefined ||
+    longitude === undefined
+  ) {
+    return;
+  }
+
+  const distance = 1000; // Distance from origin for light positioning
+
+  const js_date = date.toDate();
+
+  // === SUN ===
+  const sun_position = SunCalc.getPosition(js_date, latitude, longitude);
+  const sun_altitude = sun_position.altitude;
+  const sun_azimuth = sun_position.azimuth;
+
+  // Convert spherical coordinates to Cartesian
+  // SunCalc: azimuth 0=south, π/2=west, π/-π=north, -π/2=east
+  // World coords: +X=east, +Y=up, +Z=south, -Z=north
+  // DirectionalLight shines FROM position TOWARD origin (0,0,0)
+  const sun_x = distance * Math.cos(sun_altitude) * Math.sin(sun_azimuth);
+  const sun_y = distance * Math.cos(sun_altitude) * Math.cos(sun_azimuth);
+  const sun_z = distance * Math.sin(sun_altitude);
+
+  this.sun_light_.position.set(sun_x, sun_y, sun_z);
+
+  // Adjust sun intensity based on altitude (fade when below horizon)
+  let sun_intensity = 0.6;
+  if (sun_altitude < 0) {
+    // Sun is below horizon, fade out
+    sun_intensity = Math.max(0, 0.6 * (1 + sun_altitude / (Math.PI / 6)));
+  }
+
+  this.sun_light_.intensity = sun_intensity;
+  this.sun_light_.castShadow = sun_intensity > 0.05;
+
+  // === MOON ===
+  const moon_position = SunCalc.getMoonPosition(js_date, latitude, longitude);
+  const moon_altitude = moon_position.altitude;
+  const moon_azimuth = moon_position.azimuth;
+
+  // Get moon illumination (phase)
+  const moon_illumination = SunCalc.getMoonIllumination(js_date);
+  const moon_fraction = moon_illumination.fraction; // 0 = new moon, 1 = full moon
+
+  // Convert spherical coordinates to Cartesian (same as sun)
+  const moon_x = distance * Math.cos(moon_altitude) * Math.sin(moon_azimuth);
+  const moon_y = distance * Math.cos(moon_altitude) * Math.cos(moon_azimuth);
+  const moon_z = distance * Math.sin(moon_altitude);
+
+  this.moon_light_.position.set(moon_x, moon_y, moon_z);
+
+  // Adjust moon intensity based on altitude and illumination
+  let moon_intensity = 0.15 * moon_fraction; // Scaled by moon phase
+  if (moon_altitude < 0) {
+    // Moon is below horizon, fade out
+    moon_intensity = Math.max(0, moon_intensity * (1 + moon_altitude / (Math.PI / 6)));
+  }
+
+  this.moon_light_.intensity = moon_intensity;
+  this.moon_light_.castShadow = moon_intensity > 0.02;
+
+  // Update debug helpers if enabled
+  if (this.debug_.sun_light_helper === true) {
+    // Force world matrix update before updating helpers
+    this.sun_light_.updateMatrixWorld();
+    this.sun_light_.target.updateMatrixWorld();
+    this.sun_light_helper_.update();
+
+    this.moon_light_.updateMatrixWorld();
+    this.moon_light_.target.updateMatrixWorld();
+    this.moon_light_helper_.update();
+  }
+};
+
+/**
  * Update the scene based on the currently set date.
  */
 beestat.component.scene.prototype.update_ = function() {
@@ -507,6 +687,11 @@ beestat.component.scene.prototype.update_ = function() {
 
   if (this.debug_.directional_light_top_helper === true) {
     this.directional_light_top_helper_.update();
+  }
+
+  // Update celestial lights (sun and moon) based on date and location
+  if (this.date_ !== undefined && this.latitude_ !== undefined && this.longitude_ !== undefined) {
+    this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
   }
 
   // Update debug watcher
@@ -810,6 +995,8 @@ beestat.component.scene.prototype.add_walls_ = function(layer, group) {
       mesh.position.z = -wall_height - elevation;
       mesh.userData.is_wall = true;
       mesh.layers.set(beestat.component.scene.layer_visible);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
 
       layer.add(mesh);
     }
@@ -913,7 +1100,6 @@ beestat.component.scene.prototype.add_environment_ = function() {
   // Position the ground flush with the base of the house (hides any below-ground structures).
   let current_z = 0;
 
-  // Ground strata from top to bottom: grass, topsoil, clay, sand, bedrock.
   const padding = 60;
   const strata = [
     {'color': 0x4a7c3f, 'thickness': 8},
@@ -939,10 +1125,14 @@ beestat.component.scene.prototype.add_environment_ = function() {
     mesh.position.y = center_y;
     mesh.position.z = current_z + stratum.thickness / 2;
     mesh.userData.is_environment = true;
+    mesh.receiveShadow = true;
 
     environment_layer.add(mesh);
     current_z += stratum.thickness;
   }, this);
+
+  // Add celestial lights (sun and moon) to the environment layer
+  this.add_celestial_lights_();
 };
 
 /**
@@ -954,6 +1144,25 @@ beestat.component.scene.prototype.add_environment_ = function() {
  */
 beestat.component.scene.prototype.set_date = function(date) {
   this.date_ = date;
+
+  if (this.rendered_ === true) {
+    this.update_();
+  }
+
+  return this;
+};
+
+/**
+ * Set the location for celestial light calculations.
+ *
+ * @param {number} latitude
+ * @param {number} longitude
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_location = function(latitude, longitude) {
+  this.latitude_ = latitude;
+  this.longitude_ = longitude;
 
   if (this.rendered_ === true) {
     this.update_();
@@ -1029,6 +1238,17 @@ beestat.component.scene.prototype.set_layer_visible = function(layer_name, visib
         : beestat.component.scene.layer_hidden
     );
   });
+
+  // When toggling environment, also toggle celestial lights
+  if (layer_name === 'environment' && this.layers_['celestial'] !== undefined) {
+    this.layers_['celestial'].traverse(function(child) {
+      child.layers.set(
+        visible === true
+          ? beestat.component.scene.layer_visible
+          : beestat.component.scene.layer_hidden
+      );
+    });
+  }
 
   return this;
 };

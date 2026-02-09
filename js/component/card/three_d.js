@@ -390,6 +390,21 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  // Set location for celestial light calculations if address is available
+  if (
+    floor_plan.address_id !== undefined &&
+    floor_plan.address_id !== null
+  ) {
+    const address = beestat.cache.address[floor_plan.address_id];
+    if (address !== undefined) {
+      this.scene_.set_location(
+        address.normalized.metadata.latitude,
+        address.normalized.metadata.longitude
+      );
+    }
+  }
+
   const groups = Object.values(floor_plan.data.groups);
   groups.forEach(function(group) {
     const setting_key = 'visualize.three_d.show_group.' + group.group_id;
@@ -397,6 +412,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   });
 
   this.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
+  this.scene_.set_layer_visible('environment', beestat.setting('visualize.three_d.show_environment'));
 
   // Manage width of the scene.
   if (this.state_.width === undefined) {
