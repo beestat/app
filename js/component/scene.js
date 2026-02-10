@@ -22,6 +22,7 @@ beestat.component.scene.layer_outline = 2;
  * 3D Scene configuration constants
  */
 beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
+beestat.component.scene.roof_overhang = 12; // Roof overhang beyond walls
 beestat.component.scene.wall_thickness = 4;
 beestat.component.scene.environment_padding = 100; // Padding around floor plan
 beestat.component.scene.room_floor_thickness = 6;
@@ -1289,11 +1290,25 @@ beestat.component.scene.prototype.add_roofs_ = function() {
             return;
           }
 
+          // Add roof overhang by offsetting polygon outward
+          const roof_overhang = beestat.component.scene.roof_overhang;
+          const clipper_offset = new ClipperLib.ClipperOffset();
+          clipper_offset.AddPath(
+            simple_polygon,
+            ClipperLib.JoinType.jtMiter,
+            ClipperLib.EndType.etClosedPolygon
+          );
+          const offset_polygons = new ClipperLib.Paths();
+          clipper_offset.Execute(offset_polygons, roof_overhang);
+
+          // Use the offset polygon if successful, otherwise use original
+          const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
+
           // Convert to skeleton format
-          const ring = simple_polygon.map(function(point) {
+          const ring = roof_polygon.map(function(point) {
             return [point.x, point.y];
           });
-          ring.push([simple_polygon[0].x, simple_polygon[0].y]);
+          ring.push([roof_polygon[0].x, roof_polygon[0].y]);
 
           const coordinates = [ring];
           const result = SkeletonBuilder.buildFromPolygon(coordinates);
@@ -1303,7 +1318,7 @@ beestat.component.scene.prototype.add_roofs_ = function() {
           }
 
           // Identify boundary vertices (first N vertices match input polygon)
-          const boundary_vertex_count = simple_polygon.length;
+          const boundary_vertex_count = roof_polygon.length;
           const boundary_set = new Set();
           for (let i = 0; i < boundary_vertex_count; i++) {
             boundary_set.add(i);
@@ -1313,9 +1328,9 @@ beestat.component.scene.prototype.add_roofs_ = function() {
           const compute_distance_to_boundary = function(point_x, point_y) {
             let min_distance = Infinity;
 
-            for (let i = 0; i < simple_polygon.length; i++) {
-              const p1 = simple_polygon[i];
-              const p2 = simple_polygon[(i + 1) % simple_polygon.length];
+            for (let i = 0; i < roof_polygon.length; i++) {
+              const p1 = roof_polygon[i];
+              const p2 = roof_polygon[(i + 1) % roof_polygon.length];
 
               // Calculate perpendicular distance from point to line segment
               const dx = p2.x - p1.x;
@@ -1616,9 +1631,10 @@ beestat.component.scene.prototype.add_environment_ = function() {
 
   const padding = beestat.component.scene.environment_padding;
   const strata = [
-    {'color': 0x4a7c3f, 'thickness': 30},  // Grass (thicker, was 8)
-    {'color': 0x3d2b1f, 'thickness': 40},  // Dark brown dirt
-    {'color': 0x8b5e3c, 'thickness': 50}   // Light brown dirt
+    {'color': 0x4a7c3f, 'thickness': 10},  // Grass (thin layer)
+    {'color': 0x5a4a3a, 'thickness': 30},  // Medium brown dirt
+    {'color': 0x8b5e3c, 'thickness': 40},  // Light brown dirt
+    {'color': 0x6e6e6e, 'thickness': 40}   // Gray bedrock
   ];
 
   const environment_layer = new THREE.Group();
