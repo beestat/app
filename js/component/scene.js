@@ -73,6 +73,11 @@ beestat.component.scene.prototype.set_width = function(width) {
 beestat.component.scene.prototype.decorate_ = function(parent) {
   const self = this;
 
+  // Prevent re-initialization if already decorated
+  if (this.scene_ !== undefined) {
+    return;
+  }
+
   // Dark background to help reduce apparant flicker when resizing
   parent.style('background', '#202a30');
 
@@ -80,6 +85,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'axes': false,
     'directional_light_top_helper': false,
     'sun_light_helper': true,
+    'moon_light_helper': true,
     // 'grid': false,
     'watcher': false,
     'roof_edges': true,
@@ -348,6 +354,11 @@ beestat.component.scene.prototype.add_skybox_ = function() {
  * by lighting the top.
  */
 beestat.component.scene.prototype.add_directional_light_top_ = function() {
+  // Prevent re-initialization if light already exists
+  if (this.directional_light_top_ !== undefined) {
+    return;
+  }
+
   this.directional_light_top_ = new THREE.DirectionalLight(
     0xffffff,
     beestat.component.scene.directional_light_top_intensity
@@ -368,10 +379,16 @@ beestat.component.scene.prototype.add_directional_light_top_ = function() {
  * Ambient lighting so nothing is shrouded in darkness.
  */
 beestat.component.scene.prototype.add_ambient_light_ = function() {
-  this.scene_.add(new THREE.AmbientLight(
+  // Prevent re-initialization if light already exists
+  if (this.ambient_light_ !== undefined) {
+    return;
+  }
+
+  this.ambient_light_ = new THREE.AmbientLight(
     0xffffff,
     beestat.component.scene.ambient_light_intensity
-  ));
+  );
+  this.scene_.add(this.ambient_light_);
 };
 
 /**
@@ -380,6 +397,11 @@ beestat.component.scene.prototype.add_ambient_light_ = function() {
  * on time of day and location.
  */
 beestat.component.scene.prototype.add_celestial_lights_ = function() {
+  // Prevent re-initialization if lights already exist
+  if (this.sun_light_ !== undefined) {
+    return;
+  }
+
   // Create celestial group if it doesn't exist
   if (this.celestial_group_ === undefined) {
     this.celestial_group_ = new THREE.Group();
@@ -453,7 +475,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
   this.celestial_group_.add(this.moon_light_);
 
-  if (this.debug_.sun_light_helper === true) {
+  if (this.debug_.moon_light_helper === true) {
     this.moon_light_helper_ = new THREE.DirectionalLightHelper(
       this.moon_light_,
       100
@@ -542,7 +564,9 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     this.sun_light_.updateMatrixWorld();
     this.sun_light_.target.updateMatrixWorld();
     this.sun_light_helper_.update();
+  }
 
+  if (this.debug_.moon_light_helper === true) {
     this.moon_light_.updateMatrixWorld();
     this.moon_light_.target.updateMatrixWorld();
     this.moon_light_helper_.update();
@@ -1964,7 +1988,37 @@ beestat.component.scene.prototype.get_icon_path_ = function(icon, scale = 4) {
 };
 
 beestat.component.scene.prototype.dispose = function() {
+  // Cancel animation loop
   window.cancelAnimationFrame(this.animation_frame_);
+
+  // Dispose of controls
+  if (this.controls_ !== undefined) {
+    this.controls_.dispose();
+  }
+
+  // Dispose of renderer
+  if (this.renderer_ !== undefined) {
+    this.renderer_.dispose();
+  }
+
+  // Clean up THREE.js scene resources
+  if (this.scene_ !== undefined) {
+    this.scene_.traverse(function(object) {
+      if (object.geometry) {
+        object.geometry.dispose();
+      }
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach(function(material) {
+            material.dispose();
+          });
+        } else {
+          object.material.dispose();
+        }
+      }
+    });
+  }
+
   beestat.component.prototype.dispose.apply(this, arguments);
 };
 
