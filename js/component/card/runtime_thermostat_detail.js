@@ -467,7 +467,11 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_runtime_chip
       'color': beestat.series.compressor_cool_2.color
     });
   }
-  create_chip('Cool', beestat.series.compressor_cool_1.color, cool_segments);
+  create_chip(
+    beestat.series.compressor_cool_1.name.replace(/\d/, ''), 
+    beestat.series.compressor_cool_1.color,
+    cool_segments
+  );
 
   // Heat
   var heat_segments = [];
@@ -483,7 +487,11 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_runtime_chip
       'color': beestat.series.compressor_heat_2.color
     });
   }
-  create_chip('Heat', beestat.series.compressor_heat_1.color, heat_segments);
+  create_chip(
+    beestat.series.compressor_heat_1.name.replace(/\d/, ''),
+    beestat.series.compressor_heat_1.color,
+    heat_segments
+  );
 
   // Aux
   var aux_segments = [];
@@ -499,11 +507,15 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_runtime_chip
       'color': beestat.series.auxiliary_heat_2.color
     });
   }
-  create_chip('Aux', beestat.series.auxiliary_heat_1.color, aux_segments);
+  create_chip(
+    beestat.series.auxiliary_heat_1.name.replace(/\d/, ''),
+    beestat.series.auxiliary_heat_1.color,
+    aux_segments
+  );
 
   // Fan
   if (totals.fan > 0) {
-    create_chip('Fan', beestat.series.fan.color, [{
+    create_chip(beestat.series.fan.name, beestat.series.fan.color, [{
       'text': beestat.time(totals.fan),
       'color': beestat.series.fan.color
     }]);
@@ -520,7 +532,6 @@ beestat.component.card.runtime_thermostat_detail.prototype.decorate_runtime_chip
     }
   });
   create_chip('Accessory', beestat.series.humidifier.color, accessory_segments);
-
 
   if (has_chips === true) {
     parent.appendChild(chip_container);
