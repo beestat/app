@@ -189,7 +189,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_runtime_chi
       'border-radius': radius,
       'overflow': 'hidden',
       'font-size': beestat.style.font_size.normal,
-      'margin-right': '8px',
+      'margin-right': '4px',
       'margin-bottom': '4px'
     });
 
