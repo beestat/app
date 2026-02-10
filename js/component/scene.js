@@ -1079,6 +1079,9 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_walls_(walls_layer, group);
   });
 
+  // Add roofs using straight skeleton
+  this.add_roofs_();
+
   if (this.debug_.roof_edges) {
     this.add_roof_outlines_();
   }
@@ -1242,6 +1245,166 @@ beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floo
   });
 
   return exposed_areas;
+};
+
+/**
+ * Generate 3D roofs using straight skeleton algorithm.
+ * Creates sloped roof surfaces with proper ridge lines and hip/valley geometry.
+ */
+beestat.component.scene.prototype.add_roofs_ = function() {
+  if (typeof SkeletonBuilder === 'undefined') {
+    console.warn('SkeletonBuilder not yet loaded - skipping roof generation');
+    return;
+  }
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+
+  // Create layer for roofs
+  const roofs_layer = new THREE.Group();
+  this.main_group_.add(roofs_layer);
+  this.layers_['roofs'] = roofs_layer;
+
+  const roof_pitch = 0.5; // Rise over run (e.g., 0.5 = 6:12 pitch, 0.75 = 9:12 pitch)
+
+  // Process each exposed area
+  exposed_areas.forEach(function(area) {
+    area.polygons.forEach(function(polygon) {
+      if (polygon.length < 3) {
+        return;
+      }
+
+      try {
+        // Simplify polygon to handle complex shapes
+        const simplified = ClipperLib.Clipper.SimplifyPolygon(
+          polygon,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        simplified.forEach(function(simple_polygon) {
+          if (simple_polygon.length < 3) {
+            return;
+          }
+
+          // Convert to skeleton format
+          const ring = simple_polygon.map(function(point) {
+            return [point.x, point.y];
+          });
+          ring.push([simple_polygon[0].x, simple_polygon[0].y]);
+
+          const coordinates = [ring];
+          const result = SkeletonBuilder.buildFromPolygon(coordinates);
+
+          if (!result) {
+            return;
+          }
+
+          // Identify boundary vertices (first N vertices match input polygon)
+          const boundary_vertex_count = simple_polygon.length;
+          const boundary_set = new Set();
+          for (let i = 0; i < boundary_vertex_count; i++) {
+            boundary_set.add(i);
+          }
+
+          // Helper function to compute distance from point to polygon boundary
+          const compute_distance_to_boundary = function(point_x, point_y) {
+            let min_distance = Infinity;
+
+            for (let i = 0; i < simple_polygon.length; i++) {
+              const p1 = simple_polygon[i];
+              const p2 = simple_polygon[(i + 1) % simple_polygon.length];
+
+              // Calculate perpendicular distance from point to line segment
+              const dx = p2.x - p1.x;
+              const dy = p2.y - p1.y;
+              const length_sq = dx * dx + dy * dy;
+
+              if (length_sq === 0) {
+                // Point to point distance
+                const dist = Math.sqrt(
+                  Math.pow(point_x - p1.x, 2) + Math.pow(point_y - p1.y, 2)
+                );
+                min_distance = Math.min(min_distance, dist);
+                continue;
+              }
+
+              // Project point onto line segment
+              let t = ((point_x - p1.x) * dx + (point_y - p1.y) * dy) / length_sq;
+              t = Math.max(0, Math.min(1, t));
+
+              const closest_x = p1.x + t * dx;
+              const closest_y = p1.y + t * dy;
+
+              const dist = Math.sqrt(
+                Math.pow(point_x - closest_x, 2) + Math.pow(point_y - closest_y, 2)
+              );
+
+              min_distance = Math.min(min_distance, dist);
+            }
+
+            return min_distance;
+          };
+
+          // Create 3D vertices with heights based on distance from boundary
+          const vertices_3d = result.vertices.map(function(vertex, index) {
+            const is_boundary = boundary_set.has(index);
+            let height = 0;
+
+            if (!is_boundary) {
+              // Interior skeleton vertex - raise it based on distance to boundary
+              const distance = compute_distance_to_boundary(vertex[0], vertex[1]);
+              height = distance * roof_pitch;
+            }
+
+            return new THREE.Vector3(
+              vertex[0],
+              vertex[1],
+              area.ceiling_z - height  // Negative Z = higher in world coords
+            );
+          });
+
+          // Create geometry from skeleton polygons
+          result.polygons.forEach(function(face) {
+            if (face.length < 3) {
+              return;
+            }
+
+            // Create triangulated mesh for this face
+            const face_vertices = face.map(function(idx) {
+              return vertices_3d[idx];
+            });
+
+            // Triangulate the face (simple fan triangulation from first vertex)
+            const triangles = [];
+            for (let i = 1; i < face_vertices.length - 1; i++) {
+              triangles.push(
+                face_vertices[0],
+                face_vertices[i],
+                face_vertices[i + 1]
+              );
+            }
+
+            // Create geometry
+            const geometry = new THREE.BufferGeometry().setFromPoints(triangles);
+            geometry.computeVertexNormals();
+
+            // Create material - dark gray shingles
+            const material = new THREE.MeshPhongMaterial({
+              'color': 0x3a3a3a,
+              'side': THREE.DoubleSide,
+              'flatShading': false
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.layers.set(beestat.component.scene.layer_visible);
+            roofs_layer.add(mesh);
+          });
+        });
+      } catch (error) {
+        console.error('Error generating roof:', error, polygon);
+      }
+    });
+  });
 };
 
 /**
