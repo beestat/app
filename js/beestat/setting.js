@@ -83,8 +83,6 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'visualize.three_d.show_labels': false,
     'visualize.three_d.auto_rotate': false,
     'visualize.three_d.show_walls': false,
-    'visualize.three_d.debug_roof_edges': true,
-    'visualize.three_d.debug_straight_skeleton': true,
 
     'date_format': 'M/D/YYYY',
 

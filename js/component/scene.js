@@ -71,7 +71,9 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'directional_light_top_helper': false,
     'sun_light_helper': true,
     // 'grid': false,
-    'watcher': false
+    'watcher': false,
+    'roof_edges': true,
+    'straight_skeleton': true
   };
 
   this.width_ = this.state_.scene_width || 800;
@@ -1077,11 +1079,11 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_walls_(walls_layer, group);
   });
 
-  if (beestat.setting('visualize.three_d.debug_roof_edges')) {
+  if (this.debug_.roof_edges) {
     this.add_roof_outlines_();
   }
 
-  if (beestat.setting('visualize.three_d.debug_straight_skeleton')) {
+  if (this.debug_.straight_skeleton) {
     this.add_roof_skeleton_debug_();
   }
 
@@ -1331,7 +1333,6 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
         }
 
         successful_skeletons++;
-        console.log('Skeleton generated:', result.vertices.length, 'vertices,', result.polygons.length, 'faces');
 
         // Visualize each skeleton polygon face with blue lines
         result.polygons.forEach(function(face) {
@@ -1366,7 +1367,6 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
     });
   });
 
-  console.log('Skeleton debug: processed', total_polygons, 'polygons,', successful_skeletons, 'successful');
 };
 
 /**
