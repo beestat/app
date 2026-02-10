@@ -19,6 +19,15 @@ beestat.component.scene.layer_hidden = 1;
 beestat.component.scene.layer_outline = 2;
 
 /**
+ * 3D Scene configuration constants
+ */
+beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
+beestat.component.scene.wall_thickness = 4;
+beestat.component.scene.environment_padding = 100; // Padding around floor plan
+beestat.component.scene.room_floor_thickness = 6;
+beestat.component.scene.room_wall_inset = 1.5;
+
+/**
  * Brightness of the top-down light. This gives definition to the sides of
  * meshes by lighting the tops. Increase this for more edge definition.
  */
@@ -90,9 +99,6 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
 
   this.add_main_group_();
   this.add_floor_plan_();
-
-  // Test SkeletonBuilder
-  this.test_skeleton_builder_();
 
   const animate = function() {
     self.animation_frame_ = window.requestAnimationFrame(animate);
@@ -290,6 +296,7 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
       if (
         intersects[i].object.type === 'Mesh' &&
         intersects[i].object.userData.is_wall !== true &&
+        intersects[i].object.userData.is_roof !== true &&
         intersects[i].object.userData.is_environment !== true
       ) {
         this.intersected_mesh_ = intersects[i].object;
@@ -725,13 +732,10 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
     ClipperLib.EndType.etClosedPolygon
   );
   var clipper_hole = new ClipperLib.Path();
-  clipper_offset.Execute(clipper_hole, -1.5);
-
-  // Full height
-  // const extrude_height = (room.height || group.height) - 3;
+  clipper_offset.Execute(clipper_hole, -beestat.component.scene.room_wall_inset);
 
   // Just the floor plan
-  const extrude_height = 6;
+  const extrude_height = beestat.component.scene.room_floor_thickness;
 
   // Create a shape using the points of the room.
   const shape = new THREE.Shape();
@@ -786,7 +790,6 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
 
   // Allow me to go from room -> mesh and mesh -> room
   this.meshes_[room.room_id] = mesh;
-  // mesh.userData.room_id = room.room_id;
   mesh.userData.room = room;
 
   layer.add(mesh);
@@ -861,7 +864,7 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
  * @param {object} group The floor plan group.
  */
 beestat.component.scene.prototype.add_walls_ = function(layer, group) {
-  const wall_thickness = 4;
+  const wall_thickness = beestat.component.scene.wall_thickness;
 
   if (group.rooms.length === 0) {
     return;
@@ -1263,9 +1266,9 @@ beestat.component.scene.prototype.add_roofs_ = function() {
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
   this.main_group_.add(roofs_layer);
-  this.layers_['roofs'] = roofs_layer;
+  this.layers_['roof'] = roofs_layer;
 
-  const roof_pitch = 0.5; // Rise over run (e.g., 0.5 = 6:12 pitch, 0.75 = 9:12 pitch)
+  const roof_pitch = beestat.component.scene.roof_pitch;
 
   // Process each exposed area
   exposed_areas.forEach(function(area) {
@@ -1396,6 +1399,7 @@ beestat.component.scene.prototype.add_roofs_ = function() {
             });
 
             const mesh = new THREE.Mesh(geometry, material);
+            mesh.userData.is_roof = true;
             mesh.layers.set(beestat.component.scene.layer_visible);
             roofs_layer.add(mesh);
           });
@@ -1610,12 +1614,11 @@ beestat.component.scene.prototype.add_environment_ = function() {
   // Position the ground flush with the base of the house (hides any below-ground structures).
   let current_z = 0;
 
-  const padding = 60;
+  const padding = beestat.component.scene.environment_padding;
   const strata = [
-    {'color': 0x4a7c3f, 'thickness': 8},
-    {'color': 0x3d2b1f, 'thickness': 30},
-    {'color': 0x8b5e3c, 'thickness': 30},
-    {'color': 0x6e6e6e, 'thickness': 50}
+    {'color': 0x4a7c3f, 'thickness': 30},  // Grass (thicker, was 8)
+    {'color': 0x3d2b1f, 'thickness': 40},  // Dark brown dirt
+    {'color': 0x8b5e3c, 'thickness': 50}   // Light brown dirt
   ];
 
   const environment_layer = new THREE.Group();
@@ -1865,10 +1868,6 @@ beestat.component.scene.prototype.get_label_material_ = function(args) {
     canvas.height = 55 * scale;
 
     const context = canvas.getContext('2d');
-
-    // Debug red background
-    // context.fillStyle = 'rgba(255, 0, 0, 0.2)';
-    // context.fillRect(0, 0, canvas.width, canvas.height);
 
     const font_size = canvas.height / 2;
     switch (args.type) {

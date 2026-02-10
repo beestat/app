@@ -412,6 +412,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   });
 
   this.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
+  this.scene_.set_layer_visible('roof', beestat.setting('visualize.three_d.show_roof'));
   this.scene_.set_layer_visible('environment', beestat.setting('visualize.three_d.show_environment'));
 
   // Manage width of the scene.
