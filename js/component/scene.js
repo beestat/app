@@ -67,7 +67,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   parent.style('background', '#202a30');
 
   this.debug_ = {
-    'axes': true,
+    'axes': false,
     'directional_light_top_helper': false,
     'sun_light_helper': true,
     // 'grid': false,
@@ -1077,7 +1077,14 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_walls_(walls_layer, group);
   });
 
-  this.add_roof_outlines_();
+  if (beestat.setting('visualize.three_d.debug_roof_edges')) {
+    this.add_roof_outlines_();
+  }
+
+  if (beestat.setting('visualize.three_d.debug_straight_skeleton')) {
+    this.add_roof_skeleton_debug_();
+  }
+
   this.add_environment_();
 };
 
@@ -1275,6 +1282,91 @@ beestat.component.scene.prototype.add_roof_outlines_ = function() {
       roof_outlines_layer.add(line);
     });
   });
+};
+
+/**
+ * Visualize the straight skeleton for each roof polygon with debug lines.
+ */
+beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
+  if (typeof SkeletonBuilder === 'undefined') {
+    console.warn('SkeletonBuilder not yet loaded - skipping skeleton debug visualization');
+    return;
+  }
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+
+  // Create layer for skeleton debug lines
+  const skeleton_debug_layer = new THREE.Group();
+  this.main_group_.add(skeleton_debug_layer);
+  this.layers_['roof_skeleton_debug'] = skeleton_debug_layer;
+
+  let total_polygons = 0;
+  let successful_skeletons = 0;
+
+  // Process each exposed area
+  exposed_areas.forEach(function(area) {
+    area.polygons.forEach(function(polygon) {
+      if (polygon.length < 3) {
+        return;
+      }
+
+      total_polygons++;
+
+      try {
+        // Convert ClipperLib format {x, y} to SkeletonBuilder format [[x, y], ...]
+        const ring = polygon.map(function(point) {
+          return [point.x, point.y];
+        });
+        // Close the ring by repeating the first point
+        ring.push([polygon[0].x, polygon[0].y]);
+
+        // Build the straight skeleton
+        const coordinates = [ring];  // Array of rings (outer ring only, no holes)
+        const result = SkeletonBuilder.buildFromPolygon(coordinates);
+
+        if (!result) {
+          console.warn('SkeletonBuilder returned null for polygon:', polygon);
+          return;
+        }
+
+        successful_skeletons++;
+        console.log('Skeleton generated:', result.vertices.length, 'vertices,', result.polygons.length, 'faces');
+
+        // Visualize each skeleton polygon face with blue lines
+        result.polygons.forEach(function(face) {
+          if (face.length < 2) {
+            return;
+          }
+
+          // Create line points from the face vertices
+          const points = [];
+          face.forEach(function(vertex_index) {
+            const vertex = result.vertices[vertex_index];
+            points.push(new THREE.Vector3(vertex[0], vertex[1], area.ceiling_z));
+          });
+          // Close the loop
+          const first_vertex = result.vertices[face[0]];
+          points.push(new THREE.Vector3(first_vertex[0], first_vertex[1], area.ceiling_z));
+
+          // Create blue line for skeleton edges
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          const material = new THREE.LineBasicMaterial({
+            'color': 0x00ffff,  // Cyan
+            'linewidth': 1
+          });
+
+          const line = new THREE.Line(geometry, material);
+          line.layers.set(beestat.component.scene.layer_visible);
+          skeleton_debug_layer.add(line);
+        });
+      } catch (error) {
+        console.error('Error building skeleton for polygon:', error, polygon);
+      }
+    });
+  });
+
+  console.log('Skeleton debug: processed', total_polygons, 'polygons,', successful_skeletons, 'successful');
 };
 
 /**
