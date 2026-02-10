@@ -29,6 +29,17 @@ beestat.component.scene.room_floor_thickness = 6;
 beestat.component.scene.room_wall_inset = 1.5;
 
 /**
+ * Default appearance values for floor plans
+ */
+beestat.component.scene.default_appearance = {
+  'rotation': 0,
+  'roof_color': '#3a3a3a',
+  'roof_style': 'hip',
+  'siding_color': '#889aaa',
+  'ground_color': '#4a7c3f'
+};
+
+/**
  * Brightness of the top-down light. This gives definition to the sides of
  * meshes by lighting the tops. Increase this for more edge definition.
  */
@@ -49,6 +60,21 @@ beestat.component.scene.prototype.rerender = function() {
   this.scene_.remove(this.main_group_);
   this.add_main_group_();
   this.add_floor_plan_();
+};
+
+/**
+ * Get an appearance value with fallback to default if not set.
+ *
+ * @param {string} key The appearance key to retrieve.
+ *
+ * @return {*} The appearance value.
+ */
+beestat.component.scene.prototype.get_appearance_value_ = function(key) {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (floor_plan.data.appearance && floor_plan.data.appearance[key] !== undefined) {
+    return floor_plan.data.appearance[key];
+  }
+  return beestat.component.scene.default_appearance[key];
 };
 
 /**
@@ -204,7 +230,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_ = new THREE.OrbitControls(this.camera_, parent[0]);
   this.controls_.enableDamping = true;
   this.controls_.enablePan = false;
-  this.controls_.maxDistance = 1000;
+  this.controls_.maxDistance = 10000;
   this.controls_.minDistance = 400;
   this.controls_.maxPolarAngle = Math.PI / 2.5;
 };
@@ -507,10 +533,14 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   const js_date = date.toDate();
 
+  // Get user rotation offset (0 = North, clockwise)
+  const rotation_degrees = this.get_appearance_value_('rotation');
+  const rotation_offset = (rotation_degrees * Math.PI) / 180;
+
   // === SUN ===
   const sun_position = SunCalc.getPosition(js_date, latitude, longitude);
   const sun_altitude = sun_position.altitude;
-  const sun_azimuth = sun_position.azimuth;
+  const sun_azimuth = sun_position.azimuth + rotation_offset;
 
   // Convert spherical coordinates to Cartesian
   // SunCalc: azimuth 0=south, π/2=west, π/-π=north, -π/2=east
@@ -535,7 +565,7 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   // === MOON ===
   const moon_position = SunCalc.getMoonPosition(js_date, latitude, longitude);
   const moon_altitude = moon_position.altitude;
-  const moon_azimuth = moon_position.azimuth;
+  const moon_azimuth = moon_position.azimuth + rotation_offset;
 
   // Get moon illumination (phase)
   const moon_illumination = SunCalc.getMoonIllumination(js_date);
@@ -781,8 +811,10 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
     extrude_settings
   );
 
-  const material = new THREE.MeshPhongMaterial({
-    'color': color
+  const material = new THREE.MeshStandardMaterial({
+    'color': color,
+    'roughness': 0.6,
+    'metalness': 0.0
   });
   if (
     room.sensor_id === undefined ||
@@ -1020,8 +1052,11 @@ beestat.component.scene.prototype.add_walls_ = function(layer, group) {
         }
       );
 
-      const material = new THREE.MeshPhongMaterial({
-        'color': 0x889aaa
+      const siding_color = this.get_appearance_value_('siding_color');
+      const material = new THREE.MeshStandardMaterial({
+        'color': siding_color,
+        'roughness': 0.7,
+        'metalness': 0.0
       });
 
       const mesh = new THREE.Mesh(geometry, material);
@@ -1279,7 +1314,25 @@ beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floo
  * Generate 3D roofs using straight skeleton algorithm.
  * Creates sloped roof surfaces with proper ridge lines and hip/valley geometry.
  */
+/**
+ * Add roofs to the scene based on the configured roof style.
+ */
 beestat.component.scene.prototype.add_roofs_ = function() {
+  const roof_style = this.get_appearance_value_('roof_style');
+
+  if (roof_style === 'flat') {
+    this.add_flat_roofs_();
+  } else {
+    this.add_hip_roofs_();
+  }
+};
+
+/**
+ * Add hip roofs using the straight skeleton algorithm.
+ */
+beestat.component.scene.prototype.add_hip_roofs_ = function() {
+  const self = this;
+
   if (typeof SkeletonBuilder === 'undefined') {
     console.warn('SkeletonBuilder not yet loaded - skipping roof generation');
     return;
@@ -1430,11 +1483,14 @@ beestat.component.scene.prototype.add_roofs_ = function() {
             const geometry = new THREE.BufferGeometry().setFromPoints(triangles);
             geometry.computeVertexNormals();
 
-            // Create material - dark gray shingles
-            const material = new THREE.MeshPhongMaterial({
-              'color': 0x3a3a3a,
+            // Create material - use appearance roof color
+            const roof_color = self.get_appearance_value_('roof_color');
+            const material = new THREE.MeshStandardMaterial({
+              'color': roof_color,
               'side': THREE.DoubleSide,
-              'flatShading': false
+              'flatShading': false,
+              'roughness': 0.8,
+              'metalness': 0.0
             });
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -1445,6 +1501,89 @@ beestat.component.scene.prototype.add_roofs_ = function() {
         });
       } catch (error) {
         console.error('Error generating roof:', error, polygon);
+      }
+    });
+  });
+};
+
+/**
+ * Add flat roofs to the scene.
+ */
+beestat.component.scene.prototype.add_flat_roofs_ = function() {
+  const self = this;
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+
+  // Create layer for roofs
+  const roofs_layer = new THREE.Group();
+  this.main_group_.add(roofs_layer);
+  this.layers_['roof'] = roofs_layer;
+
+  // Process each exposed area
+  exposed_areas.forEach(function(area) {
+    area.polygons.forEach(function(polygon) {
+      if (polygon.length < 3) {
+        return;
+      }
+
+      try {
+        // Simplify polygon to handle complex shapes
+        const simplified = ClipperLib.Clipper.SimplifyPolygon(
+          polygon,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        simplified.forEach(function(simple_polygon) {
+          if (simple_polygon.length < 3) {
+            return;
+          }
+
+          // Add roof overhang by offsetting polygon outward
+          const roof_overhang = beestat.component.scene.roof_overhang;
+          const clipper_offset = new ClipperLib.ClipperOffset();
+          clipper_offset.AddPath(
+            simple_polygon,
+            ClipperLib.JoinType.jtMiter,
+            ClipperLib.EndType.etClosedPolygon
+          );
+          const offset_polygons = new ClipperLib.Paths();
+          clipper_offset.Execute(offset_polygons, roof_overhang);
+
+          // Use the offset polygon if successful, otherwise use original
+          const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
+
+          // Create flat roof shape
+          const shape = new THREE.Shape();
+          shape.moveTo(roof_polygon[0].x, roof_polygon[0].y);
+          for (let i = 1; i < roof_polygon.length; i++) {
+            shape.lineTo(roof_polygon[i].x, roof_polygon[i].y);
+          }
+          shape.closePath();
+
+          // Create flat geometry
+          const geometry = new THREE.ShapeGeometry(shape);
+
+          // Create material - use appearance roof color
+          const roof_color = self.get_appearance_value_('roof_color');
+          const material = new THREE.MeshStandardMaterial({
+            'color': roof_color,
+            'side': THREE.DoubleSide,
+            'flatShading': false,
+            'roughness': 0.9,  // Slightly higher roughness for flat roofs
+            'metalness': 0.0
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.z = area.ceiling_z;  // Position at ceiling level
+          mesh.userData.is_roof = true;
+          mesh.layers.set(beestat.component.scene.layer_visible);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          roofs_layer.add(mesh);
+        });
+      } catch (error) {
+        console.error('Error generating flat roof:', error, polygon);
       }
     });
   });
@@ -1654,11 +1793,12 @@ beestat.component.scene.prototype.add_environment_ = function() {
   let current_z = 0;
 
   const padding = beestat.component.scene.environment_padding;
+  const ground_color = this.get_appearance_value_('ground_color');
   const strata = [
-    {'color': 0x4a7c3f, 'thickness': 10},  // Grass (thin layer)
-    {'color': 0x5a4a3a, 'thickness': 30},  // Medium brown dirt
-    {'color': 0x8b5e3c, 'thickness': 40},  // Light brown dirt
-    {'color': 0x6e6e6e, 'thickness': 40}   // Gray bedrock
+    {'color': ground_color, 'thickness': 10, 'roughness': 0.95},  // User-selected ground
+    {'color': 0x5a4a3a, 'thickness': 30, 'roughness': 0.85},      // Medium brown dirt
+    {'color': 0x8b5e3c, 'thickness': 40, 'roughness': 0.85},      // Light brown dirt
+    {'color': 0x6e6e6e, 'thickness': 40, 'roughness': 0.85}       // Gray bedrock
   ];
 
   const environment_layer = new THREE.Group();
@@ -1671,7 +1811,11 @@ beestat.component.scene.prototype.add_environment_ = function() {
       plan_height + padding * 2,
       stratum.thickness
     );
-    const material = new THREE.MeshPhongMaterial({'color': stratum.color});
+    const material = new THREE.MeshStandardMaterial({
+      'color': stratum.color,
+      'roughness': stratum.roughness,
+      'metalness': 0.0
+    });
     const mesh = new THREE.Mesh(geometry, material);
 
     mesh.position.x = center_x;
