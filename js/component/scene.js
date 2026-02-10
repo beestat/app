@@ -1077,7 +1077,204 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_walls_(walls_layer, group);
   });
 
+  this.add_roof_outlines_();
   this.add_environment_();
+};
+
+/**
+ * Get the ceiling Z-position for a room.
+ *
+ * @param {object} group The floor plan group
+ * @param {object} room The room
+ *
+ * @return {number} The ceiling Z position
+ */
+beestat.component.scene.prototype.get_ceiling_z_ = function(group, room) {
+  const elevation = room.elevation || group.elevation || 0;
+  const height = room.height || group.height || 96;
+  return -(elevation + height);
+};
+
+/**
+ * Convert room.points (relative coordinates) to absolute coordinates.
+ *
+ * @param {object} room The room
+ *
+ * @return {Array} Array of absolute coordinate points {x, y}
+ */
+beestat.component.scene.prototype.convert_room_to_absolute_polygon_ = function(room) {
+  const absolute = [];
+  room.points.forEach(function(point) {
+    absolute.push({
+      'x': room.x + point.x,
+      'y': room.y + point.y
+    });
+  });
+  return absolute;
+};
+
+/**
+ * Compute which ceiling areas are exposed (not covered by floors above).
+ *
+ * @param {object} floor_plan The floor plan
+ *
+ * @return {Array} Array of {ceiling_z, polygons[]} for roof outline rendering
+ */
+beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floor_plan) {
+  const self = this;
+
+  // Step 1: Group ceilings by Z-level
+  const ceiling_levels = {}; // Key: ceiling_z, Value: array of room polygons
+
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach(function(room) {
+      const elevation = room.elevation || group.elevation || 0;
+
+      // Skip basements (below ground)
+      if (elevation < 0) {
+        return;
+      }
+
+      const ceiling_z = self.get_ceiling_z_(group, room);
+
+      if (!ceiling_levels[ceiling_z]) {
+        ceiling_levels[ceiling_z] = [];
+      }
+
+      ceiling_levels[ceiling_z].push(
+        self.convert_room_to_absolute_polygon_(room)
+      );
+    });
+  });
+
+  // Step 2: Sort ceiling levels (ascending Z = highest to lowest)
+  const sorted_levels = Object.keys(ceiling_levels)
+    .map(z => parseFloat(z))
+    .sort((a, b) => a - b);
+
+  const exposed_areas = [];
+
+  // Step 3: For each level, compute exposed area
+  sorted_levels.forEach(function(current_ceiling_z, index) {
+    const current_polygons = ceiling_levels[current_ceiling_z];
+
+    // Union all rooms at this level
+    const union_clipper = new ClipperLib.Clipper();
+    current_polygons.forEach(function(polygon) {
+      union_clipper.AddPath(polygon, ClipperLib.PolyType.ptSubject, true);
+    });
+
+    const ceiling_area = new ClipperLib.Paths();
+    union_clipper.Execute(
+      ClipperLib.ClipType.ctUnion,
+      ceiling_area,
+      ClipperLib.PolyFillType.pftNonZero,
+      ClipperLib.PolyFillType.pftNonZero
+    );
+
+    // Compute occlusion from all higher levels
+    const occlusion_clipper = new ClipperLib.Clipper();
+    let has_occlusion = false;
+
+    for (let i = 0; i < index; i++) {
+      const above_ceiling_z = sorted_levels[i];
+      const above_polygons = ceiling_levels[above_ceiling_z];
+
+      above_polygons.forEach(function(polygon) {
+        occlusion_clipper.AddPath(polygon, ClipperLib.PolyType.ptSubject, true);
+        has_occlusion = true;
+      });
+    }
+
+    let exposed;
+
+    if (!has_occlusion) {
+      // Top floor - no occlusion, entire ceiling is exposed
+      exposed = ceiling_area;
+    } else {
+      // Compute union of all occlusion polygons
+      const occlusion_area = new ClipperLib.Paths();
+      occlusion_clipper.Execute(
+        ClipperLib.ClipType.ctUnion,
+        occlusion_area,
+        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
+      );
+
+      // Subtract occlusion from ceiling
+      const diff_clipper = new ClipperLib.Clipper();
+      ceiling_area.forEach(function(path) {
+        diff_clipper.AddPath(path, ClipperLib.PolyType.ptSubject, true);
+      });
+      occlusion_area.forEach(function(path) {
+        diff_clipper.AddPath(path, ClipperLib.PolyType.ptClip, true);
+      });
+
+      exposed = new ClipperLib.Paths();
+      diff_clipper.Execute(
+        ClipperLib.ClipType.ctDifference,
+        exposed,
+        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
+      );
+    }
+
+    // Filter out tiny polygons (floating-point artifacts)
+    const filtered = exposed.filter(function(path) {
+      return Math.abs(ClipperLib.Clipper.Area(path)) > 1;
+    });
+
+    if (filtered.length > 0) {
+      exposed_areas.push({
+        'ceiling_z': current_ceiling_z,
+        'polygons': filtered
+      });
+    }
+  });
+
+  return exposed_areas;
+};
+
+/**
+ * Add red outline visualization for exposed ceiling areas (future roof locations).
+ */
+beestat.component.scene.prototype.add_roof_outlines_ = function() {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+
+  // Create layer for roof outlines
+  const roof_outlines_layer = new THREE.Group();
+  this.main_group_.add(roof_outlines_layer);
+  this.layers_['roof_outlines'] = roof_outlines_layer;
+
+  // Render each exposed area as red outline
+  exposed_areas.forEach(function(area) {
+    area.polygons.forEach(function(polygon) {
+      if (polygon.length < 3) {
+        return;
+      }
+
+      // Create line points
+      const points = [];
+      polygon.forEach(function(point) {
+        points.push(new THREE.Vector3(point.x, point.y, area.ceiling_z));
+      });
+      // Close the loop
+      points.push(new THREE.Vector3(polygon[0].x, polygon[0].y, area.ceiling_z));
+
+      // Create red line
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        'color': 0xff0000,  // Red
+        'linewidth': 2
+      });
+
+      const line = new THREE.Line(geometry, material);
+      line.layers.set(beestat.component.scene.layer_visible);
+      roof_outlines_layer.add(line);
+    });
+  });
 };
 
 /**
