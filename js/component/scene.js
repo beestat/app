@@ -1316,51 +1316,65 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
       total_polygons++;
 
       try {
-        // Convert ClipperLib format {x, y} to SkeletonBuilder format [[x, y], ...]
-        const ring = polygon.map(function(point) {
-          return [point.x, point.y];
-        });
-        // Close the ring by repeating the first point
-        ring.push([polygon[0].x, polygon[0].y]);
+        // Simplify polygon to remove self-intersections and clean up topology
+        // This splits complex polygons (L-shapes, T-shapes) into simpler ones
+        const simplified = ClipperLib.Clipper.SimplifyPolygon(
+          polygon,
+          ClipperLib.PolyFillType.pftNonZero
+        );
 
-        // Build the straight skeleton
-        const coordinates = [ring];  // Array of rings (outer ring only, no holes)
-        const result = SkeletonBuilder.buildFromPolygon(coordinates);
-
-        if (!result) {
-          console.warn('SkeletonBuilder returned null for polygon:', polygon);
-          return;
-        }
-
-        successful_skeletons++;
-
-        // Visualize each skeleton polygon face with blue lines
-        result.polygons.forEach(function(face) {
-          if (face.length < 2) {
+        // SimplifyPolygon can return multiple polygons if the original was self-intersecting
+        simplified.forEach(function(simple_polygon) {
+          if (simple_polygon.length < 3) {
             return;
           }
 
-          // Create line points from the face vertices
-          const points = [];
-          face.forEach(function(vertex_index) {
-            const vertex = result.vertices[vertex_index];
-            points.push(new THREE.Vector3(vertex[0], vertex[1], area.ceiling_z));
+          // Convert ClipperLib format {x, y} to SkeletonBuilder format [[x, y], ...]
+          const ring = simple_polygon.map(function(point) {
+            return [point.x, point.y];
           });
-          // Close the loop
-          const first_vertex = result.vertices[face[0]];
-          points.push(new THREE.Vector3(first_vertex[0], first_vertex[1], area.ceiling_z));
+          // Close the ring by repeating the first point
+          ring.push([simple_polygon[0].x, simple_polygon[0].y]);
 
-          // Create blue line for skeleton edges
-          const geometry = new THREE.BufferGeometry().setFromPoints(points);
-          const material = new THREE.LineBasicMaterial({
-            'color': 0x00ffff,  // Cyan
-            'linewidth': 1
+          // Build the straight skeleton
+          const coordinates = [ring];  // Array of rings (outer ring only, no holes)
+          const result = SkeletonBuilder.buildFromPolygon(coordinates);
+
+          if (!result) {
+            console.warn('SkeletonBuilder returned null for polygon:', simple_polygon);
+            return;
+          }
+
+          successful_skeletons++;
+
+          // Visualize each skeleton polygon face with blue lines
+          result.polygons.forEach(function(face) {
+            if (face.length < 2) {
+              return;
+            }
+
+            // Create line points from the face vertices
+            const points = [];
+            face.forEach(function(vertex_index) {
+              const vertex = result.vertices[vertex_index];
+              points.push(new THREE.Vector3(vertex[0], vertex[1], area.ceiling_z));
+            });
+            // Close the loop
+            const first_vertex = result.vertices[face[0]];
+            points.push(new THREE.Vector3(first_vertex[0], first_vertex[1], area.ceiling_z));
+
+            // Create blue line for skeleton edges
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+              'color': 0x00ffff,  // Cyan
+              'linewidth': 1
+            });
+
+            const line = new THREE.Line(geometry, material);
+            line.layers.set(beestat.component.scene.layer_visible);
+            skeleton_debug_layer.add(line);
           });
-
-          const line = new THREE.Line(geometry, material);
-          line.layers.set(beestat.component.scene.layer_visible);
-          skeleton_debug_layer.add(line);
-        });
+        }); // End simplified.forEach
       } catch (error) {
         console.error('Error building skeleton for polygon:', error, polygon);
       }
