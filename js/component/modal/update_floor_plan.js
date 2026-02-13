@@ -144,14 +144,16 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     .set_width('100%');
 
   const roof_colors = [
-    {'label': 'Charcoal Gray', 'value': '#3a3a3a'},
+    {'label': 'Charcoal', 'value': '#3a3a3a'},
     {'label': 'Black', 'value': '#1a1a1a'},
+    {'label': 'Weathered Gray', 'value': '#6a6a6a'},
+    {'label': 'Driftwood', 'value': '#8b7d6b'},
     {'label': 'Brown', 'value': '#4a3a2a'},
+    {'label': 'Dark Brown', 'value': '#2a1a0a'},
+    {'label': 'Slate', 'value': '#5a6a7a'},
     {'label': 'Terracotta', 'value': '#8b4513'},
-    {'label': 'Slate Blue', 'value': '#5a6a7a'},
     {'label': 'Forest Green', 'value': '#2d4a2e'},
-    {'label': 'Burgundy Red', 'value': '#6b2c2c'},
-    {'label': 'Weathered Gray', 'value': '#6a6a6a'}
+    {'label': 'Colonial Blue', 'value': '#3a5a6a'}
   ];
 
   roof_colors.forEach(function(color) {
@@ -179,15 +181,16 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     .set_width('100%');
 
   const siding_colors = [
-    {'label': 'Blue Gray', 'value': '#889aaa'},
     {'label': 'White', 'value': '#f5f5f5'},
-    {'label': 'Beige', 'value': '#d4c4a8'},
-    {'label': 'Light Gray', 'value': '#c0c0c0'},
-    {'label': 'Red Brick', 'value': '#9a4a3a'},
-    {'label': 'Brown', 'value': '#8b6f47'},
     {'label': 'Cream', 'value': '#f0e8d0'},
-    {'label': 'Sage Green', 'value': '#8a9a7a'},
-    {'label': 'Navy Blue', 'value': '#4a5a6a'}
+    {'label': 'Greige', 'value': '#c9c3b8'},
+    {'label': 'Charcoal', 'value': '#3a3a3a'},
+    {'label': 'Sage', 'value': '#8a9a7a'},
+    {'label': 'Navy', 'value': '#4a5a6a'},
+    {'label': 'Brick Red', 'value': '#9a4a3a'},
+    {'label': 'Sandstone', 'value': '#d4c4a8'},
+    {'label': 'Taupe', 'value': '#8b7d6b'},
+    {'label': 'Terracotta', 'value': '#b85a3a'}
   ];
 
   siding_colors.forEach(function(color) {
@@ -215,12 +218,13 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     .set_width('100%');
 
   const ground_colors = [
-    {'label': 'Grass Green', 'value': '#4a7c3f'},
-    {'label': 'Dried Grass', 'value': '#9a8a5a'},
-    {'label': 'Desert Sand', 'value': '#c4a57a'},
-    {'label': 'Dark Green', 'value': '#2a4a2a'},
-    {'label': 'Snow', 'value': '#f0f0f0'},
-    {'label': 'Autumn Grass', 'value': '#7a6a4a'}
+    {'label': 'Summer Grass', 'value': '#4a7c3f'},
+    {'label': 'Fall Grass', 'value': '#9a8a5a'},
+    {'label': 'Winter Snow', 'value': '#f0f0f0'},
+    {'label': 'Bare Dirt', 'value': '#7a5c3a'},
+    {'label': 'Gravel', 'value': '#999999'},
+    {'label': 'Coastal Sand', 'value': '#e0d5b7'},
+    {'label': 'Desert Landscape', 'value': '#c4a57a'}
   ];
 
   ground_colors.forEach(function(color) {
