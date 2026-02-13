@@ -533,14 +533,10 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   const js_date = date.toDate();
 
-  // Get user rotation offset (0 = North, clockwise)
-  const rotation_degrees = this.get_appearance_value_('rotation');
-  const rotation_offset = (rotation_degrees * Math.PI) / 180;
-
   // === SUN ===
   const sun_position = SunCalc.getPosition(js_date, latitude, longitude);
   const sun_altitude = sun_position.altitude;
-  const sun_azimuth = sun_position.azimuth + rotation_offset;
+  const sun_azimuth = sun_position.azimuth;
 
   // Convert spherical coordinates to Cartesian
   // SunCalc: azimuth 0=south, π/2=west, π/-π=north, -π/2=east
@@ -565,7 +561,7 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   // === MOON ===
   const moon_position = SunCalc.getMoonPosition(js_date, latitude, longitude);
   const moon_altitude = moon_position.altitude;
-  const moon_azimuth = moon_position.azimuth + rotation_offset;
+  const moon_azimuth = moon_position.azimuth;
 
   // Get moon illumination (phase)
   const moon_illumination = SunCalc.getMoonIllumination(js_date);
@@ -1112,10 +1108,22 @@ beestat.component.scene.prototype.update_debug_ = function() {
 beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
 
+  // Main group handles rotation and orientation
   this.main_group_ = new THREE.Group();
-  this.main_group_.translateX((bounding_box.right + bounding_box.left) / -2);
-  this.main_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
+
+  // Apply X rotation to orient the floor plan
   this.main_group_.rotation.x = Math.PI / 2;
+
+  // Apply user-defined rotation around Z axis (vertical axis after X rotation)
+  const rotation_degrees = this.get_appearance_value_('rotation');
+  this.main_group_.rotation.z = (rotation_degrees * Math.PI) / 180;
+
+  // Content group is offset to center the geometry at the rotation point
+  this.content_group_ = new THREE.Group();
+  this.content_group_.translateX((bounding_box.right + bounding_box.left) / -2);
+  this.content_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
+
+  this.main_group_.add(this.content_group_);
   this.scene_.add(this.main_group_);
 };
 
@@ -1129,12 +1137,12 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   this.layers_ = {};
 
   const walls_layer = new THREE.Group();
-  self.main_group_.add(walls_layer);
+  self.content_group_.add(walls_layer);
   self.layers_['walls'] = walls_layer;
 
   floor_plan.data.groups.forEach(function(group) {
     const layer = new THREE.Group();
-    self.main_group_.add(layer);
+    self.content_group_.add(layer);
     self.layers_[group.group_id] = layer;
     group.rooms.forEach(function(room) {
       self.add_room_(layer, group, room);
@@ -1343,7 +1351,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
-  this.main_group_.add(roofs_layer);
+  this.content_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
   const roof_pitch = beestat.component.scene.roof_pitch;
@@ -1518,7 +1526,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
-  this.main_group_.add(roofs_layer);
+  this.content_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
   // Process each exposed area
@@ -1605,7 +1613,7 @@ beestat.component.scene.prototype.add_roof_outlines_ = function() {
 
   // Create layer for roof outlines
   const roof_outlines_layer = new THREE.Group();
-  this.main_group_.add(roof_outlines_layer);
+  this.content_group_.add(roof_outlines_layer);
   this.layers_['roof_outlines'] = roof_outlines_layer;
 
   // Render each exposed area as red outline
@@ -1651,7 +1659,7 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
 
   // Create layer for skeleton debug lines
   const skeleton_debug_layer = new THREE.Group();
-  this.main_group_.add(skeleton_debug_layer);
+  this.content_group_.add(skeleton_debug_layer);
   this.layers_['roof_skeleton_debug'] = skeleton_debug_layer;
 
   let total_polygons = 0;
@@ -1808,7 +1816,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
   ];
 
   const environment_layer = new THREE.Group();
-  this.main_group_.add(environment_layer);
+  this.content_group_.add(environment_layer);
   this.layers_['environment'] = environment_layer;
 
   strata.forEach(function(stratum) {

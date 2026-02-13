@@ -79,10 +79,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   (new beestat.component.title('Appearance')).render(parent);
   parent.appendChild($.createElement('p').innerHTML('Customize how your floor plan looks in 3D view.'));
 
-  // Debug: Log current appearance data
-  console.log('Floor plan appearance data:', floor_plan.data.appearance);
-  console.log('State appearance:', self.state_.appearance);
-
   const appearance_grid = document.createElement('div');
   Object.assign(appearance_grid.style, {
     'display': 'grid',
@@ -92,29 +88,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     'margin-bottom': `${beestat.style.size.gutter}px`
   });
   parent.appendChild(appearance_grid);
-
-  // Rotation input
-  const rotation_input = new beestat.component.input.text()
-    .set_label('Rotation (°)')
-    .set_width('100%')
-    .set_icon('rotate-right');
-
-  const current_rotation = self.state_.appearance?.rotation !== undefined
-    ? self.state_.appearance.rotation
-    : (floor_plan.data.appearance?.rotation || 0);
-  rotation_input.set_value(String(current_rotation));
-
-  rotation_input.addEventListener('change', function() {
-    if (self.state_.appearance === undefined) {
-      self.state_.appearance = {};
-    }
-    const value = parseInt(rotation_input.get_value(), 10);
-    if (!isNaN(value) && value >= 0 && value <= 359) {
-      self.state_.appearance.rotation = value;
-    }
-  });
-
-  rotation_input.render($(appearance_grid));
 
   // Roof Style dropdown
   const roof_style_select = new beestat.component.input.select()
@@ -172,7 +145,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   const current_roof_color = self.state_.appearance?.roof_color !== undefined
     ? self.state_.appearance.roof_color
     : (floor_plan.data.appearance?.roof_color || '#3a3a3a');
-  console.log('Setting roof color to:', current_roof_color);
   roof_color_select.set_value(current_roof_color);
 
   // Siding Color dropdown
@@ -209,7 +181,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   const current_siding_color = self.state_.appearance?.siding_color !== undefined
     ? self.state_.appearance.siding_color
     : (floor_plan.data.appearance?.siding_color || '#889aaa');
-  console.log('Setting siding color to:', current_siding_color);
   siding_color_select.set_value(current_siding_color);
 
   // Ground Color dropdown
@@ -243,7 +214,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   const current_ground_color = self.state_.appearance?.ground_color !== undefined
     ? self.state_.appearance.ground_color
     : (floor_plan.data.appearance?.ground_color || '#4a7c3f');
-  console.log('Setting ground color to:', current_ground_color);
   ground_color_select.set_value(current_ground_color);
 
   // Address

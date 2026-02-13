@@ -359,29 +359,28 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.update_scene_();
   this.scene_.render($(parent));
 
+  // Get current time of day
+  const now = moment();
+  const current_hour = now.hour();
+  const current_minute = now.minute();
+
   if (beestat.setting('visualize.range_type') === 'dynamic') {
-    const sensor_ids = Object.keys(
-      beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_)
-    );
-    if (
-      beestat.setting('visualize.range_dynamic') === 0 &&
-      sensor_ids.length > 0
-    ) {
-      this.date_m_ = this.get_most_recent_time_with_data_();
-    } else {
-      this.date_m_ = moment()
-        .subtract(
-          beestat.setting('visualize.range_dynamic'),
-          'day'
-        )
-        .hour(0)
-        .minute(0)
-        .second(0);
-    }
+    // Set the date, then apply current time of day
+    this.date_m_ = moment()
+      .subtract(
+        beestat.setting('visualize.range_dynamic'),
+        'day'
+      )
+      .hour(current_hour)
+      .minute(current_minute)
+      .second(0);
   } else {
+    // Set the static date, then apply current time of day
     this.date_m_ = moment(
       beestat.setting('visualize.range_static.begin') + ' 00:00:00'
-    );
+    )
+      .hour(current_hour)
+      .minute(current_minute);
   }
 
   // Set some defaults on the scene.
