@@ -70,7 +70,7 @@ beestat.component.card.contribute_status.prototype.decorate_direct_ = function(p
     status_tile
       .set_icon('close')
       .set_text_color(beestat.style.color.gray.base)
-      .set_text('Not a recurring supporter');
+      .set_text('Not a recurring supporter (please allow up to an hour for new payments to sync)');
   }
   status_tile.render($(status_container));
 

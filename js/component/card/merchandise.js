@@ -13,7 +13,7 @@ beestat.extend(beestat.component.card.merchandise, beestat.component.card);
  */
 beestat.component.card.merchandise.prototype.decorate_contents_ = function(parent) {
   const p = document.createElement('p');
-  p.innerText = 'Slap a sticker on your furnace and another on a water bottle to support your favorite thermostat analytics platform! Stickers are high quality, made in the USA, and shipped within 1 business day.';
+  p.innerText = 'Slap a sticker on your furnace and another on a water bottle to support your favorite thermostat analytics platform! Stickers are high quality, made in the USA, and shipped within 3 business days.';
   parent.appendChild(p);
 
   const flex_container = document.createElement('div');

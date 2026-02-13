@@ -141,17 +141,17 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_contents_ =
 beestat.component.card.runtime_thermostat_summary.prototype.decorate_runtime_chips_ = function(parent, data) {
   var groups = [
     {
-      'label': 'Cool',
+      'label': beestat.series.sum_compressor_cool_1.name.replace(/\d/, ''),
       'label_color': beestat.series.sum_compressor_cool_1.color,
       'keys': ['sum_compressor_cool_1', 'sum_compressor_cool_2']
     },
     {
-      'label': 'Heat',
+      'label': beestat.series.sum_compressor_heat_1.name.replace(/\d/, ''),
       'label_color': beestat.series.sum_compressor_heat_1.color,
       'keys': ['sum_compressor_heat_1', 'sum_compressor_heat_2']
     },
     {
-      'label': 'Aux',
+      'label': beestat.series.auxiliary_heat_1.name.replace(/\d/, ''),
       'label_color': beestat.series.sum_auxiliary_heat_1.color,
       'keys': ['sum_auxiliary_heat_1', 'sum_auxiliary_heat_2']
     }
@@ -189,7 +189,7 @@ beestat.component.card.runtime_thermostat_summary.prototype.decorate_runtime_chi
       'border-radius': radius,
       'overflow': 'hidden',
       'font-size': beestat.style.font_size.normal,
-      'margin-right': '8px',
+      'margin-right': '4px',
       'margin-bottom': '4px'
     });
 
