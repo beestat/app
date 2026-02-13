@@ -40,16 +40,10 @@ beestat.component.scene.default_appearance = {
 };
 
 /**
- * Brightness of the top-down light. This gives definition to the sides of
- * meshes by lighting the tops. Increase this for more edge definition.
+ * Brightness of the ambient light. Works with the directional lights to provide
+ * a base level of light to the scene.
  */
-beestat.component.scene.directional_light_top_intensity = 0.25;
-
-/**
- * Brightness of the ambient light. Works with the top light to provide a base
- * level of light to the scene.
- */
-beestat.component.scene.ambient_light_intensity = 0.3;
+beestat.component.scene.ambient_light_intensity = 0.25;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -128,7 +122,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_raycaster_(parent);
   this.add_skybox_(parent);
   this.add_ambient_light_();
-  this.add_directional_light_top_();
+  this.add_directional_lights_();
 
   this.add_main_group_();
   this.add_floor_plan_();
@@ -389,29 +383,41 @@ beestat.component.scene.prototype.add_skybox_ = function() {
 };
 
 /**
- * Consistent directional light that provides definition to the edge of meshes
- * by lighting the top.
+ * Add multiple directional lights from different angles to create definition
+ * and depth without harsh shadows. This three-point lighting setup gives
+ * surfaces varied illumination for better visual depth.
  */
-beestat.component.scene.prototype.add_directional_light_top_ = function() {
-  // Prevent re-initialization if light already exists
-  if (this.directional_light_top_ !== undefined) {
+beestat.component.scene.prototype.add_directional_lights_ = function() {
+  // Prevent re-initialization if lights already exist
+  if (this.directional_lights_ !== undefined) {
     return;
   }
 
-  this.directional_light_top_ = new THREE.DirectionalLight(
-    0xffffff,
-    beestat.component.scene.directional_light_top_intensity
-  );
-  this.directional_light_top_.position.set(0, 1000, 0);
-  this.scene_.add(this.directional_light_top_);
+  this.directional_lights_ = [];
 
-  if (this.debug_.directional_light_top_helper === true) {
-    this.directional_light_top_helper_ = new THREE.DirectionalLightHelper(
-      this.directional_light_top_,
-      500
-    );
-    this.scene_.add(this.directional_light_top_helper_);
-  }
+  // Key light: Main light from upper front-right (strongest)
+  const key_light = new THREE.DirectionalLight(0xffffff, 0.1);
+  key_light.position.set(500, 800, 500);
+  this.scene_.add(key_light);
+  this.directional_lights_.push(key_light);
+
+  // Fill light: Softer light from upper front-left (balances key light)
+  const fill_light = new THREE.DirectionalLight(0xffffff, 0.1);
+  fill_light.position.set(-500, 600, 500);
+  this.scene_.add(fill_light);
+  this.directional_lights_.push(fill_light);
+
+  // Back light: Mild light from behind (creates rim lighting on edges)
+  const back_light = new THREE.DirectionalLight(0xffffff, 0.1);
+  back_light.position.set(0, 500, -500);
+  this.scene_.add(back_light);
+  this.directional_lights_.push(back_light);
+
+  // Top light: Gentle overhead light for roof definition
+  const top_light = new THREE.DirectionalLight(0xffffff, 0.1);
+  top_light.position.set(0, 1000, 0);
+  this.scene_.add(top_light);
+  this.directional_lights_.push(top_light);
 };
 
 /**
@@ -761,10 +767,6 @@ beestat.component.scene.prototype.update_ = function() {
     });
   });
 
-  if (this.debug_.directional_light_top_helper === true) {
-    this.directional_light_top_helper_.update();
-  }
-
   // Update celestial lights (sun and moon) based on date and location
   if (this.date_ !== undefined && this.latitude_ !== undefined && this.longitude_ !== undefined) {
     this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
@@ -844,6 +846,9 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = -extrude_height - (room.elevation || group.elevation);
+
+  // Enable shadow receiving for depth perception
+  mesh.receiveShadow = true;
 
   // Translate the mesh to the room x/y position.
   mesh.translateX(room.x);
