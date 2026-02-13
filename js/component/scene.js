@@ -216,9 +216,22 @@ beestat.component.scene.prototype.add_camera_ = function() {
   this.camera_.layers.enable(beestat.component.scene.layer_visible);
   this.camera_.layers.enable(beestat.component.scene.layer_outline);
 
-  this.camera_.position.x = 400;
-  this.camera_.position.y = 400;
-  this.camera_.position.z = 400;
+  // Base camera position
+  const base_x = 500;
+  const base_y = 500;
+  const base_z = 500;
+
+  // Apply rotation to camera position to match scene rotation
+  const rotation_degrees = this.get_appearance_value_('rotation');
+  const rotation_radians = (rotation_degrees * Math.PI) / 180;
+
+  // Rotate camera position around Z-axis (vertical axis after main group's X rotation)
+  const cos_angle = Math.cos(rotation_radians);
+  const sin_angle = Math.sin(rotation_radians);
+
+  this.camera_.position.x = base_x * cos_angle - base_y * sin_angle;
+  this.camera_.position.y = base_x * sin_angle + base_y * cos_angle;
+  this.camera_.position.z = base_z;
 };
 
 /**
