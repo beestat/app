@@ -124,11 +124,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   roof_style_select.add_option({'label': 'Hip', 'value': 'hip'});
   roof_style_select.add_option({'label': 'Flat', 'value': 'flat'});
 
-  const current_roof_style = self.state_.appearance?.roof_style !== undefined
-    ? self.state_.appearance.roof_style
-    : (floor_plan.data.appearance?.roof_style || 'hip');
-  roof_style_select.set_value(current_roof_style);
-
   roof_style_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
       self.state_.appearance = {};
@@ -137,6 +132,11 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   });
 
   roof_style_select.render($(appearance_grid));
+
+  const current_roof_style = self.state_.appearance?.roof_style !== undefined
+    ? self.state_.appearance.roof_style
+    : (floor_plan.data.appearance?.roof_style || 'hip');
+  roof_style_select.set_value(current_roof_style);
 
   // Roof Color dropdown
   const roof_color_select = new beestat.component.input.select()
@@ -158,12 +158,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     roof_color_select.add_option(color);
   });
 
-  const current_roof_color = self.state_.appearance?.roof_color !== undefined
-    ? self.state_.appearance.roof_color
-    : (floor_plan.data.appearance?.roof_color || '#3a3a3a');
-  console.log('Setting roof color to:', current_roof_color);
-  roof_color_select.set_value(current_roof_color);
-
   roof_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
       self.state_.appearance = {};
@@ -172,6 +166,12 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   });
 
   roof_color_select.render($(appearance_grid));
+
+  const current_roof_color = self.state_.appearance?.roof_color !== undefined
+    ? self.state_.appearance.roof_color
+    : (floor_plan.data.appearance?.roof_color || '#3a3a3a');
+  console.log('Setting roof color to:', current_roof_color);
+  roof_color_select.set_value(current_roof_color);
 
   // Siding Color dropdown
   const siding_color_select = new beestat.component.input.select()
@@ -194,12 +194,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     siding_color_select.add_option(color);
   });
 
-  const current_siding_color = self.state_.appearance?.siding_color !== undefined
-    ? self.state_.appearance.siding_color
-    : (floor_plan.data.appearance?.siding_color || '#889aaa');
-  console.log('Setting siding color to:', current_siding_color);
-  siding_color_select.set_value(current_siding_color);
-
   siding_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
       self.state_.appearance = {};
@@ -208,6 +202,12 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   });
 
   siding_color_select.render($(appearance_grid));
+
+  const current_siding_color = self.state_.appearance?.siding_color !== undefined
+    ? self.state_.appearance.siding_color
+    : (floor_plan.data.appearance?.siding_color || '#889aaa');
+  console.log('Setting siding color to:', current_siding_color);
+  siding_color_select.set_value(current_siding_color);
 
   // Ground Color dropdown
   const ground_color_select = new beestat.component.input.select()
@@ -227,12 +227,6 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     ground_color_select.add_option(color);
   });
 
-  const current_ground_color = self.state_.appearance?.ground_color !== undefined
-    ? self.state_.appearance.ground_color
-    : (floor_plan.data.appearance?.ground_color || '#4a7c3f');
-  console.log('Setting ground color to:', current_ground_color);
-  ground_color_select.set_value(current_ground_color);
-
   ground_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
       self.state_.appearance = {};
@@ -241,6 +235,12 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   });
 
   ground_color_select.render($(appearance_grid));
+
+  const current_ground_color = self.state_.appearance?.ground_color !== undefined
+    ? self.state_.appearance.ground_color
+    : (floor_plan.data.appearance?.ground_color || '#4a7c3f');
+  console.log('Setting ground color to:', current_ground_color);
+  ground_color_select.set_value(current_ground_color);
 
   // Address
   (new beestat.component.title('What is the address for this home?')).render(parent);

@@ -114,8 +114,8 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'moon_light_helper': true,
     // 'grid': false,
     'watcher': false,
-    'roof_edges': true,
-    'straight_skeleton': true
+    'roof_edges': false,
+    'straight_skeleton': false
   };
 
   this.width_ = this.state_.scene_width || 800;
@@ -1496,6 +1496,8 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.userData.is_roof = true;
             mesh.layers.set(beestat.component.scene.layer_visible);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
             roofs_layer.add(mesh);
           });
         });
@@ -1560,8 +1562,12 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
           }
           shape.closePath();
 
-          // Create flat geometry
-          const geometry = new THREE.ShapeGeometry(shape);
+          // Create extruded geometry to give flat roof some depth
+          const flat_roof_depth = 6; // 6 inches of depth
+          const geometry = new THREE.ExtrudeGeometry(shape, {
+            'depth': flat_roof_depth,
+            'bevelEnabled': false
+          });
 
           // Create material - use appearance roof color
           const roof_color = self.get_appearance_value_('roof_color');
@@ -1574,7 +1580,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
           });
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.z = area.ceiling_z;  // Position at ceiling level
+          mesh.position.z = area.ceiling_z - flat_roof_depth;  // Position so top is at ceiling level
           mesh.userData.is_roof = true;
           mesh.layers.set(beestat.component.scene.layer_visible);
           mesh.castShadow = true;
