@@ -1588,6 +1588,8 @@ beestat.component.scene.prototype.add_roofs_ = function() {
 
   if (roof_style === 'flat') {
     this.add_flat_roofs_();
+  } else if (roof_style === 'hip') {
+    this.add_hip_roofs_();
   } else {
     this.add_hip_roofs_();
   }
@@ -1640,6 +1642,36 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
 
           // Use the offset polygon if successful, otherwise use original
           const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
+
+          // Add a thin base skirt under the hip roof to give the edge subtle thickness.
+          const base_shape = new THREE.Shape();
+          base_shape.moveTo(roof_polygon[0].x, roof_polygon[0].y);
+          for (let i = 1; i < roof_polygon.length; i++) {
+            base_shape.lineTo(roof_polygon[i].x, roof_polygon[i].y);
+          }
+          base_shape.closePath();
+
+          const hip_roof_base_thickness = 4;
+          const base_geometry = new THREE.ExtrudeGeometry(base_shape, {
+            'depth': hip_roof_base_thickness,
+            'bevelEnabled': false
+          });
+          const roof_color = self.get_appearance_value_('roof_color');
+          const base_material = new THREE.MeshStandardMaterial({
+            'color': roof_color,
+            'side': THREE.DoubleSide,
+            'flatShading': false,
+            'roughness': 0.85,
+            'metalness': 0.0
+          });
+          const base_mesh = new THREE.Mesh(base_geometry, base_material);
+          // Nudge downward so the top cap doesn't z-fight with hip roof faces.
+          base_mesh.position.z = area.ceiling_z + 0.5;
+          base_mesh.userData.is_roof = true;
+          base_mesh.layers.set(beestat.component.scene.layer_visible);
+          base_mesh.castShadow = true;
+          base_mesh.receiveShadow = true;
+          roofs_layer.add(base_mesh);
 
           // Convert to skeleton format
           const ring = roof_polygon.map(function(point) {
@@ -1744,7 +1776,6 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
             geometry.computeVertexNormals();
 
             // Create material - use appearance roof color
-            const roof_color = self.get_appearance_value_('roof_color');
             const material = new THREE.MeshStandardMaterial({
               'color': roof_color,
               'side': THREE.DoubleSide,
