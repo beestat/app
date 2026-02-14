@@ -53,6 +53,7 @@ beestat.component.scene.prototype.rerender = function() {
   this.scene_.remove(this.main_group_);
   this.add_main_group_();
   this.add_floor_plan_();
+  this.apply_appearance_rotation_to_lights_();
 };
 
 /**
@@ -213,16 +214,8 @@ beestat.component.scene.prototype.add_camera_ = function() {
   const base_y = 500;
   const base_z = 500;
 
-  // Apply rotation to camera position to match scene rotation
-  const rotation_degrees = this.get_appearance_value_('rotation');
-  const rotation_radians = (rotation_degrees * Math.PI) / 180;
-
-  // Rotate camera position around Z-axis (vertical axis after main group's X rotation)
-  const cos_angle = Math.cos(rotation_radians);
-  const sin_angle = Math.sin(rotation_radians);
-
-  this.camera_.position.x = base_x * cos_angle - base_y * sin_angle;
-  this.camera_.position.y = base_x * sin_angle + base_y * cos_angle;
+  this.camera_.position.x = base_x;
+  this.camera_.position.y = base_y;
   this.camera_.position.z = base_z;
 };
 
@@ -456,6 +449,7 @@ beestat.component.scene.prototype.add_static_lights_ = function() {
 
   // Add directional fill lights
   this.add_directional_lights_();
+  this.apply_appearance_rotation_to_lights_();
 };
 
 /**
@@ -549,6 +543,22 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
     );
     this.celestial_light_group_.add(this.moon_light_helper_);
   }
+
+  this.apply_appearance_rotation_to_lights_();
+};
+
+/**
+ * Apply appearance rotation to static fill lights.
+ * Celestial lights (sun/moon) stay in world coordinates so cardinal directions
+ * remain physically correct (sun rises in the east).
+ */
+beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = function() {
+  const rotation_degrees = this.get_appearance_value_('rotation');
+  const rotation_radians = (rotation_degrees * Math.PI) / 180;
+
+  if (this.static_light_group_ !== undefined) {
+    this.static_light_group_.rotation.y = rotation_radians;
+  }
 };
 
 /**
@@ -564,13 +574,15 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 beestat.component.scene.prototype.update_celestial_lights_ = function(date, latitude, longitude) {
   const distance = 2000;
   const js_date = date.toDate();
+  const rotation_radians = (this.get_appearance_value_('rotation') * Math.PI) / 180;
 
   // Sun
   const sun_pos = SunCalc.getPosition(js_date, latitude, longitude);
+  const rotated_sun_azimuth = sun_pos.azimuth - rotation_radians;
   this.sun_light_.position.set(
-    distance * Math.cos(sun_pos.altitude) * Math.sin(sun_pos.azimuth),   // East-West
+    distance * Math.cos(sun_pos.altitude) * Math.sin(rotated_sun_azimuth),   // East-West
     distance * Math.sin(sun_pos.altitude),                                // Up-Down (altitude)
-    -distance * Math.cos(sun_pos.altitude) * Math.cos(sun_pos.azimuth)   // North-South
+    -distance * Math.cos(sun_pos.altitude) * Math.cos(rotated_sun_azimuth)   // North-South
   );
 
   // Calculate target intensity for smooth transitions
@@ -580,11 +592,12 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
+  const rotated_moon_azimuth = moon_pos.azimuth - rotation_radians;
   const moon_fraction = SunCalc.getMoonIllumination(js_date).fraction;
   this.moon_light_.position.set(
-    distance * Math.cos(moon_pos.altitude) * Math.sin(moon_pos.azimuth),    // East-West
+    distance * Math.cos(moon_pos.altitude) * Math.sin(rotated_moon_azimuth),    // East-West
     distance * Math.sin(moon_pos.altitude),                                  // Up-Down (altitude)
-    -distance * Math.cos(moon_pos.altitude) * Math.cos(moon_pos.azimuth)    // North-South
+    -distance * Math.cos(moon_pos.altitude) * Math.cos(rotated_moon_azimuth)    // North-South
   );
   const moon_intensity = beestat.component.scene.moon_light_intensity * moon_fraction;
 
@@ -1149,7 +1162,7 @@ beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
   console.info(bounding_box);
 
-  // Main group handles rotation, orientation, and centering
+  // Main group handles orientation and centering
   this.main_group_ = new THREE.Group();
 
   // Center the floor plan at origin (accounting for bounding box offset)
@@ -1161,10 +1174,6 @@ beestat.component.scene.prototype.add_main_group_ = function() {
 
   // Apply X rotation to orient the floor plan
   this.main_group_.rotation.x = Math.PI / 2;
-
-  // Apply user-defined rotation around Z axis (vertical axis after X rotation)
-  const rotation_degrees = this.get_appearance_value_('rotation');
-  this.main_group_.rotation.z = (rotation_degrees * Math.PI) / 180;
 
   this.scene_.add(this.main_group_);
 };
