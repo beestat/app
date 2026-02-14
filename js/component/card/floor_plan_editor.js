@@ -189,16 +189,18 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
 
   this.floor_plan_.render(parent);
 
-  // Create and render the compass for setting orientation
-  this.compass_ = new beestat.component.compass(
-    beestat.setting('visualize.floor_plan_id')
-  );
-  this.compass_.render(parent);
+  // Create and render the compass for setting orientation (early access only)
+  if (beestat.user.has_early_access() === true) {
+    this.compass_ = new beestat.component.compass(
+      beestat.setting('visualize.floor_plan_id')
+    );
+    this.compass_.render(parent);
 
-  // Update floor plan when rotation changes
-  this.compass_.addEventListener('rotation_change', function() {
-    self.update_floor_plan_();
-  });
+    // Update floor plan when rotation changes
+    this.compass_.addEventListener('rotation_change', function() {
+      self.update_floor_plan_();
+    });
+  }
 
   setTimeout(function() {
     if (parent.getBoundingClientRect().width > 0) {

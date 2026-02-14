@@ -32,7 +32,6 @@ beestat.component.compass.prototype.render = function(parent) {
     'cursor': 'grab',
     'z-index': '10'
   });
-  this.container_.title = 'Drag to set which direction is North for sun/moon positioning';
 
   // Create SVG
   this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
