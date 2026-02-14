@@ -102,7 +102,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
 
   this.debug_ = {
     'axes': true,
-    'directional_light_helpers': true,
+    'directional_light_helpers': false,
     'sun_light_helper': true,
     'moon_light_helper': true,
     'watcher': true,
@@ -1147,9 +1147,17 @@ beestat.component.scene.prototype.update_debug_ = function() {
  */
 beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
+  console.info(bounding_box);
 
   // Main group handles rotation, orientation, and centering
   this.main_group_ = new THREE.Group();
+
+  // Center the floor plan at origin (accounting for bounding box offset)
+  this.main_group_.position.set(
+    (bounding_box.right + bounding_box.left) / -2,
+    0,
+    (bounding_box.bottom + bounding_box.top) / -2
+  );
 
   // Apply X rotation to orient the floor plan
   this.main_group_.rotation.x = Math.PI / 2;
@@ -1157,10 +1165,6 @@ beestat.component.scene.prototype.add_main_group_ = function() {
   // Apply user-defined rotation around Z axis (vertical axis after X rotation)
   const rotation_degrees = this.get_appearance_value_('rotation');
   this.main_group_.rotation.z = (rotation_degrees * Math.PI) / 180;
-
-  // Apply translation to center the geometry at the rotation point
-  this.main_group_.translateX((bounding_box.right + bounding_box.left) / -2);
-  this.main_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
 
   this.scene_.add(this.main_group_);
 };
