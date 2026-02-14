@@ -112,6 +112,17 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(toolbar_container);
   this.decorate_toolbar_(toolbar_container);
 
+  // Environment date slider (shown only when exterior/environment is visible)
+  const environment_date_container = document.createElement('div');
+  Object.assign(environment_date_container.style, {
+    'position': 'absolute',
+    'left': `${beestat.style.size.gutter}px`,
+    'bottom': `${beestat.style.size.gutter}px`,
+    'width': '230px'
+  });
+  parent.appendChild(environment_date_container);
+  this.decorate_environment_date_(environment_date_container);
+
   const top_container = document.createElement('div');
   Object.assign(top_container.style, {
     'display': 'flex',
@@ -384,6 +395,15 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
       .minute(current_minute);
   }
 
+  // Default environment date to today.
+  this.environment_date_m_ = moment().startOf('day');
+  if (beestat.setting('visualize.three_d.show_exterior') !== false) {
+    this.date_m_
+      .year(this.environment_date_m_.year())
+      .month(this.environment_date_m_.month())
+      .date(this.environment_date_m_.date());
+  }
+
   // Set some defaults on the scene.
   this.scene_.set_date(this.date_m_);
   this.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
@@ -458,6 +478,170 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
       show_exterior === true ? false : group_visible
     );
   });
+
+  this.update_environment_date_visibility_();
+
+  if (this.controls_container_ !== undefined) {
+    this.decorate_controls_();
+  }
+};
+
+/**
+ * Decorate environment date controls.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_environment_date_ = function(parent) {
+  const self = this;
+  window.clearInterval(this.environment_date_interval_);
+  delete this.environment_date_interval_;
+
+  this.environment_date_container_ = parent;
+  this.environment_date_container_.innerHTML = '';
+
+  const header = document.createElement('div');
+  Object.assign(header.style, {
+    'display': 'flex',
+    'justify-content': 'space-between',
+    'align-items': 'center',
+    'margin-bottom': '4px',
+    'color': '#fff',
+    'font-size': beestat.style.font_size.small
+  });
+  this.environment_date_container_.appendChild(header);
+
+  this.environment_month_label_ = document.createElement('div');
+  Object.assign(this.environment_month_label_.style, {
+    'font-weight': beestat.style.font_weight.bold
+  });
+  header.appendChild(this.environment_month_label_);
+
+  const controls_right = document.createElement('div');
+  Object.assign(controls_right.style, {
+    'display': 'flex',
+    'align-items': 'center',
+    'grid-gap': '8px'
+  });
+  header.appendChild(controls_right);
+
+  this.environment_date_play_tile_ = new beestat.component.tile()
+    .set_icon('play')
+    .set_size('small')
+    .set_shadow(false)
+    .set_background_color('transparent')
+    .set_text_color('#fff')
+    .set_text_hover_color(beestat.style.color.lightblue.light)
+    .render($(controls_right));
+  this.environment_date_play_tile_.addEventListener('click', function() {
+    if (self.environment_date_interval_ === undefined) {
+      self.environment_date_play_tile_.set_icon('pause');
+      self.environment_date_interval_ = window.setInterval(function() {
+        const current = self.environment_date_m_.clone();
+        const next = current.add(1, 'day').startOf('day');
+        const wrapped = next.year() !== year_start.year() ? year_start.clone() : next;
+        const day_index = wrapped.diff(year_start, 'days');
+        self.environment_date_slider_.set_value(day_index);
+        self.set_environment_date_(wrapped);
+      }, 140);
+    } else {
+      window.clearInterval(self.environment_date_interval_);
+      delete self.environment_date_interval_;
+      self.environment_date_play_tile_.set_icon('play');
+    }
+  });
+
+  const today_icon_container = document.createElement('div');
+  controls_right.appendChild(today_icon_container);
+  new beestat.component.tile()
+    .set_icon('restart')
+    .set_size('small')
+    .set_shadow(false)
+    .set_background_color('transparent')
+    .set_text_color('#fff')
+    .set_text_hover_color(beestat.style.color.lightblue.light)
+    .render($(today_icon_container))
+    .addEventListener('click', function() {
+      const today_date = moment().startOf('day');
+      const day_index = today_date.diff(year_start, 'days');
+      self.environment_date_slider_.set_value(day_index);
+      self.set_environment_date_(today_date);
+    });
+
+  const slider_container = document.createElement('div');
+  this.environment_date_container_.appendChild(slider_container);
+
+  const year_start = moment().startOf('year');
+  const today = moment().startOf('day');
+  const day_index_today = today.diff(year_start, 'days');
+  const max_day_index = year_start.clone().endOf('year').diff(year_start, 'days');
+
+  this.environment_date_slider_ = new beestat.component.input.range()
+    .set_min(0)
+    .set_max(max_day_index)
+    .set_value(day_index_today)
+    .render($(slider_container));
+
+  this.environment_date_slider_.addEventListener('input', function() {
+    if (self.environment_date_interval_ !== undefined) {
+      window.clearInterval(self.environment_date_interval_);
+      delete self.environment_date_interval_;
+      self.environment_date_play_tile_.set_icon('play');
+    }
+    const day_index = parseInt(self.environment_date_slider_.get_value(), 10);
+    const selected_date = year_start.clone().add(day_index, 'days').startOf('day');
+    self.set_environment_date_(selected_date);
+  });
+
+  this.set_environment_date_(today);
+  this.update_environment_date_visibility_();
+};
+
+/**
+ * Set the current environment date used for celestial calculations while
+ * preserving the current time-of-day.
+ *
+ * @param {moment} date_m
+ */
+beestat.component.card.three_d.prototype.set_environment_date_ = function(date_m) {
+  if (this.date_m_ === undefined) {
+    return;
+  }
+
+  this.environment_date_m_ = date_m.clone().startOf('day');
+  this.date_m_
+    .year(this.environment_date_m_.year())
+    .month(this.environment_date_m_.month())
+    .date(this.environment_date_m_.date());
+
+  if (this.environment_month_label_ !== undefined) {
+    this.environment_month_label_.innerText = this.environment_date_m_.format('MMMM D');
+  }
+
+  if (this.scene_ !== undefined) {
+    this.scene_.set_date(this.date_m_);
+  }
+
+  this.update_sunrise_sunset_markers_();
+};
+
+/**
+ * Toggle visibility of environment date controls based on exterior mode.
+ */
+beestat.component.card.three_d.prototype.update_environment_date_visibility_ = function() {
+  if (this.environment_date_container_ === undefined) {
+    return;
+  }
+
+  const show_environment_controls = beestat.setting('visualize.three_d.show_exterior') !== false;
+  this.environment_date_container_.style.display = show_environment_controls ? 'block' : 'none';
+
+  if (show_environment_controls === false && this.environment_date_interval_ !== undefined) {
+    window.clearInterval(this.environment_date_interval_);
+    delete this.environment_date_interval_;
+    if (this.environment_date_play_tile_ !== undefined) {
+      this.environment_date_play_tile_.set_icon('play');
+    }
+  }
 };
 
 /**
@@ -495,7 +679,16 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   const range = new beestat.component.input.range();
   const time_container = document.createElement('div');
 
-  range.set_background(this.get_chart_gradient_(thermostat_ids));
+  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
+  if (show_exterior === true) {
+    range.set_background(
+      'linear-gradient(90deg, ' +
+      beestat.style.color.bluegray.base +
+      ' 0% 100%)'
+    );
+  } else {
+    range.set_background(this.get_chart_gradient_(thermostat_ids));
+  }
 
   const container = document.createElement('div');
   Object.assign(container.style, {
@@ -523,7 +716,7 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
           ((self.date_m_.hours() * 60) + self.date_m_.minutes()) / 1440 * 288
         );
         time_container.innerText = self.date_m_.format('h:mm a');
-      }, 100);
+      }, 70);
     } else {
       play_tile
         .set_icon('play');
@@ -538,51 +731,32 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
     'flex-grow': '1'
   });
   container.appendChild(range_container);
+  this.range_container_ = range_container;
 
-  // Sunrise/Sunset
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  if (
-    floor_plan.address_id !== undefined &&
-    floor_plan.address_id !== null
-  ) {
-    const address = beestat.cache.address[floor_plan.address_id];
+  // Sunrise/Sunset markers
+  this.sunrise_marker_container_ = document.createElement('div');
+  Object.assign(this.sunrise_marker_container_.style, {
+    'position': 'absolute',
+    'top': '-10px',
+    'display': 'none'
+  });
+  range_container.appendChild(this.sunrise_marker_container_);
+  this.sunrise_marker_icon_ = new beestat.component.icon('white_balance_sunny')
+    .set_size(16)
+    .set_color(beestat.style.color.yellow.base)
+    .render($(this.sunrise_marker_container_));
 
-    const times = SunCalc.getTimes(
-      self.date_m_.toDate(),
-      address.normalized.metadata.latitude,
-      address.normalized.metadata.longitude
-    );
-
-    const sunrise_m = moment(times.sunrise);
-    const sunrise_percentage = ((sunrise_m.hours() * 60) + sunrise_m.minutes()) / 1440 * 100;
-
-    const sunset_m = moment(times.sunset);
-    const sunset_percentage = ((sunset_m.hours() * 60) + sunset_m.minutes()) / 1440 * 100;
-
-    const sunrise_container = document.createElement('div');
-    Object.assign(sunrise_container.style, {
-      'position': 'absolute',
-      'top': '-10px',
-      'left': `${sunrise_percentage}%`
-    });
-    new beestat.component.icon('white_balance_sunny', 'Sunrise @ ' + sunrise_m.format('h:mm'))
-      .set_size(16)
-      .set_color(beestat.style.color.yellow.base)
-      .render($(sunrise_container));
-    range_container.appendChild(sunrise_container);
-
-    const sunset_container = document.createElement('div');
-    Object.assign(sunset_container.style, {
-      'position': 'absolute',
-      'top': '-10px',
-      'left': `${sunset_percentage}%`
-    });
-    new beestat.component.icon('moon_waning_crescent', 'Sunset @ ' + sunset_m.format('h:mm'))
-      .set_size(16)
-      .set_color(beestat.style.color.purple.base)
-      .render($(sunset_container));
-    range_container.appendChild(sunset_container);
-  }
+  this.sunset_marker_container_ = document.createElement('div');
+  Object.assign(this.sunset_marker_container_.style, {
+    'position': 'absolute',
+    'top': '-10px',
+    'display': 'none'
+  });
+  range_container.appendChild(this.sunset_marker_container_);
+  this.sunset_marker_icon_ = new beestat.component.icon('moon_waning_crescent')
+    .set_size(16)
+    .set_color(beestat.style.color.purple.base)
+    .render($(this.sunset_marker_container_));
 
   // Range input
   range
@@ -609,6 +783,52 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
     time_container.innerText = self.date_m_.format('h:mm a');
     self.scene_.set_date(self.date_m_);
   });
+
+  this.update_sunrise_sunset_markers_();
+};
+
+/**
+ * Reposition and retitle sunrise/sunset markers for the current date.
+ */
+beestat.component.card.three_d.prototype.update_sunrise_sunset_markers_ = function() {
+  if (
+    this.range_container_ === undefined ||
+    this.sunrise_marker_container_ === undefined ||
+    this.sunset_marker_container_ === undefined
+  ) {
+    return;
+  }
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (
+    floor_plan === undefined ||
+    floor_plan.address_id === undefined ||
+    floor_plan.address_id === null ||
+    beestat.cache.address[floor_plan.address_id] === undefined
+  ) {
+    this.sunrise_marker_container_.style.display = 'none';
+    this.sunset_marker_container_.style.display = 'none';
+    return;
+  }
+
+  const address = beestat.cache.address[floor_plan.address_id];
+  const times = SunCalc.getTimes(
+    this.date_m_.toDate(),
+    address.normalized.metadata.latitude,
+    address.normalized.metadata.longitude
+  );
+
+  const sunrise_m = moment(times.sunrise);
+  const sunrise_percentage = ((sunrise_m.hours() * 60) + sunrise_m.minutes()) / 1440 * 100;
+  this.sunrise_marker_container_.style.left = `${sunrise_percentage}%`;
+  this.sunrise_marker_container_.style.display = 'block';
+  this.sunrise_marker_container_.setAttribute('title', 'Sunrise @ ' + sunrise_m.format('h:mm'));
+
+  const sunset_m = moment(times.sunset);
+  const sunset_percentage = ((sunset_m.hours() * 60) + sunset_m.minutes()) / 1440 * 100;
+  this.sunset_marker_container_.style.left = `${sunset_percentage}%`;
+  this.sunset_marker_container_.style.display = 'block';
+  this.sunset_marker_container_.setAttribute('title', 'Sunset @ ' + sunset_m.format('h:mm'));
 };
 
 /**

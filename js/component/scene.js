@@ -230,7 +230,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_.enablePan = false;
   this.controls_.maxDistance = 2000;
   this.controls_.minDistance = 400;
-  this.controls_.maxPolarAngle = Math.PI / 2.5;
+  this.controls_.maxPolarAngle = Math.PI / 2.1;
 };
 
 /**
@@ -609,6 +609,20 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
   this.celestial_light_group_.add(this.sun_light_);
 
+  // Faint arc showing the sun's path across the sky.
+  this.sun_path_line_ = new THREE.Line(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({
+      'color': 0xffe7aa,
+      'vertexColors': true,
+      'transparent': true,
+      'opacity': 0.14,
+      'depthWrite': false
+    })
+  );
+  this.sun_path_line_.layers.set(beestat.component.scene.layer_visible);
+  this.celestial_light_group_.add(this.sun_path_line_);
+
   // Visible sun body and glow
   this.sun_visual_group_ = new THREE.Group();
   this.sun_visual_group_.layers.set(beestat.component.scene.layer_visible);
@@ -704,6 +718,68 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 };
 
 /**
+ * Update a faint line representing the sun's path for the current date and
+ * location.
+ *
+ * @param {moment} date
+ * @param {number} latitude
+ * @param {number} longitude
+ */
+beestat.component.scene.prototype.update_sun_path_arc_ = function(date, latitude, longitude) {
+  if (this.sun_path_line_ === undefined) {
+    return;
+  }
+
+  const rotation_radians = (this.get_appearance_value_('rotation') * Math.PI) / 180;
+  const sun_distance = 2000;
+  const start_of_day = date.clone().startOf('day');
+  const end_of_day = start_of_day.clone().add(1, 'day');
+  const start_ms = start_of_day.valueOf();
+  const end_ms = end_of_day.valueOf();
+  const sample_count = 72;
+  const points = [];
+
+  for (let i = 0; i < sample_count; i++) {
+    const t = i / (sample_count - 1);
+    const sample_date = new Date(start_ms + (end_ms - start_ms) * t);
+
+    const sun_pos = SunCalc.getPosition(sample_date, latitude, longitude);
+    const rotated_azimuth = sun_pos.azimuth - rotation_radians;
+
+    // Extend slightly below horizon so the path doesn't hard-stop at horizon.
+    if (sun_pos.altitude > -0.22) {
+      points.push(new THREE.Vector3(
+        sun_distance * Math.cos(sun_pos.altitude) * Math.sin(rotated_azimuth),
+        sun_distance * Math.sin(sun_pos.altitude),
+        -sun_distance * Math.cos(sun_pos.altitude) * Math.cos(rotated_azimuth)
+      ));
+    }
+  }
+
+  if (points.length >= 2) {
+    const geometry = this.sun_path_line_.geometry;
+    geometry.setFromPoints(points);
+
+    // Fade the ends by dimming vertex colors toward each endpoint.
+    const colors = [];
+    const base = new THREE.Color(0xffe7aa);
+    for (let i = 0; i < points.length; i++) {
+      const t = i / (points.length - 1);
+      const center_weight = Math.pow(Math.sin(Math.PI * t), 1.2);
+      const intensity = 0.2 + (0.8 * center_weight);
+      const color = base.clone().multiplyScalar(intensity);
+      colors.push(color.r, color.g, color.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    this.sun_path_line_.visible = true;
+  } else {
+    this.sun_path_line_.geometry.setFromPoints([]);
+    this.sun_path_line_.visible = false;
+  }
+};
+
+/**
  * Static (ambient/directional fill) lights should not rotate with floor-plan
  * appearance. Celestial lights are handled in update_celestial_lights_.
  */
@@ -771,6 +847,8 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     }
   }
   const moon_intensity = beestat.component.scene.moon_light_intensity * moon_fraction;
+
+  this.update_sun_path_arc_(date, latitude, longitude);
 
   // Calculate target intensity for smooth transitions
   // Moon is only visible when sun is below horizon
