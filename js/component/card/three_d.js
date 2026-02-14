@@ -112,7 +112,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(toolbar_container);
   this.decorate_toolbar_(toolbar_container);
 
-  // Environment date slider (shown only when exterior/environment is visible)
+  // Environment date slider (shown only in environment view)
   const environment_date_container = document.createElement('div');
   Object.assign(environment_date_container.style, {
     'position': 'absolute',
@@ -397,7 +397,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 
   // Default environment date to today.
   this.environment_date_m_ = moment().startOf('day');
-  if (beestat.setting('visualize.three_d.show_exterior') !== false) {
+  if (this.get_show_environment_() === true) {
     this.date_m_
       .year(this.environment_date_m_.year())
       .month(this.environment_date_m_.month())
@@ -451,7 +451,39 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 };
 
 /**
- * Apply saved layer visibility (exterior/interior/floors) to the current
+ * Get environment view state, with backward-compatible migration from
+ * legacy show_exterior setting.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.get_show_environment_ = function() {
+  const show_environment = beestat.setting('visualize.three_d.show_environment');
+  if (show_environment !== undefined) {
+    return show_environment !== false;
+  }
+
+  const legacy_show_exterior = beestat.setting('visualize.three_d.show_exterior');
+  if (legacy_show_exterior !== undefined) {
+    const migrated_value = legacy_show_exterior !== false;
+    beestat.setting('visualize.three_d.show_environment', migrated_value);
+    return migrated_value;
+  }
+
+  return true;
+};
+
+/**
+ * Set environment view state and mirror to legacy key for compatibility.
+ *
+ * @param {boolean} show_environment
+ */
+beestat.component.card.three_d.prototype.set_show_environment_ = function(show_environment) {
+  beestat.setting('visualize.three_d.show_environment', show_environment);
+  beestat.setting('visualize.three_d.show_exterior', show_environment);
+};
+
+/**
+ * Apply saved layer visibility (environment/floor plan/floors) to the current
  * scene. Used after initial draw and after scene rerenders.
  */
 beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
@@ -464,18 +496,18 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
     return;
   }
 
-  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
+  const show_environment = this.get_show_environment_();
 
-  this.scene_.set_layer_visible('walls', show_exterior);
-  this.scene_.set_layer_visible('roof', show_exterior);
-  this.scene_.set_layer_visible('environment', show_exterior);
+  this.scene_.set_layer_visible('walls', show_environment);
+  this.scene_.set_layer_visible('roof', show_environment);
+  this.scene_.set_layer_visible('environment', show_environment);
 
   Object.values(floor_plan.data.groups).forEach((group) => {
     const setting_key = 'visualize.three_d.show_group.' + group.group_id;
     const group_visible = beestat.setting(setting_key) !== false;
     this.scene_.set_layer_visible(
       group.group_id,
-      show_exterior === true ? false : group_visible
+      show_environment === true ? false : group_visible
     );
   });
 
@@ -486,6 +518,9 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   }
   if (this.legend_container_ !== undefined) {
     this.decorate_legend_();
+  }
+  if (this.toolbar_container_ !== undefined) {
+    this.decorate_toolbar_();
   }
 };
 
@@ -633,14 +668,14 @@ beestat.component.card.three_d.prototype.set_environment_date_ = function(date_m
 };
 
 /**
- * Toggle visibility of environment date controls based on exterior mode.
+ * Toggle visibility of environment date controls based on environment view.
  */
 beestat.component.card.three_d.prototype.update_environment_date_visibility_ = function() {
   if (this.environment_date_container_ === undefined) {
     return;
   }
 
-  const show_environment_controls = beestat.setting('visualize.three_d.show_exterior') !== false;
+  const show_environment_controls = this.get_show_environment_();
   this.environment_date_container_.style.display = show_environment_controls ? 'block' : 'none';
 
   if (show_environment_controls === false && this.environment_date_interval_ !== undefined) {
@@ -687,8 +722,8 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   const range = new beestat.component.input.range();
   const time_container = document.createElement('div');
 
-  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
-  if (show_exterior === true) {
+  const show_environment = this.get_show_environment_();
+  if (show_environment === true) {
     range.set_background(
       'linear-gradient(90deg, ' +
       beestat.style.color.bluegray.base +
@@ -973,6 +1008,10 @@ beestat.component.card.three_d.prototype.decorate_watermark_ = function(parent) 
  */
 beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   const self = this;
+  if (parent !== undefined) {
+    this.toolbar_container_ = parent;
+  }
+  this.toolbar_container_.innerHTML = '';
 
   const tile_group = new beestat.component.tile_group();
 
@@ -983,27 +1022,29 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     .set_text_color(beestat.style.color.lightblue.base)
   );
 
-  // Add room
-  tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.show_labels') === false ? 'label_off' : 'label')
-    .set_title('Toggle Labels')
-    .set_text_color(beestat.style.color.gray.light)
-    .set_background_color(beestat.style.color.bluegray.base)
-    .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function(e) {
-      e.stopPropagation();
-      beestat.setting(
-        'visualize.three_d.show_labels',
-        !beestat.setting('visualize.three_d.show_labels')
-      );
-      this.set_icon(
-        'label' + (beestat.setting('visualize.three_d.show_labels') === false ? '_off' : '')
-      );
-      self.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
-    })
-  );
+  const show_environment = this.get_show_environment_();
 
-  // Add room
+  // Toggle between environment view and floor plan view.
+  if (beestat.user.has_early_access() === true) {
+    const view_toggle_tile = new beestat.component.tile()
+      .set_icon(show_environment === false ? 'floor_plan' : 'home')
+      .set_title('Toggle View')
+      .set_text_color(beestat.style.color.gray.light)
+      .set_background_color(beestat.style.color.bluegray.base)
+      .set_background_hover_color(beestat.style.color.bluegray.light)
+      .addEventListener('click', function(e) {
+        e.stopPropagation();
+        const new_value = !self.get_show_environment_();
+        self.set_show_environment_(new_value);
+
+        this.set_icon(new_value ? 'home' : 'floor_plan');
+        self.apply_layer_visibility_();
+      });
+
+    tile_group.add_tile(view_toggle_tile);
+  }
+
+  // Auto-rotate
   tile_group.add_tile(new beestat.component.tile()
     .set_icon(beestat.setting('visualize.three_d.auto_rotate') === false ? 'restart_off' : 'restart')
     .set_title('Toggle Auto-Rotate')
@@ -1023,27 +1064,29 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     })
   );
 
-  // Toggle exterior (walls, roof, environment) and interior (floor plan)
-  if (beestat.user.has_early_access() === true) {
-    const view_toggle_tile = new beestat.component.tile()
-      .set_icon(beestat.setting('visualize.three_d.show_exterior') === false ? 'floor_plan' : 'home')
-      .set_title('Toggle View')
+  // Labels (hidden while environment view is on)
+  if (show_environment === false) {
+    tile_group.add_tile(new beestat.component.tile()
+      .set_icon(beestat.setting('visualize.three_d.show_labels') === false ? 'label_off' : 'label')
+      .set_title('Toggle Labels')
       .set_text_color(beestat.style.color.gray.light)
       .set_background_color(beestat.style.color.bluegray.base)
       .set_background_hover_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function(e) {
         e.stopPropagation();
-        const new_value = !beestat.setting('visualize.three_d.show_exterior');
-        beestat.setting('visualize.three_d.show_exterior', new_value);
-
-        this.set_icon(new_value ? 'home' : 'floor_plan');
-        self.apply_layer_visibility_();
-      });
-
-    tile_group.add_tile(view_toggle_tile);
+        beestat.setting(
+          'visualize.three_d.show_labels',
+          !beestat.setting('visualize.three_d.show_labels')
+        );
+        this.set_icon(
+          'label' + (beestat.setting('visualize.three_d.show_labels') === false ? '_off' : '')
+        );
+        self.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
+      })
+    );
   }
 
-  tile_group.render($(parent));
+  tile_group.render($(this.toolbar_container_));
 };
 
 /**
@@ -1108,8 +1151,8 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
     this.legend_container_ = parent;
   }
 
-  // Hide runtime gradient legend in environment/exterior mode.
-  if (beestat.setting('visualize.three_d.show_exterior') !== false) {
+  // Hide runtime gradient legend in environment view.
+  if (this.get_show_environment_() === true) {
     this.legend_container_.innerHTML = '';
     this.legend_container_.style.display = 'none';
     return;

@@ -6,6 +6,3 @@ await SkeletonBuilder.init();
 
 // Expose to global scope so the rest of the codebase can use it
 window.SkeletonBuilder = SkeletonBuilder;
-
-// Log confirmation that it's ready
-console.log('SkeletonBuilder ready');
