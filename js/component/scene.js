@@ -18,13 +18,10 @@ beestat.component.scene.layer_visible = 0;
 beestat.component.scene.layer_hidden = 1;
 beestat.component.scene.layer_outline = 2;
 
-/**
- * 3D Scene configuration constants
- */
 beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
 beestat.component.scene.roof_overhang = 12; // Roof overhang beyond walls
 beestat.component.scene.wall_thickness = 4;
-beestat.component.scene.environment_padding = 100; // Padding around floor plan
+beestat.component.scene.environment_padding = 200; // Padding around floor plan
 beestat.component.scene.room_floor_thickness = 6;
 beestat.component.scene.room_wall_inset = 1.5;
 
@@ -40,10 +37,12 @@ beestat.component.scene.default_appearance = {
 };
 
 /**
- * Brightness of the ambient light. Works with the directional lights to provide
- * a base level of light to the scene.
+ * Light intensity constants
  */
 beestat.component.scene.ambient_light_intensity = 0.25;
+beestat.component.scene.directional_light_intensity = 0.1;
+beestat.component.scene.sun_light_intensity = 0.6;
+beestat.component.scene.moon_light_intensity = 0.35;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -102,12 +101,11 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   parent.style('background', '#202a30');
 
   this.debug_ = {
-    'axes': false,
-    'directional_light_top_helper': false,
+    'axes': true,
+    'directional_light_helpers': true,
     'sun_light_helper': true,
     'moon_light_helper': true,
-    // 'grid': false,
-    'watcher': false,
+    'watcher': true,
     'roof_edges': false,
     'straight_skeleton': false
   };
@@ -121,8 +119,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_controls_(parent);
   this.add_raycaster_(parent);
   this.add_skybox_(parent);
-  this.add_ambient_light_();
-  this.add_directional_lights_();
+  this.add_static_lights_();
 
   this.add_main_group_();
   this.add_floor_plan_();
@@ -131,6 +128,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     self.animation_frame_ = window.requestAnimationFrame(animate);
     self.controls_.update();
     self.update_raycaster_();
+    self.update_celestial_light_intensities_();
     self.renderer_.render(self.scene_, self.camera_);
   };
   animate();
@@ -237,7 +235,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_ = new THREE.OrbitControls(this.camera_, parent[0]);
   this.controls_.enableDamping = true;
   this.controls_.enablePan = false;
-  this.controls_.maxDistance = 10000;
+  this.controls_.maxDistance = 2000;
   this.controls_.minDistance = 400;
   this.controls_.maxPolarAngle = Math.PI / 2.5;
 };
@@ -396,44 +394,68 @@ beestat.component.scene.prototype.add_directional_lights_ = function() {
   this.directional_lights_ = [];
 
   // Key light: Main light from upper front-right (strongest)
-  const key_light = new THREE.DirectionalLight(0xffffff, 0.1);
-  key_light.position.set(500, 800, 500);
-  this.scene_.add(key_light);
+  const key_light = new THREE.DirectionalLight(0xffffff, beestat.component.scene.directional_light_intensity);
+  key_light.position.set(2000, 3200, 2000);
+  this.static_light_group_.add(key_light);
   this.directional_lights_.push(key_light);
 
   // Fill light: Softer light from upper front-left (balances key light)
-  const fill_light = new THREE.DirectionalLight(0xffffff, 0.1);
-  fill_light.position.set(-500, 600, 500);
-  this.scene_.add(fill_light);
+  const fill_light = new THREE.DirectionalLight(0xffffff, beestat.component.scene.directional_light_intensity);
+  fill_light.position.set(-2000, 2400, 2000);
+  this.static_light_group_.add(fill_light);
   this.directional_lights_.push(fill_light);
 
   // Back light: Mild light from behind (creates rim lighting on edges)
-  const back_light = new THREE.DirectionalLight(0xffffff, 0.1);
-  back_light.position.set(0, 500, -500);
-  this.scene_.add(back_light);
+  const back_light = new THREE.DirectionalLight(0xffffff, beestat.component.scene.directional_light_intensity);
+  back_light.position.set(0, 2000, -2000);
+  this.static_light_group_.add(back_light);
   this.directional_lights_.push(back_light);
 
   // Top light: Gentle overhead light for roof definition
-  const top_light = new THREE.DirectionalLight(0xffffff, 0.1);
-  top_light.position.set(0, 1000, 0);
-  this.scene_.add(top_light);
+  const top_light = new THREE.DirectionalLight(0xffffff, beestat.component.scene.directional_light_intensity);
+  top_light.position.set(0, 4000, 0);
+  this.static_light_group_.add(top_light);
   this.directional_lights_.push(top_light);
+
+  // Add helpers for debugging
+  if (this.debug_.directional_light_helpers === true) {
+    this.directional_light_helpers_ = [];
+    this.directional_lights_.forEach((light) => {
+      const helper = new THREE.DirectionalLightHelper(light, 100);
+      this.static_light_group_.add(helper);
+      this.directional_light_helpers_.push(helper);
+    });
+  }
 };
 
 /**
- * Ambient lighting so nothing is shrouded in darkness.
+ * Create static lights group containing ambient and directional fill lights.
+ * These lights are always on and provide base illumination.
  */
-beestat.component.scene.prototype.add_ambient_light_ = function() {
-  // Prevent re-initialization if light already exists
-  if (this.ambient_light_ !== undefined) {
+beestat.component.scene.prototype.add_static_lights_ = function() {
+  // Prevent re-initialization
+  if (this.static_light_group_ !== undefined) {
     return;
   }
 
+  // Initialize layers object if not already done
+  if (this.layers_ === undefined) {
+    this.layers_ = {};
+  }
+
+  this.static_light_group_ = new THREE.Group();
+  this.scene_.add(this.static_light_group_);
+  this.layers_['static_lights'] = this.static_light_group_;
+
+  // Add ambient light
   this.ambient_light_ = new THREE.AmbientLight(
     0xffffff,
     beestat.component.scene.ambient_light_intensity
   );
-  this.scene_.add(this.ambient_light_);
+  this.static_light_group_.add(this.ambient_light_);
+
+  // Add directional fill lights
+  this.add_directional_lights_();
 };
 
 /**
@@ -448,16 +470,16 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   }
 
   // Create celestial group if it doesn't exist
-  if (this.celestial_group_ === undefined) {
-    this.celestial_group_ = new THREE.Group();
-    this.scene_.add(this.celestial_group_);
-    this.layers_['celestial'] = this.celestial_group_;
+  if (this.celestial_light_group_ === undefined) {
+    this.celestial_light_group_ = new THREE.Group();
+    this.scene_.add(this.celestial_light_group_);
+    this.layers_['celestial'] = this.celestial_light_group_;
   }
 
   // Sun light
   this.sun_light_ = new THREE.DirectionalLight(
     0xffffdd, // Slightly warm color for sunlight
-    0.6
+    beestat.component.scene.sun_light_intensity
   );
 
   // Initial position (will be updated by update_celestial_lights_)
@@ -465,67 +487,67 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
   // Enable shadow casting
   this.sun_light_.castShadow = true;
+  this.sun_light_.shadow.mapSize.set(2048, 2048);
+  this.sun_light_.shadow.bias = -0.001;
 
-  // Configure shadow properties
-  this.sun_light_.shadow.mapSize.width = 2048;
-  this.sun_light_.shadow.mapSize.height = 2048;
-  this.sun_light_.shadow.camera.left = -500;
-  this.sun_light_.shadow.camera.right = 500;
-  this.sun_light_.shadow.camera.top = 500;
-  this.sun_light_.shadow.camera.bottom = -500;
+  // Configure shadow camera frustum
+  this.sun_light_.shadow.camera.left = -1000;
+  this.sun_light_.shadow.camera.right = 1000;
+  this.sun_light_.shadow.camera.top = 1000;
+  this.sun_light_.shadow.camera.bottom = -1000;
   this.sun_light_.shadow.camera.near = 0.5;
-  this.sun_light_.shadow.camera.far = 2000;
-  this.sun_light_.shadow.bias = -0.001; // Prevent shadow acne
+  this.sun_light_.shadow.camera.far = 5000;
+  this.sun_light_.shadow.camera.updateProjectionMatrix();
 
   // Set target to world origin (0,0,0) so light always points there
   this.sun_light_.target.position.set(0, 0, 0);
   this.scene_.add(this.sun_light_.target);
 
-  this.celestial_group_.add(this.sun_light_);
+  this.celestial_light_group_.add(this.sun_light_);
 
   if (this.debug_.sun_light_helper === true) {
     this.sun_light_helper_ = new THREE.DirectionalLightHelper(
       this.sun_light_,
       100
     );
-    this.celestial_group_.add(this.sun_light_helper_);
+    this.celestial_light_group_.add(this.sun_light_helper_);
   }
 
   // Moon light
   this.moon_light_ = new THREE.DirectionalLight(
     0xaaccff, // Cool bluish color for moonlight
-    0.15
+    beestat.component.scene.moon_light_intensity
   );
 
   // Initial position (will be updated by update_celestial_lights_)
   this.moon_light_.position.set(-500, 500, 500);
 
-  // Moon casts shadows too
+  // Enable shadow casting
   this.moon_light_.castShadow = true;
-
-  // Configure shadow properties (same as sun)
-  this.moon_light_.shadow.mapSize.width = 2048;
-  this.moon_light_.shadow.mapSize.height = 2048;
-  this.moon_light_.shadow.camera.left = -500;
-  this.moon_light_.shadow.camera.right = 500;
-  this.moon_light_.shadow.camera.top = 500;
-  this.moon_light_.shadow.camera.bottom = -500;
-  this.moon_light_.shadow.camera.near = 0.5;
-  this.moon_light_.shadow.camera.far = 2000;
+  this.moon_light_.shadow.mapSize.set(2048, 2048);
   this.moon_light_.shadow.bias = -0.001;
+
+  // Configure shadow camera frustum
+  this.moon_light_.shadow.camera.left = -1000;
+  this.moon_light_.shadow.camera.right = 1000;
+  this.moon_light_.shadow.camera.top = 1000;
+  this.moon_light_.shadow.camera.bottom = -1000;
+  this.moon_light_.shadow.camera.near = 0.5;
+  this.moon_light_.shadow.camera.far = 5000;
+  this.moon_light_.shadow.camera.updateProjectionMatrix();
 
   // Set target to world origin
   this.moon_light_.target.position.set(0, 0, 0);
   this.scene_.add(this.moon_light_.target);
 
-  this.celestial_group_.add(this.moon_light_);
+  this.celestial_light_group_.add(this.moon_light_);
 
   if (this.debug_.moon_light_helper === true) {
     this.moon_light_helper_ = new THREE.DirectionalLightHelper(
       this.moon_light_,
       100
     );
-    this.celestial_group_.add(this.moon_light_helper_);
+    this.celestial_light_group_.add(this.moon_light_helper_);
   }
 };
 
@@ -536,86 +558,84 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
  * @param {moment} date The date/time to calculate positions for
  * @param {number} latitude Location latitude
  * @param {number} longitude Location longitude
+ * 
+ * @link https://www.earthspacelab.com/app/solar-time/
  */
 beestat.component.scene.prototype.update_celestial_lights_ = function(date, latitude, longitude) {
-  if (
-    this.sun_light_ === undefined ||
-    this.moon_light_ === undefined ||
-    date === undefined ||
-    latitude === undefined ||
-    longitude === undefined
-  ) {
-    return;
-  }
-
-  const distance = 1000; // Distance from origin for light positioning
-
+  const distance = 2000;
   const js_date = date.toDate();
 
-  // === SUN ===
-  const sun_position = SunCalc.getPosition(js_date, latitude, longitude);
-  const sun_altitude = sun_position.altitude;
-  const sun_azimuth = sun_position.azimuth;
+  // Sun
+  const sun_pos = SunCalc.getPosition(js_date, latitude, longitude);
+  this.sun_light_.position.set(
+    distance * Math.cos(sun_pos.altitude) * Math.sin(sun_pos.azimuth),   // East-West
+    distance * Math.sin(sun_pos.altitude),                                // Up-Down (altitude)
+    -distance * Math.cos(sun_pos.altitude) * Math.cos(sun_pos.azimuth)   // North-South
+  );
 
-  // Convert spherical coordinates to Cartesian
-  // SunCalc: azimuth 0=south, π/2=west, π/-π=north, -π/2=east
-  // World coords: +X=east, +Y=up, +Z=south, -Z=north
-  // DirectionalLight shines FROM position TOWARD origin (0,0,0)
-  const sun_x = distance * Math.cos(sun_altitude) * Math.sin(sun_azimuth);
-  const sun_y = distance * Math.cos(sun_altitude) * Math.cos(sun_azimuth);
-  const sun_z = distance * Math.sin(sun_altitude);
+  // Calculate target intensity for smooth transitions
+  this.target_sun_intensity_ = sun_pos.altitude < 0
+    ? Math.max(0, beestat.component.scene.sun_light_intensity * (1 + sun_pos.altitude / (Math.PI / 6)))
+    : beestat.component.scene.sun_light_intensity;
 
-  this.sun_light_.position.set(sun_x, sun_y, sun_z);
+  // Moon
+  const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
+  const moon_fraction = SunCalc.getMoonIllumination(js_date).fraction;
+  this.moon_light_.position.set(
+    distance * Math.cos(moon_pos.altitude) * Math.sin(moon_pos.azimuth),    // East-West
+    distance * Math.sin(moon_pos.altitude),                                  // Up-Down (altitude)
+    -distance * Math.cos(moon_pos.altitude) * Math.cos(moon_pos.azimuth)    // North-South
+  );
+  const moon_intensity = beestat.component.scene.moon_light_intensity * moon_fraction;
 
-  // Adjust sun intensity based on altitude (fade when below horizon)
-  let sun_intensity = 0.6;
-  if (sun_altitude < 0) {
-    // Sun is below horizon, fade out
-    sun_intensity = Math.max(0, 0.6 * (1 + sun_altitude / (Math.PI / 6)));
+  // Calculate target intensity for smooth transitions
+  // Moon is only visible when sun is below horizon
+  if (sun_pos.altitude >= 0) {
+    this.target_moon_intensity_ = 0;
+  } else {
+    this.target_moon_intensity_ = moon_pos.altitude < 0
+      ? Math.max(0, moon_intensity * (1 + moon_pos.altitude / (Math.PI / 6)))
+      : moon_intensity;
   }
 
-  this.sun_light_.intensity = sun_intensity;
-  this.sun_light_.castShadow = sun_intensity > 0.05;
-
-  // === MOON ===
-  const moon_position = SunCalc.getMoonPosition(js_date, latitude, longitude);
-  const moon_altitude = moon_position.altitude;
-  const moon_azimuth = moon_position.azimuth;
-
-  // Get moon illumination (phase)
-  const moon_illumination = SunCalc.getMoonIllumination(js_date);
-  const moon_fraction = moon_illumination.fraction; // 0 = new moon, 1 = full moon
-
-  // Convert spherical coordinates to Cartesian (same as sun)
-  const moon_x = distance * Math.cos(moon_altitude) * Math.sin(moon_azimuth);
-  const moon_y = distance * Math.cos(moon_altitude) * Math.cos(moon_azimuth);
-  const moon_z = distance * Math.sin(moon_altitude);
-
-  this.moon_light_.position.set(moon_x, moon_y, moon_z);
-
-  // Adjust moon intensity based on altitude and illumination
-  let moon_intensity = 0.15 * moon_fraction; // Scaled by moon phase
-  if (moon_altitude < 0) {
-    // Moon is below horizon, fade out
-    moon_intensity = Math.max(0, moon_intensity * (1 + moon_altitude / (Math.PI / 6)));
-  }
-
-  this.moon_light_.intensity = moon_intensity;
-  this.moon_light_.castShadow = moon_intensity > 0.02;
-
-  // Update debug helpers if enabled
-  if (this.debug_.sun_light_helper === true) {
-    // Force world matrix update before updating helpers
+  // Update helpers
+  if (this.debug_.sun_light_helper) {
     this.sun_light_.updateMatrixWorld();
     this.sun_light_.target.updateMatrixWorld();
     this.sun_light_helper_.update();
   }
-
-  if (this.debug_.moon_light_helper === true) {
+  if (this.debug_.moon_light_helper) {
     this.moon_light_.updateMatrixWorld();
     this.moon_light_.target.updateMatrixWorld();
     this.moon_light_helper_.update();
   }
+};
+
+/**
+ * Smoothly interpolate celestial light intensities towards their targets.
+ * Called every frame to create smooth transitions instead of instant jumps.
+ */
+beestat.component.scene.prototype.update_celestial_light_intensities_ = function() {
+  if (this.sun_light_ === undefined || this.moon_light_ === undefined) {
+    return;
+  }
+
+  // Initialize current intensities if not set
+  if (this.target_sun_intensity_ === undefined) {
+    this.target_sun_intensity_ = 0;
+  }
+  if (this.target_moon_intensity_ === undefined) {
+    this.target_moon_intensity_ = 0;
+  }
+
+  // Lerp factor - lower = smoother but slower, higher = faster but jumpier
+  const lerp_factor = 0.05;
+
+  // Lerp sun intensity
+  this.sun_light_.intensity += (this.target_sun_intensity_ - this.sun_light_.intensity) * lerp_factor;
+
+  // Lerp moon intensity
+  this.moon_light_.intensity += (this.target_moon_intensity_ - this.moon_light_.intensity) * lerp_factor;
 };
 
 /**
@@ -774,6 +794,8 @@ beestat.component.scene.prototype.update_ = function() {
 
   // Update debug watcher
   if (this.debug_.watcher === true) {
+    this.debug_info_.sun_light_intensity = this.sun_light_ !== undefined ? this.sun_light_.intensity.toFixed(3) : 'N/A';
+    this.debug_info_.moon_light_intensity = this.moon_light_ !== undefined ? this.moon_light_.intensity.toFixed(3) : 'N/A';
     this.update_debug_();
   }
 };
@@ -1126,7 +1148,7 @@ beestat.component.scene.prototype.update_debug_ = function() {
 beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
 
-  // Main group handles rotation and orientation
+  // Main group handles rotation, orientation, and centering
   this.main_group_ = new THREE.Group();
 
   // Apply X rotation to orient the floor plan
@@ -1136,12 +1158,10 @@ beestat.component.scene.prototype.add_main_group_ = function() {
   const rotation_degrees = this.get_appearance_value_('rotation');
   this.main_group_.rotation.z = (rotation_degrees * Math.PI) / 180;
 
-  // Content group is offset to center the geometry at the rotation point
-  this.content_group_ = new THREE.Group();
-  this.content_group_.translateX((bounding_box.right + bounding_box.left) / -2);
-  this.content_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
+  // Apply translation to center the geometry at the rotation point
+  this.main_group_.translateX((bounding_box.right + bounding_box.left) / -2);
+  this.main_group_.translateZ((bounding_box.bottom + bounding_box.top) / -2);
 
-  this.main_group_.add(this.content_group_);
   this.scene_.add(this.main_group_);
 };
 
@@ -1152,15 +1172,23 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   const self = this;
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
-  this.layers_ = {};
+  // Initialize layers if not already done
+  if (this.layers_ === undefined) {
+    this.layers_ = {};
+  }
+
+  // Create floor plan group for walls, rooms, and roofs
+  this.floor_plan_group_ = new THREE.Group();
+  this.main_group_.add(this.floor_plan_group_);
+  this.layers_['floor_plan'] = this.floor_plan_group_;
 
   const walls_layer = new THREE.Group();
-  self.content_group_.add(walls_layer);
+  self.floor_plan_group_.add(walls_layer);
   self.layers_['walls'] = walls_layer;
 
   floor_plan.data.groups.forEach(function(group) {
     const layer = new THREE.Group();
-    self.content_group_.add(layer);
+    self.floor_plan_group_.add(layer);
     self.layers_[group.group_id] = layer;
     group.rooms.forEach(function(room) {
       self.add_room_(layer, group, room);
@@ -1172,7 +1200,7 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
   this.add_roofs_();
 
   if (this.debug_.roof_edges) {
-    this.add_roof_outlines_();
+    this.add_roof_outline_debug_();
   }
 
   if (this.debug_.straight_skeleton) {
@@ -1358,18 +1386,12 @@ beestat.component.scene.prototype.add_roofs_ = function() {
  */
 beestat.component.scene.prototype.add_hip_roofs_ = function() {
   const self = this;
-
-  if (typeof SkeletonBuilder === 'undefined') {
-    console.warn('SkeletonBuilder not yet loaded - skipping roof generation');
-    return;
-  }
-
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
-  this.content_group_.add(roofs_layer);
+  this.floor_plan_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
   const roof_pitch = beestat.component.scene.roof_pitch;
@@ -1544,7 +1566,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
-  this.content_group_.add(roofs_layer);
+  this.floor_plan_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
   // Process each exposed area
@@ -1624,14 +1646,14 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
 /**
  * Add red outline visualization for exposed ceiling areas (future roof locations).
  */
-beestat.component.scene.prototype.add_roof_outlines_ = function() {
+beestat.component.scene.prototype.add_roof_outline_debug_ = function() {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
 
   // Create layer for roof outlines
   const roof_outlines_layer = new THREE.Group();
-  this.content_group_.add(roof_outlines_layer);
+  this.floor_plan_group_.add(roof_outlines_layer);
   this.layers_['roof_outlines'] = roof_outlines_layer;
 
   // Render each exposed area as red outline
@@ -1667,17 +1689,12 @@ beestat.component.scene.prototype.add_roof_outlines_ = function() {
  * Visualize the straight skeleton for each roof polygon with debug lines.
  */
 beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
-  if (typeof SkeletonBuilder === 'undefined') {
-    console.warn('SkeletonBuilder not yet loaded - skipping skeleton debug visualization');
-    return;
-  }
-
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
 
   // Create layer for skeleton debug lines
   const skeleton_debug_layer = new THREE.Group();
-  this.content_group_.add(skeleton_debug_layer);
+  this.floor_plan_group_.add(skeleton_debug_layer);
   this.layers_['roof_skeleton_debug'] = skeleton_debug_layer;
 
   let total_polygons = 0;
@@ -1718,7 +1735,6 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
           const result = SkeletonBuilder.buildFromPolygon(coordinates);
 
           if (!result) {
-            console.warn('SkeletonBuilder returned null for polygon:', simple_polygon);
             return;
           }
 
@@ -1761,47 +1777,6 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
 };
 
 /**
- * Test the SkeletonBuilder library with a simple square polygon.
- */
-beestat.component.scene.prototype.test_skeleton_builder_ = function() {
-  if (typeof SkeletonBuilder === 'undefined') {
-    console.warn('SkeletonBuilder not yet loaded');
-    return;
-  }
-
-  console.log('Testing SkeletonBuilder...');
-
-  try {
-    // Correct format: number[][][] = array of rings, each ring is array of [x,y] points
-    // First ring is outer boundary, must be closed (first point repeated at end)
-    const square = [
-      [  // Outer ring
-        [0, 0],
-        [100, 0],
-        [100, 100],
-        [0, 100],
-        [0, 0]  // Close the ring by repeating first point
-      ]
-      // Additional rings here would be holes
-    ];
-
-    console.log('Input polygon (correct format):', square);
-    const result = SkeletonBuilder.buildFromPolygon(square);
-
-    if (result) {
-      console.log('✓ SkeletonBuilder test passed!');
-      console.log('  Vertices:', result.vertices.length);
-      console.log('  Polygons:', result.polygons.length);
-      console.log('  Result:', result);
-    } else {
-      console.error('✗ SkeletonBuilder test failed - returned null');
-    }
-  } catch (error) {
-    console.error('✗ SkeletonBuilder test threw error:', error);
-  }
-};
-
-/**
  * Add environment layers (grass and earth strata) below the house.
  */
 beestat.component.scene.prototype.add_environment_ = function() {
@@ -1827,15 +1802,16 @@ beestat.component.scene.prototype.add_environment_ = function() {
   const padding = beestat.component.scene.environment_padding;
   const ground_color = this.get_appearance_value_('ground_color');
   const strata = [
-    {'color': ground_color, 'thickness': 10, 'roughness': 0.95},  // User-selected ground
-    {'color': 0x5a4a3a, 'thickness': 30, 'roughness': 0.85},      // Medium brown dirt
-    {'color': 0x8b5e3c, 'thickness': 40, 'roughness': 0.85},      // Light brown dirt
-    {'color': 0x6e6e6e, 'thickness': 40, 'roughness': 0.85}       // Gray bedrock
+    {'color': ground_color, 'thickness': 10, 'roughness': 0.95},
+    {'color': 0x4a3f35, 'thickness': 60, 'roughness': 0.85},
+    {'color': 0x6b5d4f, 'thickness': 60, 'roughness': 0.85},
+    {'color': 0x4a3f35, 'thickness': 60, 'roughness': 0.85}
   ];
 
-  const environment_layer = new THREE.Group();
-  this.content_group_.add(environment_layer);
-  this.layers_['environment'] = environment_layer;
+  // Create environment group for ground strata
+  this.environment_group_ = new THREE.Group();
+  this.main_group_.add(this.environment_group_);
+  this.layers_['environment'] = this.environment_group_;
 
   strata.forEach(function(stratum) {
     const geometry = new THREE.BoxGeometry(
@@ -1856,11 +1832,11 @@ beestat.component.scene.prototype.add_environment_ = function() {
     mesh.userData.is_environment = true;
     mesh.receiveShadow = true;
 
-    environment_layer.add(mesh);
+    this.environment_group_.add(mesh);
     current_z += stratum.thickness;
   }, this);
 
-  // Add celestial lights (sun and moon) to the environment layer
+  // Add celestial lights (sun and moon) - toggled with environment visibility
   this.add_celestial_lights_();
 };
 

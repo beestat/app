@@ -404,15 +404,16 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     }
   }
 
+  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
+
   const groups = Object.values(floor_plan.data.groups);
   groups.forEach(function(group) {
-    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
-    self.scene_.set_layer_visible(group.group_id, beestat.setting(setting_key) !== false);
+    self.scene_.set_layer_visible(group.group_id, !show_exterior);
   });
 
-  this.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
-  this.scene_.set_layer_visible('roof', beestat.setting('visualize.three_d.show_roof'));
-  this.scene_.set_layer_visible('environment', beestat.setting('visualize.three_d.show_environment'));
+  this.scene_.set_layer_visible('walls', show_exterior);
+  this.scene_.set_layer_visible('roof', show_exterior);
+  this.scene_.set_layer_visible('environment', show_exterior);
 
   // Manage width of the scene.
   if (this.state_.width === undefined) {
@@ -772,63 +773,30 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     })
   );
 
-  // Toggle walls
+  // Toggle exterior (walls, roof, environment) and interior (floor plan)
   tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.show_walls') === false ? 'border_none_variant' : 'wall')
-    .set_title('Toggle Walls')
+    .set_icon(beestat.setting('visualize.three_d.show_exterior') === false ? 'floor_plan' : 'home')
+    .set_title('Toggle View')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
     .addEventListener('click', function(e) {
       e.stopPropagation();
-      beestat.setting(
-        'visualize.three_d.show_walls',
-        !beestat.setting('visualize.three_d.show_walls')
-      );
-      this.set_icon(
-        beestat.setting('visualize.three_d.show_walls') === false ? 'border_none_variant' : 'wall'
-      );
-      self.scene_.set_layer_visible('walls', beestat.setting('visualize.three_d.show_walls'));
-    })
-  );
+      const new_value = !beestat.setting('visualize.three_d.show_exterior');
+      beestat.setting('visualize.three_d.show_exterior', new_value);
 
-  // Toggle roof
-  tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.show_roof') === false ? 'border_none_variant' : 'wall')
-    .set_title('Toggle Roof')
-    .set_text_color(beestat.style.color.gray.light)
-    .set_background_color(beestat.style.color.bluegray.base)
-    .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function(e) {
-      e.stopPropagation();
-      beestat.setting(
-        'visualize.three_d.show_roof',
-        !beestat.setting('visualize.three_d.show_roof')
-      );
-      this.set_icon(
-        beestat.setting('visualize.three_d.show_roof') === false ? 'border_none_variant' : 'wall'
-      );
-      self.scene_.set_layer_visible('roof', beestat.setting('visualize.three_d.show_roof'));
-    })
-  );
+      this.set_icon(new_value ? 'home' : 'floor_plan');
 
-  // Toggle environment
-  tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.show_environment') === false ? 'border_none_variant' : 'wall')
-    .set_title('Toggle Environment')
-    .set_text_color(beestat.style.color.gray.light)
-    .set_background_color(beestat.style.color.bluegray.base)
-    .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function(e) {
-      e.stopPropagation();
-      beestat.setting(
-        'visualize.three_d.show_environment',
-        !beestat.setting('visualize.three_d.show_environment')
-      );
-      this.set_icon(
-        beestat.setting('visualize.three_d.show_environment') === false ? 'border_none_variant' : 'wall'
-      );
-      self.scene_.set_layer_visible('environment', beestat.setting('visualize.three_d.show_environment'));
+      // Toggle walls, roof, and environment
+      self.scene_.set_layer_visible('walls', new_value);
+      self.scene_.set_layer_visible('roof', new_value);
+      self.scene_.set_layer_visible('environment', new_value);
+
+      // Floor plan groups are opposite of exterior (show interior when exterior is hidden)
+      const floor_plan = beestat.cache.floor_plan[self.floor_plan_id_];
+      Object.values(floor_plan.data.groups).forEach(function(group) {
+        self.scene_.set_layer_visible(group.group_id, !new_value);
+      });
     })
   );
 
