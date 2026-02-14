@@ -318,7 +318,12 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
     // Clear any existing intersects.
     if (this.intersected_mesh_ !== undefined) {
       document.body.style.cursor = '';
-      this.intersected_mesh_.material.emissive.setHex(0x000000);
+      if (
+        this.intersected_mesh_.material !== undefined &&
+        this.intersected_mesh_.material.emissive !== undefined
+      ) {
+        this.intersected_mesh_.material.emissive.setHex(0x000000);
+      }
       delete this.intersected_mesh_;
     }
 
@@ -326,9 +331,12 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
     for (let i = 0; i < intersects.length; i++) {
       if (
         intersects[i].object.type === 'Mesh' &&
+        intersects[i].object.material !== undefined &&
+        intersects[i].object.material.emissive !== undefined &&
         intersects[i].object.userData.is_wall !== true &&
         intersects[i].object.userData.is_roof !== true &&
-        intersects[i].object.userData.is_environment !== true
+        intersects[i].object.userData.is_environment !== true &&
+        intersects[i].object.userData.is_celestial_visual !== true
       ) {
         this.intersected_mesh_ = intersects[i].object;
         break;
@@ -371,6 +379,108 @@ beestat.component.scene.prototype.add_skybox_ = function() {
     'left.png'
   ]);
   this.scene_.background = texture;
+};
+
+/**
+ * Create a radial glow texture used for the sun halo sprite.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_sun_glow_texture_ = function() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+
+  gradient.addColorStop(0.0, 'rgba(255, 255, 235, 1.0)');
+  gradient.addColorStop(0.25, 'rgba(255, 230, 150, 0.75)');
+  gradient.addColorStop(0.6, 'rgba(255, 170, 80, 0.25)');
+  gradient.addColorStop(1.0, 'rgba(255, 120, 50, 0.0)');
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  return texture;
+};
+
+/**
+ * Draw the moon phase into the reusable moon canvas texture.
+ *
+ * @param {number} phase Moon phase from SunCalc (0=new, 0.25=first quarter,
+ *   0.5=full, 0.75=last quarter).
+ */
+beestat.component.scene.prototype.update_moon_phase_texture_ = function(phase) {
+  if (this.moon_phase_canvas_ === undefined) {
+    this.moon_phase_canvas_ = document.createElement('canvas');
+    this.moon_phase_canvas_.width = 256;
+    this.moon_phase_canvas_.height = 256;
+    this.moon_phase_texture_ = new THREE.CanvasTexture(this.moon_phase_canvas_);
+  }
+
+  const canvas = this.moon_phase_canvas_;
+  const context = canvas.getContext('2d');
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = 110;
+
+  context.clearRect(0, 0, size, size);
+
+  // Base dark moon disk.
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.fillStyle = '#2f3442';
+  context.fill();
+
+  // Lit region generated procedurally from phase (no image assets).
+  context.save();
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.clip();
+
+  context.fillStyle = '#dde3ef';
+  const terminator = radius * Math.cos(2 * Math.PI * phase);
+  const waxing = phase <= 0.5;
+  for (let y = -radius; y <= radius; y++) {
+    const x_edge = Math.sqrt(Math.max(0, radius * radius - y * y));
+    // Curved terminator produces natural crescent/gibbous shapes.
+    const x_terminator = terminator * Math.sqrt(Math.max(0, 1 - (y * y) / (radius * radius)));
+    let x_start;
+    let x_end;
+    if (waxing) {
+      x_start = Math.max(-x_edge, x_terminator);
+      x_end = x_edge;
+    } else {
+      x_start = -x_edge;
+      x_end = Math.min(x_edge, -x_terminator);
+    }
+
+    if (x_end > x_start) {
+      context.fillRect(center + x_start, center + y, x_end - x_start, 1);
+    }
+  }
+  context.restore();
+
+  // Subtle rim to keep the disk readable on the skybox.
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  context.lineWidth = 2;
+  context.stroke();
+
+  this.moon_phase_texture_.needsUpdate = true;
 };
 
 /**
@@ -499,6 +609,35 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
   this.celestial_light_group_.add(this.sun_light_);
 
+  // Visible sun body and glow
+  this.sun_visual_group_ = new THREE.Group();
+  this.sun_visual_group_.layers.set(beestat.component.scene.layer_visible);
+  this.celestial_light_group_.add(this.sun_visual_group_);
+
+  const sun_core_geometry = new THREE.SphereGeometry(45, 24, 24);
+  const sun_core_material = new THREE.MeshBasicMaterial({
+    'color': 0xffffff,
+    'transparent': true,
+    'opacity': 1
+  });
+  this.sun_core_mesh_ = new THREE.Mesh(sun_core_geometry, sun_core_material);
+  this.sun_core_mesh_.userData.is_celestial_visual = true;
+  this.sun_visual_group_.add(this.sun_core_mesh_);
+
+  this.sun_glow_texture_ = this.create_sun_glow_texture_();
+  const sun_glow_material = new THREE.SpriteMaterial({
+    'map': this.sun_glow_texture_,
+    'color': 0xfff0b0,
+    'transparent': true,
+    'blending': THREE.AdditiveBlending,
+    'depthWrite': false,
+    'depthTest': true,
+    'opacity': 1
+  });
+  this.sun_glow_sprite_ = new THREE.Sprite(sun_glow_material);
+  this.sun_glow_sprite_.scale.set(320, 320, 1);
+  this.sun_visual_group_.add(this.sun_glow_sprite_);
+
   if (this.debug_.sun_light_helper === true) {
     this.sun_light_helper_ = new THREE.DirectionalLightHelper(
       this.sun_light_,
@@ -536,6 +675,23 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
   this.celestial_light_group_.add(this.moon_light_);
 
+  // Visible moon disk with procedural phase texture.
+  this.moon_visual_group_ = new THREE.Group();
+  this.moon_visual_group_.layers.set(beestat.component.scene.layer_visible);
+  this.celestial_light_group_.add(this.moon_visual_group_);
+
+  this.update_moon_phase_texture_(0);
+  const moon_material = new THREE.SpriteMaterial({
+    'map': this.moon_phase_texture_,
+    'transparent': true,
+    'depthWrite': false,
+    'depthTest': true,
+    'opacity': 1
+  });
+  this.moon_sprite_ = new THREE.Sprite(moon_material);
+  this.moon_sprite_.scale.set(170, 170, 1);
+  this.moon_visual_group_.add(this.moon_sprite_);
+
   if (this.debug_.moon_light_helper === true) {
     this.moon_light_helper_ = new THREE.DirectionalLightHelper(
       this.moon_light_,
@@ -572,7 +728,8 @@ beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = functio
  * @link https://www.earthspacelab.com/app/solar-time/
  */
 beestat.component.scene.prototype.update_celestial_lights_ = function(date, latitude, longitude) {
-  const distance = 2000;
+  const sun_distance = 2000;
+  const moon_distance = 1700;
   const js_date = date.toDate();
   const rotation_radians = (this.get_appearance_value_('rotation') * Math.PI) / 180;
 
@@ -580,10 +737,16 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   const sun_pos = SunCalc.getPosition(js_date, latitude, longitude);
   const rotated_sun_azimuth = sun_pos.azimuth - rotation_radians;
   this.sun_light_.position.set(
-    distance * Math.cos(sun_pos.altitude) * Math.sin(rotated_sun_azimuth),   // East-West
-    distance * Math.sin(sun_pos.altitude),                                // Up-Down (altitude)
-    -distance * Math.cos(sun_pos.altitude) * Math.cos(rotated_sun_azimuth)   // North-South
+    sun_distance * Math.cos(sun_pos.altitude) * Math.sin(rotated_sun_azimuth),   // East-West
+    sun_distance * Math.sin(sun_pos.altitude),                                // Up-Down (altitude)
+    -sun_distance * Math.cos(sun_pos.altitude) * Math.cos(rotated_sun_azimuth)   // North-South
   );
+
+  if (this.sun_visual_group_ !== undefined) {
+    this.sun_visual_group_.position.copy(this.sun_light_.position);
+    this.sun_visual_group_.visible = true;
+    this.sun_visual_horizon_fade_ = Math.max(0, Math.min(1, (sun_pos.altitude + 0.15) / 0.3));
+  }
 
   // Calculate target intensity for smooth transitions
   this.target_sun_intensity_ = sun_pos.altitude < 0
@@ -593,12 +756,24 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
   const rotated_moon_azimuth = moon_pos.azimuth - rotation_radians;
-  const moon_fraction = SunCalc.getMoonIllumination(js_date).fraction;
+  const moon_illumination = SunCalc.getMoonIllumination(js_date);
+  const moon_fraction = moon_illumination.fraction;
+  const moon_phase = moon_illumination.phase;
   this.moon_light_.position.set(
-    distance * Math.cos(moon_pos.altitude) * Math.sin(rotated_moon_azimuth),    // East-West
-    distance * Math.sin(moon_pos.altitude),                                  // Up-Down (altitude)
-    -distance * Math.cos(moon_pos.altitude) * Math.cos(rotated_moon_azimuth)    // North-South
+    moon_distance * Math.cos(moon_pos.altitude) * Math.sin(rotated_moon_azimuth),    // East-West
+    moon_distance * Math.sin(moon_pos.altitude),                                  // Up-Down (altitude)
+    -moon_distance * Math.cos(moon_pos.altitude) * Math.cos(rotated_moon_azimuth)    // North-South
   );
+  if (this.moon_visual_group_ !== undefined) {
+    this.moon_visual_group_.position.copy(this.moon_light_.position);
+    this.moon_visual_group_.visible = true;
+    this.moon_visual_horizon_fade_ = Math.max(0, Math.min(1, (moon_pos.altitude + 0.12) / 0.24));
+
+    if (this.last_moon_phase_ === undefined || Math.abs(this.last_moon_phase_ - moon_phase) > 0.002) {
+      this.last_moon_phase_ = moon_phase;
+      this.update_moon_phase_texture_(moon_phase);
+    }
+  }
   const moon_intensity = beestat.component.scene.moon_light_intensity * moon_fraction;
 
   // Calculate target intensity for smooth transitions
@@ -649,6 +824,35 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
 
   // Lerp moon intensity
   this.moon_light_.intensity += (this.target_moon_intensity_ - this.moon_light_.intensity) * lerp_factor;
+
+  // Match visible sun brightness to actual sun light intensity, with smooth
+  // fade at/under the horizon.
+  if (this.sun_core_mesh_ !== undefined && this.sun_glow_sprite_ !== undefined) {
+    const max_sun_intensity = beestat.component.scene.sun_light_intensity;
+    const intensity_ratio = max_sun_intensity > 0
+      ? Math.max(0, Math.min(1, this.sun_light_.intensity / max_sun_intensity))
+      : 0;
+    const horizon_fade = this.sun_visual_horizon_fade_ !== undefined
+      ? this.sun_visual_horizon_fade_
+      : 1;
+    const visual_strength = intensity_ratio * horizon_fade;
+
+    this.sun_core_mesh_.material.opacity = Math.min(1, (0.65 + visual_strength * 0.8) * visual_strength);
+    this.sun_glow_sprite_.material.opacity = Math.min(1, (0.45 + visual_strength * 1.4) * visual_strength);
+  }
+
+  if (this.moon_sprite_ !== undefined) {
+    const max_moon_intensity = beestat.component.scene.moon_light_intensity;
+    const moon_intensity_ratio = max_moon_intensity > 0
+      ? Math.max(0, Math.min(1, this.moon_light_.intensity / max_moon_intensity))
+      : 0;
+    const moon_horizon_fade = this.moon_visual_horizon_fade_ !== undefined
+      ? this.moon_visual_horizon_fade_
+      : 1;
+    const moon_visual_strength = moon_intensity_ratio * moon_horizon_fade;
+
+    this.moon_sprite_.material.opacity = Math.min(1, 0.2 + (moon_visual_strength * 0.95));
+  }
 };
 
 /**
@@ -2164,6 +2368,13 @@ beestat.component.scene.prototype.dispose = function() {
   // Dispose of renderer
   if (this.renderer_ !== undefined) {
     this.renderer_.dispose();
+  }
+
+  if (this.sun_glow_texture_ !== undefined) {
+    this.sun_glow_texture_.dispose();
+  }
+  if (this.moon_phase_texture_ !== undefined) {
+    this.moon_phase_texture_.dispose();
   }
 
   // Clean up THREE.js scene resources
