@@ -89,13 +89,26 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
   });
   parent.appendChild(appearance_grid);
 
+  const add_options_alphabetically = function(select, options) {
+    options
+      .slice()
+      .sort(function(a, b) {
+        return a.label.localeCompare(b.label);
+      })
+      .forEach(function(option) {
+        select.add_option(option);
+      });
+  };
+
   // Roof Style dropdown
   const roof_style_select = new beestat.component.input.select()
     .set_label('Roof Style')
     .set_width('100%');
 
-  roof_style_select.add_option({'label': 'Hip', 'value': 'hip'});
-  roof_style_select.add_option({'label': 'Flat', 'value': 'flat'});
+  add_options_alphabetically(roof_style_select, [
+    {'label': 'Hip', 'value': 'hip'},
+    {'label': 'Flat', 'value': 'flat'}
+  ]);
 
   roof_style_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
@@ -129,9 +142,7 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     {'label': 'Colonial Blue', 'value': '#3a5a6a'}
   ];
 
-  roof_colors.forEach(function(color) {
-    roof_color_select.add_option(color);
-  });
+  add_options_alphabetically(roof_color_select, roof_colors);
 
   roof_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
@@ -165,9 +176,7 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     {'label': 'Terracotta', 'value': '#b85a3a'}
   ];
 
-  siding_colors.forEach(function(color) {
-    siding_color_select.add_option(color);
-  });
+  add_options_alphabetically(siding_color_select, siding_colors);
 
   siding_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {
@@ -198,9 +207,7 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
     {'label': 'Desert Landscape', 'value': '#c4a57a'}
   ];
 
-  ground_colors.forEach(function(color) {
-    ground_color_select.add_option(color);
-  });
+  add_options_alphabetically(ground_color_select, ground_colors);
 
   ground_color_select.addEventListener('change', function() {
     if (self.state_.appearance === undefined) {

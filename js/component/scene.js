@@ -704,16 +704,12 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 };
 
 /**
- * Apply appearance rotation to static fill lights.
- * Uses the same rotation direction as celestial azimuth adjustment so both
- * lighting systems stay consistent with floor-plan orientation.
+ * Static (ambient/directional fill) lights should not rotate with floor-plan
+ * appearance. Celestial lights are handled in update_celestial_lights_.
  */
 beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = function() {
-  const rotation_degrees = this.get_appearance_value_('rotation');
-  const rotation_radians = (rotation_degrees * Math.PI) / 180;
-
   if (this.static_light_group_ !== undefined) {
-    this.static_light_group_.rotation.y = -rotation_radians;
+    this.static_light_group_.rotation.y = 0;
   }
 };
 
@@ -1364,7 +1360,6 @@ beestat.component.scene.prototype.update_debug_ = function() {
  */
 beestat.component.scene.prototype.add_main_group_ = function() {
   const bounding_box = beestat.floor_plan.get_bounding_box(this.floor_plan_id_);
-  console.info(bounding_box);
 
   // Main group handles orientation and centering
   this.main_group_ = new THREE.Group();

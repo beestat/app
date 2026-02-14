@@ -22,6 +22,7 @@ beestat.component.card.three_d = function() {
   // Rerender the scene when the floor plan changes.
   beestat.dispatcher.addEventListener('cache.floor_plan', function() {
     self.scene_.rerender();
+    self.apply_layer_visibility_();
     self.update_scene_();
     self.update_hud_();
   });
@@ -404,16 +405,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     }
   }
 
-  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
-
-  const groups = Object.values(floor_plan.data.groups);
-  groups.forEach(function(group) {
-    self.scene_.set_layer_visible(group.group_id, !show_exterior);
-  });
-
-  this.scene_.set_layer_visible('walls', show_exterior);
-  this.scene_.set_layer_visible('roof', show_exterior);
-  this.scene_.set_layer_visible('environment', show_exterior);
+  this.apply_layer_visibility_();
 
   // Manage width of the scene.
   if (this.state_.width === undefined) {
@@ -435,6 +427,36 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   beestat.dispatcher.addEventListener('resize.three_d', function() {
     self.state_.width = parent.getBoundingClientRect().width;
     self.scene_.set_width(self.state_.width);
+  });
+};
+
+/**
+ * Apply saved layer visibility (exterior/interior/floors) to the current
+ * scene. Used after initial draw and after scene rerenders.
+ */
+beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
+  if (this.scene_ === undefined) {
+    return;
+  }
+
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (floor_plan === undefined) {
+    return;
+  }
+
+  const show_exterior = beestat.setting('visualize.three_d.show_exterior') !== false;
+
+  this.scene_.set_layer_visible('walls', show_exterior);
+  this.scene_.set_layer_visible('roof', show_exterior);
+  this.scene_.set_layer_visible('environment', show_exterior);
+
+  Object.values(floor_plan.data.groups).forEach((group) => {
+    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
+    const group_visible = beestat.setting(setting_key) !== false;
+    this.scene_.set_layer_visible(
+      group.group_id,
+      show_exterior === true ? false : group_visible
+    );
   });
 };
 
@@ -774,31 +796,32 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   );
 
   // Toggle exterior (walls, roof, environment) and interior (floor plan)
-  tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.show_exterior') === false ? 'floor_plan' : 'home')
-    .set_title('Toggle View')
-    .set_text_color(beestat.style.color.gray.light)
-    .set_background_color(beestat.style.color.bluegray.base)
-    .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function(e) {
-      e.stopPropagation();
-      const new_value = !beestat.setting('visualize.three_d.show_exterior');
-      beestat.setting('visualize.three_d.show_exterior', new_value);
+  const user_settings = beestat.user.get().settings || {};
+  const has_used_show_exterior = user_settings.visualize.three_d.show_exterior !== undefined;
 
-      this.set_icon(new_value ? 'home' : 'floor_plan');
-
-      // Toggle walls, roof, and environment
-      self.scene_.set_layer_visible('walls', new_value);
-      self.scene_.set_layer_visible('roof', new_value);
-      self.scene_.set_layer_visible('environment', new_value);
-
-      // Floor plan groups are opposite of exterior (show interior when exterior is hidden)
-      const floor_plan = beestat.cache.floor_plan[self.floor_plan_id_];
-      Object.values(floor_plan.data.groups).forEach(function(group) {
-        self.scene_.set_layer_visible(group.group_id, !new_value);
-      });
-    })
+  const can_use_exterior_toggle = (
+    beestat.user.has_early_access() === true ||
+    has_used_show_exterior
   );
+
+  if (can_use_exterior_toggle === true) {
+    const view_toggle_tile = new beestat.component.tile()
+      .set_icon(beestat.setting('visualize.three_d.show_exterior') === false ? 'floor_plan' : 'home')
+      .set_title('Toggle View')
+      .set_text_color(beestat.style.color.gray.light)
+      .set_background_color(beestat.style.color.bluegray.base)
+      .set_background_hover_color(beestat.style.color.bluegray.light)
+      .addEventListener('click', function(e) {
+        e.stopPropagation();
+        const new_value = !beestat.setting('visualize.three_d.show_exterior');
+        beestat.setting('visualize.three_d.show_exterior', new_value);
+
+        this.set_icon(new_value ? 'home' : 'floor_plan');
+        self.apply_layer_visibility_();
+      });
+
+    tile_group.add_tile(view_toggle_tile);
+  }
 
   tile_group.render($(parent));
 };
