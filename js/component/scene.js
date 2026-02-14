@@ -102,11 +102,11 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   parent.style('background', '#202a30');
 
   this.debug_ = {
-    'axes': true,
+    'axes': false,
     'directional_light_helpers': false,
-    'sun_light_helper': true,
-    'moon_light_helper': true,
-    'watcher': true,
+    'sun_light_helper': false,
+    'moon_light_helper': false,
+    'watcher': false,
     'roof_edges': false,
     'straight_skeleton': false
   };
@@ -549,15 +549,15 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
 
 /**
  * Apply appearance rotation to static fill lights.
- * Celestial lights (sun/moon) stay in world coordinates so cardinal directions
- * remain physically correct (sun rises in the east).
+ * Uses the same rotation direction as celestial azimuth adjustment so both
+ * lighting systems stay consistent with floor-plan orientation.
  */
 beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = function() {
   const rotation_degrees = this.get_appearance_value_('rotation');
   const rotation_radians = (rotation_degrees * Math.PI) / 180;
 
   if (this.static_light_group_ !== undefined) {
-    this.static_light_group_.rotation.y = rotation_radians;
+    this.static_light_group_.rotation.y = -rotation_radians;
   }
 };
 
