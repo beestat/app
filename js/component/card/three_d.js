@@ -1024,15 +1024,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   );
 
   // Toggle exterior (walls, roof, environment) and interior (floor plan)
-  const user_settings = beestat.user.get().settings || {};
-  const has_used_show_exterior = user_settings.visualize.three_d.show_exterior !== undefined;
-
-  const can_use_exterior_toggle = (
-    beestat.user.has_early_access() === true ||
-    has_used_show_exterior
-  );
-
-  if (can_use_exterior_toggle === true) {
+  if (beestat.user.has_early_access() === true) {
     const view_toggle_tile = new beestat.component.tile()
       .set_icon(beestat.setting('visualize.three_d.show_exterior') === false ? 'floor_plan' : 'home')
       .set_title('Toggle View')
