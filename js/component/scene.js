@@ -2065,28 +2065,36 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
  * Animate weather particles (snow/rain) each frame.
  */
 beestat.component.scene.prototype.update_weather_ = function() {
-  if (this.cloud_sprites_ !== undefined && this.cloud_bounds_ !== undefined) {
-    const cloud_span_x = this.cloud_bounds_.max_x - this.cloud_bounds_.min_x;
-    const cloud_span_y = this.cloud_bounds_.max_y - this.cloud_bounds_.min_y;
+  if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
+    const now_seconds = window.performance.now() / 1000;
     for (let i = 0; i < this.cloud_sprites_.length; i++) {
       const sprite = this.cloud_sprites_[i];
-      sprite.position.x += this.cloud_speeds_x_[i] * 0.016;
-      sprite.position.y += this.cloud_speeds_y_[i] * 0.016;
-      if (sprite.position.x > this.cloud_bounds_.max_x) {
-        sprite.position.x = this.cloud_bounds_.min_x;
-      } else if (sprite.position.x < this.cloud_bounds_.min_x) {
-        sprite.position.x = this.cloud_bounds_.max_x;
-      }
-      if (sprite.position.y > this.cloud_bounds_.max_y) {
-        sprite.position.y = this.cloud_bounds_.min_y;
-      } else if (sprite.position.y < this.cloud_bounds_.min_y) {
-        sprite.position.y = this.cloud_bounds_.max_y;
-      }
-      if (sprite.position.x === this.cloud_bounds_.min_x || sprite.position.x === this.cloud_bounds_.max_x) {
-        sprite.position.y = this.cloud_bounds_.min_y + Math.random() * cloud_span_y;
-      }
-      if (sprite.position.y === this.cloud_bounds_.min_y || sprite.position.y === this.cloud_bounds_.max_y) {
-        sprite.position.x = this.cloud_bounds_.min_x + Math.random() * cloud_span_x;
+      const motion = this.cloud_motion_[i];
+      const phase = now_seconds * motion.pulse_speed + motion.phase;
+
+      // Shape/size breathing.
+      const scale_x_wobble = 1 + (Math.sin(phase) * motion.scale_wobble_x);
+      const scale_y_wobble = 1 + (Math.cos(phase * 0.87) * motion.scale_wobble_y);
+      sprite.scale.set(
+        motion.base_scale_x * scale_x_wobble,
+        motion.base_scale_y * scale_y_wobble,
+        1
+      );
+
+      // Subtle random-looking positional wiggle.
+      sprite.position.x = motion.base_x + Math.sin(phase * motion.wiggle_freq_x) * motion.wiggle_x;
+      sprite.position.y = motion.base_y + Math.cos(phase * motion.wiggle_freq_y) * motion.wiggle_y;
+      sprite.position.z = motion.base_z + Math.sin(phase * motion.wiggle_freq_z) * motion.wiggle_z;
+
+      // Slight opacity shifting.
+      if (sprite.material !== undefined) {
+        sprite.material.opacity = Math.max(
+          0.2,
+          Math.min(
+            1,
+            motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble
+          )
+        );
       }
     }
   }
@@ -2494,8 +2502,7 @@ beestat.component.scene.prototype.add_weather_effect_ = function(center_x, cente
 
     this.cloud_bounds_ = cloud_bounds;
     this.cloud_sprites_ = [];
-    this.cloud_speeds_x_ = new Float32Array(cloud_count);
-    this.cloud_speeds_y_ = new Float32Array(cloud_count);
+    this.cloud_motion_ = [];
 
     for (let i = 0; i < cloud_count; i++) {
       const cloud_material = new THREE.SpriteMaterial({
@@ -2519,8 +2526,25 @@ beestat.component.scene.prototype.add_weather_effect_ = function(center_x, cente
       cloud.userData.is_environment = true;
       this.weather_group_.add(cloud);
       this.cloud_sprites_.push(cloud);
-      this.cloud_speeds_x_[i] = (Math.random() - 0.5) * 0.8;
-      this.cloud_speeds_y_[i] = (Math.random() - 0.5) * 0.4;
+      this.cloud_motion_.push({
+        'base_x': cloud.position.x,
+        'base_y': cloud.position.y,
+        'base_z': cloud.position.z,
+        'base_scale_x': cloud.scale.x,
+        'base_scale_y': cloud.scale.y,
+        'base_opacity': cloud_opacity,
+        'phase': Math.random() * Math.PI * 2,
+        'pulse_speed': 0.36 + (Math.random() * 0.32),
+        'scale_wobble_x': 0.03 + (Math.random() * 0.03),
+        'scale_wobble_y': 0.025 + (Math.random() * 0.025),
+        'opacity_wobble': 0.05 + (Math.random() * 0.05),
+        'wiggle_x': 10 + (Math.random() * 16),
+        'wiggle_y': 8 + (Math.random() * 14),
+        'wiggle_z': 3 + (Math.random() * 5),
+        'wiggle_freq_x': 1.8 + (Math.random() * 1.6),
+        'wiggle_freq_y': 1.5 + (Math.random() * 1.3),
+        'wiggle_freq_z': 1.2 + (Math.random() * 1.1)
+      });
     }
   }
 
