@@ -484,6 +484,9 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   if (this.controls_container_ !== undefined) {
     this.decorate_controls_();
   }
+  if (this.legend_container_ !== undefined) {
+    this.decorate_legend_();
+  }
 };
 
 /**
@@ -579,6 +582,11 @@ beestat.component.card.three_d.prototype.decorate_environment_date_ = function(p
     .set_min(0)
     .set_max(max_day_index)
     .set_value(day_index_today)
+    .set_background(
+      'linear-gradient(90deg, ' +
+      beestat.style.color.bluegray.base +
+      ' 0% 100%)'
+    )
     .render($(slider_container));
 
   this.environment_date_slider_.addEventListener('input', function() {
@@ -1108,6 +1116,14 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
     this.legend_container_ = parent;
   }
 
+  // Hide runtime gradient legend in environment/exterior mode.
+  if (beestat.setting('visualize.three_d.show_exterior') !== false) {
+    this.legend_container_.innerHTML = '';
+    this.legend_container_.style.display = 'none';
+    return;
+  }
+
+  this.legend_container_.style.display = 'block';
   this.legend_container_.innerHTML = '';
 
   const gradient = this.get_gradient_();
