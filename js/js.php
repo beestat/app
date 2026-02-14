@@ -195,6 +195,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/metric/property/square_feet.js"></script>' . PHP_EOL;
 }
 else {
+  echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
 }
 
