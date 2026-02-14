@@ -361,6 +361,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     beestat.setting('visualize.floor_plan_id'),
     this.get_data_()
   );
+  this.apply_weather_setting_to_scene_();
 
   this.scene_.addEventListener('change_active_room', function() {
     self.update_hud_();
@@ -473,6 +474,50 @@ beestat.component.card.three_d.prototype.get_show_environment_ = function() {
 };
 
 /**
+ * Get selected weather mode.
+ *
+ * @return {string}
+ */
+beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
+  return beestat.setting('visualize.three_d.weather_mode') || 'current';
+};
+
+/**
+ * Map UI weather mode to scene weather effect.
+ *
+ * @param {string} weather_mode
+ *
+ * @return {string} none|cloudy|rain|snow
+ */
+beestat.component.card.three_d.prototype.get_weather_effect_from_mode_ = function(weather_mode) {
+  switch (weather_mode) {
+  case 'cloudy':
+    return 'cloudy';
+  case 'raining':
+    return 'rain';
+  case 'snowing':
+    return 'snow';
+  case 'current':
+  case 'sunny':
+  default:
+    // Placeholder mappings for now.
+    return 'none';
+  }
+};
+
+/**
+ * Apply current weather settings to the scene.
+ */
+beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = function() {
+  if (this.scene_ === undefined) {
+    return;
+  }
+
+  const weather_effect = this.get_weather_effect_from_mode_(this.get_weather_mode_());
+  this.scene_.set_weather(weather_effect);
+};
+
+/**
  * Set environment view state and mirror to legacy key for compatibility.
  *
  * @param {boolean} show_environment
@@ -497,6 +542,9 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   }
 
   const show_environment = this.get_show_environment_();
+  if (show_environment === false) {
+    this.weather_menu_open_ = false;
+  }
 
   this.scene_.set_layer_visible('walls', show_environment);
   this.scene_.set_layer_visible('roof', show_environment);
@@ -1064,6 +1112,32 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     })
   );
 
+  // Weather controls (environment view only)
+  if (show_environment === true) {
+    const selected_mode = this.get_weather_mode_();
+    const weather_modes = [
+      {'value': 'current', 'icon': 'weather_partly_cloudy', 'title': 'Weather: Current'},
+      {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
+      {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
+      {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
+      {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
+    ];
+    const selected_weather_mode = weather_modes.find((mode) => mode.value === selected_mode) || weather_modes[0];
+
+    tile_group.add_tile(new beestat.component.tile()
+      .set_icon(selected_weather_mode.icon)
+      .set_title('Weather Menu')
+      .set_text_color(beestat.style.color.gray.light)
+      .set_background_color(this.weather_menu_open_ === true ? beestat.style.color.lightblue.base : beestat.style.color.bluegray.base)
+      .set_background_hover_color(this.weather_menu_open_ === true ? beestat.style.color.lightblue.light : beestat.style.color.bluegray.light)
+      .addEventListener('click', function(e) {
+        e.stopPropagation();
+        self.weather_menu_open_ = self.weather_menu_open_ !== true;
+        self.decorate_toolbar_();
+      })
+    );
+  }
+
   // Labels (hidden while environment view is on)
   if (show_environment === false) {
     tile_group.add_tile(new beestat.component.tile()
@@ -1087,6 +1161,56 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   }
 
   tile_group.render($(this.toolbar_container_));
+
+  if (show_environment === true && this.weather_menu_open_ === true) {
+    const weather_tile_element = this.toolbar_container_.querySelector('[title=\"Weather Menu\"]');
+    if (weather_tile_element !== null) {
+      const toolbar_rect = this.toolbar_container_.getBoundingClientRect();
+      const weather_tile_rect = weather_tile_element.getBoundingClientRect();
+      const selected_mode = this.get_weather_mode_();
+      const weather_modes = [
+        {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
+        {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
+        {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
+        {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
+      ];
+
+      const popup = document.createElement('div');
+      Object.assign(popup.style, {
+        'position': 'absolute',
+        'left': `${Math.round(weather_tile_rect.right - toolbar_rect.left + 6)}px`,
+        'top': `${Math.round(weather_tile_rect.top - toolbar_rect.top - 2)}px`,
+        'display': 'flex',
+        'flex-direction': 'row',
+        'align-items': 'center',
+        'grid-gap': '4px',
+        'padding': '2px'
+      });
+      this.toolbar_container_.appendChild(popup);
+
+      weather_modes.forEach((mode) => {
+        const is_selected = mode.value === selected_mode;
+        const tile = new beestat.component.tile()
+          .set_icon(mode.icon)
+          .set_title(mode.title)
+          .set_text_color(is_selected ? beestat.style.color.gray.dark : beestat.style.color.gray.light)
+          .set_background_color(is_selected ? beestat.style.color.bluegray.light : beestat.style.color.bluegray.base)
+          .set_background_hover_color(is_selected ? beestat.style.color.bluegray.light : beestat.style.color.bluegray.light);
+
+        if (is_selected === false) {
+          tile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            beestat.setting('visualize.three_d.weather_mode', mode.value);
+            this.apply_weather_setting_to_scene_();
+            this.weather_menu_open_ = false;
+            this.decorate_toolbar_();
+          });
+        }
+
+        tile.render($(popup));
+      });
+    }
+  }
 };
 
 /**

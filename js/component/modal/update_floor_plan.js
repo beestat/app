@@ -226,6 +226,7 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
       ? self.state_.appearance.ground_color
       : (floor_plan.data.appearance?.ground_color || '#4a7c3f');
     ground_color_select.set_value(current_ground_color);
+
   }
 
   // Address

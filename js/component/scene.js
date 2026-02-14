@@ -21,7 +21,7 @@ beestat.component.scene.layer_outline = 2;
 beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
 beestat.component.scene.roof_overhang = 12; // Roof overhang beyond walls
 beestat.component.scene.wall_thickness = 4;
-beestat.component.scene.environment_padding = 200; // Padding around floor plan
+beestat.component.scene.environment_padding = 400; // Padding around floor plan
 beestat.component.scene.room_floor_thickness = 6;
 beestat.component.scene.room_wall_inset = 1.5;
 
@@ -33,8 +33,10 @@ beestat.component.scene.default_appearance = {
   'roof_color': '#3a3a3a',
   'roof_style': 'hip',
   'siding_color': '#889aaa',
-  'ground_color': '#4a7c3f'
+  'ground_color': '#4a7c3f',
+  'weather': 'none'
 };
+beestat.component.scene.snow_surface_color = '#f0f0f0';
 
 /**
  * Light intensity constants
@@ -54,6 +56,12 @@ beestat.component.scene.prototype.rerender = function() {
   this.add_main_group_();
   this.add_floor_plan_();
   this.apply_appearance_rotation_to_lights_();
+
+  // Ensure weather/date-driven celestial targets are recalculated after
+  // rerendered environment changes (e.g., cloudy/rain/snow dimming).
+  if (this.rendered_ === true) {
+    this.update_();
+  }
 };
 
 /**
@@ -69,6 +77,57 @@ beestat.component.scene.prototype.get_appearance_value_ = function(key) {
     return floor_plan.data.appearance[key];
   }
   return beestat.component.scene.default_appearance[key];
+};
+
+/**
+ * Set weather effect override for this scene instance.
+ *
+ * @param {string} weather none|rain|snow
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_weather = function(weather) {
+  this.weather_ = weather;
+
+  if (this.rendered_ === true) {
+    this.rerender();
+  }
+
+  return this;
+};
+
+/**
+ * Get the effective weather effect for this scene.
+ *
+ * @return {string}
+ */
+beestat.component.scene.prototype.get_weather_effect_ = function() {
+  if (this.weather_ !== undefined) {
+    return this.weather_;
+  }
+
+  const appearance_weather = this.get_appearance_value_('weather');
+  return appearance_weather || 'none';
+};
+
+/**
+ * Get effective surface colors, applying snow overrides when snow weather is
+ * active.
+ *
+ * @return {{ground_color: string, roof_color: string}}
+ */
+beestat.component.scene.prototype.get_surface_colors_ = function() {
+  if (this.get_weather_effect_() === 'snow') {
+    return {
+      'ground_color': beestat.component.scene.snow_surface_color,
+      'roof_color': beestat.component.scene.snow_surface_color
+    };
+  }
+
+  return {
+    'ground_color': this.get_appearance_value_('ground_color'),
+    'roof_color': this.get_appearance_value_('roof_color')
+  };
 };
 
 /**
@@ -130,6 +189,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     self.controls_.update();
     self.update_raycaster_();
     self.update_celestial_light_intensities_();
+    self.update_weather_();
     self.renderer_.render(self.scene_, self.camera_);
   };
   animate();
@@ -228,7 +288,7 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_ = new THREE.OrbitControls(this.camera_, parent[0]);
   this.controls_.enableDamping = true;
   this.controls_.enablePan = false;
-  this.controls_.maxDistance = 2000;
+  this.controls_.maxDistance = 1500;
   this.controls_.minDistance = 400;
   this.controls_.maxPolarAngle = Math.PI / 2.1;
 };
@@ -414,6 +474,126 @@ beestat.component.scene.prototype.create_sun_glow_texture_ = function() {
   texture.needsUpdate = true;
 
   return texture;
+};
+
+/**
+ * Create a circular particle texture for snow.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_snow_particle_texture_ = function() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+  gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  gradient.addColorStop(0.4, 'rgba(245, 250, 255, 0.9)');
+  gradient.addColorStop(1.0, 'rgba(240, 245, 255, 0.0)');
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  return texture;
+};
+
+/**
+ * Create a streak-like particle texture for rain.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_rain_particle_texture_ = function() {
+  const width = 24;
+  const height = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0.0, 'rgba(170, 200, 255, 0.0)');
+  gradient.addColorStop(0.25, 'rgba(185, 210, 255, 0.85)');
+  gradient.addColorStop(1.0, 'rgba(170, 200, 255, 0.0)');
+
+  context.fillStyle = gradient;
+  context.fillRect(width / 2 - 2, 0, 4, height);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  return texture;
+};
+
+/**
+ * Create a soft cloud texture used for weather cloud sprites.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_cloud_texture_ = function() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+
+  const circles = [
+    {'x': 0.36, 'y': 0.56, 'r': 0.2},
+    {'x': 0.5, 'y': 0.5, 'r': 0.24},
+    {'x': 0.64, 'y': 0.56, 'r': 0.2},
+    {'x': 0.5, 'y': 0.64, 'r': 0.22}
+  ];
+
+  circles.forEach(function(circle) {
+    const gradient = context.createRadialGradient(
+      size * circle.x,
+      size * circle.y,
+      0,
+      size * circle.x,
+      size * circle.y,
+      size * circle.r
+    );
+    gradient.addColorStop(0.0, 'rgba(255,255,255,0.9)');
+    gradient.addColorStop(0.55, 'rgba(240,245,255,0.55)');
+    gradient.addColorStop(1.0, 'rgba(240,245,255,0.0)');
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.arc(size * circle.x, size * circle.y, size * circle.r, 0, Math.PI * 2);
+    context.fill();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+/**
+ * Get dimming multiplier from weather for sun/moon brightness.
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
+  switch (this.get_weather_effect_()) {
+  case 'cloudy':
+    return 0.18;
+  case 'rain':
+    return 0.08;
+  case 'snow':
+    return 0.12;
+  default:
+    return 1;
+  }
 };
 
 /**
@@ -820,10 +1000,13 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     this.sun_visual_horizon_fade_ = Math.max(0, Math.min(1, (sun_pos.altitude + 0.15) / 0.3));
   }
 
+  const cloud_dimming = this.get_cloud_dimming_factor_();
+
   // Calculate target intensity for smooth transitions
   this.target_sun_intensity_ = sun_pos.altitude < 0
     ? Math.max(0, beestat.component.scene.sun_light_intensity * (1 + sun_pos.altitude / (Math.PI / 6)))
     : beestat.component.scene.sun_light_intensity;
+  this.target_sun_intensity_ *= cloud_dimming;
 
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
@@ -859,6 +1042,7 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
       ? Math.max(0, moon_intensity * (1 + moon_pos.altitude / (Math.PI / 6)))
       : moon_intensity;
   }
+  this.target_moon_intensity_ *= cloud_dimming;
 
   // Update helpers
   if (this.debug_.sun_light_helper) {
@@ -1677,9 +1861,10 @@ beestat.component.scene.prototype.add_roofs_ = function() {
  * Add hip roofs using the straight skeleton algorithm.
  */
 beestat.component.scene.prototype.add_hip_roofs_ = function() {
-  const self = this;
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+  const surface_colors = this.get_surface_colors_();
+  const roof_color = surface_colors.roof_color;
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
@@ -1734,7 +1919,6 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
             'depth': hip_roof_base_thickness,
             'bevelEnabled': false
           });
-          const roof_color = self.get_appearance_value_('roof_color');
           const base_material = new THREE.MeshStandardMaterial({
             'color': roof_color,
             'side': THREE.DoubleSide,
@@ -1878,12 +2062,90 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
 };
 
 /**
+ * Animate weather particles (snow/rain) each frame.
+ */
+beestat.component.scene.prototype.update_weather_ = function() {
+  if (this.cloud_sprites_ !== undefined && this.cloud_bounds_ !== undefined) {
+    const cloud_span_x = this.cloud_bounds_.max_x - this.cloud_bounds_.min_x;
+    const cloud_span_y = this.cloud_bounds_.max_y - this.cloud_bounds_.min_y;
+    for (let i = 0; i < this.cloud_sprites_.length; i++) {
+      const sprite = this.cloud_sprites_[i];
+      sprite.position.x += this.cloud_speeds_x_[i] * 0.016;
+      sprite.position.y += this.cloud_speeds_y_[i] * 0.016;
+      if (sprite.position.x > this.cloud_bounds_.max_x) {
+        sprite.position.x = this.cloud_bounds_.min_x;
+      } else if (sprite.position.x < this.cloud_bounds_.min_x) {
+        sprite.position.x = this.cloud_bounds_.max_x;
+      }
+      if (sprite.position.y > this.cloud_bounds_.max_y) {
+        sprite.position.y = this.cloud_bounds_.min_y;
+      } else if (sprite.position.y < this.cloud_bounds_.min_y) {
+        sprite.position.y = this.cloud_bounds_.max_y;
+      }
+      if (sprite.position.x === this.cloud_bounds_.min_x || sprite.position.x === this.cloud_bounds_.max_x) {
+        sprite.position.y = this.cloud_bounds_.min_y + Math.random() * cloud_span_y;
+      }
+      if (sprite.position.y === this.cloud_bounds_.min_y || sprite.position.y === this.cloud_bounds_.max_y) {
+        sprite.position.x = this.cloud_bounds_.min_x + Math.random() * cloud_span_x;
+      }
+    }
+  }
+
+  if (
+    this.weather_points_ === undefined ||
+    this.weather_particle_speeds_ === undefined ||
+    this.weather_bounds_ === undefined
+  ) {
+    return;
+  }
+
+  const now_ms = window.performance.now();
+  if (this.weather_last_update_ms_ === undefined) {
+    this.weather_last_update_ms_ = now_ms;
+    return;
+  }
+
+  const delta_seconds = Math.min(0.05, (now_ms - this.weather_last_update_ms_) / 1000);
+  this.weather_last_update_ms_ = now_ms;
+  if (delta_seconds <= 0) {
+    return;
+  }
+
+  const positions = this.weather_points_.geometry.attributes.position.array;
+  const bounds = this.weather_bounds_;
+  const span_x = bounds.max_x - bounds.min_x;
+  const span_y = bounds.max_y - bounds.min_y;
+  const span_z = bounds.max_z - bounds.min_z;
+
+  for (let i = 0; i < this.weather_particle_speeds_.length; i++) {
+    const offset = i * 3;
+
+    positions[offset + 2] += this.weather_particle_speeds_[i] * delta_seconds;
+    positions[offset] += this.weather_particle_drift_x_[i] * delta_seconds;
+    positions[offset + 1] += this.weather_particle_drift_y_[i] * delta_seconds;
+
+    if (
+      positions[offset] < bounds.min_x || positions[offset] > bounds.max_x ||
+      positions[offset + 1] < bounds.min_y || positions[offset + 1] > bounds.max_y ||
+      positions[offset + 2] > bounds.max_z
+    ) {
+      positions[offset] = bounds.min_x + Math.random() * span_x;
+      positions[offset + 1] = bounds.min_y + Math.random() * span_y;
+      positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+    }
+  }
+
+  this.weather_points_.geometry.attributes.position.needsUpdate = true;
+};
+
+/**
  * Add flat roofs to the scene.
  */
 beestat.component.scene.prototype.add_flat_roofs_ = function() {
-  const self = this;
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
+  const surface_colors = this.get_surface_colors_();
+  const roof_color = surface_colors.roof_color;
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
@@ -1939,7 +2201,6 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
           });
 
           // Create material - use appearance roof color
-          const roof_color = self.get_appearance_value_('roof_color');
           const material = new THREE.MeshStandardMaterial({
             'color': roof_color,
             'side': THREE.DoubleSide,
@@ -2121,7 +2382,8 @@ beestat.component.scene.prototype.add_environment_ = function() {
   let current_z = 0;
 
   const padding = beestat.component.scene.environment_padding;
-  const ground_color = this.get_appearance_value_('ground_color');
+  const surface_colors = this.get_surface_colors_();
+  const ground_color = surface_colors.ground_color;
   const strata = [
     {'color': ground_color, 'thickness': 10, 'roughness': 0.95},
     {'color': 0x4a3f35, 'thickness': 60, 'roughness': 0.85},
@@ -2159,6 +2421,162 @@ beestat.component.scene.prototype.add_environment_ = function() {
 
   // Add celestial lights (sun and moon) - toggled with environment visibility
   this.add_celestial_lights_();
+  this.add_weather_effect_(center_x, center_y, plan_width, plan_height);
+};
+
+/**
+ * Add procedural weather particles based on floor plan appearance.
+ *
+ * @param {number} center_x
+ * @param {number} center_y
+ * @param {number} plan_width
+ * @param {number} plan_height
+ */
+beestat.component.scene.prototype.add_weather_effect_ = function(center_x, center_y, plan_width, plan_height) {
+  const weather = this.get_weather_effect_();
+  const has_clouds = weather === 'cloudy' || weather === 'rain' || weather === 'snow';
+  const has_precipitation = weather === 'rain' || weather === 'snow';
+
+  if (has_clouds === false && has_precipitation === false) {
+    return;
+  }
+
+  const padding = beestat.component.scene.environment_padding + 120;
+  const bounds = {
+    'min_x': center_x - ((plan_width + padding * 2) / 2),
+    'max_x': center_x + ((plan_width + padding * 2) / 2),
+    'min_y': center_y - ((plan_height + padding * 2) / 2),
+    'max_y': center_y + ((plan_height + padding * 2) / 2),
+    'min_z': -780,
+    'max_z': 140
+  };
+
+  const config = weather === 'snow'
+    ? {
+      'count': 1500,
+      'size': 10,
+      'opacity': 0.75,
+      'color': 0xffffff,
+      'speed_min': 18,
+      'speed_max': 44,
+      'drift': 12
+    }
+    : {
+      'count': 2200,
+      'size': 11,
+      'opacity': 0.7,
+      'color': 0xa8c7ff,
+      'speed_min': 280,
+      'speed_max': 430,
+      'drift': 28
+    };
+
+  this.weather_group_ = new THREE.Group();
+  this.weather_group_.userData.is_environment = true;
+  this.environment_group_.add(this.weather_group_);
+
+  if (has_clouds === true) {
+    if (this.cloud_texture_ === undefined) {
+      this.cloud_texture_ = this.create_cloud_texture_();
+    }
+
+    // const cloud_count = weather === 'cloudy' ? 140 : 180;
+    const cloud_count = 140;
+    // const cloud_opacity = weather === 'cloudy' ? 0.55 : 0.62;
+    const cloud_opacity = 0.2;
+    const cloud_bounds = {
+      'min_x': bounds.min_x - 260,
+      'max_x': bounds.max_x + 260,
+      'min_y': bounds.min_y - 260,
+      'max_y': bounds.max_y + 260,
+      'z': -760
+    };
+
+    this.cloud_bounds_ = cloud_bounds;
+    this.cloud_sprites_ = [];
+    this.cloud_speeds_x_ = new Float32Array(cloud_count);
+    this.cloud_speeds_y_ = new Float32Array(cloud_count);
+
+    for (let i = 0; i < cloud_count; i++) {
+      const cloud_material = new THREE.SpriteMaterial({
+        'map': this.cloud_texture_,
+        'color': 0xdce3ee,
+        'transparent': true,
+        'opacity': cloud_opacity,
+        'depthWrite': false,
+        'depthTest': true
+      });
+
+      const cloud = new THREE.Sprite(cloud_material);
+      cloud.position.set(
+        cloud_bounds.min_x + Math.random() * (cloud_bounds.max_x - cloud_bounds.min_x),
+        cloud_bounds.min_y + Math.random() * (cloud_bounds.max_y - cloud_bounds.min_y),
+        cloud_bounds.z + (Math.random() * 130)
+      );
+      const cloud_size = 520 + Math.random() * 560;
+      cloud.scale.set(cloud_size, cloud_size * 0.6, 1);
+      cloud.layers.set(beestat.component.scene.layer_visible);
+      cloud.userData.is_environment = true;
+      this.weather_group_.add(cloud);
+      this.cloud_sprites_.push(cloud);
+      this.cloud_speeds_x_[i] = (Math.random() - 0.5) * 0.8;
+      this.cloud_speeds_y_[i] = (Math.random() - 0.5) * 0.4;
+    }
+  }
+
+  if (has_precipitation === false) {
+    return;
+  }
+
+  if (weather === 'snow' && this.snow_particle_texture_ === undefined) {
+    this.snow_particle_texture_ = this.create_snow_particle_texture_();
+  }
+  if (weather === 'rain' && this.rain_particle_texture_ === undefined) {
+    this.rain_particle_texture_ = this.create_rain_particle_texture_();
+  }
+
+  const positions = new Float32Array(config.count * 3);
+  const particle_speeds = new Float32Array(config.count);
+  const particle_drift_x = new Float32Array(config.count);
+  const particle_drift_y = new Float32Array(config.count);
+
+  const span_x = bounds.max_x - bounds.min_x;
+  const span_y = bounds.max_y - bounds.min_y;
+  const span_z = bounds.max_z - bounds.min_z;
+
+  for (let i = 0; i < config.count; i++) {
+    const offset = i * 3;
+    positions[offset] = bounds.min_x + Math.random() * span_x;
+    positions[offset + 1] = bounds.min_y + Math.random() * span_y;
+    positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+
+    particle_speeds[i] = config.speed_min + Math.random() * (config.speed_max - config.speed_min);
+    particle_drift_x[i] = (Math.random() - 0.5) * config.drift;
+    particle_drift_y[i] = (Math.random() - 0.5) * config.drift;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+  const material = new THREE.PointsMaterial({
+    'size': config.size,
+    'color': config.color,
+    'transparent': true,
+    'opacity': config.opacity,
+    'depthWrite': false,
+    'blending': THREE.NormalBlending,
+    'map': weather === 'snow' ? this.snow_particle_texture_ : this.rain_particle_texture_
+  });
+
+  this.weather_points_ = new THREE.Points(geometry, material);
+  this.weather_points_.layers.set(beestat.component.scene.layer_visible);
+  this.weather_group_.add(this.weather_points_);
+
+  this.weather_bounds_ = bounds;
+  this.weather_particle_speeds_ = particle_speeds;
+  this.weather_particle_drift_x_ = particle_drift_x;
+  this.weather_particle_drift_y_ = particle_drift_y;
+  this.weather_last_update_ms_ = window.performance.now();
 };
 
 /**
@@ -2476,6 +2894,15 @@ beestat.component.scene.prototype.dispose = function() {
 
   if (this.sun_glow_texture_ !== undefined) {
     this.sun_glow_texture_.dispose();
+  }
+  if (this.snow_particle_texture_ !== undefined) {
+    this.snow_particle_texture_.dispose();
+  }
+  if (this.rain_particle_texture_ !== undefined) {
+    this.rain_particle_texture_.dispose();
+  }
+  if (this.cloud_texture_ !== undefined) {
+    this.cloud_texture_.dispose();
   }
   if (this.moon_phase_texture_ !== undefined) {
     this.moon_phase_texture_.dispose();
