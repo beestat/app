@@ -54,6 +54,9 @@ beestat.component.scene.ambient_light_intensity = 0.25;
 beestat.component.scene.directional_light_intensity = 0.1;
 beestat.component.scene.sun_light_intensity = 0.6;
 beestat.component.scene.moon_light_intensity = 0.35;
+beestat.component.scene.star_count = 900;
+beestat.component.scene.star_min_size = 8;
+beestat.component.scene.star_max_size = 34;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -593,6 +596,39 @@ beestat.component.scene.prototype.create_sun_glow_texture_ = function() {
 };
 
 /**
+ * Create a soft star sprite texture.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_star_texture_ = function() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+  gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1)');
+  gradient.addColorStop(0.2, 'rgba(245, 250, 255, 0.95)');
+  gradient.addColorStop(0.65, 'rgba(210, 225, 255, 0.25)');
+  gradient.addColorStop(1.0, 'rgba(200, 220, 255, 0)');
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+/**
  * Create a circular particle texture for snow.
  *
  * @return {THREE.Texture}
@@ -1010,7 +1046,66 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
     this.celestial_light_group_.add(this.moon_light_helper_);
   }
 
+  this.add_stars_();
+
   this.apply_appearance_rotation_to_lights_();
+};
+
+/**
+ * Add stars as non-lighting visual sprites in the sky.
+ */
+beestat.component.scene.prototype.add_stars_ = function() {
+  if (this.star_texture_ === undefined) {
+    this.star_texture_ = this.create_star_texture_();
+  }
+
+  this.star_group_ = new THREE.Group();
+  this.star_group_.layers.set(beestat.component.scene.layer_visible);
+  this.celestial_light_group_.add(this.star_group_);
+
+  this.stars_ = [];
+
+  const radius = 4200;
+  for (let i = 0; i < beestat.component.scene.star_count; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.cos(phi);
+    const z = radius * Math.sin(phi) * Math.sin(theta);
+
+    const size =
+      beestat.component.scene.star_min_size +
+      (Math.pow(Math.random(), 1.7) * (beestat.component.scene.star_max_size - beestat.component.scene.star_min_size));
+    const is_twinkle = size >= 20;
+    const base_opacity = 0.3 + (Math.random() * 0.7);
+
+    const material = new THREE.SpriteMaterial({
+      'map': this.star_texture_,
+      'transparent': true,
+      'opacity': 0,
+      'depthWrite': false,
+      'depthTest': true,
+      'blending': THREE.AdditiveBlending
+    });
+    const star = new THREE.Sprite(material);
+    star.position.set(x, y, z);
+    star.scale.set(size, size, 1);
+    star.userData.is_celestial_visual = true;
+    this.star_group_.add(star);
+
+    this.stars_.push({
+      'sprite': star,
+      'base_opacity': base_opacity,
+      'twinkle': is_twinkle,
+      'twinkle_amount': is_twinkle ? (0.06 + (Math.random() * 0.1)) : 0,
+      'twinkle_speed': is_twinkle ? (0.8 + (Math.random() * 1.2)) : 0,
+      'phase': Math.random() * Math.PI * 2
+    });
+  }
+
+  this.star_visibility_ = 0;
+  this.target_star_visibility_ = 0;
 };
 
 /**
@@ -1124,6 +1219,12 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     : beestat.component.scene.sun_light_intensity;
   this.target_sun_intensity_ *= cloud_dimming;
 
+  // Fade stars out at day and in at night.
+  this.target_star_visibility_ = Math.max(
+    0,
+    Math.min(1, (-sun_pos.altitude - 0.05) / 0.25)
+  );
+
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
   const rotated_moon_azimuth = moon_pos.azimuth - rotation_radians;
@@ -1226,6 +1327,47 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
     const moon_visual_strength = moon_intensity_ratio * moon_horizon_fade;
 
     this.moon_sprite_.material.opacity = Math.min(1, 0.2 + (moon_visual_strength * 0.95));
+  }
+
+  this.update_stars_();
+};
+
+/**
+ * Update star visibility and subtle twinkle.
+ */
+beestat.component.scene.prototype.update_stars_ = function() {
+  if (this.stars_ === undefined || this.stars_.length === 0) {
+    return;
+  }
+
+  if (this.target_star_visibility_ === undefined) {
+    this.target_star_visibility_ = 0;
+  }
+  if (this.star_visibility_ === undefined) {
+    this.star_visibility_ = 0;
+  }
+
+  this.star_visibility_ += (this.target_star_visibility_ - this.star_visibility_) * 0.06;
+  const visibility = Math.max(0, Math.min(1, this.star_visibility_));
+  const now_seconds = window.performance.now() / 1000;
+
+  if (this.star_group_ !== undefined) {
+    this.star_group_.visible = visibility > 0.005;
+  }
+
+  for (let i = 0; i < this.stars_.length; i++) {
+    const star = this.stars_[i];
+    let twinkle = 1;
+    if (star.twinkle === true) {
+      twinkle = 1 + (Math.sin((now_seconds * star.twinkle_speed) + star.phase) * star.twinkle_amount);
+    }
+    star.sprite.material.opacity = Math.max(
+      0,
+      Math.min(
+        1,
+        star.base_opacity * visibility * twinkle
+      )
+    );
   }
 };
 
@@ -3179,6 +3321,9 @@ beestat.component.scene.prototype.dispose = function() {
   }
   if (this.moon_phase_texture_ !== undefined) {
     this.moon_phase_texture_.dispose();
+  }
+  if (this.star_texture_ !== undefined) {
+    this.star_texture_.dispose();
   }
 
   // Clean up THREE.js scene resources
