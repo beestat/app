@@ -479,7 +479,12 @@ beestat.component.card.three_d.prototype.get_show_environment_ = function() {
  * @return {string}
  */
 beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
-  return beestat.setting('visualize.three_d.weather_mode') || 'current';
+  const weather_mode = beestat.setting('visualize.three_d.weather_mode');
+  if (weather_mode === 'current') {
+    beestat.setting('visualize.three_d.weather_mode', 'sunny');
+    return 'sunny';
+  }
+  return weather_mode || 'sunny';
 };
 
 /**
@@ -497,10 +502,8 @@ beestat.component.card.three_d.prototype.get_weather_effect_from_mode_ = functio
     return 'rain';
   case 'snowing':
     return 'snow';
-  case 'current':
   case 'sunny':
   default:
-    // Placeholder mappings for now.
     return 'none';
   }
 };
@@ -1116,7 +1119,6 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   if (show_environment === true) {
     const selected_mode = this.get_weather_mode_();
     const weather_modes = [
-      {'value': 'current', 'icon': 'weather_partly_cloudy', 'title': 'Weather: Current'},
       {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
       {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
       {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},

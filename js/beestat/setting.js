@@ -85,7 +85,7 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'visualize.three_d.show_walls': false,
     'visualize.three_d.show_roof': false,
     'visualize.three_d.show_environment': true,
-    'visualize.three_d.weather_mode': 'current',
+    'visualize.three_d.weather_mode': 'sunny',
 
     'date_format': 'M/D/YYYY',
 

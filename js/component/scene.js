@@ -1,3 +1,10 @@
+// Ideas
+// Surfaces (Sidewalk, Mulch, etc)
+// Trees
+// When dragging across a DST boundary change the time so the sun doesn't jump
+// Smooth weather effects
+
+
 /**
  * Home Scene
  *
@@ -22,6 +29,8 @@ beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
 beestat.component.scene.roof_overhang = 12; // Roof overhang beyond walls
 beestat.component.scene.wall_thickness = 4;
 beestat.component.scene.environment_padding = 400; // Padding around floor plan
+beestat.component.scene.weather_rain_max_count = 2200;
+beestat.component.scene.weather_snow_max_count = 1500;
 beestat.component.scene.room_floor_thickness = 6;
 beestat.component.scene.room_wall_inset = 1.5;
 
@@ -88,9 +97,10 @@ beestat.component.scene.prototype.get_appearance_value_ = function(key) {
  */
 beestat.component.scene.prototype.set_weather = function(weather) {
   this.weather_ = weather;
+  this.update_weather_targets_();
 
   if (this.rendered_ === true) {
-    this.rerender();
+    this.update_();
   }
 
   return this;
@@ -111,23 +121,129 @@ beestat.component.scene.prototype.get_weather_effect_ = function() {
 };
 
 /**
+ * Get weather transition profile for visuals.
+ *
+ * @param {string} weather
+ *
+ * @return {object}
+ */
+beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
+  switch (weather) {
+  case 'snow':
+    return {
+      'cloud_cover': 1,
+      'rain_count': 0,
+      'snow_count': beestat.component.scene.weather_snow_max_count
+    };
+  case 'rain':
+    return {
+      'cloud_cover': 1,
+      'rain_count': beestat.component.scene.weather_rain_max_count,
+      'snow_count': 0
+    };
+  case 'cloudy':
+    return {
+      'cloud_cover': 1,
+      'rain_count': 0,
+      'snow_count': 0
+    };
+  case 'sunny':
+  case 'none':
+  default:
+    return {
+      'cloud_cover': 0,
+      'rain_count': 0,
+      'snow_count': 0
+    };
+  }
+};
+
+/**
+ * Update weather transition targets based on the current weather effect.
+ */
+beestat.component.scene.prototype.update_weather_targets_ = function() {
+  this.weather_profile_target_ = this.get_weather_profile_(this.get_weather_effect_());
+};
+
+/**
  * Get effective surface colors, applying snow overrides when snow weather is
  * active.
  *
  * @return {{ground_color: string, roof_color: string}}
  */
 beestat.component.scene.prototype.get_surface_colors_ = function() {
-  if (this.get_weather_effect_() === 'snow') {
-    return {
-      'ground_color': beestat.component.scene.snow_surface_color,
-      'roof_color': beestat.component.scene.snow_surface_color
-    };
-  }
-
   return {
     'ground_color': this.get_appearance_value_('ground_color'),
     'roof_color': this.get_appearance_value_('roof_color')
   };
+};
+
+/**
+ * Get current snow cover blend amount (0-1) from precipitation transition.
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_snow_cover_blend_ = function() {
+  if (
+    this.current_snow_count_ === undefined ||
+    beestat.component.scene.weather_snow_max_count <= 0
+  ) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      1,
+      this.current_snow_count_ / beestat.component.scene.weather_snow_max_count
+    )
+  );
+};
+
+/**
+ * Blend roof and ground surface materials toward snow white.
+ *
+ * @param {number} snow_blend
+ */
+beestat.component.scene.prototype.update_snow_surface_colors_ = function(snow_blend) {
+  if (this.layers_ === undefined) {
+    return;
+  }
+
+  const blend = Math.max(0, Math.min(1, snow_blend));
+  const base_surface_colors = this.get_surface_colors_();
+  const snow_color = new THREE.Color(beestat.component.scene.snow_surface_color);
+  const base_roof_color = new THREE.Color(base_surface_colors.roof_color);
+  const base_ground_color = new THREE.Color(base_surface_colors.ground_color);
+
+  const roof_color = base_roof_color.clone().lerp(snow_color, blend);
+  const ground_color = base_ground_color.clone().lerp(snow_color, blend);
+
+  if (this.layers_.roof !== undefined) {
+    this.layers_.roof.traverse(function(object) {
+      if (
+        object.userData !== undefined &&
+        object.userData.is_roof === true &&
+        object.material !== undefined &&
+        object.material.color !== undefined
+      ) {
+        object.material.color.copy(roof_color);
+      }
+    });
+  }
+
+  if (this.layers_.environment !== undefined) {
+    this.layers_.environment.traverse(function(object) {
+      if (
+        object.userData !== undefined &&
+        object.userData.is_ground_surface === true &&
+        object.material !== undefined &&
+        object.material.color !== undefined
+      ) {
+        object.material.color.copy(ground_color);
+      }
+    });
+  }
 };
 
 /**
@@ -1846,21 +1962,27 @@ beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floo
  * Add roofs to the scene based on the configured roof style.
  */
 beestat.component.scene.prototype.add_roofs_ = function() {
+  const skeleton_builder = this.get_skeleton_builder_();
   const roof_style = this.get_appearance_value_('roof_style');
 
   if (roof_style === 'flat') {
     this.add_flat_roofs_();
-  } else if (roof_style === 'hip') {
-    this.add_hip_roofs_();
+  } else if (roof_style === 'hip' && skeleton_builder !== undefined) {
+    this.add_hip_roofs_(skeleton_builder);
   } else {
-    this.add_hip_roofs_();
+    if (roof_style === 'hip') {
+      this.listen_for_skeleton_builder_ready_();
+    }
+    this.add_flat_roofs_();
   }
 };
 
 /**
  * Add hip roofs using the straight skeleton algorithm.
+ *
+ * @param {object} skeleton_builder
  */
-beestat.component.scene.prototype.add_hip_roofs_ = function() {
+beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
   const surface_colors = this.get_surface_colors_();
@@ -1942,7 +2064,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
           ring.push([roof_polygon[0].x, roof_polygon[0].y]);
 
           const coordinates = [ring];
-          const result = SkeletonBuilder.buildFromPolygon(coordinates);
+          const result = skeleton_builder.buildFromPolygon(coordinates);
 
           if (!result) {
             return;
@@ -2065,48 +2187,6 @@ beestat.component.scene.prototype.add_hip_roofs_ = function() {
  * Animate weather particles (snow/rain) each frame.
  */
 beestat.component.scene.prototype.update_weather_ = function() {
-  if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
-    const now_seconds = window.performance.now() / 1000;
-    for (let i = 0; i < this.cloud_sprites_.length; i++) {
-      const sprite = this.cloud_sprites_[i];
-      const motion = this.cloud_motion_[i];
-      const phase = now_seconds * motion.pulse_speed + motion.phase;
-
-      // Shape/size breathing.
-      const scale_x_wobble = 1 + (Math.sin(phase) * motion.scale_wobble_x);
-      const scale_y_wobble = 1 + (Math.cos(phase * 0.87) * motion.scale_wobble_y);
-      sprite.scale.set(
-        motion.base_scale_x * scale_x_wobble,
-        motion.base_scale_y * scale_y_wobble,
-        1
-      );
-
-      // Subtle random-looking positional wiggle.
-      sprite.position.x = motion.base_x + Math.sin(phase * motion.wiggle_freq_x) * motion.wiggle_x;
-      sprite.position.y = motion.base_y + Math.cos(phase * motion.wiggle_freq_y) * motion.wiggle_y;
-      sprite.position.z = motion.base_z + Math.sin(phase * motion.wiggle_freq_z) * motion.wiggle_z;
-
-      // Slight opacity shifting.
-      if (sprite.material !== undefined) {
-        sprite.material.opacity = Math.max(
-          0.2,
-          Math.min(
-            1,
-            motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble
-          )
-        );
-      }
-    }
-  }
-
-  if (
-    this.weather_points_ === undefined ||
-    this.weather_particle_speeds_ === undefined ||
-    this.weather_bounds_ === undefined
-  ) {
-    return;
-  }
-
   const now_ms = window.performance.now();
   if (this.weather_last_update_ms_ === undefined) {
     this.weather_last_update_ms_ = now_ms;
@@ -2119,31 +2199,68 @@ beestat.component.scene.prototype.update_weather_ = function() {
     return;
   }
 
-  const positions = this.weather_points_.geometry.attributes.position.array;
-  const bounds = this.weather_bounds_;
-  const span_x = bounds.max_x - bounds.min_x;
-  const span_y = bounds.max_y - bounds.min_y;
-  const span_z = bounds.max_z - bounds.min_z;
+  if (this.weather_profile_target_ === undefined) {
+    this.update_weather_targets_();
+  }
 
-  for (let i = 0; i < this.weather_particle_speeds_.length; i++) {
-    const offset = i * 3;
+  const transition_rate = 2.8;
+  const transition_t = 1 - Math.exp(-transition_rate * delta_seconds);
+  const transition = function(current, target) {
+    return current + ((target - current) * transition_t);
+  };
 
-    positions[offset + 2] += this.weather_particle_speeds_[i] * delta_seconds;
-    positions[offset] += this.weather_particle_drift_x_[i] * delta_seconds;
-    positions[offset + 1] += this.weather_particle_drift_y_[i] * delta_seconds;
+  this.current_cloud_cover_ = transition(
+    this.current_cloud_cover_ === undefined ? 0 : this.current_cloud_cover_,
+    this.weather_profile_target_.cloud_cover
+  );
+  this.current_rain_count_ = transition(
+    this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
+    this.weather_profile_target_.rain_count
+  );
+  this.current_snow_count_ = transition(
+    this.current_snow_count_ === undefined ? 0 : this.current_snow_count_,
+    this.weather_profile_target_.snow_count
+  );
 
-    if (
-      positions[offset] < bounds.min_x || positions[offset] > bounds.max_x ||
-      positions[offset + 1] < bounds.min_y || positions[offset + 1] > bounds.max_y ||
-      positions[offset + 2] > bounds.max_z
-    ) {
-      positions[offset] = bounds.min_x + Math.random() * span_x;
-      positions[offset + 1] = bounds.min_y + Math.random() * span_y;
-      positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+  if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
+    const now_seconds = now_ms / 1000;
+    const cloud_cover = Math.max(0, Math.min(1, this.current_cloud_cover_));
+    for (let i = 0; i < this.cloud_sprites_.length; i++) {
+      const sprite = this.cloud_sprites_[i];
+      const motion = this.cloud_motion_[i];
+      const phase = now_seconds * motion.pulse_speed + motion.phase;
+
+      // Shape/size breathing plus transition growth/shrink.
+      const scale_x_wobble = 1 + (Math.sin(phase) * motion.scale_wobble_x);
+      const scale_y_wobble = 1 + (Math.cos(phase * 0.87) * motion.scale_wobble_y);
+      const cloud_scale_transition = 0.72 + (0.28 * cloud_cover);
+      sprite.scale.set(
+        motion.base_scale_x * scale_x_wobble * cloud_scale_transition,
+        motion.base_scale_y * scale_y_wobble * cloud_scale_transition,
+        1
+      );
+
+      // Subtle random-looking positional wiggle.
+      sprite.position.x = motion.base_x + Math.sin(phase * motion.wiggle_freq_x) * motion.wiggle_x;
+      sprite.position.y = motion.base_y + Math.cos(phase * motion.wiggle_freq_y) * motion.wiggle_y;
+      sprite.position.z = motion.base_z + Math.sin(phase * motion.wiggle_freq_z) * motion.wiggle_z;
+
+      // Slight opacity shifting.
+      if (sprite.material !== undefined) {
+        sprite.material.opacity = Math.max(
+          0,
+          Math.min(
+            1,
+            (motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble) * cloud_cover
+          )
+        );
+      }
     }
   }
 
-  this.weather_points_.geometry.attributes.position.needsUpdate = true;
+  this.update_precipitation_system_(this.rain_particles_, this.current_rain_count_, delta_seconds);
+  this.update_precipitation_system_(this.snow_particles_, this.current_snow_count_, delta_seconds);
+  this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 };
 
 /**
@@ -2279,6 +2396,11 @@ beestat.component.scene.prototype.add_roof_outline_debug_ = function() {
  * Visualize the straight skeleton for each roof polygon with debug lines.
  */
 beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
+  const skeleton_builder = this.get_skeleton_builder_();
+  if (skeleton_builder === undefined) {
+    return;
+  }
+
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
 
@@ -2322,7 +2444,7 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
 
           // Build the straight skeleton
           const coordinates = [ring];  // Array of rings (outer ring only, no holes)
-          const result = SkeletonBuilder.buildFromPolygon(coordinates);
+          const result = skeleton_builder.buildFromPolygon(coordinates);
 
           if (!result) {
             return;
@@ -2367,6 +2489,164 @@ beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
 };
 
 /**
+ * Get the straight-skeleton runtime when it has finished initializing.
+ *
+ * @return {object|undefined}
+ */
+beestat.component.scene.prototype.get_skeleton_builder_ = function() {
+  if (window.SkeletonBuilderInitialized === true) {
+    return window.SkeletonBuilder;
+  }
+  return undefined;
+};
+
+/**
+ * If the skeleton runtime is still loading, listen for readiness and rerender
+ * once so hip roofs replace fallback flat roofs.
+ */
+beestat.component.scene.prototype.listen_for_skeleton_builder_ready_ = function() {
+  const self = this;
+
+  if (this.skeleton_builder_ready_handler_ !== undefined) {
+    return;
+  }
+
+  this.skeleton_builder_ready_handler_ = function() {
+    if (self.skeleton_builder_ready_handler_ !== undefined) {
+      window.removeEventListener('skeleton_builder_ready', self.skeleton_builder_ready_handler_);
+      delete self.skeleton_builder_ready_handler_;
+    }
+
+    if (self.rendered_ === true) {
+      self.rerender();
+    }
+  };
+
+  window.addEventListener('skeleton_builder_ready', this.skeleton_builder_ready_handler_);
+};
+
+/**
+ * Create a precipitation particle system with static particle properties.
+ *
+ * @param {object} bounds
+ * @param {number} max_count
+ * @param {object} config
+ *
+ * @return {object}
+ */
+beestat.component.scene.prototype.create_precipitation_system_ = function(bounds, max_count, config) {
+  const positions = new Float32Array(max_count * 3);
+  const speeds = new Float32Array(max_count);
+  const drift_x = new Float32Array(max_count);
+  const drift_y = new Float32Array(max_count);
+
+  const span_x = bounds.max_x - bounds.min_x;
+  const span_y = bounds.max_y - bounds.min_y;
+  const span_z = bounds.max_z - bounds.min_z;
+
+  for (let i = 0; i < max_count; i++) {
+    const offset = i * 3;
+    positions[offset] = bounds.min_x + Math.random() * span_x;
+    positions[offset + 1] = bounds.min_y + Math.random() * span_y;
+    positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+
+    speeds[i] = config.speed_min + Math.random() * (config.speed_max - config.speed_min);
+    drift_x[i] = (Math.random() - 0.5) * config.drift;
+    drift_y[i] = (Math.random() - 0.5) * config.drift;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setDrawRange(0, 0);
+
+  const material = new THREE.PointsMaterial({
+    'size': config.size,
+    'color': config.color,
+    'transparent': true,
+    'opacity': 0,
+    'depthWrite': false,
+    'blending': THREE.NormalBlending,
+    'map': config.texture
+  });
+
+  const points = new THREE.Points(geometry, material);
+  points.layers.set(beestat.component.scene.layer_visible);
+  points.userData.is_environment = true;
+
+  return {
+    'points': points,
+    'bounds': bounds,
+    'speeds': speeds,
+    'drift_x': drift_x,
+    'drift_y': drift_y,
+    'max_count': max_count,
+    'target_opacity': config.opacity
+  };
+};
+
+/**
+ * Update a precipitation system by particle volume only.
+ *
+ * @param {object} precipitation
+ * @param {number} target_count
+ * @param {number} delta_seconds
+ */
+beestat.component.scene.prototype.update_precipitation_system_ = function(precipitation, target_count, delta_seconds) {
+  if (
+    precipitation === undefined ||
+    precipitation.points === undefined ||
+    precipitation.points.geometry === undefined ||
+    precipitation.points.material === undefined
+  ) {
+    return;
+  }
+
+  const clamped_count = Math.max(
+    0,
+    Math.min(precipitation.max_count, Math.round(target_count))
+  );
+  precipitation.points.geometry.setDrawRange(0, clamped_count);
+
+  if (precipitation.max_count > 0) {
+    precipitation.points.material.opacity =
+      precipitation.target_opacity * (clamped_count / precipitation.max_count);
+  } else {
+    precipitation.points.material.opacity = 0;
+  }
+
+  if (clamped_count === 0) {
+    return;
+  }
+
+  const bounds = precipitation.bounds;
+  const span_x = bounds.max_x - bounds.min_x;
+  const span_y = bounds.max_y - bounds.min_y;
+  const span_z = bounds.max_z - bounds.min_z;
+  const positions = precipitation.points.geometry.attributes.position.array;
+
+  for (let i = 0; i < clamped_count; i++) {
+    const offset = i * 3;
+    positions[offset + 2] += precipitation.speeds[i] * delta_seconds;
+    positions[offset] += precipitation.drift_x[i] * delta_seconds;
+    positions[offset + 1] += precipitation.drift_y[i] * delta_seconds;
+
+    if (
+      positions[offset] < bounds.min_x ||
+      positions[offset] > bounds.max_x ||
+      positions[offset + 1] < bounds.min_y ||
+      positions[offset + 1] > bounds.max_y ||
+      positions[offset + 2] > bounds.max_z
+    ) {
+      positions[offset] = bounds.min_x + Math.random() * span_x;
+      positions[offset + 1] = bounds.min_y + Math.random() * span_y;
+      positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+    }
+  }
+
+  precipitation.points.geometry.attributes.position.needsUpdate = true;
+};
+
+/**
  * Add environment layers (grass and earth strata) below the house.
  */
 beestat.component.scene.prototype.add_environment_ = function() {
@@ -2404,7 +2684,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
   this.main_group_.add(this.environment_group_);
   this.layers_['environment'] = this.environment_group_;
 
-  strata.forEach(function(stratum) {
+  strata.forEach(function(stratum, index) {
     const geometry = new THREE.BoxGeometry(
       plan_width + padding * 2,
       plan_height + padding * 2,
@@ -2421,6 +2701,9 @@ beestat.component.scene.prototype.add_environment_ = function() {
     mesh.position.y = center_y;
     mesh.position.z = current_z + stratum.thickness / 2;
     mesh.userData.is_environment = true;
+    if (index === 0) {
+      mesh.userData.is_ground_surface = true;
+    }
     mesh.receiveShadow = true;
 
     this.environment_group_.add(mesh);
@@ -2441,14 +2724,6 @@ beestat.component.scene.prototype.add_environment_ = function() {
  * @param {number} plan_height
  */
 beestat.component.scene.prototype.add_weather_effect_ = function(center_x, center_y, plan_width, plan_height) {
-  const weather = this.get_weather_effect_();
-  const has_clouds = weather === 'cloudy' || weather === 'rain' || weather === 'snow';
-  const has_precipitation = weather === 'rain' || weather === 'snow';
-
-  if (has_clouds === false && has_precipitation === false) {
-    return;
-  }
-
   const padding = beestat.component.scene.environment_padding + 120;
   const bounds = {
     'min_x': center_x - ((plan_width + padding * 2) / 2),
@@ -2459,148 +2734,117 @@ beestat.component.scene.prototype.add_weather_effect_ = function(center_x, cente
     'max_z': 140
   };
 
-  const config = weather === 'snow'
-    ? {
-      'count': 1500,
-      'size': 10,
-      'opacity': 0.75,
-      'color': 0xffffff,
-      'speed_min': 18,
-      'speed_max': 44,
-      'drift': 12
-    }
-    : {
-      'count': 2200,
-      'size': 11,
-      'opacity': 0.7,
-      'color': 0xa8c7ff,
-      'speed_min': 280,
-      'speed_max': 430,
-      'drift': 28
-    };
-
   this.weather_group_ = new THREE.Group();
   this.weather_group_.userData.is_environment = true;
   this.environment_group_.add(this.weather_group_);
 
-  if (has_clouds === true) {
-    if (this.cloud_texture_ === undefined) {
-      this.cloud_texture_ = this.create_cloud_texture_();
-    }
-
-    // const cloud_count = weather === 'cloudy' ? 140 : 180;
-    const cloud_count = 140;
-    // const cloud_opacity = weather === 'cloudy' ? 0.55 : 0.62;
-    const cloud_opacity = 0.2;
-    const cloud_bounds = {
-      'min_x': bounds.min_x - 260,
-      'max_x': bounds.max_x + 260,
-      'min_y': bounds.min_y - 260,
-      'max_y': bounds.max_y + 260,
-      'z': -760
-    };
-
-    this.cloud_bounds_ = cloud_bounds;
-    this.cloud_sprites_ = [];
-    this.cloud_motion_ = [];
-
-    for (let i = 0; i < cloud_count; i++) {
-      const cloud_material = new THREE.SpriteMaterial({
-        'map': this.cloud_texture_,
-        'color': 0xdce3ee,
-        'transparent': true,
-        'opacity': cloud_opacity,
-        'depthWrite': false,
-        'depthTest': true
-      });
-
-      const cloud = new THREE.Sprite(cloud_material);
-      cloud.position.set(
-        cloud_bounds.min_x + Math.random() * (cloud_bounds.max_x - cloud_bounds.min_x),
-        cloud_bounds.min_y + Math.random() * (cloud_bounds.max_y - cloud_bounds.min_y),
-        cloud_bounds.z + (Math.random() * 130)
-      );
-      const cloud_size = 520 + Math.random() * 560;
-      cloud.scale.set(cloud_size, cloud_size * 0.6, 1);
-      cloud.layers.set(beestat.component.scene.layer_visible);
-      cloud.userData.is_environment = true;
-      this.weather_group_.add(cloud);
-      this.cloud_sprites_.push(cloud);
-      this.cloud_motion_.push({
-        'base_x': cloud.position.x,
-        'base_y': cloud.position.y,
-        'base_z': cloud.position.z,
-        'base_scale_x': cloud.scale.x,
-        'base_scale_y': cloud.scale.y,
-        'base_opacity': cloud_opacity,
-        'phase': Math.random() * Math.PI * 2,
-        'pulse_speed': 0.36 + (Math.random() * 0.32),
-        'scale_wobble_x': 0.03 + (Math.random() * 0.03),
-        'scale_wobble_y': 0.025 + (Math.random() * 0.025),
-        'opacity_wobble': 0.05 + (Math.random() * 0.05),
-        'wiggle_x': 10 + (Math.random() * 16),
-        'wiggle_y': 8 + (Math.random() * 14),
-        'wiggle_z': 3 + (Math.random() * 5),
-        'wiggle_freq_x': 1.8 + (Math.random() * 1.6),
-        'wiggle_freq_y': 1.5 + (Math.random() * 1.3),
-        'wiggle_freq_z': 1.2 + (Math.random() * 1.1)
-      });
-    }
+  if (this.cloud_texture_ === undefined) {
+    this.cloud_texture_ = this.create_cloud_texture_();
   }
 
-  if (has_precipitation === false) {
-    return;
-  }
-
-  if (weather === 'snow' && this.snow_particle_texture_ === undefined) {
+  if (this.snow_particle_texture_ === undefined) {
     this.snow_particle_texture_ = this.create_snow_particle_texture_();
   }
-  if (weather === 'rain' && this.rain_particle_texture_ === undefined) {
+  if (this.rain_particle_texture_ === undefined) {
     this.rain_particle_texture_ = this.create_rain_particle_texture_();
   }
 
-  const positions = new Float32Array(config.count * 3);
-  const particle_speeds = new Float32Array(config.count);
-  const particle_drift_x = new Float32Array(config.count);
-  const particle_drift_y = new Float32Array(config.count);
+  const cloud_count = 140;
+  const cloud_opacity = 0.2;
+  const cloud_bounds = {
+    'min_x': bounds.min_x - 260,
+    'max_x': bounds.max_x + 260,
+    'min_y': bounds.min_y - 260,
+    'max_y': bounds.max_y + 260,
+    'z': -760
+  };
 
-  const span_x = bounds.max_x - bounds.min_x;
-  const span_y = bounds.max_y - bounds.min_y;
-  const span_z = bounds.max_z - bounds.min_z;
+  this.cloud_bounds_ = cloud_bounds;
+  this.cloud_sprites_ = [];
+  this.cloud_motion_ = [];
 
-  for (let i = 0; i < config.count; i++) {
-    const offset = i * 3;
-    positions[offset] = bounds.min_x + Math.random() * span_x;
-    positions[offset + 1] = bounds.min_y + Math.random() * span_y;
-    positions[offset + 2] = bounds.min_z + Math.random() * span_z;
+  for (let i = 0; i < cloud_count; i++) {
+    const cloud_material = new THREE.SpriteMaterial({
+      'map': this.cloud_texture_,
+      'color': 0xdce3ee,
+      'transparent': true,
+      'opacity': 0,
+      'depthWrite': false,
+      'depthTest': true
+    });
 
-    particle_speeds[i] = config.speed_min + Math.random() * (config.speed_max - config.speed_min);
-    particle_drift_x[i] = (Math.random() - 0.5) * config.drift;
-    particle_drift_y[i] = (Math.random() - 0.5) * config.drift;
+    const cloud = new THREE.Sprite(cloud_material);
+    cloud.position.set(
+      cloud_bounds.min_x + Math.random() * (cloud_bounds.max_x - cloud_bounds.min_x),
+      cloud_bounds.min_y + Math.random() * (cloud_bounds.max_y - cloud_bounds.min_y),
+      cloud_bounds.z + (Math.random() * 130)
+    );
+    const cloud_size = 520 + Math.random() * 560;
+    cloud.scale.set(cloud_size, cloud_size * 0.6, 1);
+    cloud.layers.set(beestat.component.scene.layer_visible);
+    cloud.userData.is_environment = true;
+    this.weather_group_.add(cloud);
+    this.cloud_sprites_.push(cloud);
+    this.cloud_motion_.push({
+      'base_x': cloud.position.x,
+      'base_y': cloud.position.y,
+      'base_z': cloud.position.z,
+      'base_scale_x': cloud.scale.x,
+      'base_scale_y': cloud.scale.y,
+      'base_opacity': cloud_opacity,
+      'phase': Math.random() * Math.PI * 2,
+      'pulse_speed': 0.36 + (Math.random() * 0.32),
+      'scale_wobble_x': 0.03 + (Math.random() * 0.03),
+      'scale_wobble_y': 0.025 + (Math.random() * 0.025),
+      'opacity_wobble': 0.05 + (Math.random() * 0.05),
+      'wiggle_x': 10 + (Math.random() * 16),
+      'wiggle_y': 8 + (Math.random() * 14),
+      'wiggle_z': 3 + (Math.random() * 5),
+      'wiggle_freq_x': 1.8 + (Math.random() * 1.6),
+      'wiggle_freq_y': 1.5 + (Math.random() * 1.3),
+      'wiggle_freq_z': 1.2 + (Math.random() * 1.1)
+    });
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  this.rain_particles_ = this.create_precipitation_system_(
+    bounds,
+    beestat.component.scene.weather_rain_max_count,
+    {
+      'size': 11,
+      'color': 0xa8c7ff,
+      'opacity': 0.7,
+      'speed_min': 280,
+      'speed_max': 430,
+      'drift': 28,
+      'texture': this.rain_particle_texture_
+    }
+  );
+  this.weather_group_.add(this.rain_particles_.points);
 
-  const material = new THREE.PointsMaterial({
-    'size': config.size,
-    'color': config.color,
-    'transparent': true,
-    'opacity': config.opacity,
-    'depthWrite': false,
-    'blending': THREE.NormalBlending,
-    'map': weather === 'snow' ? this.snow_particle_texture_ : this.rain_particle_texture_
-  });
+  this.snow_particles_ = this.create_precipitation_system_(
+    bounds,
+    beestat.component.scene.weather_snow_max_count,
+    {
+      'size': 10,
+      'color': 0xffffff,
+      'opacity': 0.75,
+      'speed_min': 18,
+      'speed_max': 44,
+      'drift': 12,
+      'texture': this.snow_particle_texture_
+    }
+  );
+  this.weather_group_.add(this.snow_particles_.points);
 
-  this.weather_points_ = new THREE.Points(geometry, material);
-  this.weather_points_.layers.set(beestat.component.scene.layer_visible);
-  this.weather_group_.add(this.weather_points_);
-
-  this.weather_bounds_ = bounds;
-  this.weather_particle_speeds_ = particle_speeds;
-  this.weather_particle_drift_x_ = particle_drift_x;
-  this.weather_particle_drift_y_ = particle_drift_y;
   this.weather_last_update_ms_ = window.performance.now();
+
+  this.weather_profile_current_ = this.get_weather_profile_(this.get_weather_effect_());
+  this.weather_profile_target_ = this.weather_profile_current_;
+  this.current_cloud_cover_ = this.weather_profile_current_.cloud_cover;
+  this.current_rain_count_ = this.weather_profile_current_.rain_count;
+  this.current_snow_count_ = this.weather_profile_current_.snow_count;
+  this.update_weather_targets_();
+  this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 };
 
 /**
@@ -2903,6 +3147,11 @@ beestat.component.scene.prototype.get_icon_path_ = function(icon, scale = 4) {
 };
 
 beestat.component.scene.prototype.dispose = function() {
+  if (this.skeleton_builder_ready_handler_ !== undefined) {
+    window.removeEventListener('skeleton_builder_ready', this.skeleton_builder_ready_handler_);
+    delete this.skeleton_builder_ready_handler_;
+  }
+
   // Cancel animation loop
   window.cancelAnimationFrame(this.animation_frame_);
 
