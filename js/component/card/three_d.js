@@ -494,7 +494,7 @@ beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
  *
  * @return {string} none|cloudy|rain|snow
  */
-beestat.component.card.three_d.prototype.get_weather_effect_from_mode_ = function(weather_mode) {
+beestat.component.card.three_d.prototype.get_weather_from_mode_ = function(weather_mode) {
   switch (weather_mode) {
   case 'cloudy':
     return 'cloudy';
@@ -516,8 +516,8 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
     return;
   }
 
-  const weather_effect = this.get_weather_effect_from_mode_(this.get_weather_mode_());
-  this.scene_.set_weather(weather_effect);
+  const weather = this.get_weather_from_mode_(this.get_weather_mode_());
+  this.scene_.set_weather(weather);
 };
 
 /**

@@ -2,7 +2,6 @@
 // Surfaces (Sidewalk, Mulch, etc)
 // Trees
 // When dragging across a DST boundary change the time so the sun doesn't jump
-// Smooth weather effects
 
 
 /**
@@ -21,21 +20,94 @@ beestat.component.scene = function(floor_plan_id, data) {
 };
 beestat.extend(beestat.component.scene, beestat.component);
 
+/**
+ * Render layer index for standard visible meshes.
+ *
+ * @type {number}
+ */
 beestat.component.scene.layer_visible = 0;
+
+/**
+ * Render layer index for hidden meshes.
+ *
+ * @type {number}
+ */
 beestat.component.scene.layer_hidden = 1;
+
+/**
+ * Render layer index for room outlines.
+ *
+ * @type {number}
+ */
 beestat.component.scene.layer_outline = 2;
 
-beestat.component.scene.roof_pitch = 0.5; // Rise over run (0.5 = 6:12 pitch)
-beestat.component.scene.roof_overhang = 12; // Roof overhang beyond walls
+/**
+ * Roof rise-over-run pitch ratio (0.5 = 6:12 pitch).
+ *
+ * @type {number}
+ */
+beestat.component.scene.roof_pitch = 0.5;
+
+/**
+ * Roof overhang beyond wall exterior in model units (inches).
+ *
+ * @type {number}
+ */
+beestat.component.scene.roof_overhang = 12;
+
+/**
+ * Exterior wall thickness in model units (inches).
+ *
+ * @type {number}
+ */
 beestat.component.scene.wall_thickness = 4;
-beestat.component.scene.environment_padding = 400; // Padding around floor plan
+
+/**
+ * Extra padding added around the floor plan for environment meshes.
+ *
+ * @type {number}
+ */
+beestat.component.scene.environment_padding = 400;
+
+/**
+ * Maximum rain particle count at full rain intensity.
+ *
+ * @type {number}
+ */
 beestat.component.scene.weather_rain_max_count = 2200;
+
+/**
+ * Maximum snow particle count at full snow intensity.
+ *
+ * @type {number}
+ */
 beestat.component.scene.weather_snow_max_count = 1500;
+
+/**
+ * Maximum cloud sprite count at full cloud intensity.
+ *
+ * @type {number}
+ */
+beestat.component.scene.weather_cloud_max_count = 140;
+
+/**
+ * Default room floor slab thickness in model units (inches).
+ *
+ * @type {number}
+ */
 beestat.component.scene.room_floor_thickness = 6;
+
+/**
+ * Inset used when building wall geometry to avoid z-fighting seams.
+ *
+ * @type {number}
+ */
 beestat.component.scene.room_wall_inset = 1.5;
 
 /**
- * Default appearance values for floor plans
+ * Default appearance values for floor plans.
+ *
+ * @type {{rotation: number, roof_color: string, roof_style: string, siding_color: string, ground_color: string, weather: string}}
  */
 beestat.component.scene.default_appearance = {
   'rotation': 0,
@@ -45,18 +117,75 @@ beestat.component.scene.default_appearance = {
   'ground_color': '#4a7c3f',
   'weather': 'none'
 };
+/**
+ * Snow cover tint used to blend roof/ground surfaces during snowfall.
+ *
+ * @type {string}
+ */
 beestat.component.scene.snow_surface_color = '#f0f0f0';
 
 /**
- * Light intensity constants
+ * Ambient light intensity for constant scene fill.
+ *
+ * @type {number}
  */
 beestat.component.scene.ambient_light_intensity = 0.25;
+
+/**
+ * Directional fill light intensity for static key/fill/rim lights.
+ *
+ * @type {number}
+ */
 beestat.component.scene.directional_light_intensity = 0.1;
+
+/**
+ * Peak directional sunlight intensity.
+ *
+ * @type {number}
+ */
 beestat.component.scene.sun_light_intensity = 0.6;
+
+/**
+ * Peak directional moonlight intensity before phase scaling.
+ *
+ * @type {number}
+ */
 beestat.component.scene.moon_light_intensity = 0.35;
+
+/**
+ * Number of star sprites generated in the sky dome.
+ *
+ * @type {number}
+ */
 beestat.component.scene.star_count = 900;
+
+/**
+ * Minimum star sprite size.
+ *
+ * @type {number}
+ */
 beestat.component.scene.star_min_size = 8;
+
+/**
+ * Maximum star sprite size.
+ *
+ * @type {number}
+ */
 beestat.component.scene.star_max_size = 34;
+
+/**
+ * Sidereal day duration in seconds used for starfield drift.
+ *
+ * @type {number}
+ */
+beestat.component.scene.sidereal_day_seconds = 86164.0905;
+
+/**
+ * Visual multiplier for subtle star drift (1 = full sidereal motion).
+ *
+ * @type {number}
+ */
+beestat.component.scene.star_drift_visual_factor = 0.12;
 
 /**
  * Rerender the scene by removing the primary group, then re-adding it and the
@@ -69,8 +198,7 @@ beestat.component.scene.prototype.rerender = function() {
   this.add_floor_plan_();
   this.apply_appearance_rotation_to_lights_();
 
-  // Ensure weather/date-driven celestial targets are recalculated after
-  // rerendered environment changes (e.g., cloudy/rain/snow dimming).
+  // Ensure everything gets updated with the latest info.
   if (this.rendered_ === true) {
     this.update_();
   }
@@ -92,14 +220,18 @@ beestat.component.scene.prototype.get_appearance_value_ = function(key) {
 };
 
 /**
- * Set weather effect override for this scene instance.
+ * Set weather on the floor-plan appearance.
  *
- * @param {string} weather none|rain|snow
+ * @param {string} weather none|sunny|cloudy|rain|snow
  *
  * @return {beestat.component.scene}
  */
 beestat.component.scene.prototype.set_weather = function(weather) {
-  this.weather_ = weather;
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (floor_plan.data.appearance === undefined) {
+    floor_plan.data.appearance = {};
+  }
+  floor_plan.data.appearance.weather = weather;
   this.update_weather_targets_();
 
   if (this.rendered_ === true) {
@@ -107,20 +239,6 @@ beestat.component.scene.prototype.set_weather = function(weather) {
   }
 
   return this;
-};
-
-/**
- * Get the effective weather effect for this scene.
- *
- * @return {string}
- */
-beestat.component.scene.prototype.get_weather_effect_ = function() {
-  if (this.weather_ !== undefined) {
-    return this.weather_;
-  }
-
-  const appearance_weather = this.get_appearance_value_('weather');
-  return appearance_weather || 'none';
 };
 
 /**
@@ -134,19 +252,19 @@ beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
   switch (weather) {
   case 'snow':
     return {
-      'cloud_cover': 1,
+      'cloud_count': beestat.component.scene.weather_cloud_max_count,
       'rain_count': 0,
       'snow_count': beestat.component.scene.weather_snow_max_count
     };
   case 'rain':
     return {
-      'cloud_cover': 1,
+      'cloud_count': Math.round(beestat.component.scene.weather_cloud_max_count * 0.92),
       'rain_count': beestat.component.scene.weather_rain_max_count,
       'snow_count': 0
     };
   case 'cloudy':
     return {
-      'cloud_cover': 1,
+      'cloud_count': Math.round(beestat.component.scene.weather_cloud_max_count * 0.72),
       'rain_count': 0,
       'snow_count': 0
     };
@@ -154,7 +272,7 @@ beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
   case 'none':
   default:
     return {
-      'cloud_cover': 0,
+      'cloud_count': 0,
       'rain_count': 0,
       'snow_count': 0
     };
@@ -162,23 +280,30 @@ beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
 };
 
 /**
- * Update weather transition targets based on the current weather effect.
+ * Get dimming multiplier from active cloud density for sun/moon brightness.
+ *
+ * @return {number}
  */
-beestat.component.scene.prototype.update_weather_targets_ = function() {
-  this.weather_profile_target_ = this.get_weather_profile_(this.get_weather_effect_());
+beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
+  const current_cloud_count = this.current_cloud_count_ === undefined
+    ? 0
+    : this.current_cloud_count_;
+  const cloud_density = Math.max(
+    0,
+    Math.min(
+      1,
+      current_cloud_count / beestat.component.scene.weather_cloud_max_count
+    )
+  );
+
+  return 1 - (cloud_density * 0.92);
 };
 
 /**
- * Get effective surface colors, applying snow overrides when snow weather is
- * active.
- *
- * @return {{ground_color: string, roof_color: string}}
+ * Update weather transition targets based on appearance weather.
  */
-beestat.component.scene.prototype.get_surface_colors_ = function() {
-  return {
-    'ground_color': this.get_appearance_value_('ground_color'),
-    'roof_color': this.get_appearance_value_('roof_color')
-  };
+beestat.component.scene.prototype.update_weather_targets_ = function() {
+  this.weather_profile_target_ = this.get_weather_profile_(this.get_appearance_value_('weather'));
 };
 
 /**
@@ -214,10 +339,9 @@ beestat.component.scene.prototype.update_snow_surface_colors_ = function(snow_bl
   }
 
   const blend = Math.max(0, Math.min(1, snow_blend));
-  const base_surface_colors = this.get_surface_colors_();
   const snow_color = new THREE.Color(beestat.component.scene.snow_surface_color);
-  const base_roof_color = new THREE.Color(base_surface_colors.roof_color);
-  const base_ground_color = new THREE.Color(base_surface_colors.ground_color);
+  const base_roof_color = new THREE.Color(this.get_appearance_value_('roof_color'));
+  const base_ground_color = new THREE.Color(this.get_appearance_value_('ground_color'));
 
   const roof_color = base_roof_color.clone().lerp(snow_color, blend);
   const ground_color = base_ground_color.clone().lerp(snow_color, blend);
@@ -515,7 +639,7 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
         intersects[i].object.userData.is_wall !== true &&
         intersects[i].object.userData.is_roof !== true &&
         intersects[i].object.userData.is_environment !== true &&
-        intersects[i].object.userData.is_celestial_visual !== true
+        intersects[i].object.userData.is_celestial_object !== true
       ) {
         this.intersected_mesh_ = intersects[i].object;
         break;
@@ -731,24 +855,6 @@ beestat.component.scene.prototype.create_cloud_texture_ = function() {
 };
 
 /**
- * Get dimming multiplier from weather for sun/moon brightness.
- *
- * @return {number}
- */
-beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
-  switch (this.get_weather_effect_()) {
-  case 'cloudy':
-    return 0.18;
-  case 'rain':
-    return 0.08;
-  case 'snow':
-    return 0.12;
-  default:
-    return 1;
-  }
-};
-
-/**
  * Draw the moon phase into the reusable moon canvas texture.
  *
  * @param {number} phase Moon phase from SunCalc (0=new, 0.25=first quarter,
@@ -960,14 +1066,14 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_visual_group_.layers.set(beestat.component.scene.layer_visible);
   this.celestial_light_group_.add(this.sun_visual_group_);
 
-  const sun_core_geometry = new THREE.SphereGeometry(45, 24, 24);
+  const sun_core_geometry = new THREE.SphereGeometry(180, 24, 24);
   const sun_core_material = new THREE.MeshBasicMaterial({
     'color': 0xffffff,
     'transparent': true,
     'opacity': 1
   });
   this.sun_core_mesh_ = new THREE.Mesh(sun_core_geometry, sun_core_material);
-  this.sun_core_mesh_.userData.is_celestial_visual = true;
+  this.sun_core_mesh_.userData.is_celestial_object = true;
   this.sun_visual_group_.add(this.sun_core_mesh_);
 
   this.sun_glow_texture_ = this.create_sun_glow_texture_();
@@ -981,7 +1087,8 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
     'opacity': 1
   });
   this.sun_glow_sprite_ = new THREE.Sprite(sun_glow_material);
-  this.sun_glow_sprite_.scale.set(320, 320, 1);
+  this.sun_glow_sprite_.userData.is_celestial_object = true;
+  this.sun_glow_sprite_.scale.set(1280, 1280, 1);
   this.sun_visual_group_.add(this.sun_glow_sprite_);
 
   if (this.debug_.sun_light_helper === true) {
@@ -1035,7 +1142,8 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
     'opacity': 1
   });
   this.moon_sprite_ = new THREE.Sprite(moon_material);
-  this.moon_sprite_.scale.set(170, 170, 1);
+  this.moon_sprite_.userData.is_celestial_object = true;
+  this.moon_sprite_.scale.set(500, 500, 1);
   this.moon_visual_group_.add(this.moon_sprite_);
 
   if (this.debug_.moon_light_helper === true) {
@@ -1091,7 +1199,7 @@ beestat.component.scene.prototype.add_stars_ = function() {
     const star = new THREE.Sprite(material);
     star.position.set(x, y, z);
     star.scale.set(size, size, 1);
-    star.userData.is_celestial_visual = true;
+    star.userData.is_celestial_object = true;
     this.star_group_.add(star);
 
     this.stars_.push({
@@ -1122,7 +1230,7 @@ beestat.component.scene.prototype.update_sun_path_arc_ = function(date, latitude
   }
 
   const rotation_radians = (this.get_appearance_value_('rotation') * Math.PI) / 180;
-  const sun_distance = 2000;
+  const sun_distance = 4000;
   const start_of_day = date.clone().startOf('day');
   const end_of_day = start_of_day.clone().add(1, 'day');
   const start_ms = start_of_day.valueOf();
@@ -1191,8 +1299,8 @@ beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = functio
  * @link https://www.earthspacelab.com/app/solar-time/
  */
 beestat.component.scene.prototype.update_celestial_lights_ = function(date, latitude, longitude) {
-  const sun_distance = 2000;
-  const moon_distance = 1700;
+  const sun_distance = 4000;
+  const moon_distance = 3920;
   const js_date = date.toDate();
   const rotation_radians = (this.get_appearance_value_('rotation') * Math.PI) / 180;
 
@@ -1237,7 +1345,15 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     -moon_distance * Math.cos(moon_pos.altitude) * Math.cos(rotated_moon_azimuth)    // North-South
   );
   if (this.moon_visual_group_ !== undefined) {
-    this.moon_visual_group_.position.copy(this.moon_light_.position);
+    let moon_front_direction;
+    if (this.camera_ !== undefined) {
+      moon_front_direction = this.camera_.position.clone().sub(this.moon_light_.position).normalize();
+    } else {
+      moon_front_direction = this.moon_light_.position.clone().normalize().negate();
+    }
+    this.moon_visual_group_.position.copy(
+      this.moon_light_.position.clone().add(moon_front_direction.multiplyScalar(20))
+    );
     this.moon_visual_group_.visible = true;
     this.moon_visual_horizon_fade_ = Math.max(0, Math.min(1, (moon_pos.altitude + 0.12) / 0.24));
 
@@ -1352,6 +1468,13 @@ beestat.component.scene.prototype.update_stars_ = function() {
   const now_seconds = window.performance.now() / 1000;
 
   if (this.star_group_ !== undefined) {
+    if (this.date_ !== undefined && typeof this.date_.valueOf === 'function') {
+      // Apparent star motion is westward due to Earth's eastward rotation.
+      const sidereal_phase = (
+        (this.date_.valueOf() / 1000) % beestat.component.scene.sidereal_day_seconds
+      ) / beestat.component.scene.sidereal_day_seconds;
+      this.star_group_.rotation.y = -sidereal_phase * Math.PI * 2 * beestat.component.scene.star_drift_visual_factor;
+    }
     this.star_group_.visible = visibility > 0.005;
   }
 
@@ -2127,8 +2250,7 @@ beestat.component.scene.prototype.add_roofs_ = function() {
 beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
-  const surface_colors = this.get_surface_colors_();
-  const roof_color = surface_colors.roof_color;
+  const roof_color = this.get_appearance_value_('roof_color');
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
@@ -2351,9 +2473,9 @@ beestat.component.scene.prototype.update_weather_ = function() {
     return current + ((target - current) * transition_t);
   };
 
-  this.current_cloud_cover_ = transition(
-    this.current_cloud_cover_ === undefined ? 0 : this.current_cloud_cover_,
-    this.weather_profile_target_.cloud_cover
+  this.current_cloud_count_ = transition(
+    this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+    this.weather_profile_target_.cloud_count
   );
   this.current_rain_count_ = transition(
     this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
@@ -2366,7 +2488,13 @@ beestat.component.scene.prototype.update_weather_ = function() {
 
   if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
     const now_seconds = now_ms / 1000;
-    const cloud_cover = Math.max(0, Math.min(1, this.current_cloud_cover_));
+    const cloud_density = Math.max(
+      0,
+      Math.min(
+        1,
+        this.current_cloud_count_ / beestat.component.scene.weather_cloud_max_count
+      )
+    );
     for (let i = 0; i < this.cloud_sprites_.length; i++) {
       const sprite = this.cloud_sprites_[i];
       const motion = this.cloud_motion_[i];
@@ -2375,7 +2503,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
       // Shape/size breathing plus transition growth/shrink.
       const scale_x_wobble = 1 + (Math.sin(phase) * motion.scale_wobble_x);
       const scale_y_wobble = 1 + (Math.cos(phase * 0.87) * motion.scale_wobble_y);
-      const cloud_scale_transition = 0.72 + (0.28 * cloud_cover);
+      const cloud_scale_transition = 0.72 + (0.28 * cloud_density);
       sprite.scale.set(
         motion.base_scale_x * scale_x_wobble * cloud_scale_transition,
         motion.base_scale_y * scale_y_wobble * cloud_scale_transition,
@@ -2393,7 +2521,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
           0,
           Math.min(
             1,
-            (motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble) * cloud_cover
+            (motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble) * cloud_density
           )
         );
       }
@@ -2403,6 +2531,16 @@ beestat.component.scene.prototype.update_weather_ = function() {
   this.update_precipitation_system_(this.rain_particles_, this.current_rain_count_, delta_seconds);
   this.update_precipitation_system_(this.snow_particles_, this.current_snow_count_, delta_seconds);
   this.update_snow_surface_colors_(this.get_snow_cover_blend_());
+
+  if (
+    this.date_ !== undefined &&
+    this.latitude_ !== undefined &&
+    this.longitude_ !== undefined &&
+    this.sun_light_ !== undefined &&
+    this.moon_light_ !== undefined
+  ) {
+    this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
+  }
 };
 
 /**
@@ -2411,8 +2549,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
 beestat.component.scene.prototype.add_flat_roofs_ = function() {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
-  const surface_colors = this.get_surface_colors_();
-  const roof_color = surface_colors.roof_color;
+  const roof_color = this.get_appearance_value_('roof_color');
 
   // Create layer for roofs
   const roofs_layer = new THREE.Group();
@@ -2812,8 +2949,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
   let current_z = 0;
 
   const padding = beestat.component.scene.environment_padding;
-  const surface_colors = this.get_surface_colors_();
-  const ground_color = surface_colors.ground_color;
+  const ground_color = this.get_appearance_value_('ground_color');
   const strata = [
     {'color': ground_color, 'thickness': 10, 'roughness': 0.95},
     {'color': 0x4a3f35, 'thickness': 60, 'roughness': 0.85},
@@ -2854,7 +2990,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
 
   // Add celestial lights (sun and moon) - toggled with environment visibility
   this.add_celestial_lights_();
-  this.add_weather_effect_(center_x, center_y, plan_width, plan_height);
+  this.add_weather_(center_x, center_y, plan_width, plan_height);
 };
 
 /**
@@ -2865,7 +3001,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
  * @param {number} plan_width
  * @param {number} plan_height
  */
-beestat.component.scene.prototype.add_weather_effect_ = function(center_x, center_y, plan_width, plan_height) {
+beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, plan_width, plan_height) {
   const padding = beestat.component.scene.environment_padding + 120;
   const bounds = {
     'min_x': center_x - ((plan_width + padding * 2) / 2),
@@ -2891,7 +3027,7 @@ beestat.component.scene.prototype.add_weather_effect_ = function(center_x, cente
     this.rain_particle_texture_ = this.create_rain_particle_texture_();
   }
 
-  const cloud_count = 140;
+  const cloud_count = beestat.component.scene.weather_cloud_max_count;
   const cloud_opacity = 0.2;
   const cloud_bounds = {
     'min_x': bounds.min_x - 260,
@@ -2980,11 +3116,11 @@ beestat.component.scene.prototype.add_weather_effect_ = function(center_x, cente
 
   this.weather_last_update_ms_ = window.performance.now();
 
-  this.weather_profile_current_ = this.get_weather_profile_(this.get_weather_effect_());
-  this.weather_profile_target_ = this.weather_profile_current_;
-  this.current_cloud_cover_ = this.weather_profile_current_.cloud_cover;
-  this.current_rain_count_ = this.weather_profile_current_.rain_count;
-  this.current_snow_count_ = this.weather_profile_current_.snow_count;
+  const initial_weather_profile = this.get_weather_profile_(this.get_appearance_value_('weather'));
+  this.weather_profile_target_ = initial_weather_profile;
+  this.current_cloud_count_ = initial_weather_profile.cloud_count;
+  this.current_rain_count_ = initial_weather_profile.rain_count;
+  this.current_snow_count_ = initial_weather_profile.snow_count;
   this.update_weather_targets_();
   this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 };
