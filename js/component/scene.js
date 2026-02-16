@@ -3351,6 +3351,9 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   };
   const branch_height_samples = [];
   const branch_tips = [];
+  if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
+    this.tree_foliage_meshes_ = [];
+  }
 
   for (let i = 0; i < branch_count; i++) {
     const stratified = (i + 0.5) / branch_count;
@@ -3397,6 +3400,28 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     branch.quaternion.setFromUnitVectors(branch_axis, direction);
     branches.add(branch);
     branch_tips.push(base.clone().addScaledVector(direction, branch_length));
+
+    if (has_foliage === true) {
+      const branch_blob_anchor = base.clone().addScaledVector(direction, branch_length * 0.82);
+      const branch_blob = create_foliage_blob(
+        Math.max(3.5, branch_length * 0.12),
+        0.16
+      );
+      branch_blob.position.copy(branch_blob_anchor);
+      branch_blob.scale.set(
+        0.75 + (Math.random() * 0.35),
+        0.75 + (Math.random() * 0.35),
+        0.7 + (Math.random() * 0.4)
+      );
+      branch_blob.rotation.x = (Math.random() - 0.5) * 0.2;
+      branch_blob.rotation.y = (Math.random() - 0.5) * 0.2;
+      branch_blob.rotation.z = (Math.random() - 0.5) * 0.2;
+      branch_blob.castShadow = true;
+      branch_blob.receiveShadow = true;
+      branch_blob.userData.is_environment = true;
+      foliage.add(branch_blob);
+      this.tree_foliage_meshes_.push(branch_blob);
+    }
   }
 
   if (has_foliage === true) {
@@ -3425,9 +3450,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     core_blob.receiveShadow = true;
     core_blob.userData.is_environment = true;
     foliage.add(core_blob);
-    if (this.tree_foliage_meshes_ === undefined) {
-      this.tree_foliage_meshes_ = [];
-    }
     this.tree_foliage_meshes_.push(core_blob);
   }
 
@@ -3440,9 +3462,9 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
 };
 
 /**
- * Get seasonal foliage color and opacity from current date.
+ * Get seasonal foliage color and visibility from current date.
  *
- * @return {{color: THREE.Color, opacity: number}}
+ * @return {{color: THREE.Color, visible: boolean}}
  */
 beestat.component.scene.prototype.get_tree_foliage_state_ = function() {
   const colors = beestat.component.scene.tree_foliage_colors;
@@ -3454,37 +3476,29 @@ beestat.component.scene.prototype.get_tree_foliage_state_ = function() {
   if (this.date_ === undefined || typeof this.date_.month !== 'function') {
     return {
       'color': summer,
-      'opacity': 1
+      'visible': true
     };
   }
 
   const month = this.date_.month() + 1; // 1-12
   const day = this.date_.date();
   const day_ratio = Math.max(0, Math.min(1, (day - 1) / 30));
-  let color = summer.clone();
-  let opacity = 1;
+  const color = summer.clone();
+  const visible = month >= 4 && month <= 10;
 
   if (month === 9) {
     color.lerp(fall_early, day_ratio);
   } else if (month === 10) {
     color.copy(fall_early).lerp(fall_late, day_ratio);
-  } else if (month === 11) {
-    color.copy(fall_late).lerp(winter, day_ratio);
-    opacity = 1 - (day_ratio * 0.85);
-  } else if (month === 12 || month === 1 || month === 2) {
+  } else if (visible === false) {
     color.copy(winter);
-    opacity = 0;
-  } else if (month === 3) {
-    color.copy(winter).lerp(summer, day_ratio);
-    opacity = 0.15 + (day_ratio * 0.85);
   } else {
     color.copy(summer);
-    opacity = 1;
   }
 
   return {
     'color': color,
-    'opacity': Math.max(0, Math.min(1, opacity))
+    'visible': visible
   };
 };
 
@@ -3503,10 +3517,10 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       continue;
     }
     mesh.material.color.copy(state.color);
-    mesh.material.opacity = state.opacity;
-    mesh.material.transparent = state.opacity < 0.995;
+    mesh.material.opacity = 1;
+    mesh.material.transparent = false;
     mesh.material.needsUpdate = true;
-    mesh.visible = state.opacity > 0.01;
+    mesh.visible = state.visible;
   }
 };
 
