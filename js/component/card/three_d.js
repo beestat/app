@@ -647,7 +647,7 @@ beestat.component.card.three_d.prototype.decorate_environment_date_ = function(p
   const today_icon_container = document.createElement('div');
   controls_right.appendChild(today_icon_container);
   new beestat.component.tile()
-    .set_icon('restart')
+    .set_icon('calendar-today')
     .set_size('small')
     .set_shadow(false)
     .set_background_color('transparent')

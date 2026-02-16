@@ -91,11 +91,44 @@ beestat.component.scene.weather_snow_max_count = 1500;
 beestat.component.scene.weather_cloud_max_count = 140;
 
 /**
+ * Time in seconds for weather effects to fully transition to a new mode.
+ *
+ * @type {number}
+ */
+beestat.component.scene.weather_transition_seconds = 2;
+
+/**
  * Default room floor slab thickness in model units (inches).
  *
  * @type {number}
  */
 beestat.component.scene.room_floor_thickness = 6;
+
+/**
+ * Default number of decorative trees to place around the environment.
+ *
+ * @type {number}
+ */
+beestat.component.scene.environment_tree_count = 14;
+
+/**
+ * Toggle tree foliage visibility for environment trees.
+ *
+ * @type {boolean}
+ */
+beestat.component.scene.environment_tree_foliage_enabled = true;
+
+/**
+ * Seasonal foliage colors for deciduous trees.
+ *
+ * @type {{summer: number, fall_early: number, fall_late: number, winter: number}}
+ */
+beestat.component.scene.tree_foliage_colors = {
+  'summer': 0x4f9f2f,
+  'fall_early': 0x9a7b2f,
+  'fall_late': 0x8b4f1f,
+  'winter': 0x6f5f3a
+};
 
 /**
  * Inset used when building wall geometry to avoid z-fighting seams.
@@ -304,6 +337,13 @@ beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
  */
 beestat.component.scene.prototype.update_weather_targets_ = function() {
   this.weather_profile_target_ = this.get_weather_profile_(this.get_appearance_value_('weather'));
+
+  this.weather_transition_start_profile_ = {
+    'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+    'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
+    'snow_count': this.current_snow_count_ === undefined ? 0 : this.current_snow_count_
+  };
+  this.weather_transition_start_ms_ = window.performance.now();
 };
 
 /**
@@ -1648,6 +1688,8 @@ beestat.component.scene.prototype.update_ = function() {
     this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
   }
 
+  this.update_tree_foliage_season_();
+
   // Update debug watcher
   if (this.debug_.watcher === true) {
     this.debug_info_.sun_light_intensity = this.sun_light_ !== undefined ? this.sun_light_.intensity.toFixed(3) : 'N/A';
@@ -2467,22 +2509,43 @@ beestat.component.scene.prototype.update_weather_ = function() {
     this.update_weather_targets_();
   }
 
-  const transition_rate = 2.8;
-  const transition_t = 1 - Math.exp(-transition_rate * delta_seconds);
-  const transition = function(current, target) {
-    return current + ((target - current) * transition_t);
+  if (this.weather_transition_start_profile_ === undefined) {
+    this.weather_transition_start_profile_ = {
+      'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+      'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
+      'snow_count': this.current_snow_count_ === undefined ? 0 : this.current_snow_count_
+    };
+  }
+  if (this.weather_transition_start_ms_ === undefined) {
+    this.weather_transition_start_ms_ = now_ms;
+  }
+
+  const transition_duration_ms = Math.max(
+    1,
+    beestat.component.scene.weather_transition_seconds * 1000
+  );
+  const transition_t = Math.max(
+    0,
+    Math.min(
+      1,
+      (now_ms - this.weather_transition_start_ms_) / transition_duration_ms
+    )
+  );
+
+  const transition = function(start, target) {
+    return start + ((target - start) * transition_t);
   };
 
   this.current_cloud_count_ = transition(
-    this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+    this.weather_transition_start_profile_.cloud_count,
     this.weather_profile_target_.cloud_count
   );
   this.current_rain_count_ = transition(
-    this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
+    this.weather_transition_start_profile_.rain_count,
     this.weather_profile_target_.rain_count
   );
   this.current_snow_count_ = transition(
-    this.current_snow_count_ === undefined ? 0 : this.current_snow_count_,
+    this.weather_transition_start_profile_.snow_count,
     this.weather_profile_target_.snow_count
   );
 
@@ -2926,6 +2989,629 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(precip
 };
 
 /**
+ * Create a low-poly pine tree with slight procedural variation.
+ *
+ * @param {number} height Total tree height.
+ * @param {number} max_diameter Maximum foliage diameter.
+ * @param {boolean} has_foliage Whether foliage should be rendered.
+ *
+ * @return {THREE.Group}
+ */
+beestat.component.scene.prototype.create_pine_tree_ = function(height, max_diameter, has_foliage) {
+  const clamped_height = Math.max(40, height || 120);
+  const clamped_diameter = Math.max(18, max_diameter || 48);
+  const tree = new THREE.Group();
+  tree.userData.is_environment = true;
+  tree.userData.is_tree = true;
+
+  const trunk_height_ratio = 0.2 + (Math.random() * 0.08);
+  const trunk_height = clamped_height * trunk_height_ratio;
+  const trunk_radius_top = Math.max(1.2, clamped_diameter * (0.045 + (Math.random() * 0.015)));
+  const trunk_radius_bottom = trunk_radius_top * (1.25 + (Math.random() * 0.2));
+  const trunk_geometry = new THREE.CylinderGeometry(
+    trunk_radius_top,
+    trunk_radius_bottom,
+    trunk_height,
+    6
+  );
+  trunk_geometry.rotateX(-Math.PI / 2);
+  const trunk_material = new THREE.MeshStandardMaterial({
+    'color': 0x5d4226,
+    'roughness': 0.9,
+    'metalness': 0.0
+  });
+  const trunk = new THREE.Mesh(trunk_geometry, trunk_material);
+  trunk.position.z = -(trunk_height / 2);
+  trunk.castShadow = true;
+  trunk.receiveShadow = true;
+  trunk.userData.is_environment = true;
+  tree.add(trunk);
+
+  if (has_foliage === false) {
+    return tree;
+  }
+
+  const clamp01 = function(value) {
+    return Math.max(0, Math.min(1, value));
+  };
+
+  const crown_height_target = Math.max(10, clamped_height - trunk_height);
+  const base_foliage_color = new THREE.Color(0x2f7d2d);
+  const base_hsl = {};
+  base_foliage_color.getHSL(base_hsl);
+  const tree_foliage_color = new THREE.Color().setHSL(
+    clamp01(base_hsl.h + ((Math.random() - 0.5) * 0.03)),
+    clamp01(base_hsl.s + ((Math.random() - 0.5) * 0.08)),
+    clamp01(base_hsl.l + ((Math.random() - 0.5) * 0.08))
+  );
+  const foliage_material = new THREE.MeshStandardMaterial({
+    'color': tree_foliage_color,
+    'roughness': 0.85,
+    'metalness': 0.0,
+    'flatShading': true
+  });
+  const max_tilt_radians = Math.PI * 0.02;
+  const max_segments = 10;
+  let previous_apex_height = null;
+  let previous_radius = null;
+  let previous_segment_height = null;
+
+  for (let i = 0; i < max_segments; i++) {
+    let segment_height;
+    let segment_base_height;
+    if (i === 0) {
+      segment_height = crown_height_target * (0.34 + (Math.random() * 0.14));
+      segment_base_height = trunk_height * (0.9 + (Math.random() * 0.08));
+    } else {
+      segment_height = previous_segment_height * (0.94 + (Math.random() * 0.02));
+      segment_height = Math.max(8, segment_height);
+      const overlap = previous_segment_height * (0.5 + ((Math.random() - 0.5) * 0.06));
+      segment_base_height = previous_apex_height - overlap;
+    }
+
+    const progress = Math.max(
+      0,
+      Math.min(1, (segment_base_height - trunk_height) / Math.max(1, crown_height_target))
+    );
+    const radius_variation = 0.9 + (Math.random() * 0.16);
+    let radius = Math.max(
+      2,
+      ((clamped_diameter / 2) * (1 - (progress * 0.75))) * radius_variation
+    );
+    if (previous_radius !== null) {
+      const overlap = previous_apex_height - segment_base_height;
+      const previous_overlap_ratio = Math.max(
+        0,
+        Math.min(1, overlap / previous_segment_height)
+      );
+      const previous_overlap_radius = previous_radius * previous_overlap_ratio;
+      const min_radius_for_overlap = previous_overlap_radius * (1.06 + (Math.random() * 0.05));
+      const max_radius_for_taper = previous_radius * (0.94 + (Math.random() * 0.03));
+      radius = Math.max(radius, min_radius_for_overlap);
+      radius = Math.min(radius, max_radius_for_taper);
+      if (radius < min_radius_for_overlap) {
+        radius = min_radius_for_overlap;
+      }
+    }
+    radius = Math.max(2, radius);
+
+    const foliage_geometry = new THREE.ConeGeometry(radius, segment_height, 6);
+    foliage_geometry.rotateX(-Math.PI / 2);
+    const cone_material = foliage_material.clone();
+    cone_material.color.offsetHSL(
+      (Math.random() - 0.5) * 0.01,
+      (Math.random() - 0.5) * 0.03,
+      (Math.random() - 0.5) * 0.03
+    );
+    const foliage_mesh = new THREE.Mesh(foliage_geometry, cone_material);
+    foliage_mesh.position.z = -(segment_base_height + (segment_height / 2));
+    const tilt_direction = Math.random() * Math.PI * 2;
+    const tilt_amount = Math.random() * max_tilt_radians;
+    foliage_mesh.rotation.x = Math.cos(tilt_direction) * tilt_amount;
+    foliage_mesh.rotation.y = Math.sin(tilt_direction) * tilt_amount;
+    foliage_mesh.rotation.z = (Math.random() - 0.5) * 0.2;
+    foliage_mesh.castShadow = true;
+    foliage_mesh.receiveShadow = true;
+    foliage_mesh.userData.is_environment = true;
+    tree.add(foliage_mesh);
+
+    previous_apex_height = segment_base_height + segment_height;
+    previous_radius = radius;
+    previous_segment_height = segment_height;
+
+    if (previous_apex_height >= clamped_height) {
+      break;
+    }
+  }
+
+  return tree;
+};
+
+/**
+ * Sample XY offset from a stick curve at a height measured from the stick base.
+ *
+ * @param {{controls: Array<{x: number, y: number}>, height: number}} curve
+ * @param {number} height_from_base
+ *
+ * @return {{x: number, y: number}}
+ */
+beestat.component.scene.prototype.sample_stick_curve_offset_ = function(curve, height_from_base) {
+  if (
+    curve === undefined ||
+    curve.controls === undefined ||
+    curve.controls.length < 2 ||
+    curve.height === undefined ||
+    curve.height <= 0
+  ) {
+    return {'x': 0, 'y': 0};
+  }
+
+  const t = Math.max(0, Math.min(1, height_from_base / curve.height));
+  const scaled = t * (curve.controls.length - 1);
+  const index = Math.floor(scaled);
+  const next_index = Math.min(curve.controls.length - 1, index + 1);
+  const blend = scaled - index;
+
+  return {
+    'x': THREE.MathUtils.lerp(curve.controls[index].x, curve.controls[next_index].x, blend),
+    'y': THREE.MathUtils.lerp(curve.controls[index].y, curve.controls[next_index].y, blend)
+  };
+};
+
+/**
+ * Create a low-poly tapered stick mesh with slight bend.
+ *
+ * @param {object} config
+ *
+ * @return {{mesh: THREE.Mesh, curve: {controls: Array<{x: number, y: number}>, height: number}, radius_top: number, radius_bottom: number, height: number}}
+ */
+beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
+  const height = Math.max(1, config.height || 10);
+  const radius_bottom = Math.max(0.15, config.radius_bottom || 1);
+  const taper_end_ratio = config.taper_end_ratio === undefined
+    ? null
+    : Math.max(0, Math.min(1, config.taper_end_ratio));
+  const taper_max_ratio = config.taper_max_ratio === undefined
+    ? null
+    : Math.max(0, Math.min(1, config.taper_max_ratio));
+  const resolved_top_ratio = taper_max_ratio === null
+    ? taper_end_ratio
+    : (1 - taper_max_ratio);
+  const radius_top = Math.max(
+    0,
+    resolved_top_ratio === null
+      ? (config.radius_top === undefined ? (radius_bottom * 0.7) : config.radius_top)
+      : (radius_bottom * resolved_top_ratio)
+  );
+  const radial_segments = Math.max(3, config.radial_segments || 7);
+  const height_segments = Math.max(1, config.height_segments || 6);
+  const control_count = Math.max(2, config.control_count || 5);
+  const max_drift = Math.max(0, config.max_drift || 0);
+  const direction_jitter = config.direction_jitter || (radius_bottom * 0.15);
+  const straight_start_ratio = Math.max(0, Math.min(0.9, config.straight_start_ratio || 0));
+  const taper_start_ratio = Math.max(0, Math.min(0.95, config.taper_start_ratio || 0));
+
+  const controls = [{'x': 0, 'y': 0}];
+  let drift_x = 0;
+  let drift_y = 0;
+  for (let i = 1; i < control_count; i++) {
+    const progress = i / (control_count - 1);
+    drift_x += (Math.random() - 0.5) * direction_jitter;
+    drift_y += (Math.random() - 0.5) * direction_jitter;
+    const drift_length = Math.sqrt((drift_x * drift_x) + (drift_y * drift_y));
+    const drift_limit = max_drift * progress;
+    if (drift_length > drift_limit && drift_length > 0) {
+      const scale = drift_limit / drift_length;
+      drift_x *= scale;
+      drift_y *= scale;
+    }
+    controls.push({'x': drift_x, 'y': drift_y});
+  }
+
+  const curve = {
+    'controls': controls,
+    'height': height
+  };
+
+  const geometry = new THREE.CylinderGeometry(
+    radius_bottom,
+    radius_bottom,
+    height,
+    radial_segments,
+    height_segments
+  );
+  geometry.rotateX(-Math.PI / 2);
+
+  const position = geometry.attributes.position;
+  for (let i = 0; i < position.count; i++) {
+    const vertex_z = position.getZ(i);
+    const height_from_base = (height / 2) - vertex_z;
+    const height_ratio = Math.max(0, Math.min(1, height_from_base / height));
+    const taper_progress = height_ratio <= taper_start_ratio
+      ? 0
+      : (height_ratio - taper_start_ratio) / Math.max(0.0001, 1 - taper_start_ratio);
+    const target_radius = THREE.MathUtils.lerp(radius_bottom, radius_top, taper_progress);
+    const taper_scale = target_radius / radius_bottom;
+    position.setX(i, position.getX(i) * taper_scale);
+    position.setY(i, position.getY(i) * taper_scale);
+
+    const offset = this.sample_stick_curve_offset_(curve, height_from_base);
+    if (straight_start_ratio > 0) {
+      const straight_height = height * straight_start_ratio;
+      const bend_blend = height_from_base <= straight_height
+        ? (height_from_base / Math.max(0.0001, straight_height))
+        : 1;
+      position.setX(i, position.getX(i) + (offset.x * bend_blend));
+      position.setY(i, position.getY(i) + (offset.y * bend_blend));
+    } else {
+      position.setX(i, position.getX(i) + offset.x);
+      position.setY(i, position.getY(i) + offset.y);
+    }
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  const mesh = new THREE.Mesh(geometry, config.material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.is_environment = true;
+
+  return {
+    'mesh': mesh,
+    'curve': curve,
+    'radius_top': radius_top,
+    'radius_bottom': radius_bottom,
+    'height': height
+  };
+};
+
+/**
+ * Create a low-poly round canopy tree using clustered foliage blobs.
+ *
+ * @param {number} height Total tree height.
+ * @param {number} max_diameter Maximum canopy diameter.
+ * @param {boolean} has_foliage Whether foliage should be rendered.
+ *
+ * @return {THREE.Group}
+ */
+beestat.component.scene.prototype.create_round_tree_ = function(height, max_diameter, has_foliage) {
+  const tree = new THREE.Group();
+  tree.userData.is_environment = true;
+  tree.userData.is_tree = true;
+
+  const wood_material = new THREE.MeshStandardMaterial({
+    'color': 0x6a4d2f,
+    'roughness': 0.9,
+    'metalness': 0.0,
+    'flatShading': true
+  });
+
+  const trunk_height = height * 0.75;
+  const size_scale = trunk_height / Math.max(1, height);
+  const trunk_radius_bottom = Math.max(1.5, trunk_height * 0.03);
+  const trunk_stick = this.create_stick_mesh_({
+    'height': trunk_height,
+    'radius_bottom': trunk_radius_bottom,
+    'radial_segments': 7,
+    'height_segments': 8,
+    'control_count': 6,
+    'max_drift': 8,
+    'direction_jitter': 3,
+    'taper_start_ratio': 0.5,
+    'taper_max_ratio': 0.5,
+    'material': wood_material
+  });
+  const trunk = trunk_stick.mesh;
+  trunk.position.z = -(trunk_height / 2);
+  tree.add(trunk);
+
+  // Single branch layer: starts halfway up trunk and thins/shortens toward the top.
+  const branch_count = 12;
+  const branches = new THREE.Group();
+  branches.userData.is_environment = true;
+  const branch_axis = new THREE.Vector3(0, 0, -1);
+  const foliage = new THREE.Group();
+  foliage.userData.is_environment = true;
+  const foliage_material = new THREE.MeshStandardMaterial({
+    'color': 0x4f9f2f,
+    'roughness': 0.82,
+    'metalness': 0.0,
+    'flatShading': true,
+    'transparent': true,
+    'opacity': 1
+  });
+  const create_foliage_blob = function(radius, irregularity) {
+    const geometry = new THREE.IcosahedronGeometry(radius, 1);
+    const positions = geometry.attributes.position;
+    const strength = Math.max(0, Math.min(0.35, irregularity));
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const y = positions.getY(i);
+      const z = positions.getZ(i);
+      const len = Math.max(0.0001, Math.sqrt((x * x) + (y * y) + (z * z)));
+      const nx = x / len;
+      const ny = y / len;
+      const nz = z / len;
+
+      // Smooth directional warp: stays volumetric, avoids spiky "exploded" artifacts.
+      const noise =
+        (Math.sin((nx * 3.1) + (ny * 1.7)) * 0.45) +
+        (Math.cos((ny * 2.8) - (nz * 2.1)) * 0.35) +
+        (Math.sin((nz * 4.0) + (nx * 1.3)) * 0.2);
+      const distortion = 1 + (noise * strength);
+
+      positions.setX(i, x * distortion);
+      positions.setY(i, y * distortion);
+      positions.setZ(i, z * distortion);
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+
+    return new THREE.Mesh(geometry, foliage_material.clone());
+  };
+  const branch_height_samples = [];
+  const branch_tips = [];
+
+  for (let i = 0; i < branch_count; i++) {
+    const stratified = (i + 0.5) / branch_count;
+    const jittered = stratified + ((Math.random() - 0.5) * 0.25 / branch_count);
+    branch_height_samples.push(Math.max(0, Math.min(1, jittered)));
+  }
+  for (let i = branch_height_samples.length - 1; i > 0; i--) {
+    const swap_index = Math.floor(Math.random() * (i + 1));
+    const temp = branch_height_samples[i];
+    branch_height_samples[i] = branch_height_samples[swap_index];
+    branch_height_samples[swap_index] = temp;
+  }
+
+  for (let i = 0; i < branch_count; i++) {
+    const t = branch_height_samples[i];
+    const base_height = trunk_height * (0.5 + (t * 0.45));
+    const base_offset = this.sample_stick_curve_offset_(trunk_stick.curve, base_height);
+    const branch_length = Math.max(8, (max_diameter * (0.75 - (t * 0.34))) * size_scale);
+    const branch_radius_bottom = Math.max(0.35, trunk_radius_bottom * (0.42 - (t * 0.26)));
+    const azimuth = ((i / branch_count) * Math.PI * 2) + ((Math.random() - 0.5) * 0.35);
+    const elevation = (Math.PI / 180) * (16 + (Math.random() * 10));
+    const direction = new THREE.Vector3(
+      Math.cos(azimuth) * Math.cos(elevation),
+      Math.sin(azimuth) * Math.cos(elevation),
+      -Math.sin(elevation)
+    ).normalize();
+    const base = new THREE.Vector3(base_offset.x, base_offset.y, -base_height);
+
+    const branch_stick = this.create_stick_mesh_({
+      'height': branch_length,
+      'radius_bottom': branch_radius_bottom,
+      'radial_segments': 7,
+      'height_segments': 6,
+      'control_count': 6,
+      'max_drift': branch_length * 0.24,
+      'direction_jitter': branch_length * 0.12,
+      'straight_start_ratio': 0.2,
+      'taper_start_ratio': 0.2,
+      'taper_max_ratio': 1,
+      'material': wood_material
+    });
+    const branch = branch_stick.mesh;
+    branch.position.copy(base).addScaledVector(direction, (branch_length / 2) - (branch_radius_bottom * 0.45));
+    branch.quaternion.setFromUnitVectors(branch_axis, direction);
+    branches.add(branch);
+    branch_tips.push(base.clone().addScaledVector(direction, branch_length));
+  }
+
+  if (has_foliage === true) {
+    const core_height = trunk_height * 0.75;
+    const core_offset = this.sample_stick_curve_offset_(trunk_stick.curve, core_height);
+    const core_center = new THREE.Vector3(core_offset.x, core_offset.y, -core_height);
+    let coverage_radius = 0;
+    for (let i = 0; i < branch_tips.length; i++) {
+      const distance = branch_tips[i].distanceTo(core_center);
+      if (distance > coverage_radius) {
+        coverage_radius = distance;
+      }
+    }
+    const core_radius = Math.max(26, max_diameter * 0.62, coverage_radius * 1.14);
+    const core_blob = create_foliage_blob(core_radius, 0.18);
+    core_blob.position.copy(core_center);
+    core_blob.scale.set(
+      1.0 + (Math.random() * 0.2),
+      0.95 + (Math.random() * 0.22),
+      0.9 + (Math.random() * 0.18)
+    );
+    core_blob.rotation.x = (Math.random() - 0.5) * 0.2;
+    core_blob.rotation.y = (Math.random() - 0.5) * 0.2;
+    core_blob.rotation.z = (Math.random() - 0.5) * 0.2;
+    core_blob.castShadow = true;
+    core_blob.receiveShadow = true;
+    core_blob.userData.is_environment = true;
+    foliage.add(core_blob);
+    if (this.tree_foliage_meshes_ === undefined) {
+      this.tree_foliage_meshes_ = [];
+    }
+    this.tree_foliage_meshes_.push(core_blob);
+  }
+
+  tree.add(branches);
+  if (has_foliage === true) {
+    tree.add(foliage);
+  }
+
+  return tree;
+};
+
+/**
+ * Get seasonal foliage color and opacity from current date.
+ *
+ * @return {{color: THREE.Color, opacity: number}}
+ */
+beestat.component.scene.prototype.get_tree_foliage_state_ = function() {
+  const colors = beestat.component.scene.tree_foliage_colors;
+  const summer = new THREE.Color(colors.summer);
+  const fall_early = new THREE.Color(colors.fall_early);
+  const fall_late = new THREE.Color(colors.fall_late);
+  const winter = new THREE.Color(colors.winter);
+
+  if (this.date_ === undefined || typeof this.date_.month !== 'function') {
+    return {
+      'color': summer,
+      'opacity': 1
+    };
+  }
+
+  const month = this.date_.month() + 1; // 1-12
+  const day = this.date_.date();
+  const day_ratio = Math.max(0, Math.min(1, (day - 1) / 30));
+  let color = summer.clone();
+  let opacity = 1;
+
+  if (month === 9) {
+    color.lerp(fall_early, day_ratio);
+  } else if (month === 10) {
+    color.copy(fall_early).lerp(fall_late, day_ratio);
+  } else if (month === 11) {
+    color.copy(fall_late).lerp(winter, day_ratio);
+    opacity = 1 - (day_ratio * 0.85);
+  } else if (month === 12 || month === 1 || month === 2) {
+    color.copy(winter);
+    opacity = 0;
+  } else if (month === 3) {
+    color.copy(winter).lerp(summer, day_ratio);
+    opacity = 0.15 + (day_ratio * 0.85);
+  } else {
+    color.copy(summer);
+    opacity = 1;
+  }
+
+  return {
+    'color': color,
+    'opacity': Math.max(0, Math.min(1, opacity))
+  };
+};
+
+/**
+ * Apply seasonal foliage appearance to deciduous canopy meshes.
+ */
+beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
+  if (this.tree_foliage_meshes_ === undefined || this.tree_foliage_meshes_.length === 0) {
+    return;
+  }
+
+  const state = this.get_tree_foliage_state_();
+  for (let i = 0; i < this.tree_foliage_meshes_.length; i++) {
+    const mesh = this.tree_foliage_meshes_[i];
+    if (mesh === undefined || mesh.material === undefined) {
+      continue;
+    }
+    mesh.material.color.copy(state.color);
+    mesh.material.opacity = state.opacity;
+    mesh.material.transparent = state.opacity < 0.995;
+    mesh.material.needsUpdate = true;
+    mesh.visible = state.opacity > 0.01;
+  }
+};
+
+/**
+ * Add randomly placed procedural trees around the house footprint.
+ *
+ * @param {number} center_x
+ * @param {number} center_y
+ * @param {number} plan_width
+ * @param {number} plan_height
+ * @param {number} ground_surface_z
+ */
+beestat.component.scene.prototype.add_trees_ = function(
+  center_x,
+  center_y,
+  plan_width,
+  plan_height,
+  ground_surface_z
+) {
+  const padding = beestat.component.scene.environment_padding;
+  const area_min_x = center_x - ((plan_width + (padding * 2)) / 2);
+  const area_max_x = center_x + ((plan_width + (padding * 2)) / 2);
+  const area_min_y = center_y - ((plan_height + (padding * 2)) / 2);
+  const area_max_y = center_y + ((plan_height + (padding * 2)) / 2);
+
+  const exclusion = 110;
+  const house_min_x = center_x - (plan_width / 2) - exclusion;
+  const house_max_x = center_x + (plan_width / 2) + exclusion;
+  const house_min_y = center_y - (plan_height / 2) - exclusion;
+  const house_max_y = center_y + (plan_height / 2) + exclusion;
+
+  const tree_group = new THREE.Group();
+  tree_group.userData.is_environment = true;
+  this.environment_group_.add(tree_group);
+  this.tree_foliage_meshes_ = [];
+
+  const positions = [];
+  const tree_count = beestat.component.scene.environment_tree_count;
+  const min_spacing = 95;
+  const max_attempts = 30;
+
+  for (let i = 0; i < tree_count; i++) {
+    let position = null;
+
+    for (let attempt = 0; attempt < max_attempts; attempt++) {
+      const candidate = {
+        'x': area_min_x + (Math.random() * (area_max_x - area_min_x)),
+        'y': area_min_y + (Math.random() * (area_max_y - area_min_y))
+      };
+
+      const inside_house_buffer = (
+        candidate.x >= house_min_x &&
+        candidate.x <= house_max_x &&
+        candidate.y >= house_min_y &&
+        candidate.y <= house_max_y
+      );
+      if (inside_house_buffer) {
+        continue;
+      }
+
+      let too_close = false;
+      for (let j = 0; j < positions.length; j++) {
+        const dx = candidate.x - positions[j].x;
+        const dy = candidate.y - positions[j].y;
+        if (Math.sqrt((dx * dx) + (dy * dy)) < min_spacing) {
+          too_close = true;
+          break;
+        }
+      }
+      if (too_close === true) {
+        continue;
+      }
+
+      position = candidate;
+      break;
+    }
+
+    if (position === null) {
+      continue;
+    }
+
+    const foliage_enabled = beestat.component.scene.environment_tree_foliage_enabled;
+    const use_round_tree = foliage_enabled === false
+      ? true
+      : ((i % 3 === 0) || (Math.random() < 0.2));
+    const tree_height = use_round_tree
+      ? 210 + (Math.random() * 190)
+      : 190 + (Math.random() * 210);
+    const tree_max_diameter = use_round_tree
+      ? Math.max(100, tree_height * (0.48 + (Math.random() * 0.26)))
+      : Math.max(72, tree_height * (0.28 + (Math.random() * 0.2)));
+    const tree = use_round_tree
+      ? this.create_round_tree_(tree_height, tree_max_diameter, foliage_enabled)
+      : this.create_pine_tree_(tree_height, tree_max_diameter, foliage_enabled);
+    tree.position.set(position.x, position.y, ground_surface_z);
+    tree.rotation.z = (Math.random() * Math.PI * 2);
+
+    tree_group.add(tree);
+    positions.push(position);
+  }
+
+  this.update_tree_foliage_season_();
+};
+
+/**
  * Add environment layers (grass and earth strata) below the house.
  */
 beestat.component.scene.prototype.add_environment_ = function() {
@@ -2987,6 +3673,9 @@ beestat.component.scene.prototype.add_environment_ = function() {
     this.environment_group_.add(mesh);
     current_z += stratum.thickness;
   }, this);
+
+  const ground_surface_z = 0;
+  this.add_trees_(center_x, center_y, plan_width, plan_height, ground_surface_z);
 
   // Add celestial lights (sun and moon) - toggled with environment visibility
   this.add_celestial_lights_();

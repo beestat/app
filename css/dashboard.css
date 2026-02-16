@@ -439,6 +439,7 @@ input[type=range]::-moz-range-thumb {
 .icon.calendar_alert:before { content: "\F0A31"; }
 .icon.calendar_edit:before { content: "\F08A7"; }
 .icon.calendar_month:before { content: "\F0E17"; }
+.icon.calendar_today:before, .icon.calendar-today:before { content: "\F00F6"; }
 .icon.calendar_week:before { content: "\F0A33"; }
 .icon.cancel:before { content: "\F073A"; }
 .icon.card_plus_outline:before { content: "\F1200"; }
