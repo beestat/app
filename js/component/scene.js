@@ -3275,6 +3275,7 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
  * @return {THREE.Group}
  */
 beestat.component.scene.prototype.create_round_tree_ = function(height, max_diameter, has_foliage) {
+  const self = this;
   const tree = new THREE.Group();
   tree.userData.is_environment = true;
   tree.userData.is_tree = true;
@@ -3316,9 +3317,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'color': 0x4f9f2f,
     'roughness': 0.82,
     'metalness': 0.0,
-    'flatShading': true,
-    'transparent': true,
-    'opacity': 1
+    'flatShading': true
   });
   const create_foliage_blob = function(radius, irregularity) {
     const geometry = new THREE.IcosahedronGeometry(radius, 1);
@@ -3351,6 +3350,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   };
   const branch_height_samples = [];
   const branch_tips = [];
+  const max_branch_depth = 1;
   if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
   }
@@ -3367,6 +3367,96 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     branch_height_samples[swap_index] = temp;
   }
 
+  const get_stick_point_world = function(branch_info, ratio) {
+    const clamped_ratio = Math.max(0, Math.min(1, ratio));
+    const along_height = branch_info.length * clamped_ratio;
+    const local_offset = self.sample_stick_curve_offset_(branch_info.stick.curve, along_height);
+    const local_point = new THREE.Vector3(
+      local_offset.x,
+      local_offset.y,
+      (branch_info.length / 2) - along_height
+    );
+    return branch_info.mesh.localToWorld(local_point);
+  };
+
+  const build_child_direction = function(base_direction, divergence_degrees) {
+    const tangent = base_direction.clone().normalize();
+    const reference = Math.abs(tangent.z) > 0.85
+      ? new THREE.Vector3(1, 0, 0)
+      : new THREE.Vector3(0, 0, 1);
+    const right = new THREE.Vector3().crossVectors(tangent, reference).normalize();
+    const up = new THREE.Vector3().crossVectors(right, tangent).normalize();
+    const phi = Math.random() * Math.PI * 2;
+    const theta = (Math.PI / 180) * divergence_degrees;
+
+    return tangent.clone().multiplyScalar(Math.cos(theta))
+      .add(right.multiplyScalar(Math.sin(theta) * Math.cos(phi)))
+      .add(up.multiplyScalar(Math.sin(theta) * Math.sin(phi)))
+      .normalize();
+  };
+
+  const create_branch = function(base, direction, length, radius_bottom, depth) {
+    const branch_stick = self.create_stick_mesh_({
+      'height': length,
+      'radius_bottom': radius_bottom,
+      'radial_segments': 7,
+      'height_segments': 6,
+      'control_count': 6,
+      'max_drift': length * (0.24 + (depth * 0.05)),
+      'direction_jitter': length * (0.12 + (depth * 0.03)),
+      'straight_start_ratio': 0.2,
+      'taper_start_ratio': 0.2,
+      'taper_max_ratio': 1,
+      'material': wood_material
+    });
+    const branch = branch_stick.mesh;
+    branch.position.copy(base).addScaledVector(direction, (length / 2) - (radius_bottom * 0.45));
+    branch.quaternion.setFromUnitVectors(branch_axis, direction);
+    branches.add(branch);
+    branch.updateMatrixWorld(true);
+
+    return {
+      'mesh': branch,
+      'stick': branch_stick,
+      'length': length,
+      'radius_bottom': radius_bottom,
+      'direction': direction
+    };
+  };
+
+  const add_sub_branches = function(parent_branch, depth) {
+    if (depth >= max_branch_depth) {
+      return;
+    }
+
+    const child_count = 2 + Math.floor(Math.random() * 2);
+    for (let j = 0; j < child_count; j++) {
+      const attach_ratio = 0.35 + (Math.random() * 0.45);
+      const attach_point = get_stick_point_world(parent_branch, attach_ratio);
+      const child_length = Math.max(
+        4,
+        parent_branch.length * (0.34 + (Math.random() * 0.16)) * (1 - (attach_ratio * 0.25))
+      );
+      const child_radius_bottom = Math.max(
+        0.15,
+        parent_branch.radius_bottom * (0.38 + (Math.random() * 0.15)) * (1 - (attach_ratio * 0.2))
+      );
+      const child_direction = build_child_direction(
+        parent_branch.direction,
+        34 + (Math.random() * 24)
+      );
+      const child_branch = create_branch(
+        attach_point,
+        child_direction,
+        child_length,
+        child_radius_bottom,
+        depth + 1
+      );
+      branch_tips.push(get_stick_point_world(child_branch, 1));
+      add_sub_branches(child_branch, depth + 1);
+    }
+  };
+
   for (let i = 0; i < branch_count; i++) {
     const t = branch_height_samples[i];
     const base_height = trunk_height * (0.5 + (t * 0.45));
@@ -3382,46 +3472,9 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     ).normalize();
     const base = new THREE.Vector3(base_offset.x, base_offset.y, -base_height);
 
-    const branch_stick = this.create_stick_mesh_({
-      'height': branch_length,
-      'radius_bottom': branch_radius_bottom,
-      'radial_segments': 7,
-      'height_segments': 6,
-      'control_count': 6,
-      'max_drift': branch_length * 0.24,
-      'direction_jitter': branch_length * 0.12,
-      'straight_start_ratio': 0.2,
-      'taper_start_ratio': 0.2,
-      'taper_max_ratio': 1,
-      'material': wood_material
-    });
-    const branch = branch_stick.mesh;
-    branch.position.copy(base).addScaledVector(direction, (branch_length / 2) - (branch_radius_bottom * 0.45));
-    branch.quaternion.setFromUnitVectors(branch_axis, direction);
-    branches.add(branch);
-    branch_tips.push(base.clone().addScaledVector(direction, branch_length));
-
-    if (has_foliage === true) {
-      const branch_blob_anchor = base.clone().addScaledVector(direction, branch_length * 0.82);
-      const branch_blob = create_foliage_blob(
-        Math.max(3.5, branch_length * 0.12),
-        0.16
-      );
-      branch_blob.position.copy(branch_blob_anchor);
-      branch_blob.scale.set(
-        0.75 + (Math.random() * 0.35),
-        0.75 + (Math.random() * 0.35),
-        0.7 + (Math.random() * 0.4)
-      );
-      branch_blob.rotation.x = (Math.random() - 0.5) * 0.2;
-      branch_blob.rotation.y = (Math.random() - 0.5) * 0.2;
-      branch_blob.rotation.z = (Math.random() - 0.5) * 0.2;
-      branch_blob.castShadow = true;
-      branch_blob.receiveShadow = true;
-      branch_blob.userData.is_environment = true;
-      foliage.add(branch_blob);
-      this.tree_foliage_meshes_.push(branch_blob);
-    }
+    const primary_branch = create_branch(base, direction, branch_length, branch_radius_bottom, 0);
+    branch_tips.push(get_stick_point_world(primary_branch, 1));
+    add_sub_branches(primary_branch, 0);
   }
 
   if (has_foliage === true) {
@@ -3435,7 +3488,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
         coverage_radius = distance;
       }
     }
-    const core_radius = Math.max(26, max_diameter * 0.62, coverage_radius * 1.14);
+    const core_radius = Math.max(20, coverage_radius * 1.03);
     const core_blob = create_foliage_blob(core_radius, 0.18);
     core_blob.position.copy(core_center);
     core_blob.scale.set(
@@ -3612,9 +3665,10 @@ beestat.component.scene.prototype.add_trees_ = function(
     const tree_max_diameter = use_round_tree
       ? Math.max(100, tree_height * (0.48 + (Math.random() * 0.26)))
       : Math.max(72, tree_height * (0.28 + (Math.random() * 0.2)));
+    const round_tree_has_foliage = foliage_enabled === true && Math.random() < 0.65;
     const tree = use_round_tree
-      ? this.create_round_tree_(tree_height, tree_max_diameter, foliage_enabled)
-      : this.create_pine_tree_(tree_height, tree_max_diameter, foliage_enabled);
+      ? this.create_round_tree_(tree_height, tree_max_diameter, round_tree_has_foliage)
+      : this.create_pine_tree_(tree_height, tree_max_diameter, true);
     tree.position.set(position.x, position.y, ground_surface_z);
     tree.rotation.z = (Math.random() * Math.PI * 2);
 
