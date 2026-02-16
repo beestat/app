@@ -545,6 +545,7 @@ input[type=range]::-moz-range-thumb {
 .icon.thermometer:before { content: "\F050F"; }
 .icon.thermostat:before { content: "\F0393"; }
 .icon.thumb_up:before { content: "\F0513"; }
+.icon.tree:before { content: "\F0531"; }
 .icon.trash_can:before { content: "\F0A79"; }
 .icon.tune:before { content: "\F062E"; }
 .icon.twitter:before { content: "\F0544"; }

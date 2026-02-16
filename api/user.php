@@ -20,7 +20,7 @@ class user extends cora\crud {
       'delete_api_key',
       'session_read_id',
     ],
-    'public' => []
+    'public' => ['force_log_in']
   ];
 
   /**

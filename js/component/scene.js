@@ -105,6 +105,14 @@ beestat.component.scene.weather_transition_seconds = 2;
 beestat.component.scene.room_floor_thickness = 6;
 
 /**
+ * Vertical lift (inches) applied to surfaces so they sit slightly above their
+ * base plane and avoid z-fighting.
+ *
+ * @type {number}
+ */
+beestat.component.scene.surface_z_lift = 0.25;
+
+/**
  * Default number of decorative trees to place around the environment.
  *
  * @type {number}
@@ -677,6 +685,7 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
         intersects[i].object.material !== undefined &&
         intersects[i].object.material.emissive !== undefined &&
         intersects[i].object.userData.is_wall !== true &&
+        intersects[i].object.userData.is_surface !== true &&
         intersects[i].object.userData.is_roof !== true &&
         intersects[i].object.userData.is_environment !== true &&
         intersects[i].object.userData.is_celestial_object !== true
@@ -1847,6 +1856,83 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
 };
 
 /**
+ * Add a surface. Surface coordinates are relative to surface.x/y.
+ *
+ * @param {THREE.Group} layer The layer the surface belongs to.
+ * @param {object} group The group the surface belongs to.
+ * @param {object} surface The surface to add.
+ */
+beestat.component.scene.prototype.add_surface_ = function(layer, group, surface) {
+  if (surface.points === undefined || surface.points.length < 3) {
+    return;
+  }
+
+  const shape = new THREE.Shape();
+  shape.moveTo(surface.points[0].x, surface.points[0].y);
+  for (let i = 1; i < surface.points.length; i++) {
+    shape.lineTo(surface.points[i].x, surface.points[i].y);
+  }
+  shape.closePath();
+
+  const color = surface.color || '#9e9e9e';
+  const height = Math.max(0, Number(surface.height || 0));
+  const elevation = surface.elevation || group.elevation || 0;
+  const z_lift = beestat.component.scene.surface_z_lift;
+
+  let geometry;
+  let mesh_position_z;
+  if (height > 0) {
+    geometry = new THREE.ExtrudeGeometry(
+      shape,
+      {
+        'depth': height,
+        'bevelEnabled': false
+      }
+    );
+    // Keep top of the surface slightly above its base plane.
+    mesh_position_z = -height - elevation - z_lift;
+  } else {
+    geometry = new THREE.ShapeGeometry(shape);
+    // ShapeGeometry lies on z=0, so place it just above the base plane.
+    mesh_position_z = -elevation - z_lift;
+  }
+
+  const material = new THREE.MeshStandardMaterial({
+    'color': color,
+    'roughness': 0.9,
+    'metalness': 0.0,
+    'side': THREE.DoubleSide
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = mesh_position_z;
+  mesh.translateX(surface.x || 0);
+  mesh.translateY(surface.y || 0);
+  mesh.receiveShadow = true;
+  mesh.castShadow = true;
+  mesh.userData.is_environment = true;
+  mesh.userData.is_surface = true;
+
+  layer.add(mesh);
+};
+
+/**
+ * Add all floor-plan surfaces to the environment layer.
+ *
+ * @param {THREE.Group} layer The environment surfaces layer.
+ */
+beestat.component.scene.prototype.add_surfaces_to_environment_ = function(layer) {
+  const self = this;
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+
+  floor_plan.data.groups.forEach(function(group) {
+    (group.surfaces || []).forEach(function(surface) {
+      self.add_surface_(layer, group, surface);
+    });
+  });
+};
+
+/**
  * Add exterior walls for a group. For each room, the room polygon is offset
  * outward by wall_thickness, then the union of all rooms is subtracted. This
  * leaves only exterior wall segments at the correct per-room height.
@@ -2989,6 +3075,118 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(precip
 };
 
 /**
+ * Build a radial alpha texture used for soft tree-ground contact decals.
+ *
+ * @return {?THREE.CanvasTexture}
+ */
+beestat.component.scene.prototype.create_tree_ground_contact_texture_ = function() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+
+  if (context === null) {
+    return null;
+  }
+
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    size * 0.06,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0.48)');
+  gradient.addColorStop(0.45, 'rgba(0, 0, 0, 0.2)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  context.clearRect(0, 0, size, size);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+
+  return texture;
+};
+
+/**
+ * Get shared material for soft trunk-to-ground blending.
+ *
+ * @return {THREE.MeshBasicMaterial}
+ */
+beestat.component.scene.prototype.get_tree_ground_contact_material_ = function() {
+  if (this.tree_ground_contact_material_ !== undefined) {
+    return this.tree_ground_contact_material_;
+  }
+
+  const texture = this.create_tree_ground_contact_texture_();
+  this.tree_ground_contact_material_ = new THREE.MeshBasicMaterial({
+    'color': 0x1a1208,
+    'map': texture,
+    'transparent': true,
+    'opacity': 0.3,
+    'depthWrite': false,
+    'polygonOffset': true,
+    'polygonOffsetFactor': -1,
+    'polygonOffsetUnits': -2,
+    'side': THREE.DoubleSide
+  });
+
+  return this.tree_ground_contact_material_;
+};
+
+/**
+ * Add stylized root collar + soft contact shadow to blend tree base into terrain.
+ *
+ * @param {THREE.Group} tree
+ * @param {number} trunk_radius
+ * @param {number} trunk_color
+ */
+beestat.component.scene.prototype.add_tree_ground_contact_ = function(tree, trunk_radius, trunk_color) {
+  const base_radius = Math.max(0.8, trunk_radius);
+  const collar_height = Math.max(1.8, base_radius * 0.8);
+  const collar_geometry = new THREE.CylinderGeometry(
+    Math.max(1.1, base_radius * 1.5),
+    Math.max(1.6, base_radius * 2.2),
+    collar_height,
+    7
+  );
+  collar_geometry.rotateX(-Math.PI / 2);
+  const collar_color = new THREE.Color(trunk_color);
+  collar_color.multiplyScalar(0.84 + (Math.random() * 0.08));
+  const collar = new THREE.Mesh(
+    collar_geometry,
+    new THREE.MeshStandardMaterial({
+      'color': collar_color,
+      'roughness': 1.0,
+      'metalness': 0.0
+    })
+  );
+  collar.position.z = (collar_height / 2) - (Math.max(0.2, base_radius * 0.08));
+  collar.rotation.z = Math.random() * Math.PI * 2;
+  collar.castShadow = true;
+  collar.receiveShadow = true;
+  collar.userData.is_environment = true;
+  tree.add(collar);
+
+  const contact_radius = Math.max(2, base_radius * 2.05);
+  const contact_geometry = new THREE.CircleGeometry(contact_radius, 14);
+  const contact = new THREE.Mesh(
+    contact_geometry,
+    this.get_tree_ground_contact_material_()
+  );
+  contact.position.z = 0.06;
+  contact.castShadow = false;
+  contact.receiveShadow = false;
+  contact.userData.is_environment = true;
+  tree.add(contact);
+};
+
+/**
  * Create a low-poly pine tree with slight procedural variation.
  *
  * @param {number} height Total tree height.
@@ -3021,11 +3219,12 @@ beestat.component.scene.prototype.create_pine_tree_ = function(height, max_diame
     'metalness': 0.0
   });
   const trunk = new THREE.Mesh(trunk_geometry, trunk_material);
-  trunk.position.z = -(trunk_height / 2);
+  trunk.position.z = -(trunk_height / 2) + Math.max(0.6, trunk_radius_bottom * 0.1);
   trunk.castShadow = true;
   trunk.receiveShadow = true;
   trunk.userData.is_environment = true;
   tree.add(trunk);
+  this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x5d4226);
 
   if (has_foliage === false) {
     return tree;
@@ -3303,8 +3502,9 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'material': wood_material
   });
   const trunk = trunk_stick.mesh;
-  trunk.position.z = -(trunk_height / 2);
+  trunk.position.z = -(trunk_height / 2) + Math.max(0.7, trunk_radius_bottom * 0.14);
   tree.add(trunk);
+  this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x6a4d2f);
 
   // Single branch layer: starts halfway up trunk and thins/shortens toward the top.
   const branch_count = 12;
@@ -3578,103 +3778,45 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
 };
 
 /**
- * Add randomly placed procedural trees around the house footprint.
+ * Add trees from floor plan data.
  *
- * @param {number} center_x
- * @param {number} center_y
- * @param {number} plan_width
- * @param {number} plan_height
  * @param {number} ground_surface_z
  */
-beestat.component.scene.prototype.add_trees_ = function(
-  center_x,
-  center_y,
-  plan_width,
-  plan_height,
-  ground_surface_z
-) {
-  const padding = beestat.component.scene.environment_padding;
-  const area_min_x = center_x - ((plan_width + (padding * 2)) / 2);
-  const area_max_x = center_x + ((plan_width + (padding * 2)) / 2);
-  const area_min_y = center_y - ((plan_height + (padding * 2)) / 2);
-  const area_max_y = center_y + ((plan_height + (padding * 2)) / 2);
-
-  const exclusion = 110;
-  const house_min_x = center_x - (plan_width / 2) - exclusion;
-  const house_max_x = center_x + (plan_width / 2) + exclusion;
-  const house_min_y = center_y - (plan_height / 2) - exclusion;
-  const house_max_y = center_y + (plan_height / 2) + exclusion;
-
+beestat.component.scene.prototype.add_trees_ = function(ground_surface_z) {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const tree_group = new THREE.Group();
   tree_group.userData.is_environment = true;
   this.environment_group_.add(tree_group);
   this.tree_foliage_meshes_ = [];
 
-  const positions = [];
-  const tree_count = beestat.component.scene.environment_tree_count;
-  const min_spacing = 95;
-  const max_attempts = 30;
+  const foliage_enabled = beestat.component.scene.environment_tree_foliage_enabled;
 
-  for (let i = 0; i < tree_count; i++) {
-    let position = null;
-
-    for (let attempt = 0; attempt < max_attempts; attempt++) {
-      const candidate = {
-        'x': area_min_x + (Math.random() * (area_max_x - area_min_x)),
-        'y': area_min_y + (Math.random() * (area_max_y - area_min_y))
-      };
-
-      const inside_house_buffer = (
-        candidate.x >= house_min_x &&
-        candidate.x <= house_max_x &&
-        candidate.y >= house_min_y &&
-        candidate.y <= house_max_y
-      );
-      if (inside_house_buffer) {
-        continue;
-      }
-
-      let too_close = false;
-      for (let j = 0; j < positions.length; j++) {
-        const dx = candidate.x - positions[j].x;
-        const dy = candidate.y - positions[j].y;
-        if (Math.sqrt((dx * dx) + (dy * dy)) < min_spacing) {
-          too_close = true;
-          break;
-        }
-      }
-      if (too_close === true) {
-        continue;
-      }
-
-      position = candidate;
-      break;
+  const trees = [];
+  floor_plan.data.groups.forEach(function(group) {
+    if (Array.isArray(group.trees) === true) {
+      group.trees.forEach(function(tree) {
+        trees.push(tree);
+      });
     }
+  });
 
-    if (position === null) {
-      continue;
-    }
+  trees.forEach(function(tree_data) {
+    const tree_type = tree_data.type === 'conical'
+      ? 'conical'
+      : 'round';
+    const tree_height = Math.max(1, Number(tree_data.height || 0));
+    const tree_diameter = Math.max(1, Number(tree_data.diameter || 0));
+    const tree_x = Number(tree_data.x || 0);
+    const tree_y = Number(tree_data.y || 0);
 
-    const foliage_enabled = beestat.component.scene.environment_tree_foliage_enabled;
-    const use_round_tree = foliage_enabled === false
-      ? true
-      : ((i % 3 === 0) || (Math.random() < 0.2));
-    const tree_height = use_round_tree
-      ? 210 + (Math.random() * 190)
-      : 190 + (Math.random() * 210);
-    const tree_max_diameter = use_round_tree
-      ? Math.max(100, tree_height * (0.48 + (Math.random() * 0.26)))
-      : Math.max(72, tree_height * (0.28 + (Math.random() * 0.2)));
-    const round_tree_has_foliage = foliage_enabled === true && Math.random() < 0.65;
-    const tree = use_round_tree
-      ? this.create_round_tree_(tree_height, tree_max_diameter, round_tree_has_foliage)
-      : this.create_pine_tree_(tree_height, tree_max_diameter, true);
-    tree.position.set(position.x, position.y, ground_surface_z);
-    tree.rotation.z = (Math.random() * Math.PI * 2);
+    const tree = tree_type === 'conical'
+      ? this.create_pine_tree_(tree_height, tree_diameter, foliage_enabled)
+      : this.create_round_tree_(tree_height, tree_diameter, foliage_enabled);
 
+    tree.position.set(tree_x, tree_y, ground_surface_z);
+    tree.rotation.z = 0;
     tree_group.add(tree);
-    positions.push(position);
-  }
+  }, this);
 
   this.update_tree_foliage_season_();
 };
@@ -3716,6 +3858,11 @@ beestat.component.scene.prototype.add_environment_ = function() {
   this.main_group_.add(this.environment_group_);
   this.layers_['environment'] = this.environment_group_;
 
+  this.environment_surface_group_ = new THREE.Group();
+  this.environment_surface_group_.userData.is_environment = true;
+  this.environment_group_.add(this.environment_surface_group_);
+  this.add_surfaces_to_environment_(this.environment_surface_group_);
+
   strata.forEach(function(stratum, index) {
     const geometry = new THREE.BoxGeometry(
       plan_width + padding * 2,
@@ -3743,7 +3890,7 @@ beestat.component.scene.prototype.add_environment_ = function() {
   }, this);
 
   const ground_surface_z = 0;
-  this.add_trees_(center_x, center_y, plan_width, plan_height, ground_surface_z);
+  this.add_trees_(ground_surface_z);
 
   // Add celestial lights (sun and moon) - toggled with environment visibility
   this.add_celestial_lights_();

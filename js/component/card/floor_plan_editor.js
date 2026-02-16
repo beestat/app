@@ -62,6 +62,12 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     if (group.group_id === undefined) {
       group.group_id = window.crypto.randomUUID();
     }
+    if (group.surfaces === undefined) {
+      group.surfaces = [];
+    }
+    if (group.trees === undefined) {
+      group.trees = [];
+    }
   });
 
   /**
@@ -226,6 +232,22 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.update_floor_plan_();
     self.rerender();
   });
+  this.floor_plan_.addEventListener('add_surface', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('remove_surface', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('add_tree', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('remove_tree', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
   this.floor_plan_.addEventListener('undo', function() {
     self.update_floor_plan_();
     self.rerender();
@@ -244,6 +266,13 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
         .set_room(room)
         .set_group(self.state_.active_group);
       room_entity.render(self.floor_plan_.get_g());
+    });
+    group_below.surfaces.forEach(function(surface) {
+      const surface_entity = new beestat.component.floor_plan_entity.surface(self.floor_plan_, self.state_)
+        .set_enabled(false)
+        .set_surface(surface)
+        .set_group(self.state_.active_group);
+      surface_entity.render(self.floor_plan_.get_g());
     });
   }
 
@@ -309,6 +338,107 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   if (this.state_.active_room_entity !== undefined) {
     this.state_.active_room_entity.render(this.floor_plan_.get_g());
   }
+
+  // Loop over surfaces in this group and add them.
+  let active_surface_entity;
+  this.state_.active_group.surfaces.forEach(function(surface) {
+    const surface_entity = new beestat.component.floor_plan_entity.surface(self.floor_plan_, self.state_)
+      .set_surface(surface)
+      .set_group(self.state_.active_group);
+
+    surface_entity.addEventListener('update', function() {
+      self.floor_plan_.update_infobox();
+      self.update_info_pane_();
+      self.update_floor_plan_tile_();
+      self.update_floor_plan_();
+    });
+
+    surface_entity.addEventListener('activate', function() {
+      self.floor_plan_.update_infobox();
+      self.floor_plan_.update_toolbar();
+      self.update_info_pane_();
+      self.update_floor_plan_tile_();
+    });
+
+    surface_entity.addEventListener('inactivate', function() {
+      self.floor_plan_.update_infobox();
+      self.floor_plan_.update_toolbar();
+      self.update_info_pane_();
+      self.update_floor_plan_tile_();
+    });
+
+    if (
+      self.state_.active_surface_entity !== undefined &&
+      surface.surface_id === self.state_.active_surface_entity.get_surface().surface_id
+    ) {
+      delete self.state_.active_surface_entity;
+      active_surface_entity = surface_entity;
+    }
+
+    surface_entity.render(self.floor_plan_.get_g());
+  });
+
+  if (active_surface_entity !== undefined) {
+    active_surface_entity.set_active(true);
+  }
+
+  if (this.state_.active_surface_entity !== undefined) {
+    this.state_.active_surface_entity.render(this.floor_plan_.get_g());
+  }
+
+  // Trees are only editable on the first floor.
+  const tree_group = this.floor_plan_.get_tree_group_();
+  if (tree_group === this.state_.active_group) {
+    if (tree_group.trees === undefined) {
+      tree_group.trees = [];
+    }
+
+    let active_tree_entity;
+    tree_group.trees.forEach(function(tree) {
+      const tree_entity = new beestat.component.floor_plan_entity.tree(self.floor_plan_, self.state_)
+        .set_tree(tree)
+        .set_group(tree_group);
+
+      tree_entity.addEventListener('update', function() {
+        self.floor_plan_.update_infobox();
+        self.update_info_pane_();
+        self.update_floor_plan_tile_();
+        self.update_floor_plan_();
+      });
+
+      tree_entity.addEventListener('activate', function() {
+        self.floor_plan_.update_infobox();
+        self.floor_plan_.update_toolbar();
+        self.update_info_pane_();
+        self.update_floor_plan_tile_();
+      });
+
+      tree_entity.addEventListener('inactivate', function() {
+        self.floor_plan_.update_infobox();
+        self.floor_plan_.update_toolbar();
+        self.update_info_pane_();
+        self.update_floor_plan_tile_();
+      });
+
+      if (
+        self.state_.active_tree_entity !== undefined &&
+        tree.tree_id === self.state_.active_tree_entity.get_tree().tree_id
+      ) {
+        delete self.state_.active_tree_entity;
+        active_tree_entity = tree_entity;
+      }
+
+      tree_entity.render(self.floor_plan_.get_g());
+    });
+
+    if (active_tree_entity !== undefined) {
+      active_tree_entity.set_active(true);
+    }
+
+    if (this.state_.active_tree_entity !== undefined) {
+      this.state_.active_tree_entity.render(this.floor_plan_.get_g());
+    }
+  }
 };
 
 /**
@@ -317,7 +447,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
  * @param {rocket.Elements} parent
  */
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_ = function(parent) {
-  if (this.state_.active_room_entity !== undefined) {
+  if (this.state_.active_tree_entity !== undefined) {
+    this.decorate_info_pane_tree_(parent);
+  } else if (this.state_.active_surface_entity !== undefined) {
+    this.decorate_info_pane_surface_(parent);
+  } else if (this.state_.active_room_entity !== undefined) {
     this.decorate_info_pane_room_(parent);
   } else {
     this.decorate_info_pane_floor_(parent);
@@ -454,6 +588,230 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
   // Sensor
   div = $.createElement('div');
   grid.appendChild(div);
+};
+
+/**
+ * Decorate the info pane for a tree.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = function(parent) {
+  const self = this;
+  const tree = this.state_.active_tree_entity.get_tree();
+
+  const grid = $.createElement('div')
+    .style({
+      'display': 'grid',
+      'grid-template-columns': 'repeat(auto-fit, minmax(150px, 1fr))',
+      'column-gap': beestat.style.size.gutter
+    });
+  parent.appendChild(grid);
+
+  let div;
+
+  // Type
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const format_tree_type = function(value) {
+    return String(value || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, function(letter) {
+        return letter.toUpperCase();
+      });
+  };
+  const type_input = new beestat.component.input.select()
+    .set_label('Type')
+    .set_width('100%')
+    .add_option({
+      'label': format_tree_type('conical'),
+      'value': 'conical'
+    })
+    .add_option({
+      'label': format_tree_type('round'),
+      'value': 'round'
+    })
+    .render(div);
+
+  type_input.set_value(['conical', 'round'].includes(tree.type) ? tree.type : 'round');
+  type_input.addEventListener('change', function() {
+    tree.type = type_input.get_value();
+    self.update_floor_plan_();
+  });
+
+  // Height
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const height_input = new beestat.component.input.text()
+    .set_label('Height (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': tree.height,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': tree.height,
+      'round': 2
+    }) || '')
+    .set_width('100%')
+    .set_maxlength(5)
+    .set_requirements({
+      'type': 'decimal',
+      'min_value': beestat.distance(1),
+      'required': true
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
+    .render(div);
+
+  height_input.addEventListener('change', function() {
+    if (height_input.meets_requirements() === true) {
+      tree.height = beestat.distance({
+        'distance': height_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+      self.update_floor_plan_();
+    } else {
+      height_input.set_value(beestat.distance({
+        'distance': tree.height,
+        'round': 2
+      }) || '', false);
+    }
+  });
+};
+
+/**
+ * Decorate the info pane for a surface.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ = function(parent) {
+  const self = this;
+  const surface = this.state_.active_surface_entity.get_surface();
+
+  const grid = $.createElement('div')
+    .style({
+      'display': 'grid',
+      'grid-template-columns': 'repeat(auto-fit, minmax(150px, 1fr))',
+      'column-gap': beestat.style.size.gutter
+    });
+  parent.appendChild(grid);
+
+  let div;
+
+  // Surface color preset
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const color_input = new beestat.component.input.select()
+    .set_label('Color')
+    .set_width('100%');
+
+  const surface_colors = [
+    {'label': 'Concrete', 'value': '#9e9e9e'},
+    {'label': 'Asphalt', 'value': '#2f2f2f'},
+    {'label': 'Mulch - Brown', 'value': '#6f4e37'},
+    {'label': 'Mulch - Black', 'value': '#1f1b1a'},
+    {'label': 'Gravel', 'value': '#b3aea3'},
+    {'label': 'Pavers', 'value': '#8c6d5a'},
+    {'label': 'Deck - Wood', 'value': '#8b5a2b'},
+    {'label': 'Grass', 'value': '#4a7c3f'}
+  ];
+
+  surface_colors.forEach(function(surface_color) {
+    color_input.add_option(surface_color);
+  });
+
+  color_input.render(div);
+  color_input.set_value(surface.color || '#9e9e9e');
+
+  color_input.addEventListener('change', function() {
+    surface.color = color_input.get_value();
+    self.floor_plan_.update_infobox();
+    self.update_floor_plan_();
+    self.rerender();
+  });
+
+  // Elevation
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const elevation_input = new beestat.component.input.text()
+    .set_label('Elevation (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': self.state_.active_group.elevation,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': surface.elevation,
+      'round': 2
+    }) || '')
+    .set_width('100%')
+    .set_maxlength(5)
+    .set_requirements({
+      'type': 'decimal',
+      'min_value': beestat.distance(-600),
+      'max_value': beestat.distance(600)
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
+    .render(div);
+
+  elevation_input.addEventListener('change', function() {
+    if (elevation_input.meets_requirements() === true) {
+      surface.elevation = beestat.distance({
+        'distance': elevation_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+      self.update_floor_plan_();
+      self.rerender();
+    } else {
+      elevation_input.set_value('', false);
+    }
+  });
+
+  // Height
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const height_input = new beestat.component.input.text()
+    .set_label('Height (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': surface.height || 0,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': surface.height || 0,
+      'round': 2
+    }) || '')
+    .set_width('100%')
+    .set_maxlength(5)
+    .set_requirements({
+      'type': 'decimal',
+      'min_value': beestat.distance(0)
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
+    .render(div);
+
+  height_input.addEventListener('change', function() {
+    if (height_input.meets_requirements() === true) {
+      surface.height = beestat.distance({
+        'distance': height_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+      self.update_floor_plan_();
+    } else {
+      height_input.set_value('', false);
+    }
+  });
 };
 
 /**

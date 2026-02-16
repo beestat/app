@@ -170,6 +170,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/title.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity/room.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity/surface.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_entity/tree.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity/point.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_entity/wall.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/metric.js"></script>' . PHP_EOL;
