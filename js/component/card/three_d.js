@@ -375,7 +375,7 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   // Get current time of day
   const now = moment();
   const current_hour = now.hour();
-  const current_minute = now.minute();
+  const current_minute = Math.floor(now.minute() / 5) * 5;
 
   if (beestat.setting('visualize.range_type') === 'dynamic') {
     // Set the date, then apply current time of day
@@ -393,7 +393,8 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
       beestat.setting('visualize.range_static.begin') + ' 00:00:00'
     )
       .hour(current_hour)
-      .minute(current_minute);
+      .minute(current_minute)
+      .second(0);
   }
 
   // Default environment date to today.
@@ -458,6 +459,10 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
  * @return {boolean}
  */
 beestat.component.card.three_d.prototype.get_show_environment_ = function() {
+  if (beestat.user.has_early_access() !== true) {
+    return false;
+  }
+
   const show_environment = beestat.setting('visualize.three_d.show_environment');
   if (show_environment !== undefined) {
     return show_environment !== false;
