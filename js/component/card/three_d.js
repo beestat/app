@@ -1133,7 +1133,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
     tile_group.add_tile(new beestat.component.tile()
       .set_icon(selected_weather_mode.icon)
-      .set_title('Weather Menu')
+      .set_title('Weather')
       .set_text_color(beestat.style.color.gray.light)
       .set_background_color(this.weather_menu_open_ === true ? beestat.style.color.lightblue.base : beestat.style.color.bluegray.base)
       .set_background_hover_color(this.weather_menu_open_ === true ? beestat.style.color.lightblue.light : beestat.style.color.bluegray.light)

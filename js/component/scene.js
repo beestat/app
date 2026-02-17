@@ -3576,7 +3576,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x6a4d2f);
 
   // Single branch layer: starts halfway up trunk and thins/shortens toward the top.
-  const branch_count = 12;
+  const branch_count = 18;
   const branches = new THREE.Group();
   branches.userData.is_environment = true;
   const branch_axis = new THREE.Vector3(0, 0, -1);
@@ -3622,7 +3622,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   };
   const branch_height_samples = [];
   const branch_tips = [];
-  const max_branch_depth = 1;
+  const max_branch_depth = 2;
   if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
   }
