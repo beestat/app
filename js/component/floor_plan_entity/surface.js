@@ -30,7 +30,7 @@ beestat.component.floor_plan_entity.surface.prototype.decorate_polygon_ = functi
   } else if (this.enabled_ === true) {
     this.polygon_.style.cursor = 'pointer';
     this.polygon_.style.fillOpacity = '0.5';
-    this.polygon_.style.fill = this.surface_.color || '#9e9e9e';
+    this.polygon_.style.fill = this.surface_.color || '#9a9a96';
     this.polygon_.style.stroke = beestat.style.color.gray.base;
   } else {
     this.polygon_.style.cursor = 'default';
@@ -82,7 +82,7 @@ beestat.component.floor_plan_entity.surface.prototype.set_surface = function(sur
   }
 
   if (this.surface_.color === undefined) {
-    this.surface_.color = '#9e9e9e';
+    this.surface_.color = '#9a9a96';
   }
   if (this.surface_.height === undefined) {
     this.surface_.height = 0;
@@ -108,6 +108,10 @@ beestat.component.floor_plan_entity.surface.prototype.get_surface = function() {
  * @return {beestat.component.floor_plan_entity.surface} This.
  */
 beestat.component.floor_plan_entity.surface.prototype.set_active = function(active) {
+  if (active === true && this.enabled_ !== true) {
+    return this;
+  }
+
   if (this.state_.active_point_entity !== undefined) {
     this.state_.active_point_entity.set_active(false);
     this.floor_plan_.update_toolbar();

@@ -162,6 +162,19 @@ beestat.component.floor_plan_entity.tree.prototype.set_group = function(group) {
 };
 
 /**
+ * Set enabled (different than active).
+ *
+ * @param {boolean} enabled
+ *
+ * @return {beestat.component.floor_plan_entity.tree} This.
+ */
+beestat.component.floor_plan_entity.tree.prototype.set_enabled = function(enabled) {
+  this.enabled_ = enabled;
+
+  return this;
+};
+
+/**
  * Get the tree.
  *
  * @return {object} tree
@@ -178,6 +191,10 @@ beestat.component.floor_plan_entity.tree.prototype.get_tree = function() {
  * @return {beestat.component.floor_plan_entity.tree} This.
  */
 beestat.component.floor_plan_entity.tree.prototype.set_active = function(active) {
+  if (active === true && this.enabled_ !== true) {
+    return this;
+  }
+
   if (active !== this.active_) {
     this.active_ = active;
 

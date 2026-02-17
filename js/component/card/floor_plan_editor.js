@@ -176,6 +176,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
  */
 beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = function(parent) {
   const self = this;
+  const has_early_access = beestat.user.has_early_access() === true;
 
   // Dispose existing SVG to remove any global listeners.
   if (this.floor_plan_ !== undefined) {
@@ -194,6 +195,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   );
 
   this.floor_plan_.render(parent);
+
+  if (has_early_access !== true) {
+    delete this.state_.active_surface_entity;
+    delete this.state_.active_tree_entity;
+  }
 
   // Create and render the compass for setting orientation (early access only)
   if (beestat.user.has_early_access() === true) {
@@ -343,6 +349,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   let active_surface_entity;
   this.state_.active_group.surfaces.forEach(function(surface) {
     const surface_entity = new beestat.component.floor_plan_entity.surface(self.floor_plan_, self.state_)
+      .set_enabled(has_early_access)
       .set_surface(surface)
       .set_group(self.state_.active_group);
 
@@ -396,6 +403,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     let active_tree_entity;
     tree_group.trees.forEach(function(tree) {
       const tree_entity = new beestat.component.floor_plan_entity.tree(self.floor_plan_, self.state_)
+        .set_enabled(has_early_access)
         .set_tree(tree)
         .set_group(tree_group);
 
@@ -602,8 +610,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = fu
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
-      'grid-template-columns': 'repeat(auto-fit, minmax(150px, 1fr))',
-      'column-gap': beestat.style.size.gutter
+      'grid-template-columns': 'repeat(4, minmax(150px, 1fr))',
+      'column-gap': beestat.style.size.gutter,
+      'width': '100%'
     });
   parent.appendChild(grid);
 
@@ -694,8 +703,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
-      'grid-template-columns': 'repeat(auto-fit, minmax(150px, 1fr))',
-      'column-gap': beestat.style.size.gutter
+      'grid-template-columns': 'repeat(4, minmax(150px, 1fr))',
+      'column-gap': beestat.style.size.gutter,
+      'width': '100%'
     });
   parent.appendChild(grid);
 
@@ -708,29 +718,116 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
     .set_label('Color')
     .set_width('100%');
 
-  const surface_colors = [
-    {'label': 'Concrete', 'value': '#9e9e9e'},
-    {'label': 'Asphalt', 'value': '#2f2f2f'},
-    {'label': 'Mulch - Brown', 'value': '#6f4e37'},
-    {'label': 'Mulch - Black', 'value': '#1f1b1a'},
-    {'label': 'Gravel', 'value': '#b3aea3'},
-    {'label': 'Pavers', 'value': '#8c6d5a'},
-    {'label': 'Deck - Wood', 'value': '#8b5a2b'},
-    {'label': 'Grass', 'value': '#4a7c3f'}
-  ];
+  const normalize_hex_color = function(value) {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
 
+    let normalized = String(value).trim();
+    if (normalized === '') {
+      return undefined;
+    }
+
+    if (normalized.charAt(0) !== '#') {
+      normalized = '#' + normalized;
+    }
+
+    if (/^#[0-9a-fA-F]{6}$/.test(normalized) !== true) {
+      return undefined;
+    }
+
+    return normalized.toLowerCase();
+  };
+
+  const apply_surface_color = function(color) {
+    surface.color = color;
+    self.floor_plan_.update_infobox();
+    self.update_floor_plan_();
+    self.rerender();
+  };
+
+  const surface_colors = [
+    {'label': 'Pavement - Concrete', 'value': '#9a9a96'},
+    {'label': 'Pavement - Asphalt', 'value': '#1f2328'},
+    {'label': 'Pavers - Brick', 'value': '#7a2f2a'},
+    {'label': 'Pavers - Stone', 'value': '#8f877e'},
+    {'label': 'Wood - Light', 'value': '#c79a6b'},
+    {'label': 'Wood - Dark', 'value': '#4b2f1f'},
+    {'label': 'Mulch - Brown', 'value': '#6b4a2f'},
+    {'label': 'Mulch - Red', 'value': '#7a3f32'},
+    {'label': 'Mulch - Black', 'value': '#2e3136'},
+    {'label': 'Water - Pool', 'value': '#3e89b8'},
+    {'label': 'Water - Natural', 'value': '#3f6f5b'}
+  ];
+  surface_colors.sort(function(a, b) {
+    return a.label.localeCompare(b.label, 'en', {'sensitivity': 'base'});
+  });
+  surface_colors.push({'label': 'Custom', 'value': '__custom__'});
+
+  const preset_color_map = {};
   surface_colors.forEach(function(surface_color) {
+    if (surface_color.value !== '__custom__') {
+      preset_color_map[surface_color.value] = true;
+    }
     color_input.add_option(surface_color);
   });
 
   color_input.render(div);
-  color_input.set_value(surface.color || '#9e9e9e');
+
+  const custom_color_container = $.createElement('div');
+  custom_color_container.style('display', 'none');
+  grid.appendChild(custom_color_container);
+  const custom_color_input = new beestat.component.input.text()
+    .set_label('Custom Hex')
+    .set_placeholder('#RRGGBB')
+    .set_width('100%')
+    .set_maxlength(7)
+    .render(custom_color_container);
+
+  const current_surface_color = normalize_hex_color(surface.color) || '#9a9a96';
+  const is_preset_color = preset_color_map[current_surface_color] === true;
+
+  if (is_preset_color === true) {
+    color_input.set_value(current_surface_color);
+    custom_color_input.set_value('', false);
+    custom_color_container.style('display', 'none');
+  } else {
+    color_input.set_value('__custom__');
+    custom_color_input.set_value(current_surface_color, false);
+    custom_color_container.style('display', 'block');
+  }
 
   color_input.addEventListener('change', function() {
-    surface.color = color_input.get_value();
-    self.floor_plan_.update_infobox();
-    self.update_floor_plan_();
-    self.rerender();
+    const selected_value = color_input.get_value();
+
+    if (selected_value === '__custom__') {
+      const custom_color = normalize_hex_color(custom_color_input.get_value()) ||
+        normalize_hex_color(surface.color) ||
+        '#9a9a96';
+      custom_color_input.set_value(custom_color, false);
+      custom_color_container.style('display', 'block');
+      custom_color_input.input_.focus();
+      return;
+    }
+
+    custom_color_input.set_value('', false);
+    custom_color_container.style('display', 'none');
+    apply_surface_color(selected_value);
+  });
+
+  custom_color_input.addEventListener('change', function() {
+    if (color_input.get_value() !== '__custom__') {
+      return;
+    }
+
+    const custom_color = normalize_hex_color(custom_color_input.get_value());
+    if (custom_color === undefined) {
+      custom_color_input.set_value(surface.color || '#9a9a96', false);
+      return;
+    }
+
+    custom_color_input.set_value(custom_color, false);
+    apply_surface_color(custom_color);
   });
 
   // Elevation

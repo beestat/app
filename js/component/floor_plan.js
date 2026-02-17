@@ -66,13 +66,26 @@ beestat.component.floor_plan.prototype.render = function(parent) {
   this.update_view_box_();
 
   this.toolbar_container_ = $.createElement('div');
+  const toolbar_left = beestat.style.size.gutter + (beestat.style.size.gutter / 2);
+  const toolbar_column_width = 40;
+  const toolbar_column_gap = beestat.style.size.gutter / 2;
+  const toolbar_row_offset = toolbar_column_width;
   this.toolbar_container_.style({
     'position': 'absolute',
     'top': beestat.style.size.gutter,
-    'left': beestat.style.size.gutter + (beestat.style.size.gutter / 2),
+    'left': toolbar_left,
     'width': '40px'
   });
   parent.appendChild(this.toolbar_container_);
+
+  this.toolbar_container_secondary_ = $.createElement('div');
+  this.toolbar_container_secondary_.style({
+    'position': 'absolute',
+    'top': beestat.style.size.gutter + toolbar_row_offset,
+    'left': toolbar_left + toolbar_column_width + toolbar_column_gap,
+    'width': '40px'
+  });
+  parent.appendChild(this.toolbar_container_secondary_);
 
   this.floors_container_ = $.createElement('div');
   this.floors_container_.style({
@@ -112,22 +125,27 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (e.key === 'Delete') {
         if (self.state_.active_point_entity !== undefined) {
           self.remove_point_();
-        } else if (self.state_.active_surface_entity !== undefined) {
-          self.remove_surface_();
-        } else if (self.state_.active_room_entity !== undefined) {
-          self.remove_room_();
-        } else if (self.state_.active_tree_entity !== undefined) {
-          self.remove_tree_();
+        } else {
+          self.remove_active_entity_();
         }
       } else if (e.key.toLowerCase() === 'r') {
         if (e.ctrlKey === false) {
           self.add_room_();
+        }
+      } else if (e.key.toLowerCase() === 'f') {
+        if (e.ctrlKey === false && beestat.user.has_early_access() === true) {
+          self.add_surface_();
+        }
+      } else if (e.key.toLowerCase() === 't') {
+        if (e.ctrlKey === false && beestat.user.has_early_access() === true) {
+          self.add_tree_();
         }
       } else if (e.key.toLowerCase() === 's') {
         self.toggle_snapping_();
       } else if (
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true &&
+        beestat.user.has_early_access() === true &&
         self.state_.active_surface_entity !== undefined
       ) {
         self.state_.copied_object = {
@@ -146,6 +164,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true &&
+        beestat.user.has_early_access() === true &&
         self.state_.active_tree_entity !== undefined
       ) {
         self.state_.copied_object = {
@@ -155,6 +174,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true &&
+        beestat.user.has_early_access() === true &&
         self.state_.copied_object !== undefined &&
         self.state_.copied_object.type === 'surface'
       ) {
@@ -162,6 +182,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true &&
+        beestat.user.has_early_access() === true &&
         self.state_.copied_object !== undefined &&
         self.state_.copied_object.type === 'tree'
       ) {
@@ -450,6 +471,7 @@ beestat.component.floor_plan.prototype.dispose = function() {
 beestat.component.floor_plan.prototype.update_toolbar = function() {
   const self = this;
   const tree_group = this.get_tree_group_();
+  const has_early_access = beestat.user.has_early_access() === true;
 
   if (this.tile_group_ !== undefined) {
     this.tile_group_.dispose();
@@ -458,8 +480,12 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
   if (this.tile_group_floors_ !== undefined) {
     this.tile_group_floors_.dispose();
   }
+  if (this.tile_group_secondary_ !== undefined) {
+    this.tile_group_secondary_.dispose();
+  }
 
   this.tile_group_ = new beestat.component.tile_group();
+  this.tile_group_secondary_ = new beestat.component.tile_group();
 
   // Add floor
   this.tile_group_.add_tile(new beestat.component.tile()
@@ -480,49 +506,55 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     })
   );
 
-  // Add surface
-  this.tile_group_.add_tile(new beestat.component.tile()
-    .set_icon('border_none_variant')
-    .set_title('Add Surface')
-    .set_text_color(beestat.style.color.gray.light)
-    .set_background_color(beestat.style.color.bluegray.base)
-    .set_background_hover_color(beestat.style.color.bluegray.light)
-    .addEventListener('click', function() {
-      self.add_surface_();
-    })
-  );
-
-  // Remove room
-  const remove_room_button = new beestat.component.tile()
-    .set_icon('card_remove_outline')
-    .set_title('Remove Room [Delete]')
-    .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(remove_room_button);
-
-  if (this.state_.active_room_entity !== undefined) {
-    remove_room_button
+  if (has_early_access === true) {
+    // Add surface
+    this.tile_group_.add_tile(new beestat.component.tile()
+      .set_icon('texture_box')
+      .set_title('Add Surface [F]')
+      .set_text_color(beestat.style.color.gray.light)
+      .set_background_color(beestat.style.color.bluegray.base)
       .set_background_hover_color(beestat.style.color.bluegray.light)
-      .set_text_color(beestat.style.color.red.base)
-      .addEventListener('click', this.remove_room_.bind(this));
-  } else {
-    remove_room_button
-      .set_text_color(beestat.style.color.bluegray.dark);
+      .addEventListener('click', function() {
+        self.add_surface_();
+      })
+    );
+
+    // Add tree (first floor only)
+    const add_tree_button = new beestat.component.tile()
+      .set_icon('tree')
+      .set_title('Add Tree [T]')
+      .set_background_color(beestat.style.color.bluegray.base);
+    this.tile_group_.add_tile(add_tree_button);
+
+    if (this.state_.active_group === tree_group) {
+      add_tree_button
+        .set_background_hover_color(beestat.style.color.bluegray.light)
+        .set_text_color(beestat.style.color.gray.light)
+        .addEventListener('click', this.add_tree_.bind(this));
+    } else {
+      add_tree_button
+        .set_text_color(beestat.style.color.bluegray.dark);
+    }
   }
 
-  // Remove surface
-  const remove_surface_button = new beestat.component.tile()
+  // Remove selected room, surface, or tree
+  const remove_button = new beestat.component.tile()
     .set_icon('card_remove_outline')
-    .set_title('Remove Surface [Delete]')
+    .set_title('Remove [Delete]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(remove_surface_button);
+  this.tile_group_.add_tile(remove_button);
 
-  if (this.state_.active_surface_entity !== undefined) {
-    remove_surface_button
+  if (
+    this.state_.active_room_entity !== undefined ||
+    this.state_.active_surface_entity !== undefined ||
+    this.state_.active_tree_entity !== undefined
+  ) {
+    remove_button
       .set_background_hover_color(beestat.style.color.bluegray.light)
       .set_text_color(beestat.style.color.red.base)
-      .addEventListener('click', this.remove_surface_.bind(this));
+      .addEventListener('click', this.remove_active_entity_.bind(this));
   } else {
-    remove_surface_button
+    remove_button
       .set_text_color(beestat.style.color.bluegray.dark);
   }
 
@@ -589,7 +621,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('undo')
     .set_title('Undo [Ctrl+Z]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(undo_button);
+  this.tile_group_secondary_.add_tile(undo_button);
 
   if (
     this.can_undo_() === true
@@ -610,7 +642,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('redo')
     .set_title('Redo [Ctrl+Y]')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(redo_button);
+  this.tile_group_secondary_.add_tile(redo_button);
 
   if (
     this.can_redo_() === true
@@ -631,7 +663,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('magnify_plus_outline')
     .set_title('Zoom In')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(zoom_in_button);
+  this.tile_group_secondary_.add_tile(zoom_in_button);
 
   if (
     this.can_zoom_in_() === true
@@ -652,7 +684,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     .set_icon('magnify_minus_outline')
     .set_title('Zoom out')
     .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(zoom_out_button);
+  this.tile_group_secondary_.add_tile(zoom_out_button);
 
   if (
     this.can_zoom_out_() === true
@@ -668,25 +700,9 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
       .set_text_color(beestat.style.color.bluegray.dark);
   }
 
-  // Add tree (first floor only)
-  const add_tree_button = new beestat.component.tile()
-    .set_icon('tree')
-    .set_title('Add Tree')
-    .set_background_color(beestat.style.color.bluegray.base);
-  this.tile_group_.add_tile(add_tree_button);
-
-  if (this.state_.active_group === tree_group) {
-    add_tree_button
-      .set_background_hover_color(beestat.style.color.bluegray.light)
-      .set_text_color(beestat.style.color.gray.light)
-      .addEventListener('click', this.add_tree_.bind(this));
-  } else {
-    add_tree_button
-      .set_text_color(beestat.style.color.bluegray.dark);
-  }
-
   // Render
   this.tile_group_.render(this.toolbar_container_);
+  this.tile_group_secondary_.render(this.toolbar_container_secondary_);
 
   // FLOORS
   this.tile_group_floors_ = new beestat.component.tile_group();
@@ -810,6 +826,10 @@ beestat.component.floor_plan.prototype.toggle_snapping_ = function() {
  * @param {object} surface Optional surface to copy from.
  */
 beestat.component.floor_plan.prototype.add_surface_ = function(surface) {
+  if (beestat.user.has_early_access() !== true) {
+    return;
+  }
+
   this.save_buffer();
 
   if (this.state_.active_group.surfaces === undefined) {
@@ -825,7 +845,7 @@ beestat.component.floor_plan.prototype.add_surface_ = function(surface) {
       'surface_id': window.crypto.randomUUID(),
       'x': svg_view_box.x + (svg_view_box.width / 2) - (new_surface_size / 2),
       'y': svg_view_box.y + (svg_view_box.height / 2) - (new_surface_size / 2),
-      'color': '#9e9e9e',
+      'color': '#9a9a96',
       'height': 0,
       'points': [
         {
@@ -863,7 +883,7 @@ beestat.component.floor_plan.prototype.add_surface_ = function(surface) {
       'surface_id': window.crypto.randomUUID(),
       'x': svg_view_box.x + (svg_view_box.width / 2) - ((max_x - min_x) / 2),
       'y': svg_view_box.y + (svg_view_box.height / 2) - ((max_y - min_y) / 2),
-      'color': surface.color || '#9e9e9e',
+      'color': surface.color || '#9a9a96',
       'height': surface.height || 0,
       'points': beestat.clone(surface.points)
     };
@@ -985,6 +1005,25 @@ beestat.component.floor_plan.prototype.remove_room_ = function() {
 };
 
 /**
+ * Remove the currently active selectable entity (surface, room, or tree).
+ */
+beestat.component.floor_plan.prototype.remove_active_entity_ = function() {
+  if (this.state_.active_surface_entity !== undefined) {
+    this.remove_surface_();
+    return;
+  }
+
+  if (this.state_.active_room_entity !== undefined) {
+    this.remove_room_();
+    return;
+  }
+
+  if (this.state_.active_tree_entity !== undefined) {
+    this.remove_tree_();
+  }
+};
+
+/**
  * Remove the currently active surface.
  */
 beestat.component.floor_plan.prototype.remove_surface_ = function() {
@@ -1026,6 +1065,10 @@ beestat.component.floor_plan.prototype.remove_surface_ = function() {
  * @param {object} tree Optional tree to copy from.
  */
 beestat.component.floor_plan.prototype.add_tree_ = function(tree) {
+  if (beestat.user.has_early_access() !== true) {
+    return;
+  }
+
   const tree_group = this.get_tree_group_();
   if (tree_group === undefined || this.state_.active_group !== tree_group) {
     return;

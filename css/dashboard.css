@@ -434,6 +434,7 @@ input[type=range]::-moz-range-thumb {
 .icon.bell:before { content: "\F009A"; }
 .icon.bell_off:before { content: "\F009B"; }
 .icon.border_none_variant:before { content: "\F08A4"; }
+.icon.texture_box:before { content: "\F0FE6"; }
 .icon.bullhorn:before { content: "\F00E6"; }
 .icon.calendar:before { content: "\F00ED"; }
 .icon.calendar_alert:before { content: "\F0A31"; }
