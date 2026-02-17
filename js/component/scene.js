@@ -110,7 +110,7 @@ beestat.component.scene.room_floor_thickness = 6;
  *
  * @type {number}
  */
-beestat.component.scene.surface_z_lift = 0.25;
+beestat.component.scene.surface_z_lift = 0.75;
 
 /**
  * Default number of decorative trees to place around the environment.
@@ -1292,7 +1292,9 @@ beestat.component.scene.prototype.update_sun_path_arc_ = function(date, latitude
     const sample_date = new Date(start_ms + (end_ms - start_ms) * t);
 
     const sun_pos = SunCalc.getPosition(sample_date, latitude, longitude);
-    const rotated_azimuth = sun_pos.azimuth - rotation_radians;
+    // Convert SunCalc azimuth (south-origin, west-positive) to a north-origin,
+    // clockwise bearing, then apply floor-plan north rotation.
+    const rotated_azimuth = sun_pos.azimuth + Math.PI + rotation_radians;
 
     // Extend slightly below horizon so the path doesn't hard-stop at horizon.
     if (sun_pos.altitude > -0.22) {
@@ -1355,7 +1357,9 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   // Sun
   const sun_pos = SunCalc.getPosition(js_date, latitude, longitude);
-  const rotated_sun_azimuth = sun_pos.azimuth - rotation_radians;
+  // Convert SunCalc azimuth (south-origin, west-positive) to a north-origin,
+  // clockwise bearing, then apply floor-plan north rotation.
+  const rotated_sun_azimuth = sun_pos.azimuth + Math.PI + rotation_radians;
   this.sun_light_.position.set(
     sun_distance * Math.cos(sun_pos.altitude) * Math.sin(rotated_sun_azimuth),   // East-West
     sun_distance * Math.sin(sun_pos.altitude),                                // Up-Down (altitude)
@@ -1384,7 +1388,8 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
-  const rotated_moon_azimuth = moon_pos.azimuth - rotation_radians;
+  // Keep moon conversion consistent with the sun conversion.
+  const rotated_moon_azimuth = moon_pos.azimuth + Math.PI + rotation_radians;
   const moon_illumination = SunCalc.getMoonIllumination(js_date);
   const moon_fraction = moon_illumination.fraction;
   const moon_phase = moon_illumination.phase;
