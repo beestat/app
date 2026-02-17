@@ -1170,7 +1170,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   tile_group.render($(this.toolbar_container_));
 
   if (show_environment === true && this.weather_menu_open_ === true) {
-    const weather_tile_element = this.toolbar_container_.querySelector('[title=\"Weather Menu\"]');
+    const weather_tile_element = this.toolbar_container_.querySelector('[title=\"Weather\"]');
     if (weather_tile_element !== null) {
       const toolbar_rect = this.toolbar_container_.getBoundingClientRect();
       const weather_tile_rect = weather_tile_element.getBoundingClientRect();

@@ -23,7 +23,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/lib/suncalc/suncalc.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/clipper/clipper.js"></script>' . PHP_EOL;
   echo '<script src="/js/lib/polylabel/polylabel.js"></script>' . PHP_EOL;
-  echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js"></script>' . PHP_EOL;
+  echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
 
   // Beestat
   echo '<script src="/js/beestat.js"></script>' . PHP_EOL;
@@ -197,7 +197,8 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/metric/property/square_feet.js"></script>' . PHP_EOL;
 }
 else {
-  echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js"></script>' . PHP_EOL;
+  echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
   echo '<script src="/js/beestat.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
 }
+
 
