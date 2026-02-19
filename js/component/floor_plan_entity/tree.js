@@ -209,6 +209,9 @@ beestat.component.floor_plan_entity.tree.prototype.set_active = function(active)
       if (this.state_.active_surface_entity !== undefined) {
         this.state_.active_surface_entity.set_active(false);
       }
+      if (this.state_.active_opening_entity !== undefined) {
+        this.state_.active_opening_entity.set_active(false);
+      }
 
       this.state_.active_tree_entity = this;
       this.dispatchEvent('activate');

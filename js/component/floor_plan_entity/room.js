@@ -256,6 +256,10 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
     this.state_.active_surface_entity.set_active(false);
     this.floor_plan_.update_toolbar();
   }
+  if (this.state_.active_opening_entity !== undefined) {
+    this.state_.active_opening_entity.set_active(false);
+    this.floor_plan_.update_toolbar();
+  }
 
   if (active !== this.active_) {
     this.active_ = active;

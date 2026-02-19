@@ -113,6 +113,10 @@ beestat.component.floor_plan_entity.surface.prototype.set_active = function(acti
     this.state_.active_tree_entity.set_active(false);
     this.floor_plan_.update_toolbar();
   }
+  if (this.state_.active_opening_entity !== undefined) {
+    this.state_.active_opening_entity.set_active(false);
+    this.floor_plan_.update_toolbar();
+  }
 
   if (active !== this.active_) {
     this.active_ = active;

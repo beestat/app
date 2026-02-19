@@ -82,6 +82,9 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
     if (group.trees === undefined) {
       group.trees = [];
     }
+    if (group.openings === undefined) {
+      group.openings = [];
+    }
 
     group.rooms.forEach(function(room) {
       if (room.room_id === undefined) {
@@ -119,6 +122,28 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       delete tree.editor_visible;
       if (tree.editor_locked === undefined) {
         tree.editor_locked = false;
+      }
+    });
+
+    group.openings.forEach(function(opening) {
+      if (opening.opening_id === undefined) {
+        opening.opening_id = window.crypto.randomUUID();
+      }
+      if (opening.editor_hidden === undefined) {
+        opening.editor_hidden = opening.editor_visible === false;
+      }
+      delete opening.editor_visible;
+      if (opening.editor_locked === undefined) {
+        opening.editor_locked = false;
+      }
+      if (['empty', 'door', 'window'].includes(opening.type) !== true) {
+        opening.type = 'empty';
+      }
+      if (opening.width === undefined) {
+        opening.width = 36;
+      }
+      if (opening.height === undefined) {
+        opening.height = 80;
       }
     });
   });
@@ -417,6 +442,14 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.update_floor_plan_();
     self.rerender();
   });
+  this.floor_plan_.addEventListener('add_opening', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
+  this.floor_plan_.addEventListener('remove_opening', function() {
+    self.update_floor_plan_();
+    self.rerender();
+  });
   this.floor_plan_.addEventListener('undo', function() {
     self.update_floor_plan_();
     self.rerender();
@@ -430,7 +463,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   this.entity_index_ = {
     'rooms': {},
     'surfaces': {},
-    'trees': {}
+    'trees': {},
+    'openings': {}
   };
 
   const on_entity_update = function() {
@@ -483,6 +517,17 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
         .set_surface(surface)
         .set_group(self.state_.active_group);
       surface_entity.render(self.floor_plan_.get_g());
+    });
+    (group_below.openings || []).slice().reverse().forEach(function(opening) {
+      if (opening.editor_hidden === true) {
+        return;
+      }
+
+      const opening_entity = new beestat.component.floor_plan_entity.opening(self.floor_plan_, self.state_)
+        .set_enabled(false)
+        .set_opening(opening)
+        .set_group(self.state_.active_group);
+      opening_entity.render(self.floor_plan_.get_g());
     });
   }
 
@@ -571,6 +616,42 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     this.state_.active_surface_entity.render(this.floor_plan_.get_g());
   }
 
+  // Loop over openings in this group and add them.
+  let active_opening_entity;
+  (this.state_.active_group.openings || []).slice().reverse().forEach(function(opening) {
+    if (opening.editor_hidden === true) {
+      return;
+    }
+
+    const opening_entity = new beestat.component.floor_plan_entity.opening(self.floor_plan_, self.state_)
+      .set_enabled(opening.editor_locked !== true)
+      .set_opening(opening)
+      .set_group(self.state_.active_group);
+
+    opening_entity.addEventListener('update', on_entity_update);
+    opening_entity.addEventListener('activate', on_entity_activate);
+    opening_entity.addEventListener('inactivate', on_entity_inactivate);
+
+    if (
+      self.state_.active_opening_entity !== undefined &&
+      opening.opening_id === self.state_.active_opening_entity.get_opening().opening_id
+    ) {
+      delete self.state_.active_opening_entity;
+      active_opening_entity = opening_entity;
+    }
+
+    opening_entity.render(self.floor_plan_.get_g());
+    self.entity_index_.openings[opening.opening_id] = opening_entity;
+  });
+
+  if (active_opening_entity !== undefined) {
+    active_opening_entity.set_active(true);
+  }
+
+  if (this.state_.active_opening_entity !== undefined) {
+    this.state_.active_opening_entity.render(this.floor_plan_.get_g());
+  }
+
   // Trees are only editable on the first floor.
   const tree_group = this.floor_plan_.get_tree_group_();
   if (tree_group === this.state_.active_group) {
@@ -632,11 +713,16 @@ beestat.component.card.floor_plan_editor.prototype.update_layers_sidebar_ = func
  * Select an object from the layers sidebar.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {string} object_id
  */
 beestat.component.card.floor_plan_editor.prototype.select_layer_object_ = function(group, type, object_id) {
-  const normalized_type = type === 'room' ? 'rooms' : type;
+  let normalized_type = type;
+  if (normalized_type === 'room') {
+    normalized_type = 'rooms';
+  } else if (normalized_type === 'opening') {
+    normalized_type = 'openings';
+  }
   const object = this.get_layer_object_by_id_(group, normalized_type, object_id);
   const is_active_group = (
     this.state_.active_group !== undefined &&
@@ -670,7 +756,7 @@ beestat.component.card.floor_plan_editor.prototype.select_layer_object_ = functi
  * Set an object's editor visibility.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {string} object_id
  * @param {boolean} visible
  */
@@ -703,6 +789,13 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_visibility_ 
     ) {
       this.state_.active_tree_entity.set_active(false);
     }
+    if (
+      type === 'openings' &&
+      this.state_.active_opening_entity !== undefined &&
+      this.state_.active_opening_entity.get_opening().opening_id === object_id
+    ) {
+      this.state_.active_opening_entity.set_active(false);
+    }
   }
 
   this.floor_plan_.update_infobox();
@@ -716,7 +809,7 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_visibility_ 
  * Set an object's editor lock.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {string} object_id
  * @param {boolean} locked
  */
@@ -750,6 +843,13 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_locked_ = fu
     ) {
       this.state_.active_tree_entity.set_active(false);
     }
+    if (
+      type === 'openings' &&
+      this.state_.active_opening_entity !== undefined &&
+      this.state_.active_opening_entity.get_opening().opening_id === object_id
+    ) {
+      this.state_.active_opening_entity.set_active(false);
+    }
   }
 
   this.floor_plan_.update_infobox();
@@ -763,7 +863,7 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_locked_ = fu
  * Lock or unlock all objects in a layer type.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {boolean} locked
  */
 beestat.component.card.floor_plan_editor.prototype.set_layer_locked_ = function(group, type, locked) {
@@ -783,7 +883,7 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_locked_ = function(
  * Hide or show all objects in a type layer.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {boolean} visible
  */
 beestat.component.card.floor_plan_editor.prototype.set_layer_visible_ = function(group, type, visible) {
@@ -806,7 +906,7 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_visible_ = function
  * @param {boolean} locked
  */
 beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(group, locked) {
-  ['rooms', 'surfaces', 'trees'].forEach(function(type) {
+  ['rooms', 'surfaces', 'openings', 'trees'].forEach(function(type) {
     const collection = group[type] || [];
     collection.forEach(function(object) {
       object.editor_locked = locked;
@@ -816,6 +916,7 @@ beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(
   if (locked === true) {
     this.deactivate_active_entity_for_group_type_(group, 'rooms');
     this.deactivate_active_entity_for_group_type_(group, 'surfaces');
+    this.deactivate_active_entity_for_group_type_(group, 'openings');
     this.deactivate_active_entity_for_group_type_(group, 'trees');
   }
 
@@ -829,7 +930,7 @@ beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(
  * @param {boolean} visible
  */
 beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function(group, visible) {
-  ['rooms', 'surfaces', 'trees'].forEach(function(type) {
+  ['rooms', 'surfaces', 'openings', 'trees'].forEach(function(type) {
     const collection = group[type] || [];
     collection.forEach(function(object) {
       object.editor_hidden = visible !== true;
@@ -839,6 +940,7 @@ beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function
   if (visible !== true) {
     this.deactivate_active_entity_for_group_type_(group, 'rooms');
     this.deactivate_active_entity_for_group_type_(group, 'surfaces');
+    this.deactivate_active_entity_for_group_type_(group, 'openings');
     this.deactivate_active_entity_for_group_type_(group, 'trees');
   }
 
@@ -849,7 +951,7 @@ beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function
  * Deactivate active entity if it belongs to the specified group/type.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  */
 beestat.component.card.floor_plan_editor.prototype.deactivate_active_entity_for_group_type_ = function(group, type) {
   if (type === 'rooms' && this.state_.active_room_entity !== undefined) {
@@ -869,6 +971,13 @@ beestat.component.card.floor_plan_editor.prototype.deactivate_active_entity_for_
   if (type === 'trees' && this.state_.active_tree_entity !== undefined) {
     if (this.state_.active_tree_entity.group_ === group) {
       this.state_.active_tree_entity.set_active(false);
+    }
+    return;
+  }
+
+  if (type === 'openings' && this.state_.active_opening_entity !== undefined) {
+    if (this.state_.active_opening_entity.group_ === group) {
+      this.state_.active_opening_entity.set_active(false);
     }
   }
 };
@@ -957,6 +1066,16 @@ beestat.component.card.floor_plan_editor.prototype.ensure_active_entity_visibili
   ) {
     delete this.state_.active_tree_entity;
   }
+
+  if (
+    this.state_.active_opening_entity !== undefined &&
+    (
+      this.state_.active_opening_entity.get_opening().editor_hidden === true ||
+      this.state_.active_opening_entity.get_opening().editor_locked === true
+    )
+  ) {
+    delete this.state_.active_opening_entity;
+  }
 };
 
 /**
@@ -1003,6 +1122,9 @@ beestat.component.card.floor_plan_editor.prototype.get_layer_object_id_key_ = fu
   if (type === 'surfaces') {
     return 'surface_id';
   }
+  if (type === 'openings') {
+    return 'opening_id';
+  }
   return 'tree_id';
 };
 
@@ -1010,7 +1132,7 @@ beestat.component.card.floor_plan_editor.prototype.get_layer_object_id_key_ = fu
  * Get object by id from a group/type.
  *
  * @param {object} group
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees
  * @param {string} object_id
  *
  * @return {object|undefined}
@@ -1036,6 +1158,8 @@ beestat.component.card.floor_plan_editor.prototype.expand_layers_for_active_enti
   let type;
   if (this.state_.active_tree_entity !== undefined) {
     type = 'trees';
+  } else if (this.state_.active_opening_entity !== undefined) {
+    type = 'openings';
   } else if (this.state_.active_surface_entity !== undefined) {
     type = 'surfaces';
   } else if (this.state_.active_room_entity !== undefined) {
@@ -1063,6 +1187,9 @@ beestat.component.card.floor_plan_editor.prototype.scroll_layers_to_active_entit
   if (this.state_.active_tree_entity !== undefined) {
     type = 'trees';
     object_id = this.state_.active_tree_entity.get_tree().tree_id;
+  } else if (this.state_.active_opening_entity !== undefined) {
+    type = 'openings';
+    object_id = this.state_.active_opening_entity.get_opening().opening_id;
   } else if (this.state_.active_surface_entity !== undefined) {
     type = 'surfaces';
     object_id = this.state_.active_surface_entity.get_surface().surface_id;
@@ -1117,6 +1244,12 @@ beestat.component.card.floor_plan_editor.prototype.restore_entity_draw_order_ = 
     'surface_id'
   );
 
+  append_entities_in_order(
+    this.state_.active_group.openings || [],
+    this.entity_index_.openings || {},
+    'opening_id'
+  );
+
   const tree_group = this.floor_plan_.get_tree_group_();
   if (tree_group === this.state_.active_group) {
     append_entities_in_order(
@@ -1135,6 +1268,8 @@ beestat.component.card.floor_plan_editor.prototype.restore_entity_draw_order_ = 
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_ = function(parent) {
   if (this.state_.active_tree_entity !== undefined) {
     this.decorate_info_pane_tree_(parent);
+  } else if (this.state_.active_opening_entity !== undefined) {
+    this.decorate_info_pane_opening_(parent);
   } else if (this.state_.active_surface_entity !== undefined) {
     this.decorate_info_pane_surface_(parent);
   } else if (this.state_.active_room_entity !== undefined) {
@@ -1639,6 +1774,155 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
       self.update_floor_plan_();
     } else {
       height_input.set_value('', false);
+    }
+  });
+};
+
+/**
+ * Decorate the info pane for an opening.
+ *
+ * @param {rocket.Elements} parent
+ */
+beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ = function(parent) {
+  const self = this;
+  const opening = this.state_.active_opening_entity.get_opening();
+
+  const grid = $.createElement('div')
+    .style({
+      'display': 'grid',
+      'grid-template-columns': 'repeat(auto-fit, minmax(150px, 1fr))',
+      'column-gap': beestat.style.size.gutter
+    });
+  parent.appendChild(grid);
+
+  let div;
+
+  // Name
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const name_input = new beestat.component.input.text()
+    .set_label('Opening Name')
+    .set_placeholder('Unnamed Opening')
+    .set_width('100%')
+    .set_maxlength(50)
+    .render(div);
+
+  if (opening.name !== undefined) {
+    name_input.set_value(opening.name);
+  }
+
+  name_input.addEventListener('input', function() {
+    opening.name = name_input.get_value();
+    self.update_layers_sidebar_();
+  });
+  name_input.addEventListener('change', function() {
+    opening.name = name_input.get_value();
+    self.update_floor_plan_();
+    self.update_layers_sidebar_();
+  });
+
+  // Type
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const type_input = new beestat.component.input.select()
+    .set_label('Type')
+    .set_width('100%')
+    .add_option({'label': 'Empty', 'value': 'empty'})
+    .add_option({'label': 'Door', 'value': 'door'})
+    .add_option({'label': 'Window', 'value': 'window'})
+    .render(div);
+
+  type_input.set_value(['empty', 'door', 'window'].includes(opening.type) ? opening.type : 'empty');
+  type_input.addEventListener('change', function() {
+    opening.type = type_input.get_value();
+    self.update_floor_plan_();
+    self.rerender();
+  });
+
+  // Width
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const width_input = new beestat.component.input.text()
+    .set_label('Width (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': opening.width || 0,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': opening.width || 0,
+      'round': 2
+    }) || '')
+    .set_width('100%')
+    .set_maxlength(5)
+    .set_requirements({
+      'type': 'decimal',
+      'min_value': beestat.distance(1),
+      'required': true
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
+    .render(div);
+
+  width_input.addEventListener('change', function() {
+    if (width_input.meets_requirements() === true) {
+      opening.width = beestat.distance({
+        'distance': width_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+      self.update_floor_plan_();
+      self.rerender();
+    } else {
+      width_input.set_value(beestat.distance({
+        'distance': opening.width || 0,
+        'round': 2
+      }) || '', false);
+    }
+  });
+
+  // Height
+  div = $.createElement('div');
+  grid.appendChild(div);
+  const height_input = new beestat.component.input.text()
+    .set_label('Height (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': opening.height || 0,
+      'round': 2
+    }))
+    .set_value(beestat.distance({
+      'distance': opening.height || 0,
+      'round': 2
+    }) || '')
+    .set_width('100%')
+    .set_maxlength(5)
+    .set_requirements({
+      'type': 'decimal',
+      'min_value': beestat.distance(1),
+      'required': true
+    })
+    .set_transform({
+      'type': 'round',
+      'decimals': 2
+    })
+    .render(div);
+
+  height_input.addEventListener('change', function() {
+    if (height_input.meets_requirements() === true) {
+      opening.height = beestat.distance({
+        'distance': height_input.get_value(),
+        'input_distance_unit': beestat.setting('units.distance'),
+        'output_distance_unit': 'in',
+        'round': 2
+      });
+      self.update_floor_plan_();
+    } else {
+      height_input.set_value(beestat.distance({
+        'distance': opening.height || 0,
+        'round': 2
+      }) || '', false);
     }
   });
 };

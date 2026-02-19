@@ -130,7 +130,8 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         if (
           self.state_.active_room_entity !== undefined ||
           self.state_.active_surface_entity !== undefined ||
-          self.state_.active_tree_entity !== undefined
+          self.state_.active_tree_entity !== undefined ||
+          self.state_.active_opening_entity !== undefined
         ) {
           self.clear_room_();
         }
@@ -151,6 +152,10 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (e.key.toLowerCase() === 't') {
         if (e.ctrlKey === false && self.has_early_access_() === true) {
           self.add_tree_();
+        }
+      } else if (e.key.toLowerCase() === 'o') {
+        if (e.ctrlKey === false) {
+          self.add_opening_();
         }
       } else if (e.key.toLowerCase() === 's') {
         self.toggle_snapping_();
@@ -225,6 +230,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         const entity =
           self.state_.active_point_entity ||
           self.state_.active_wall_entity ||
+          self.state_.active_opening_entity ||
           self.state_.active_surface_entity ||
           self.state_.active_room_entity ||
           self.state_.active_tree_entity;
@@ -510,6 +516,18 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     })
   );
 
+  // Add opening
+  this.tile_group_.add_tile(new beestat.component.tile()
+    .set_icon('window_closed_variant')
+    .set_title('Add Opening [O]')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      self.add_opening_();
+    })
+  );
+
   if (this.has_early_access_() === true) {
     // Add surface
     this.tile_group_.add_tile(new beestat.component.tile()
@@ -550,7 +568,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     }
   }
 
-  // Remove selected room, surface, or tree
+  // Remove selected room, opening, surface, or tree
   const remove_button = new beestat.component.tile()
     .set_icon('card_remove_outline')
     .set_title('Remove [Delete]')
@@ -559,6 +577,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
 
   if (
     this.state_.active_room_entity !== undefined ||
+    this.state_.active_opening_entity !== undefined ||
     this.state_.active_surface_entity !== undefined ||
     this.state_.active_tree_entity !== undefined
   ) {
@@ -800,6 +819,17 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
         'units': true
       })
     );
+  } else if (this.state_.active_opening_entity !== undefined) {
+    const opening = this.state_.active_opening_entity.get_opening();
+    parts.push('Opening');
+    parts.push((opening.type || 'empty').toUpperCase());
+    parts.push(
+      beestat.distance({
+        'distance': opening.width || 0,
+        'units': true,
+        'round': 0
+      }) + ' w'
+    );
   } else {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
     parts.push(
@@ -1016,9 +1046,14 @@ beestat.component.floor_plan.prototype.remove_room_ = function() {
 };
 
 /**
- * Remove the currently active selectable entity (surface, room, or tree).
+ * Remove the currently active selectable entity (surface, room, opening, or tree).
  */
 beestat.component.floor_plan.prototype.remove_active_entity_ = function() {
+  if (this.state_.active_opening_entity !== undefined) {
+    this.remove_opening_();
+    return;
+  }
+
   if (this.state_.active_surface_entity !== undefined) {
     this.remove_surface_();
     return;
@@ -1061,6 +1096,9 @@ beestat.component.floor_plan.prototype.set_active_group = function(group) {
   if (this.state_.active_tree_entity !== undefined) {
     this.state_.active_tree_entity.set_active(false);
   }
+  if (this.state_.active_opening_entity !== undefined) {
+    this.state_.active_opening_entity.set_active(false);
+  }
 
   this.state_.active_group = group;
   this.dispatchEvent('change_group');
@@ -1102,6 +1140,71 @@ beestat.component.floor_plan.prototype.remove_surface_ = function() {
   this.state_.active_group.surfaces.splice(index, 1);
 
   this.dispatchEvent('remove_surface');
+};
+
+/**
+ * Add a new opening.
+ *
+ * @param {object} opening Optional opening to copy from.
+ */
+beestat.component.floor_plan.prototype.add_opening_ = function(opening) {
+  this.save_buffer();
+
+  if (this.state_.active_group.openings === undefined) {
+    this.state_.active_group.openings = [];
+  }
+
+  const svg_view_box = this.view_box_;
+  const width = Math.max(12, Number((opening || {}).width || 36));
+  const height = Math.max(1, Number((opening || {}).height || 80));
+
+  const new_opening = {
+    'opening_id': window.crypto.randomUUID(),
+    'x': Number((opening || {}).x || (svg_view_box.x + (svg_view_box.width / 2))),
+    'y': Number((opening || {}).y || (svg_view_box.y + (svg_view_box.height / 2))),
+    'width': width,
+    'height': height,
+    'type': ['empty', 'door', 'window'].includes((opening || {}).type) ? opening.type : 'empty',
+    'name': (opening || {}).name,
+    'editor_hidden': false,
+    'editor_locked': false
+  };
+
+  this.state_.active_group.openings.unshift(new_opening);
+  new beestat.component.floor_plan_entity.opening(this, this.state_)
+    .set_opening(new_opening)
+    .set_group(this.state_.active_group)
+    .set_active(true);
+
+  this.dispatchEvent('add_opening');
+};
+
+/**
+ * Remove the currently active opening.
+ */
+beestat.component.floor_plan.prototype.remove_opening_ = function() {
+  this.save_buffer();
+
+  if (
+    this.state_.active_opening_entity === undefined ||
+    this.state_.active_group.openings === undefined
+  ) {
+    return;
+  }
+
+  const self = this;
+  const index = this.state_.active_group.openings.findIndex(function(opening) {
+    return opening === self.state_.active_opening_entity.get_opening();
+  });
+
+  if (index === -1) {
+    return;
+  }
+
+  this.state_.active_opening_entity.set_active(false);
+  this.state_.active_group.openings.splice(index, 1);
+
+  this.dispatchEvent('remove_opening');
 };
 
 /**
@@ -1211,6 +1314,9 @@ beestat.component.floor_plan.prototype.clear_room_ = function() {
   }
   if (this.state_.active_point_entity !== undefined) {
     this.state_.active_point_entity.set_active(false);
+  }
+  if (this.state_.active_opening_entity !== undefined) {
+    this.state_.active_opening_entity.set_active(false);
   }
 };
 
@@ -1474,6 +1580,7 @@ beestat.component.floor_plan.prototype.save_buffer = function(clear = true) {
     'active_room_entity': this.state_.active_room_entity,
     'active_surface_entity': this.state_.active_surface_entity,
     'active_tree_entity': this.state_.active_tree_entity,
+    'active_opening_entity': this.state_.active_opening_entity,
     'active_group_id': this.state_.active_group.group_id
   });
 
@@ -1523,6 +1630,8 @@ beestat.component.floor_plan.prototype.undo_ = function() {
       this.state_.buffer[this.state_.buffer_pointer].active_surface_entity;
     this.state_.active_tree_entity =
       this.state_.buffer[this.state_.buffer_pointer].active_tree_entity;
+    this.state_.active_opening_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_opening_entity;
 
     // Restore any active group.
     this.state_.active_group_id =
@@ -1572,6 +1681,8 @@ beestat.component.floor_plan.prototype.redo_ = function() {
       this.state_.buffer[this.state_.buffer_pointer].active_surface_entity;
     this.state_.active_tree_entity =
       this.state_.buffer[this.state_.buffer_pointer].active_tree_entity;
+    this.state_.active_opening_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_opening_entity;
 
     // Restore any active group.
     this.state_.active_group_id =
@@ -1600,3 +1711,5 @@ beestat.component.floor_plan.prototype.can_redo_ = function() {
   return this.state_.buffer !== undefined &&
     this.state_.buffer_pointer + 1 < this.state_.buffer.length;
 };
+
+

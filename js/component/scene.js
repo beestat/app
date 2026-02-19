@@ -508,7 +508,9 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'moon_light_helper': false,
     'watcher': false,
     'roof_edges': false,
-    'straight_skeleton': false
+    'straight_skeleton': false,
+    'openings': true,
+    'opening_cutters': false
   };
 
   this.width_ = this.state_.scene_width || 800;
@@ -2138,6 +2140,8 @@ beestat.component.scene.prototype.add_walls_ = function(layer, group) {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.z = -wall_height - elevation;
       mesh.userData.is_wall = true;
+      mesh.userData.group_id = group.group_id;
+      mesh.userData.wall_cuttable = true;
       mesh.layers.set(beestat.component.scene.layer_visible);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
@@ -2145,6 +2149,206 @@ beestat.component.scene.prototype.add_walls_ = function(layer, group) {
       layer.add(mesh);
     }
   }
+};
+
+/**
+ * Build an opening cutter mesh for CSG subtraction.
+ *
+ * @param {object} group The floor plan group.
+ * @param {object} opening The opening.
+ * @return {?THREE.Mesh} Opening cutter mesh or null if opening is not cuttable.
+ */
+beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, opening) {
+  if (opening.editor_hidden === true) {
+    return null;
+  }
+
+  const width = Math.max(12, Number(opening.width || 0));
+  const height = Math.max(1, Number(opening.height || 0));
+  const wall_thickness = Number(beestat.component.scene.wall_thickness || 4);
+  const depth = Math.max(0.5, wall_thickness);
+  const elevation = Number(group.elevation || 0);
+
+  if (this.csg_cutter_material_ === undefined) {
+    this.csg_cutter_material_ = new THREE.MeshBasicMaterial({
+      'visible': false
+    });
+  }
+
+  const geometry = new THREE.BoxGeometry(width, depth, height);
+  const cutter = new THREE.Mesh(geometry, this.csg_cutter_material_);
+  cutter.position.set(
+    Number(opening.x || 0),
+    Number(opening.y || 0),
+    -elevation - (height / 2)
+  );
+  cutter.updateMatrix();
+  cutter.updateMatrixWorld(true);
+
+  return cutter;
+};
+
+/**
+ * Add a debug wireframe for an opening cutter.
+ *
+ * @param {THREE.Group} layer The debug layer.
+ * @param {THREE.Mesh} cutter The cutter mesh.
+ */
+beestat.component.scene.prototype.add_opening_cutter_debug_ = function(layer, cutter) {
+  const edges_geometry = new THREE.EdgesGeometry(cutter.geometry);
+  const wireframe = new THREE.LineSegments(
+    edges_geometry,
+    new THREE.LineBasicMaterial({
+      'color': 0xff7700
+    })
+  );
+  wireframe.position.copy(cutter.position);
+  wireframe.rotation.copy(cutter.rotation);
+  wireframe.scale.copy(cutter.scale);
+  wireframe.layers.set(beestat.component.scene.layer_visible);
+
+  layer.add(wireframe);
+};
+
+/**
+ * Subtract opening cutters from wall meshes.
+ *
+ * @param {THREE.Group} walls_layer The wall mesh layer.
+ * @param {object} floor_plan The floor plan data.
+ * @param {THREE.Group=} opening_cutter_debug_layer Optional debug cutter layer.
+ */
+beestat.component.scene.prototype.apply_opening_cuts_ = function(
+  walls_layer,
+  floor_plan,
+  opening_cutter_debug_layer
+) {
+  if (window.CSG === undefined || typeof window.CSG.subtract !== 'function') {
+    return;
+  }
+
+  const wall_meshes = walls_layer.children.filter(function(child) {
+    return (
+      child !== undefined &&
+      child.type === 'Mesh' &&
+      child.userData !== undefined &&
+      child.userData.wall_cuttable === true
+    );
+  });
+
+  floor_plan.data.groups.forEach(function(group) {
+    const openings = group.openings || [];
+    if (openings.length === 0) {
+      return;
+    }
+
+    const group_wall_meshes = wall_meshes.filter(function(mesh) {
+      return mesh.userData.group_id === group.group_id;
+    });
+    if (group_wall_meshes.length === 0) {
+      return;
+    }
+
+    openings.forEach((opening) => {
+      const cutter = this.build_opening_cutter_mesh_(group, opening);
+      if (cutter === null) {
+        return;
+      }
+
+      if (opening_cutter_debug_layer !== undefined) {
+        this.add_opening_cutter_debug_(opening_cutter_debug_layer, cutter);
+      }
+
+      const cutter_box = new THREE.Box3().setFromObject(cutter);
+
+      group_wall_meshes.forEach(function(wall_mesh) {
+        const wall_box = new THREE.Box3().setFromObject(wall_mesh);
+        if (wall_box.intersectsBox(cutter_box) !== true) {
+          return;
+        }
+
+        try {
+          wall_mesh.updateMatrix();
+          wall_mesh.updateMatrixWorld(true);
+
+          const result_mesh = window.CSG.subtract(wall_mesh, cutter);
+          if (
+            result_mesh === undefined ||
+            result_mesh.geometry === undefined ||
+            result_mesh.geometry.attributes === undefined ||
+            result_mesh.geometry.attributes.position === undefined ||
+            result_mesh.geometry.attributes.position.count === 0
+          ) {
+            return;
+          }
+
+          result_mesh.geometry.computeBoundingBox();
+          result_mesh.geometry.computeBoundingSphere();
+          result_mesh.geometry.computeVertexNormals();
+
+          const old_geometry = wall_mesh.geometry;
+          wall_mesh.geometry = result_mesh.geometry;
+          wall_mesh.castShadow = true;
+          wall_mesh.receiveShadow = true;
+          wall_mesh.layers.set(beestat.component.scene.layer_visible);
+          wall_mesh.updateMatrix();
+          wall_mesh.updateMatrixWorld(true);
+
+          if (old_geometry !== undefined) {
+            old_geometry.dispose();
+          }
+        } catch (error) {
+          // Keep original wall mesh if CSG subtraction fails.
+        }
+      });
+
+      cutter.geometry.dispose();
+    });
+  }, this);
+};
+
+/**
+ * Add red wireframe boxes to visualize opening placement in 3D.
+ *
+ * @param {THREE.Group} layer The layer to add opening debug to.
+ * @param {object} group The floor plan group.
+ */
+beestat.component.scene.prototype.add_openings_debug_ = function(layer, group) {
+  if (group.openings === undefined || group.openings.length === 0) {
+    return;
+  }
+
+  const wall_thickness = beestat.component.scene.wall_thickness;
+
+  group.openings.forEach(function(opening) {
+    if (opening.editor_hidden === true) {
+      return;
+    }
+
+    const width = Math.max(12, Number(opening.width || 0));
+    const height = Math.max(1, Number(opening.height || 0));
+    const elevation = group.elevation || 0;
+
+    const geometry = new THREE.BoxGeometry(
+      width,
+      wall_thickness,
+      height
+    );
+
+    const edges_geometry = new THREE.EdgesGeometry(geometry);
+    const wireframe = new THREE.LineSegments(
+      edges_geometry,
+      new THREE.LineBasicMaterial({
+        'color': 0xff0000
+      })
+    );
+
+    wireframe.position.x = Number(opening.x || 0);
+    wireframe.position.y = Number(opening.y || 0);
+    wireframe.position.z = -elevation - (height / 2);
+    wireframe.layers.set(beestat.component.scene.layer_visible);
+
+    layer.add(wireframe);
+  });
 };
 
 /**
@@ -2266,6 +2470,29 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     });
     self.add_walls_(walls_layer, group);
   });
+
+  let opening_cutter_debug_layer;
+  if (this.debug_.opening_cutters === true) {
+    opening_cutter_debug_layer = new THREE.Group();
+    this.floor_plan_group_.add(opening_cutter_debug_layer);
+    this.layers_['opening_cutters_debug'] = opening_cutter_debug_layer;
+  }
+
+  this.apply_opening_cuts_(
+    walls_layer,
+    floor_plan,
+    opening_cutter_debug_layer
+  );
+
+  if (this.debug_.openings === true) {
+    const openings_debug_layer = new THREE.Group();
+    this.floor_plan_group_.add(openings_debug_layer);
+    this.layers_['openings_debug'] = openings_debug_layer;
+
+    floor_plan.data.groups.forEach(function(group) {
+      self.add_openings_debug_(openings_debug_layer, group);
+    });
+  }
 
   // Add roofs using straight skeleton
   this.add_roofs_();
@@ -4644,6 +4871,9 @@ beestat.component.scene.prototype.dispose = function() {
   }
   if (this.star_texture_ !== undefined) {
     this.star_texture_.dispose();
+  }
+  if (this.csg_cutter_material_ !== undefined) {
+    this.csg_cutter_material_.dispose();
   }
 
   // Clean up THREE.js scene resources
