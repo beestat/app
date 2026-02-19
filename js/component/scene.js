@@ -3778,7 +3778,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     };
   };
   const branch_height_samples = [];
-  const recursive_depth_limit = 2;
+  const recursive_depth_limit = 1;
   const children_per_branch = 2;
   if (foliage_enabled === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
