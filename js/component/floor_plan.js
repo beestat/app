@@ -1139,7 +1139,7 @@ beestat.component.floor_plan.prototype.add_tree_ = function(tree) {
       'editor_locked': false
     };
   } else {
-    const tree_type = ['conical', 'round'].includes(tree.type)
+    const tree_type = ['conical', 'round', 'oval'].includes(tree.type)
       ? tree.type
       : 'round';
     new_tree = {

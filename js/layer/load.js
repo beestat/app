@@ -311,7 +311,7 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     if (window.location.href.indexOf('glenwood') !== -1) {
       (new beestat.layer.glenwood_enroll()).render();
     } else {
-      (new beestat.layer.detail()).render();
+      (new beestat.layer.visualize()).render();
     }
 
     beestat.ecobee.notify_if_down();

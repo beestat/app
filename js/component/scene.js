@@ -127,6 +127,59 @@ beestat.component.scene.environment_tree_count = 14;
 beestat.component.scene.environment_tree_foliage_enabled = true;
 
 /**
+ * Debug opacity for deciduous canopies when foliage is visible.
+ *
+ * @type {number}
+ */
+beestat.component.scene.debug_tree_canopy_opacity = 1;
+
+/**
+ * Keep deciduous branch meshes visible even when foliage is visible.
+ *
+ * @type {boolean}
+ */
+beestat.component.scene.debug_show_branches_with_foliage = true;
+
+/**
+ * Show red debug points used to generate deciduous canopy mesh.
+ *
+ * @type {boolean}
+ */
+beestat.component.scene.debug_tree_canopy_points_enabled = true;
+
+/**
+ * Radius of canopy debug points.
+ *
+ * @type {number}
+ */
+beestat.component.scene.debug_tree_canopy_points_radius = 1.8;
+
+/**
+ * Config for deciduous branch count scaling.
+ *
+ * Branch count grows with tree height using:
+ * `base_count * (height / reference_height) ^ height_exponent`
+ *
+ * @type {{round: {base_count: number, reference_height: number, height_exponent: number, min_count: number, max_count: number}, oval: {base_count: number, reference_height: number, height_exponent: number, min_count: number, max_count: number}}}
+ */
+beestat.component.scene.deciduous_branch_count_config = {
+  'round': {
+    'base_count': 18,
+    'reference_height': 120,
+    'height_exponent': 0.78,
+    'min_count': 10,
+    'max_count': 44
+  },
+  'oval': {
+    'base_count': 22,
+    'reference_height': 120,
+    'height_exponent': 0.82,
+    'min_count': 12,
+    'max_count': 52
+  }
+};
+
+/**
  * Seasonal foliage colors for deciduous trees.
  *
  * @type {{summer: number, fall_early: number, fall_late: number, winter: number}}
@@ -607,9 +660,9 @@ beestat.component.scene.prototype.add_camera_ = function() {
 beestat.component.scene.prototype.add_controls_ = function(parent) {
   this.controls_ = new THREE.OrbitControls(this.camera_, parent[0]);
   this.controls_.enableDamping = true;
-  this.controls_.enablePan = false;
+  this.controls_.enablePan = true;
   this.controls_.maxDistance = 1500;
-  this.controls_.minDistance = 400;
+  this.controls_.minDistance = 120;
   this.controls_.maxPolarAngle = Math.PI / 2.1;
 };
 
@@ -3534,7 +3587,105 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
 };
 
 /**
- * Create a low-poly round canopy tree using clustered foliage blobs.
+ * Get deciduous branch count from config with height-based scaling.
+ *
+ * @param {number} height Total tree height.
+ * @param {string} canopy_shape round|oval
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_deciduous_branch_count_ = function(height, canopy_shape = 'round') {
+  const config_map = beestat.component.scene.deciduous_branch_count_config || {};
+  const fallback = {
+    'base_count': 18,
+    'reference_height': 120,
+    'height_exponent': 0.78,
+    'min_count': 10,
+    'max_count': 44
+  };
+  const config = config_map[canopy_shape] || config_map.round || fallback;
+
+  const base_count = Math.max(1, Number(config.base_count || fallback.base_count));
+  const reference_height = Math.max(1, Number(config.reference_height || fallback.reference_height));
+  const height_exponent = Math.max(0.1, Number(config.height_exponent || fallback.height_exponent));
+  const min_count = Math.max(1, Number(config.min_count || fallback.min_count));
+  const max_count = Math.max(min_count, Number(config.max_count || fallback.max_count));
+  const normalized_height = Math.max(0.4, Number(height || reference_height) / reference_height);
+
+  const scaled = Math.round(base_count * Math.pow(normalized_height, height_exponent));
+  return Math.max(min_count, Math.min(max_count, scaled));
+};
+
+/**
+ * Get shape-specific normalized branch length factor f(x) for deciduous trees.
+ *
+ * `x` is normalized trunk height in [0, 1], where 0 = trunk base and 1 = top.
+ * Output is clamped to [0, 1]:
+ * - 0 means no branch length
+ * - 1 means max branch length (tree radius)
+ *
+ * Round trees are active from 50%-100% of trunk height.
+ * Oval trees are active from 30%-100% of trunk height.
+ *
+ * @param {number} trunk_ratio Normalized trunk height in [0, 1].
+ * @param {string} canopy_shape round|oval
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_deciduous_branch_length_factor_ = function(trunk_ratio, canopy_shape = 'round') {
+  const is_oval = canopy_shape === 'oval';
+  const x = Math.max(0, Math.min(1, Number(trunk_ratio || 0)));
+
+  const start = is_oval ? 0.3 : 0.5;
+  const end = 1.0;
+  if (x <= start || x >= end) {
+    return 0;
+  }
+  const u = (x - start) / (end - start); // Normalize into active range [0, 1]
+
+  let factor;
+  if (is_oval) {
+    // Oval equation:
+    // f(x) = 4u(1-u), u = (x-0.3)/0.7, x in [0.3, 1]
+    factor = 4 * u * (1 - u);
+  } else {
+    // Round equation:
+    // f(x) = sin(pi*u), u = (x-0.5)/0.5, x in [0.5, 1]
+    factor = Math.sin(Math.PI * u);
+  }
+
+  return Math.max(0, Math.min(1, Number.isFinite(factor) ? factor : 0));
+};
+
+/**
+ * Get shape-specific profile values for primary deciduous branch placement.
+ *
+ * @param {number} t Normalized branch sample index in [0, 1].
+ * @param {string} canopy_shape round|oval
+ *
+ * @return {{base_height_ratio: number, elevation_base_degrees: number, elevation_jitter_degrees: number}}
+ */
+beestat.component.scene.prototype.get_deciduous_primary_branch_profile_ = function(t, canopy_shape = 'round') {
+  const is_oval = canopy_shape === 'oval';
+  const clamped_t = Math.max(0, Math.min(1, Number(t || 0)));
+
+  if (is_oval) {
+    return {
+      'base_height_ratio': 0.3 + (clamped_t * 0.7),
+      'elevation_base_degrees': 12,
+      'elevation_jitter_degrees': 9
+    };
+  }
+
+  return {
+    'base_height_ratio': 0.5 + (clamped_t * 0.5),
+    'elevation_base_degrees': 16,
+    'elevation_jitter_degrees': 10
+  };
+};
+
+/**
+ * Create a low-poly round canopy tree scaffold (trunk + first-level branches).
  *
  * @param {number} height Total tree height.
  * @param {number} max_diameter Maximum canopy diameter.
@@ -3542,12 +3693,14 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
  *
  * @return {THREE.Group}
  */
-beestat.component.scene.prototype.create_round_tree_ = function(height, max_diameter, has_foliage) {
+beestat.component.scene.prototype.create_round_tree_ = function(height, max_diameter, has_foliage, canopy_shape = 'round') {
   const self = this;
   const tree = new THREE.Group();
   tree.userData.is_environment = true;
   tree.userData.is_tree = true;
+  const is_oval = canopy_shape === 'oval';
   const max_canopy_radius = Math.max(0.5, max_diameter / 2);
+  const foliage_enabled = has_foliage === true;
 
   const wood_material = new THREE.MeshStandardMaterial({
     'color': 0x6a4d2f,
@@ -3556,7 +3709,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'flatShading': true
   });
 
-  const trunk_height = height * 0.75;
+  const trunk_height = height;
   const trunk_radius_bottom = Math.max(1.5, trunk_height * 0.03);
   const trunk_stick = this.create_stick_mesh_({
     'height': trunk_height,
@@ -3566,8 +3719,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'control_count': 6,
     'max_drift': 8,
     'direction_jitter': 3,
-    'taper_start_ratio': 0.5,
-    'taper_max_ratio': 0.5,
+    'taper_start_ratio': 0.35,
+    'taper_max_ratio': 0.72,
     'material': wood_material
   });
   const trunk = trunk_stick.mesh;
@@ -3576,7 +3729,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x6a4d2f);
 
   // Single branch layer: starts halfway up trunk and thins/shortens toward the top.
-  const branch_count = 18;
+  const branch_count = this.get_deciduous_branch_count_(height, canopy_shape);
   const branches = new THREE.Group();
   branches.userData.is_environment = true;
   const branch_axis = new THREE.Vector3(0, 0, -1);
@@ -3586,7 +3739,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'color': 0x4f9f2f,
     'roughness': 0.82,
     'metalness': 0.0,
-    'flatShading': true
+    'flatShading': true,
+    'transparent': true,
+    'opacity': beestat.component.scene.debug_tree_canopy_opacity,
+    'depthWrite': false
   });
   const create_foliage_blob = function(radius, irregularity) {
     const geometry = new THREE.IcosahedronGeometry(radius, 1);
@@ -3601,7 +3757,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       const ny = y / len;
       const nz = z / len;
 
-      // Smooth directional warp: stays volumetric, avoids spiky "exploded" artifacts.
       const noise =
         (Math.sin((nx * 3.1) + (ny * 1.7)) * 0.45) +
         (Math.cos((ny * 2.8) - (nz * 2.1)) * 0.35) +
@@ -3620,16 +3775,86 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     foliage_mesh.userData.base_tree_foliage_color = foliage_mesh.material.color.getHex();
     return foliage_mesh;
   };
+  const create_canopy_from_primary_tips = function(primary_tips) {
+    if (Array.isArray(primary_tips) !== true || primary_tips.length < 4) {
+      return null;
+    }
+
+    const center = new THREE.Vector3();
+    for (let i = 0; i < primary_tips.length; i++) {
+      center.add(primary_tips[i]);
+    }
+    center.multiplyScalar(1 / primary_tips.length);
+
+    let max_distance = 0;
+    for (let i = 0; i < primary_tips.length; i++) {
+      const distance = primary_tips[i].distanceTo(center);
+      if (distance > max_distance) {
+        max_distance = distance;
+      }
+    }
+
+    const canopy_radius = Math.min(
+      max_canopy_radius,
+      Math.max(4, max_distance * 1.04)
+    );
+    const geometry = new THREE.IcosahedronGeometry(canopy_radius, 1);
+    const positions = geometry.attributes.position;
+    const irregularity = is_oval ? 0.14 : 0.18;
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const y = positions.getY(i);
+      const z = positions.getZ(i);
+      const len = Math.max(0.0001, Math.sqrt((x * x) + (y * y) + (z * z)));
+      const nx = x / len;
+      const ny = y / len;
+      const nz = z / len;
+      const noise =
+        (Math.sin((nx * 3.1) + (ny * 1.7)) * 0.45) +
+        (Math.cos((ny * 2.8) - (nz * 2.1)) * 0.35) +
+        (Math.sin((nz * 4.0) + (nx * 1.3)) * 0.2);
+      const distortion = 1 + (noise * irregularity);
+      positions.setXYZ(i, x * distortion, y * distortion, z * distortion);
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+
+    const canopy_mesh = new THREE.Mesh(geometry, foliage_material.clone());
+    canopy_mesh.position.copy(center);
+    if (is_oval) {
+      canopy_mesh.scale.set(
+        0.88 + (Math.random() * 0.16),
+        0.84 + (Math.random() * 0.14),
+        1.2 + (Math.random() * 0.2)
+      );
+    } else {
+      canopy_mesh.scale.set(
+        0.95 + (Math.random() * 0.16),
+        0.92 + (Math.random() * 0.16),
+        0.92 + (Math.random() * 0.16)
+      );
+    }
+    canopy_mesh.rotation.x = (Math.random() - 0.5) * 0.18;
+    canopy_mesh.rotation.y = (Math.random() - 0.5) * 0.18;
+    canopy_mesh.rotation.z = (Math.random() - 0.5) * 0.18;
+    canopy_mesh.userData.is_tree_foliage = true;
+    canopy_mesh.userData.base_tree_foliage_color = canopy_mesh.material.color.getHex();
+    return {
+      'mesh': canopy_mesh
+    };
+  };
   const branch_height_samples = [];
   const branch_tips = [];
-  const max_branch_depth = 2;
-  if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
+  const primary_branch_tips = [];
+  const max_branch_depth = 0;
+  if (foliage_enabled === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
   }
-  if (has_foliage === true && this.tree_branch_groups_ === undefined) {
+  if (foliage_enabled === true && this.tree_branch_groups_ === undefined) {
     this.tree_branch_groups_ = [];
   }
 
+  const azimuth_phase = Math.random() * Math.PI * 2;
   for (let i = 0; i < branch_count; i++) {
     const stratified = (i + 0.5) / branch_count;
     const jittered = stratified + ((Math.random() - 0.5) * 0.25 / branch_count);
@@ -3753,21 +3978,22 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
 
   for (let i = 0; i < branch_count; i++) {
     const t = branch_height_samples[i];
-    const base_height = trunk_height * (0.5 + (t * 0.45));
+    const profile = this.get_deciduous_primary_branch_profile_(t, canopy_shape);
+    const base_height = trunk_height * profile.base_height_ratio;
     const base_offset = this.sample_stick_curve_offset_(trunk_stick.curve, base_height);
-    // Scale branch length by both canopy diameter and total tree height so
-    // taller trees do not end up with disproportionately short limbs.
-    const height_to_diameter_ratio = height / Math.max(1, max_diameter);
-    const branch_height_scale = Math.max(0.75, Math.min(1.9, height_to_diameter_ratio / 1.4));
-    // Stronger nonlinear taper so upper branches are visibly shorter.
-    const vertical_taper = Math.pow(1 - t, 1.35);
-    const branch_length = Math.max(
-      4,
-      (max_diameter * (0.2 + (0.8 * vertical_taper))) * branch_height_scale
+    const branch_length_factor = this.get_deciduous_branch_length_factor_(
+      profile.base_height_ratio,
+      canopy_shape
     );
+    const branch_length = max_canopy_radius * branch_length_factor;
+    if (branch_length <= 0) {
+      continue;
+    }
     const branch_radius_bottom = Math.max(0.35, trunk_radius_bottom * (0.42 - (t * 0.26)));
-    const azimuth = ((i / branch_count) * Math.PI * 2) + ((Math.random() - 0.5) * 0.35);
-    const elevation = (Math.PI / 180) * (16 + (Math.random() * 10));
+    const azimuth = azimuth_phase + ((i / branch_count) * Math.PI * 2);
+    const elevation = (Math.PI / 180) * (
+      profile.elevation_base_degrees + (Math.random() * profile.elevation_jitter_degrees)
+    );
     const direction = new THREE.Vector3(
       Math.cos(azimuth) * Math.cos(elevation),
       Math.sin(azimuth) * Math.cos(elevation),
@@ -3779,49 +4005,102 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     if (primary_branch === null) {
       continue;
     }
-    branch_tips.push(get_stick_point_world(primary_branch, 1));
+    const primary_tip = get_stick_point_world(primary_branch, 1);
+    primary_branch_tips.push(primary_tip.clone());
+    branch_tips.push(primary_tip);
     add_sub_branches(primary_branch, 0);
   }
 
-    if (has_foliage === true) {
-    const core_height = trunk_height * 0.75;
-    const core_offset = this.sample_stick_curve_offset_(trunk_stick.curve, core_height);
-    const core_center = new THREE.Vector3(core_offset.x, core_offset.y, -core_height);
-    let coverage_radius = 0;
-    for (let i = 0; i < branch_tips.length; i++) {
-      const distance = branch_tips[i].distanceTo(core_center);
-      if (distance > coverage_radius) {
-        coverage_radius = distance;
+  if (foliage_enabled === true) {
+    if (beestat.component.scene.debug_tree_canopy_points_enabled === true) {
+      const debug_points_group = new THREE.Group();
+      debug_points_group.userData.is_environment = true;
+      const debug_point_geometry = new THREE.SphereGeometry(
+        beestat.component.scene.debug_tree_canopy_points_radius,
+        7,
+        6
+      );
+      const debug_point_material = new THREE.MeshBasicMaterial({
+        'color': 0xff3333
+      });
+
+      for (let i = 0; i < primary_branch_tips.length; i++) {
+        const marker = new THREE.Mesh(debug_point_geometry, debug_point_material);
+        marker.position.copy(primary_branch_tips[i]);
+        marker.userData.is_environment = true;
+        debug_points_group.add(marker);
       }
+
+      foliage.add(debug_points_group);
     }
-    const core_radius = Math.min(max_canopy_radius, Math.max(4, coverage_radius * 1.03));
-    const core_blob = create_foliage_blob(core_radius, 0.18);
-    core_blob.position.copy(core_center);
-    core_blob.scale.set(
-      1.0 + (Math.random() * 0.2),
-      0.95 + (Math.random() * 0.22),
-      0.9 + (Math.random() * 0.18)
-    );
-    core_blob.rotation.x = (Math.random() - 0.5) * 0.2;
-    core_blob.rotation.y = (Math.random() - 0.5) * 0.2;
-    core_blob.rotation.z = (Math.random() - 0.5) * 0.2;
-    core_blob.castShadow = true;
-    core_blob.receiveShadow = true;
-    core_blob.userData.is_environment = true;
-    foliage.add(core_blob);
-    this.tree_foliage_meshes_.push(core_blob);
+
+    let canopy_result = create_canopy_from_primary_tips(primary_branch_tips);
+    let canopy_mesh = canopy_result !== null ? canopy_result.mesh : null;
+    if (canopy_mesh === null) {
+      const core_height = trunk_height * (is_oval ? 0.66 : 0.75);
+      const core_offset = this.sample_stick_curve_offset_(trunk_stick.curve, core_height);
+      const core_center = new THREE.Vector3(core_offset.x, core_offset.y, -core_height);
+      let coverage_radius = 0;
+      for (let i = 0; i < branch_tips.length; i++) {
+        const distance = branch_tips[i].distanceTo(core_center);
+        if (distance > coverage_radius) {
+          coverage_radius = distance;
+        }
+      }
+      const core_radius = Math.min(max_canopy_radius, Math.max(4, coverage_radius * 1.03));
+      canopy_mesh = create_foliage_blob(core_radius, 0.18);
+      canopy_mesh.position.copy(core_center);
+      if (is_oval) {
+        canopy_mesh.scale.set(
+          0.84 + (Math.random() * 0.18),
+          0.8 + (Math.random() * 0.2),
+          1.2 + (Math.random() * 0.26)
+        );
+      } else {
+        canopy_mesh.scale.set(
+          1.0 + (Math.random() * 0.2),
+          0.95 + (Math.random() * 0.22),
+          0.9 + (Math.random() * 0.18)
+        );
+      }
+      canopy_mesh.rotation.x = (Math.random() - 0.5) * 0.2;
+      canopy_mesh.rotation.y = (Math.random() - 0.5) * 0.2;
+      canopy_mesh.rotation.z = (Math.random() - 0.5) * 0.2;
+    }
+    canopy_mesh.castShadow = true;
+    canopy_mesh.receiveShadow = true;
+    canopy_mesh.userData.is_environment = true;
+    foliage.add(canopy_mesh);
+    this.tree_foliage_meshes_.push(canopy_mesh);
   }
 
-  if (has_foliage === true) {
+  if (foliage_enabled === true) {
     this.tree_branch_groups_.push(branches);
   }
-  branches.visible = has_foliage !== true;
+  branches.visible = (
+    beestat.component.scene.debug_show_branches_with_foliage === true
+      ? true
+      : foliage_enabled !== true
+  );
   tree.add(branches);
-  if (has_foliage === true) {
+  if (foliage_enabled === true) {
     tree.add(foliage);
   }
 
   return tree;
+};
+
+/**
+ * Create a low-poly oval canopy tree.
+ *
+ * @param {number} height Total tree height.
+ * @param {number} max_diameter Maximum canopy diameter.
+ * @param {boolean} has_foliage Whether foliage should be rendered.
+ *
+ * @return {THREE.Group}
+ */
+beestat.component.scene.prototype.create_oval_tree_ = function(height, max_diameter, has_foliage) {
+  return this.create_round_tree_(height, max_diameter, has_foliage, 'oval');
 };
 
 /**
@@ -3884,8 +4163,9 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       }
       mesh.material.color.copy(state.color);
       mesh.userData.base_tree_foliage_color = state.color.getHex();
-      mesh.material.opacity = 1;
-      mesh.material.transparent = false;
+      mesh.material.opacity = beestat.component.scene.debug_tree_canopy_opacity;
+      mesh.material.transparent = true;
+      mesh.material.depthWrite = false;
       mesh.material.needsUpdate = true;
       mesh.visible = state.visible;
     }
@@ -3895,7 +4175,11 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
     for (let i = 0; i < this.tree_branch_groups_.length; i++) {
       const branch_group = this.tree_branch_groups_[i];
       if (branch_group !== undefined) {
-        branch_group.visible = state.visible !== true;
+        branch_group.visible = (
+          beestat.component.scene.debug_show_branches_with_foliage === true
+            ? true
+            : state.visible !== true
+        );
       }
     }
   }
@@ -3926,17 +4210,22 @@ beestat.component.scene.prototype.add_trees_ = function(ground_surface_z) {
   });
 
   trees.forEach(function(tree_data) {
-    const tree_type = tree_data.type === 'conical'
-      ? 'conical'
+    const tree_type = ['conical', 'round', 'oval'].includes(tree_data.type)
+      ? tree_data.type
       : 'round';
     const tree_height = Math.max(1, Number(tree_data.height || 0));
     const tree_diameter = Math.max(1, Number(tree_data.diameter || 0));
     const tree_x = Number(tree_data.x || 0);
     const tree_y = Number(tree_data.y || 0);
 
-    const tree = tree_type === 'conical'
-      ? this.create_pine_tree_(tree_height, tree_diameter, foliage_enabled)
-      : this.create_round_tree_(tree_height, tree_diameter, foliage_enabled);
+    let tree;
+    if (tree_type === 'conical') {
+      tree = this.create_pine_tree_(tree_height, tree_diameter, foliage_enabled);
+    } else if (tree_type === 'oval') {
+      tree = this.create_oval_tree_(tree_height, tree_diameter, foliage_enabled);
+    } else {
+      tree = this.create_round_tree_(tree_height, tree_diameter, foliage_enabled);
+    }
 
     tree.position.set(tree_x, tree_y, ground_surface_z);
     tree.rotation.z = 0;

@@ -372,10 +372,9 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.update_scene_();
   this.scene_.render($(parent));
 
-  // Get current time of day
-  const now = moment();
-  const current_hour = now.hour();
-  const current_minute = Math.floor(now.minute() / 5) * 5;
+  // Debug: lock initial time to noon for faster visual iteration.
+  const current_hour = 12;
+  const current_minute = 0;
 
   if (beestat.setting('visualize.range_type') === 'dynamic') {
     // Set the date, then apply current time of day

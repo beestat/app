@@ -1343,9 +1343,13 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = fu
       'label': format_tree_type('round'),
       'value': 'round'
     })
+    .add_option({
+      'label': format_tree_type('oval'),
+      'value': 'oval'
+    })
     .render(div);
 
-  type_input.set_value(['conical', 'round'].includes(tree.type) ? tree.type : 'round');
+  type_input.set_value(['conical', 'round', 'oval'].includes(tree.type) ? tree.type : 'round');
   type_input.addEventListener('change', function() {
     tree.type = type_input.get_value();
     self.update_floor_plan_();

@@ -129,7 +129,7 @@ beestat.component.floor_plan_entity.tree.prototype.set_tree = function(tree) {
   this.tree_.y = this.tree_.y || 0;
   this.tree_.height = this.tree_.height || 120;
   this.tree_.diameter = this.tree_.diameter || 72;
-  if (['conical', 'round'].includes(this.tree_.type) === false) {
+  if (['conical', 'round', 'oval'].includes(this.tree_.type) === false) {
     this.tree_.type = 'round';
   }
 
