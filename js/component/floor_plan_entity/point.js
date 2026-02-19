@@ -45,7 +45,7 @@ beestat.component.floor_plan_entity.point.prototype.decorate_rect_ = function(pa
 
   this.rect_.setAttribute('width', size);
   this.rect_.setAttribute('height', size);
-  this.rect_.style.stroke = '#ffffff';
+  this.rect_.style.stroke = beestat.style.color.gray.base;
   this.rect_.style.cursor = 'pointer';
 
   this.update_rect_();
@@ -77,14 +77,37 @@ beestat.component.floor_plan_entity.point.prototype.update_rect_ = function() {
   this.rect_.setAttribute('x', this.point_.x);
   this.rect_.setAttribute('y', this.point_.y);
 
+  const anchor_color = this.get_anchor_color_();
   if (
     this.active_ === true ||
     this.hover_ === true
   ) {
-    this.rect_.style.fill = beestat.style.color.green.base;
+    this.rect_.style.fill = anchor_color;
+    this.rect_.style.stroke = '#ffffff';
   } else {
-    this.rect_.style.fill = '#ffffff';
+    this.rect_.style.fill = beestat.style.color.gray.light;
+    this.rect_.style.stroke = beestat.style.color.gray.base;
   }
+};
+
+/**
+ * Get anchor color based on the parent entity type.
+ *
+ * @return {string}
+ */
+beestat.component.floor_plan_entity.point.prototype.get_anchor_color_ = function() {
+  if (
+    this.room_ !== undefined &&
+    typeof this.room_.get_surface === 'function'
+  ) {
+    const surface = this.room_.get_surface();
+    if (surface !== undefined && surface.color !== undefined) {
+      return surface.color;
+    }
+    return beestat.style.color.gray.dark;
+  }
+
+  return beestat.style.color.blue.base;
 };
 
 /**

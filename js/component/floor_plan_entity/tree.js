@@ -32,45 +32,34 @@ beestat.component.floor_plan_entity.tree.prototype.decorate_circle_ = function(p
   this.circle_ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   this.circle_.style.strokeWidth = '2';
   parent.appendChild(this.circle_);
+  const tree_fill = beestat.style.color.green.dark;
 
   if (this.active_ === true) {
     this.set_draggable_(true);
     this.circle_.style.cursor = 'pointer';
-    this.circle_.style.fillOpacity = '0.5';
-    this.circle_.style.fill = beestat.style.color.green.light;
+    this.circle_.style.fillOpacity = '0.65';
+    this.circle_.style.fill = tree_fill;
     this.circle_.style.stroke = '#ffffff';
-    this.circle_.style.filter = 'drop-shadow(3px 3px 3px #000000)';
+    this.circle_.style.filter = 'brightness(1.2)';
   } else if (this.enabled_ === true) {
     this.circle_.style.cursor = 'pointer';
     this.circle_.style.fillOpacity = '0.5';
-    this.circle_.style.fill = beestat.style.color.green.dark;
+    this.circle_.style.fill = tree_fill;
     this.circle_.style.stroke = beestat.style.color.gray.base;
+    this.circle_.style.filter = 'none';
   } else {
     this.circle_.style.cursor = 'default';
     this.circle_.style.fillOpacity = '0.2';
     this.circle_.style.fill = beestat.style.color.gray.base;
     this.circle_.style.stroke = beestat.style.color.gray.dark;
+    this.circle_.style.filter = 'none';
   }
 
   if (this.enabled_ === true) {
-    const mousedown_handler = function(e) {
-      self.mousedown_mouse_ = {
-        'x': e.clientX || e.touches[0].clientX,
-        'y': e.clientY || e.touches[0].clientY
-      };
-    };
-    this.circle_.addEventListener('mousedown', mousedown_handler);
-
-    const mouseup_handler = function(e) {
-      if (
-        self.mousedown_mouse_ !== undefined &&
-        (e.clientX || e.changedTouches[0].clientX) === self.mousedown_mouse_.x &&
-        (e.clientY || e.changedTouches[0].clientY) === self.mousedown_mouse_.y
-      ) {
-        self.set_active(true);
-      }
-    };
-    this.circle_.addEventListener('mouseup', mouseup_handler);
+    this.circle_.addEventListener('click', function(e) {
+      e.stopPropagation();
+      self.set_active(true);
+    });
   }
 
   this.update_circle_();
@@ -86,18 +75,20 @@ beestat.component.floor_plan_entity.tree.prototype.decorate_handle_ = function(p
 
   this.handle_ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   this.handle_.setAttribute('r', 4);
-  this.handle_.style.fill = '#ffffff';
-  this.handle_.style.stroke = '#ffffff';
+  this.handle_.style.fill = beestat.style.color.gray.light;
+  this.handle_.style.stroke = beestat.style.color.gray.light;
   this.handle_.style.cursor = 'ew-resize';
   parent.appendChild(this.handle_);
 
   this.update_handle_();
 
   this.handle_.addEventListener('mouseover', function() {
-    self.handle_.style.fill = beestat.style.color.green.base;
+    self.handle_.style.fill = beestat.style.color.lightblue.light;
+    self.handle_.style.stroke = beestat.style.color.lightblue.light;
   });
   this.handle_.addEventListener('mouseout', function() {
-    self.handle_.style.fill = '#ffffff';
+    self.handle_.style.fill = beestat.style.color.gray.light;
+    self.handle_.style.stroke = beestat.style.color.gray.light;
   });
   this.handle_.addEventListener('mousedown', this.handle_mousedown_handler_.bind(this));
 };

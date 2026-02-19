@@ -46,45 +46,32 @@ beestat.component.floor_plan_entity.prototype.decorate_polygon_ = function(paren
   if (this.active_ === true) {
     this.set_draggable_(true);
 
+    const active_fill = beestat.style.color.blue.base;
     this.polygon_.style.cursor = 'pointer';
-    this.polygon_.style.fillOpacity = '0.5';
-    this.polygon_.style.fill = beestat.style.color.green.light;
+    this.polygon_.style.fillOpacity = '0.65';
+    this.polygon_.style.fill = active_fill;
     this.polygon_.style.stroke = '#ffffff';
-    this.polygon_.style.filter = 'drop-shadow(3px 3px 3px #000000)';
+    this.polygon_.style.filter = 'brightness(1.2)';
   } else if (this.enabled_ === true) {
     this.polygon_.style.cursor = 'pointer';
     this.polygon_.style.fillOpacity = '0.5';
     this.polygon_.style.fill = beestat.style.color.blue.base;
     this.polygon_.style.stroke = beestat.style.color.gray.base;
+    this.polygon_.style.filter = 'none';
   } else {
     this.polygon_.style.cursor = 'default';
     this.polygon_.style.fillOpacity = '0.2';
     this.polygon_.style.fill = beestat.style.color.gray.base;
     this.polygon_.style.stroke = beestat.style.color.gray.dark;
+    this.polygon_.style.filter = 'none';
   }
 
-  // Activate room on click if the mouse didn't move.
+  // Activate room on click.
   if (this.enabled_ === true) {
-    const mousedown_handler = function(e) {
-      self.mousedown_mouse_ = {
-        'x': e.clientX || e.touches[0].clientX,
-        'y': e.clientY || e.touches[0].clientY
-      };
-    };
-    this.polygon_.addEventListener('mousedown', mousedown_handler);
-    // this.polygon_.addEventListener('touchstart', mousedown_handler);
-
-    const mouseup_handler = function(e) {
-      if (
-        self.mousedown_mouse_ !== undefined &&
-        (e.clientX || e.changedTouches[0].clientX) === self.mousedown_mouse_.x &&
-        (e.clientY || e.changedTouches[0].clientY) === self.mousedown_mouse_.y
-      ) {
-        self.set_active(true);
-      }
-    };
-    this.polygon_.addEventListener('mouseup', mouseup_handler);
-    // this.polygon_.addEventListener('touchend', mouseup_handler);
+    this.polygon_.addEventListener('click', function(e) {
+      e.stopPropagation();
+      self.set_active(true);
+    });
   }
 
   this.update_polygon_();
@@ -244,6 +231,10 @@ beestat.component.floor_plan_entity.prototype.update_walls_ = function() {
  * @return {beestat.component.floor_plan_entity.room} This.
  */
 beestat.component.floor_plan_entity.room.prototype.set_active = function(active) {
+  if (active === true && this.enabled_ !== true) {
+    return this;
+  }
+
   /**
    * Always clear the active point and wall when clicking on a room, even if
    * it's already active. Also force a toolbar update. This is a little hacky
@@ -315,6 +306,9 @@ beestat.component.floor_plan_entity.room.prototype.update_snap_points_ = functio
 
   // Snap to rooms in this group.
   this.group_.rooms.forEach(function(room) {
+    if (room.editor_hidden === true) {
+      return;
+    }
     room.points.forEach(function(point) {
       snap_x[point.x + room.x] = true;
       snap_y[point.y + room.y] = true;
@@ -325,6 +319,9 @@ beestat.component.floor_plan_entity.room.prototype.update_snap_points_ = functio
   const group_below = this.floor_plan_.get_group_below(this.group_);
   if (group_below !== undefined) {
     group_below.rooms.forEach(function(room) {
+      if (room.editor_hidden === true) {
+        return;
+      }
       room.points.forEach(function(point) {
         snap_x[point.x + room.x] = true;
         snap_y[point.y + room.y] = true;

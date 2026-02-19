@@ -18,47 +18,36 @@ beestat.component.floor_plan_entity.surface.prototype.decorate_polygon_ = functi
   parent.appendChild(this.polygon_);
 
   this.polygon_.style.strokeWidth = '2';
+  const surface_fill = this.surface_.color || '#9a9a96';
 
   if (this.active_ === true) {
     this.set_draggable_(true);
 
     this.polygon_.style.cursor = 'pointer';
-    this.polygon_.style.fillOpacity = '0.5';
-    this.polygon_.style.fill = beestat.style.color.green.light;
+    this.polygon_.style.fillOpacity = '0.65';
+    this.polygon_.style.fill = surface_fill;
     this.polygon_.style.stroke = '#ffffff';
-    this.polygon_.style.filter = 'drop-shadow(3px 3px 3px #000000)';
+    this.polygon_.style.filter = 'brightness(1.2)';
   } else if (this.enabled_ === true) {
     this.polygon_.style.cursor = 'pointer';
     this.polygon_.style.fillOpacity = '0.5';
-    this.polygon_.style.fill = this.surface_.color || '#9a9a96';
+    this.polygon_.style.fill = surface_fill;
     this.polygon_.style.stroke = beestat.style.color.gray.base;
+    this.polygon_.style.filter = 'none';
   } else {
     this.polygon_.style.cursor = 'default';
     this.polygon_.style.fillOpacity = '0.2';
     this.polygon_.style.fill = beestat.style.color.gray.base;
     this.polygon_.style.stroke = beestat.style.color.gray.dark;
+    this.polygon_.style.filter = 'none';
   }
 
-  // Activate on click if the mouse didn't move.
+  // Activate on click.
   if (this.enabled_ === true) {
-    const mousedown_handler = function(e) {
-      self.mousedown_mouse_ = {
-        'x': e.clientX || e.touches[0].clientX,
-        'y': e.clientY || e.touches[0].clientY
-      };
-    };
-    this.polygon_.addEventListener('mousedown', mousedown_handler);
-
-    const mouseup_handler = function(e) {
-      if (
-        self.mousedown_mouse_ !== undefined &&
-        (e.clientX || e.changedTouches[0].clientX) === self.mousedown_mouse_.x &&
-        (e.clientY || e.changedTouches[0].clientY) === self.mousedown_mouse_.y
-      ) {
-        self.set_active(true);
-      }
-    };
-    this.polygon_.addEventListener('mouseup', mouseup_handler);
+    this.polygon_.addEventListener('click', function(e) {
+      e.stopPropagation();
+      self.set_active(true);
+    });
   }
 
   this.update_polygon_();
@@ -181,6 +170,9 @@ beestat.component.floor_plan_entity.surface.prototype.update_snap_points_ = func
     }
 
     shapes.forEach(function(shape) {
+      if (shape.editor_hidden === true) {
+        return;
+      }
       shape.points.forEach(function(point) {
         snap_x[point.x + shape.x] = true;
         snap_y[point.y + shape.y] = true;

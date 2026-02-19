@@ -131,6 +131,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/menu_item.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/scene.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/floor_plan_layers_sidebar.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/compass.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/radio_group.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/modal.js"></script>' . PHP_EOL;

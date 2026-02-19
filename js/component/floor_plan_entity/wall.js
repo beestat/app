@@ -36,10 +36,10 @@ beestat.component.floor_plan_entity.wall.prototype.decorate_line_ = function(par
   this.path_.style.strokeWidth = '6';
 
   if (this.active_ === true) {
-    this.path_.style.stroke = beestat.style.color.green.base;
+    this.path_.style.stroke = '#ffffff';
     this.path_.style.opacity = 0.5;
   } else {
-    this.path_.style.stroke = '#ffffff';
+    this.path_.style.stroke = beestat.style.color.gray.base;
     this.path_.style.opacity = 0.2;
   }
 

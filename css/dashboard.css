@@ -450,6 +450,7 @@ input[type=range]::-moz-range-thumb {
 .icon.chart_line:before { content: "\F012A"; }
 .icon.check:before { content: "\F012C"; }
 .icon.chevron_down:before { content: "\F0140"; }
+.icon.chevron_right:before { content: "\F0142"; }
 .icon.chevron_up:before { content: "\F0143"; }
 .icon.clock_outline:before { content: "\F0150"; }
 .icon.close:before { content: "\F0156"; }
@@ -470,6 +471,8 @@ input[type=range]::-moz-range-thumb {
 .icon.eye:before { content: "\F0208"; }
 .icon.eye_circle:before { content: "\F0B94"; }
 .icon.eye_off:before { content: "\F0209"; }
+.icon.lock:before { content: "\F033E"; }
+.icon.lock_open:before { content: "\F033F"; }
 .icon.fan:before { content: "\F0210"; }
 .icon.fast_forward:before { content: "\F0211"; }
 .icon.fire:before { content: "\F0238"; }
@@ -576,6 +579,7 @@ input[type=range]::-moz-range-thumb {
 .icon.domain:before { content: "\F01D7"; }
 .icon.file_chart:before { content: "\F0215"; }
 .icon.wall:before { content: "\F07FE"; }
+.icon.window_closed_variant:before { content: "\F11DB"; }
 
 .icon.f16:before { font-size: 16px; }
 .icon.f24:before { font-size: 24px; }
