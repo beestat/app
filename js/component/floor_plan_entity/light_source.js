@@ -63,6 +63,10 @@ beestat.component.floor_plan_entity.light_source.prototype.decorate_circle_ = fu
       e.stopPropagation();
       self.set_active(true);
     });
+    this.circle_.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+      self.set_active(true);
+    });
   }
 
   this.update_circle_();

@@ -668,6 +668,10 @@ beestat.component.floor_plan_entity.opening.prototype.set_active = function(acti
       this.state_.active_room_entity.set_active(false);
       this.floor_plan_.update_toolbar();
     }
+    if (this.state_.active_light_source_entity !== undefined) {
+      this.state_.active_light_source_entity.set_active(false);
+      this.floor_plan_.update_toolbar();
+    }
   }
 
   if (active !== this.active_) {

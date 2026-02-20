@@ -2225,10 +2225,6 @@ beestat.component.scene.prototype.add_walls_ = function(layer, group) {
  * @return {?THREE.Mesh} Opening cutter mesh or null if opening is not cuttable.
  */
 beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, opening) {
-  if (opening.editor_hidden === true) {
-    return null;
-  }
-
   const opening_line = this.get_opening_line_params_(opening);
   const width = opening_line.width;
   const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
@@ -2479,10 +2475,6 @@ beestat.component.scene.prototype.add_openings_debug_ = function(layer, group) {
   const wall_thickness = beestat.component.scene.wall_thickness;
 
   group.openings.forEach(function(opening) {
-    if (opening.editor_hidden === true) {
-      return;
-    }
-
     const opening_line = this.get_opening_line_params_(opening);
     const width = opening_line.width;
     const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
@@ -2548,9 +2540,6 @@ beestat.component.scene.prototype.add_opening_fixtures_ = function(layer, group)
   }
 
   group.openings.forEach(function(opening) {
-    if (opening.editor_hidden === true) {
-      return;
-    }
     if (opening.type !== 'door' && opening.type !== 'window' && opening.type !== 'glass') {
       return;
     }
