@@ -544,8 +544,20 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_main_group_();
   this.add_floor_plan_();
 
+  this.fps_ = 0;
+  this.fps_frame_count_ = 0;
+  this.fps_last_sample_ms_ = window.performance.now();
+
   const animate = function() {
     self.animation_frame_ = window.requestAnimationFrame(animate);
+    self.fps_frame_count_++;
+    const now_ms = window.performance.now();
+    const elapsed_ms = now_ms - self.fps_last_sample_ms_;
+    if (elapsed_ms >= 500) {
+      self.fps_ = Math.round((self.fps_frame_count_ * 1000) / elapsed_ms);
+      self.fps_frame_count_ = 0;
+      self.fps_last_sample_ms_ = now_ms;
+    }
     self.controls_.update();
     self.update_raycaster_();
     self.update_celestial_light_intensities_();
@@ -2256,6 +2268,18 @@ beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, o
 };
 
 /**
+ * Whether an opening type should be treated as glass-family geometry.
+ * Window reuses glass geometry and only adds a crossbar.
+ *
+ * @param {string} type
+ *
+ * @return {boolean}
+ */
+beestat.component.scene.prototype.is_opening_glass_family_ = function(type) {
+  return type === 'window' || type === 'glass';
+};
+
+/**
  * Get default opening width by type.
  *
  * @param {string} type
@@ -2263,7 +2287,7 @@ beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, o
  * @return {number}
  */
 beestat.component.scene.prototype.get_opening_default_width_ = function(type) {
-  return (type === 'window' || type === 'glass') ? 48 : 36;
+  return this.is_opening_glass_family_(type) ? 48 : 36;
 };
 
 /**
@@ -2274,7 +2298,7 @@ beestat.component.scene.prototype.get_opening_default_width_ = function(type) {
  * @return {number}
  */
 beestat.component.scene.prototype.get_opening_default_height_ = function(type) {
-  return (type === 'window' || type === 'glass') ? 42 : 78;
+  return this.is_opening_glass_family_(type) ? 60 : 78;
 };
 
 /**
@@ -2285,7 +2309,7 @@ beestat.component.scene.prototype.get_opening_default_height_ = function(type) {
  * @return {number}
  */
 beestat.component.scene.prototype.get_opening_default_elevation_ = function(type) {
-  return (type === 'window' || type === 'glass') ? 36 : 0;
+  return this.is_opening_glass_family_(type) ? 24 : 0;
 };
 
 /**
@@ -2296,29 +2320,41 @@ beestat.component.scene.prototype.get_opening_default_elevation_ = function(type
  * @return {{center_x:number, center_y:number, width:number, rotation_radians:number}}
  */
 beestat.component.scene.prototype.get_opening_line_params_ = function(opening) {
-  if (
+  const points = (
     opening.points !== undefined &&
     Array.isArray(opening.points) === true &&
     opening.points.length === 2
-  ) {
-    const p1 = opening.points[0];
-    const p2 = opening.points[1];
-    const dx = Number(p2.x || 0) - Number(p1.x || 0);
-    const dy = Number(p2.y || 0) - Number(p1.y || 0);
-    return {
-      'center_x': (Number(p1.x || 0) + Number(p2.x || 0)) / 2,
-      'center_y': (Number(p1.y || 0) + Number(p2.y || 0)) / 2,
-      'width': Math.max(12, Math.sqrt((dx * dx) + (dy * dy))),
-      'rotation_radians': Math.atan2(dy, dx)
+  )
+    ? opening.points
+    : null;
+
+  let p1;
+  let p2;
+  if (points !== null) {
+    p1 = points[0];
+    p2 = points[1];
+  } else {
+    const center_x = Number(opening.x || 0);
+    const center_y = Number(opening.y || 0);
+    const width = Math.max(12, Number(opening.width || this.get_opening_default_width_(opening.type)));
+    const half_width = width / 2;
+    p1 = {
+      'x': center_x - half_width,
+      'y': center_y
+    };
+    p2 = {
+      'x': center_x + half_width,
+      'y': center_y
     };
   }
 
-  const width = Math.max(12, Number(opening.width || this.get_opening_default_width_(opening.type)));
+  const dx = Number(p2.x || 0) - Number(p1.x || 0);
+  const dy = Number(p2.y || 0) - Number(p1.y || 0);
   return {
-    'center_x': Number(opening.x || 0),
-    'center_y': Number(opening.y || 0),
-    'width': width,
-    'rotation_radians': (Number(opening.rotation || 0) * Math.PI) / 180
+    'center_x': (Number(p1.x || 0) + Number(p2.x || 0)) / 2,
+    'center_y': (Number(p1.y || 0) + Number(p2.y || 0)) / 2,
+    'width': Math.max(12, Math.sqrt((dx * dx) + (dy * dy))),
+    'rotation_radians': Math.atan2(dy, dx)
   };
 };
 
@@ -2540,7 +2576,8 @@ beestat.component.scene.prototype.add_opening_fixtures_ = function(layer, group)
   }
 
   group.openings.forEach(function(opening) {
-    if (opening.type !== 'door' && opening.type !== 'window' && opening.type !== 'glass') {
+    const is_glass_family = this.is_opening_glass_family_(opening.type);
+    if (opening.type !== 'door' && is_glass_family !== true) {
       return;
     }
 
@@ -2580,7 +2617,7 @@ beestat.component.scene.prototype.add_opening_fixtures_ = function(layer, group)
     top_frame.userData.is_opening = true;
     fixture_group.add(top_frame);
 
-    if (opening.type === 'window' || opening.type === 'glass') {
+    if (is_glass_family === true) {
       const bottom_frame = new THREE.Mesh(top_geometry, this.opening_frame_material_);
       bottom_frame.position.z = -(height / 2) + (frame_thickness / 2);
       bottom_frame.castShadow = true;
@@ -2739,7 +2776,7 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
   group.light_sources.forEach(function(light_source) {
     const x = Number(light_source.x || 0);
     const y = Number(light_source.y || 0);
-    const elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 84);
+    const elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 72);
     const z = -group_elevation - floor_thickness - elevation;
     let intensity_level = 2;
     if (light_source.intensity === 'dim') {
@@ -5236,6 +5273,15 @@ beestat.component.scene.prototype.set_gradient = function(gradient) {
   this.gradient_ = gradient;
 
   return this;
+};
+
+/**
+ * Get the current sampled frame rate.
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_fps = function() {
+  return Number(this.fps_ || 0);
 };
 
 /**

@@ -1231,13 +1231,9 @@ beestat.component.floor_plan.prototype.add_opening_ = function(opening) {
 
   const svg_view_box = this.view_box_;
   const requested_opening_type = (opening || {}).type;
-  const opening_type = requested_opening_type === 'garage'
-    ? 'door'
-    : (
-      ['empty', 'door', 'window', 'glass'].includes(requested_opening_type)
-        ? requested_opening_type
-        : 'empty'
-    );
+  const opening_type = ['empty', 'door', 'window', 'glass'].includes(requested_opening_type)
+    ? requested_opening_type
+    : 'empty';
 
   let default_width = 36;
   let default_height = 78;
@@ -1245,8 +1241,8 @@ beestat.component.floor_plan.prototype.add_opening_ = function(opening) {
   let default_color = '#7a573b';
   if (opening_type === 'window' || opening_type === 'glass') {
     default_width = 48;
-    default_height = 42;
-    default_elevation = 36;
+    default_height = 60;
+    default_elevation = 24;
   }
 
   const width = Math.max(12, Number((opening || {}).width || default_width));
@@ -1360,7 +1356,7 @@ beestat.component.floor_plan.prototype.add_light_source_ = function(light_source
     'light_source_id': window.crypto.randomUUID(),
     'x': Number((light_source || {}).x || (svg_view_box.x + (svg_view_box.width / 2))),
     'y': Number((light_source || {}).y || (svg_view_box.y + (svg_view_box.height / 2))),
-    'elevation': Number((light_source || {}).elevation !== undefined ? light_source.elevation : 84),
+    'elevation': Number((light_source || {}).elevation !== undefined ? light_source.elevation : 72),
     'intensity': ['dim', 'normal', 'bright'].includes((light_source || {}).intensity)
       ? light_source.intensity
       : 'normal',

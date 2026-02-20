@@ -94,9 +94,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
         room.room_id = window.crypto.randomUUID();
       }
       if (room.editor_hidden === undefined) {
-        room.editor_hidden = room.editor_visible === false;
+        room.editor_hidden = false;
       }
-      delete room.editor_visible;
       if (room.editor_locked === undefined) {
         room.editor_locked = false;
       }
@@ -107,9 +106,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
         surface.surface_id = window.crypto.randomUUID();
       }
       if (surface.editor_hidden === undefined) {
-        surface.editor_hidden = surface.editor_visible === false;
+        surface.editor_hidden = false;
       }
-      delete surface.editor_visible;
       if (surface.editor_locked === undefined) {
         surface.editor_locked = false;
       }
@@ -120,9 +118,8 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
         tree.tree_id = window.crypto.randomUUID();
       }
       if (tree.editor_hidden === undefined) {
-        tree.editor_hidden = tree.editor_visible === false;
+        tree.editor_hidden = false;
       }
-      delete tree.editor_visible;
       if (tree.editor_locked === undefined) {
         tree.editor_locked = false;
       }
@@ -133,27 +130,22 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
         opening.opening_id = window.crypto.randomUUID();
       }
       if (opening.editor_hidden === undefined) {
-        opening.editor_hidden = opening.editor_visible === false;
+        opening.editor_hidden = false;
       }
-      delete opening.editor_visible;
       if (opening.editor_locked === undefined) {
         opening.editor_locked = false;
-      }
-      if (opening.type === 'garage') {
-        opening.type = 'door';
       }
       if (['empty', 'door', 'window', 'glass'].includes(opening.type) !== true) {
         opening.type = 'empty';
       }
       const is_window_like = opening.type === 'window' || opening.type === 'glass';
       const default_opening_width = is_window_like ? 48 : 36;
-      const default_opening_height = is_window_like ? 42 : 78;
-      const default_opening_elevation = is_window_like ? 36 : 0;
+      const default_opening_height = is_window_like ? 60 : 78;
+      const default_opening_elevation = is_window_like ? 24 : 0;
       const default_opening_color = '#7a573b';
       const center_x = Number(opening.x || 0);
       const center_y = Number(opening.y || 0);
       const width = Number(opening.width || default_opening_width);
-      const rotation_radians = (Number(opening.rotation || 0) * Math.PI) / 180;
       if (opening.width === undefined) {
         opening.width = default_opening_width;
       }
@@ -163,25 +155,20 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       if (opening.elevation === undefined) {
         opening.elevation = default_opening_elevation;
       }
-      if (opening.rotation === undefined) {
-        opening.rotation = 0;
-      }
       if (
         opening.points === undefined ||
         Array.isArray(opening.points) !== true ||
         opening.points.length !== 2
       ) {
         const half_width = Math.max(12, width) / 2;
-        const axis_x = Math.cos(rotation_radians);
-        const axis_y = Math.sin(rotation_radians);
         opening.points = [
           {
-            'x': center_x - (axis_x * half_width),
-            'y': center_y - (axis_y * half_width)
+            'x': center_x - half_width,
+            'y': center_y
           },
           {
-            'x': center_x + (axis_x * half_width),
-            'y': center_y + (axis_y * half_width)
+            'x': center_x + half_width,
+            'y': center_y
           }
         ];
       }
@@ -190,7 +177,6 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
       const dx = Number(opening.points[1].x || 0) - Number(opening.points[0].x || 0);
       const dy = Number(opening.points[1].y || 0) - Number(opening.points[0].y || 0);
       opening.width = Math.max(12, Math.round(Math.sqrt((dx * dx) + (dy * dy))));
-      delete opening.rotation;
       if (opening.type === 'door') {
         if (opening.color === undefined) {
           opening.color = default_opening_color;
@@ -205,15 +191,14 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
         light_source.light_source_id = window.crypto.randomUUID();
       }
       if (light_source.editor_hidden === undefined) {
-        light_source.editor_hidden = light_source.editor_visible === false;
+        light_source.editor_hidden = false;
       }
-      delete light_source.editor_visible;
       if (light_source.editor_locked === undefined) {
         light_source.editor_locked = false;
       }
       light_source.x = Number(light_source.x || 0);
       light_source.y = Number(light_source.y || 0);
-      light_source.elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 84);
+      light_source.elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 72);
       light_source.intensity = ['dim', 'normal', 'bright'].includes(light_source.intensity)
         ? light_source.intensity
         : 'normal';
@@ -1725,6 +1710,19 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = fu
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_light_source_ = function(parent) {
   const self = this;
   const light_source = this.state_.active_light_source_entity.get_light_source();
+  const default_light_elevation = 72;
+  const get_light_elevation_input_value = function() {
+    if (
+      light_source.elevation === undefined ||
+      Number(light_source.elevation) === default_light_elevation
+    ) {
+      return '';
+    }
+    return beestat.distance({
+      'distance': Number(light_source.elevation),
+      'round': 2
+    }) || '';
+  };
 
   const grid = $.createElement('div')
     .style({
@@ -1814,12 +1812,13 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_light_sour
   grid.appendChild(elevation_div);
   const elevation_input = new beestat.component.input.text()
     .set_label('Elevation (' + beestat.setting('units.distance') + ')')
+    .set_placeholder(beestat.distance({
+      'distance': default_light_elevation,
+      'round': 2
+    }))
     .set_width('100%')
     .set_maxlength(6)
-    .set_value(beestat.distance({
-      'distance': Number(light_source.elevation !== undefined ? light_source.elevation : 84),
-      'round': 2
-    }) || '')
+    .set_value(get_light_elevation_input_value())
     .set_requirements({
       'type': 'decimal',
       'min_value': beestat.distance(-600),
@@ -1844,10 +1843,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_light_sour
       return;
     }
 
-    elevation_input.set_value(beestat.distance({
-      'distance': Number(light_source.elevation !== undefined ? light_source.elevation : 84),
-      'round': 2
-    }) || '', false);
+    elevation_input.set_value(get_light_elevation_input_value(), false);
   });
 };
 
@@ -2103,6 +2099,38 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ = function(parent) {
   const self = this;
   const opening = this.state_.active_opening_entity.get_opening();
+  const get_opening_default_height = function(type) {
+    return (type === 'window' || type === 'glass') ? 60 : 78;
+  };
+  const get_opening_default_elevation = function(type) {
+    return (type === 'window' || type === 'glass') ? 24 : 0;
+  };
+  const get_opening_height_input_value = function() {
+    const default_height = get_opening_default_height(opening.type);
+    if (
+      opening.height === undefined ||
+      Number(opening.height) === default_height
+    ) {
+      return '';
+    }
+    return beestat.distance({
+      'distance': Number(opening.height),
+      'round': 2
+    }) || '';
+  };
+  const get_opening_elevation_input_value = function() {
+    const default_elevation = get_opening_default_elevation(opening.type);
+    if (
+      opening.elevation === undefined ||
+      Number(opening.elevation) === default_elevation
+    ) {
+      return '';
+    }
+    return beestat.distance({
+      'distance': Number(opening.elevation),
+      'round': 2
+    }) || '';
+  };
 
   const grid = $.createElement('div')
     .style({
@@ -2154,16 +2182,14 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
   type_input.addEventListener('change', function() {
     const previous_type = opening.type;
     opening.type = type_input.get_value();
-    const previous_is_window_like = previous_type === 'window' || previous_type === 'glass';
-    const next_is_window_like = opening.type === 'window' || opening.type === 'glass';
-    const previous_default_height = previous_is_window_like ? 42 : 78;
-    const previous_default_elevation = previous_is_window_like ? 36 : 0;
-    const next_default_height = next_is_window_like ? 42 : 78;
-    const next_default_elevation = next_is_window_like ? 36 : 0;
-    if (Number(opening.height || 0) === previous_default_height) {
+    const previous_default_height = get_opening_default_height(previous_type);
+    const previous_default_elevation = get_opening_default_elevation(previous_type);
+    const next_default_height = get_opening_default_height(opening.type);
+    const next_default_elevation = get_opening_default_elevation(opening.type);
+    if (Number(opening.height !== undefined ? opening.height : previous_default_height) === previous_default_height) {
       opening.height = next_default_height;
     }
-    if (Number(opening.elevation || 0) === previous_default_elevation) {
+    if (Number(opening.elevation !== undefined ? opening.elevation : previous_default_elevation) === previous_default_elevation) {
       opening.elevation = next_default_elevation;
     }
     if (opening.type === 'door') {
@@ -2203,13 +2229,10 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
   const height_input = new beestat.component.input.text()
     .set_label('Height (' + beestat.setting('units.distance') + ')')
     .set_placeholder(beestat.distance({
-      'distance': opening.height || 0,
+      'distance': get_opening_default_height(opening.type),
       'round': 2
     }))
-    .set_value(beestat.distance({
-      'distance': opening.height || 0,
-      'round': 2
-    }) || '')
+    .set_value(get_opening_height_input_value())
     .set_width('100%')
     .set_maxlength(5)
     .set_requirements({
@@ -2233,10 +2256,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
       });
       self.update_floor_plan_();
     } else {
-      height_input.set_value(beestat.distance({
-        'distance': opening.height || 0,
-        'round': 2
-      }) || '', false);
+      height_input.set_value(get_opening_height_input_value(), false);
     }
   });
 
@@ -2246,13 +2266,10 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
   const elevation_input = new beestat.component.input.text()
     .set_label('Elevation (' + beestat.setting('units.distance') + ')')
     .set_placeholder(beestat.distance({
-      'distance': opening.elevation || 0,
+      'distance': get_opening_default_elevation(opening.type),
       'round': 2
     }))
-    .set_value(beestat.distance({
-      'distance': opening.elevation || 0,
-      'round': 2
-    }) || '')
+    .set_value(get_opening_elevation_input_value())
     .set_width('100%')
     .set_maxlength(5)
     .set_requirements({
@@ -2277,10 +2294,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
       });
       self.update_floor_plan_();
     } else {
-      elevation_input.set_value(beestat.distance({
-        'distance': opening.elevation || 0,
-        'round': 2
-      }) || '', false);
+      elevation_input.set_value(get_opening_elevation_input_value(), false);
     }
   });
 };

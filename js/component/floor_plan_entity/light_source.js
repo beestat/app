@@ -93,7 +93,7 @@ beestat.component.floor_plan_entity.light_source.prototype.set_light_source = fu
   this.light_source_.light_source_id = this.light_source_.light_source_id || window.crypto.randomUUID();
   this.light_source_.x = Number(this.light_source_.x || 0);
   this.light_source_.y = Number(this.light_source_.y || 0);
-  this.light_source_.elevation = Number(this.light_source_.elevation !== undefined ? this.light_source_.elevation : 84);
+  this.light_source_.elevation = Number(this.light_source_.elevation !== undefined ? this.light_source_.elevation : 72);
   if (this.light_source_.name === undefined) {
     this.light_source_.name = '';
   }

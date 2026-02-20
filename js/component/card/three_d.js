@@ -83,6 +83,8 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
  */
 beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   delete this.data_;
+  window.clearInterval(this.fps_interval_);
+  delete this.fps_interval_;
 
   const drawing_pane_container = document.createElement('div');
   drawing_pane_container.style.overflowX = 'hidden';
@@ -100,6 +102,21 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   });
   parent.appendChild(watermark_container);
   this.decorate_watermark_(watermark_container);
+
+  // FPS ticker
+  const fps_container = document.createElement('div');
+  Object.assign(fps_container.style, {
+    'position': 'absolute',
+    'bottom': `${beestat.style.size.gutter + 24}px`,
+    'right': `${beestat.style.size.gutter}px`,
+    'font-size': beestat.style.font_size.small,
+    'color': 'rgba(255,255,255,0.85)',
+    'font-family': 'Consolas, Courier, Monospace',
+    'pointer-events': 'none',
+    'text-align': 'right'
+  });
+  parent.appendChild(fps_container);
+  this.decorate_fps_ticker_(fps_container);
 
   // Toolbar
   const toolbar_container = document.createElement('div');
@@ -1070,6 +1087,30 @@ beestat.component.card.three_d.prototype.decorate_watermark_ = function(parent) 
 };
 
 /**
+ * FPS ticker.
+ *
+ * @param {HTMLDivElement} parent
+ */
+beestat.component.card.three_d.prototype.decorate_fps_ticker_ = function(parent) {
+  const self = this;
+  this.fps_container_ = parent;
+
+  const set_text = function() {
+    const fps = (
+      self.scene_ !== undefined &&
+      typeof self.scene_.get_fps === 'function'
+    )
+      ? self.scene_.get_fps()
+      : 0;
+    self.fps_container_.innerText = fps + ' FPS';
+  };
+
+  set_text();
+  window.clearInterval(this.fps_interval_);
+  this.fps_interval_ = window.setInterval(set_text, 250);
+};
+
+/**
  * Toolbar.
  *
  * @param {HTMLDivElement} parent
@@ -1686,4 +1727,10 @@ beestat.component.card.three_d.prototype.get_most_recent_time_with_data_ = funct
   }
 
   return null;
+};
+
+beestat.component.card.three_d.prototype.dispose = function() {
+  window.clearInterval(this.fps_interval_);
+  delete this.fps_interval_;
+  beestat.component.card.prototype.dispose.apply(this, arguments);
 };

@@ -530,10 +530,10 @@ beestat.component.floor_plan_entity.opening.prototype.set_opening = function(ope
     this.opening_.type = 'empty';
   }
   if (this.opening_.height === undefined) {
-    this.opening_.height = (this.opening_.type === 'window' || this.opening_.type === 'glass') ? 42 : 78;
+    this.opening_.height = (this.opening_.type === 'window' || this.opening_.type === 'glass') ? 60 : 78;
   }
   if (this.opening_.elevation === undefined) {
-    this.opening_.elevation = (this.opening_.type === 'window' || this.opening_.type === 'glass') ? 36 : 0;
+    this.opening_.elevation = (this.opening_.type === 'window' || this.opening_.type === 'glass') ? 24 : 0;
   }
 
   const default_width = (this.opening_.type === 'window' || this.opening_.type === 'glass') ? 48 : 36;
@@ -725,7 +725,6 @@ beestat.component.floor_plan_entity.opening.prototype.get_room = function() {
 beestat.component.floor_plan_entity.opening.prototype.get_opening_color_ = function() {
   switch (this.opening_.type) {
   case 'door':
-  case 'garage':
     return beestat.style.color.green.base;
   case 'window':
   case 'glass':
