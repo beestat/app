@@ -131,6 +131,16 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/component/menu.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/menu_item.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/scene.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/interaction.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/texture.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/light.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/weather.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/floor_plan.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/opening.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/layout.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/roof.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/tree.js"></script>' . PHP_EOL;
+  echo '<script src="/js/component/scene/environment.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/floor_plan_layers_sidebar.js"></script>' . PHP_EOL;
   echo '<script src="/js/component/compass.js"></script>' . PHP_EOL;
@@ -204,5 +214,6 @@ else {
   echo '<script type="module" src="/js/lib/straight-skeleton/wrapper.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
   echo '<script src="/js/beestat.js?' . $setting->get('commit') . '"></script>' . PHP_EOL;
 }
+
 
 

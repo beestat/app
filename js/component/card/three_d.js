@@ -579,6 +579,8 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   this.scene_.set_layer_visible('walls', show_environment);
   this.scene_.set_layer_visible('roof', show_environment);
   this.scene_.set_layer_visible('environment', show_environment);
+  this.scene_.set_layer_visible('openings', show_environment);
+  this.scene_.set_layer_visible('light_sources', show_environment);
 
   Object.values(floor_plan.data.groups).forEach((group) => {
     const setting_key = 'visualize.three_d.show_group.' + group.group_id;
