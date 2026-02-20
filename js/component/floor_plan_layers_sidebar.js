@@ -96,6 +96,7 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       sidebar_state.collapsed_types[group.group_id + '.trees'] = true;
       sidebar_state.collapsed_types[group.group_id + '.surfaces'] = true;
       sidebar_state.collapsed_types[group.group_id + '.openings'] = true;
+      sidebar_state.collapsed_types[group.group_id + '.light_sources'] = true;
       sidebar_state.collapsed_types[group.group_id + '.rooms'] = true;
     });
     sidebar_state.initialized_collapsed = true;
@@ -114,6 +115,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
     if (sidebar_state.collapsed_types[group.group_id + '.openings'] === undefined) {
       sidebar_state.collapsed_types[group.group_id + '.openings'] = true;
     }
+    if (sidebar_state.collapsed_types[group.group_id + '.light_sources'] === undefined) {
+      sidebar_state.collapsed_types[group.group_id + '.light_sources'] = true;
+    }
     if (sidebar_state.collapsed_types[group.group_id + '.rooms'] === undefined) {
       sidebar_state.collapsed_types[group.group_id + '.rooms'] = true;
     }
@@ -127,6 +131,7 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       .concat(group.trees || [])
       .concat(group.surfaces || [])
       .concat(group.openings || [])
+      .concat(group.light_sources || [])
       .concat(group.rooms || []);
     const has_group_objects = group_objects.length > 0;
     const group_all_hidden = has_group_objects === true && group_objects.every(function(object) {
@@ -220,6 +225,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
         if ((group.openings || []).length > 0) {
           self.on_toggle_layer_visibility_(group, 'openings', group_all_hidden === true);
         }
+        if ((group.light_sources || []).length > 0) {
+          self.on_toggle_layer_visibility_(group, 'light_sources', group_all_hidden === true);
+        }
         if ((group.rooms || []).length > 0) {
           self.on_toggle_layer_visibility_(group, 'rooms', group_all_hidden === true);
         }
@@ -256,6 +264,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
         }
         if ((group.openings || []).length > 0) {
           self.on_toggle_layer_lock_(group, 'openings', !group_all_locked);
+        }
+        if ((group.light_sources || []).length > 0) {
+          self.on_toggle_layer_lock_(group, 'light_sources', !group_all_locked);
         }
         if ((group.rooms || []).length > 0) {
           self.on_toggle_layer_lock_(group, 'rooms', !group_all_locked);
@@ -317,6 +328,15 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
         group,
         'openings',
         'Opening',
+        font_size_small,
+        scroll_to,
+        scroll_to_row
+      );
+      scroll_to_row = self.decorate_group_type_(
+        group_panel,
+        group,
+        'light_sources',
+        'Light Source',
         font_size_small,
         scroll_to,
         scroll_to_row
@@ -991,6 +1011,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.get_type_icon_ = function(
   if (type === 'openings') {
     return 'window_closed_variant';
   }
+  if (type === 'light_sources') {
+    return 'lightbulb_on';
+  }
   return 'view_quilt';
 };
 
@@ -1038,6 +1061,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.get_object_id_ = function(
   }
   if (type === 'openings') {
     return object.opening_id;
+  }
+  if (type === 'light_sources') {
+    return object.light_source_id;
   }
   return object.tree_id;
 };
@@ -1110,6 +1136,13 @@ beestat.component.floor_plan_layers_sidebar.prototype.is_active_row_ = function(
     type === 'openings' &&
     this.state_.active_opening_entity !== undefined &&
     this.state_.active_opening_entity.get_opening().opening_id === object_id
+  ) {
+    return true;
+  }
+  if (
+    type === 'light_sources' &&
+    this.state_.active_light_source_entity !== undefined &&
+    this.state_.active_light_source_entity.get_light_source().light_source_id === object_id
   ) {
     return true;
   }

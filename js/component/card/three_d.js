@@ -408,7 +408,12 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 
   // Set some defaults on the scene.
   this.scene_.set_date(this.date_m_);
-  this.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
+  this.scene_.set_labels(
+    this.get_show_environment_() === true
+      ? false
+      : beestat.setting('visualize.three_d.show_labels')
+  );
+  this.scene_.set_room_interaction_enabled(this.get_show_environment_() === false);
   this.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
@@ -563,9 +568,16 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
     const group_visible = beestat.setting(setting_key) !== false;
     this.scene_.set_layer_visible(
       group.group_id,
-      show_environment === true ? false : group_visible
+      group_visible
     );
   });
+
+  this.scene_.set_labels(
+    show_environment === true
+      ? false
+      : beestat.setting('visualize.three_d.show_labels')
+  );
+  this.scene_.set_room_interaction_enabled(show_environment === false);
 
   this.update_environment_date_visibility_();
 

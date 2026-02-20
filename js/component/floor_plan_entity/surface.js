@@ -174,23 +174,28 @@ beestat.component.floor_plan_entity.surface.prototype.update_snap_points_ = func
     }
 
     shapes.forEach(function(shape) {
-      if (shape.editor_hidden === true) {
+      if (shape.editor_hidden === true || Array.isArray(shape.points) !== true) {
         return;
       }
       shape.points.forEach(function(point) {
-        snap_x[point.x + shape.x] = true;
-        snap_y[point.y + shape.y] = true;
+        const is_opening = shape.opening_id !== undefined;
+        const absolute_x = is_opening ? Number(point.x || 0) : Number(point.x || 0) + Number(shape.x || 0);
+        const absolute_y = is_opening ? Number(point.y || 0) : Number(point.y || 0) + Number(shape.y || 0);
+        snap_x[absolute_x] = true;
+        snap_y[absolute_y] = true;
       });
     });
   };
 
   append_shapes(this.group_.rooms);
   append_shapes(this.group_.surfaces);
+  append_shapes(this.group_.openings);
 
   const group_below = this.floor_plan_.get_group_below(this.group_);
   if (group_below !== undefined) {
     append_shapes(group_below.rooms);
     append_shapes(group_below.surfaces);
+    append_shapes(group_below.openings);
   }
 
   this.snap_x_ = Object.keys(snap_x).map(function(key) {

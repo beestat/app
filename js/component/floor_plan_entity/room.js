@@ -318,6 +318,16 @@ beestat.component.floor_plan_entity.room.prototype.update_snap_points_ = functio
       snap_y[point.y + room.y] = true;
     });
   });
+  (this.group_.openings || []).forEach(function(opening) {
+    if (opening.editor_hidden === true || Array.isArray(opening.points) !== true) {
+      return;
+    }
+    opening.points.forEach(function(point) {
+      // Opening points are stored in absolute editor coordinates.
+      snap_x[point.x] = true;
+      snap_y[point.y] = true;
+    });
+  });
 
   // Snap to rooms in the group under this one.
   const group_below = this.floor_plan_.get_group_below(this.group_);
@@ -329,6 +339,16 @@ beestat.component.floor_plan_entity.room.prototype.update_snap_points_ = functio
       room.points.forEach(function(point) {
         snap_x[point.x + room.x] = true;
         snap_y[point.y + room.y] = true;
+      });
+    });
+    (group_below.openings || []).forEach(function(opening) {
+      if (opening.editor_hidden === true || Array.isArray(opening.points) !== true) {
+        return;
+      }
+      opening.points.forEach(function(point) {
+        // Opening points are stored in absolute editor coordinates.
+        snap_x[point.x] = true;
+        snap_y[point.y] = true;
       });
     });
   }

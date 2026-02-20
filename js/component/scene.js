@@ -212,7 +212,21 @@ beestat.component.scene.sun_light_intensity = 0.6;
  *
  * @type {number}
  */
-beestat.component.scene.moon_light_intensity = 0.35;
+beestat.component.scene.moon_light_intensity = 0.13125;
+
+/**
+ * Peak per-room interior light intensity used at night.
+ *
+ * @type {number}
+ */
+beestat.component.scene.interior_light_intensity = 0.9;
+
+/**
+ * Max number of interior point lights allowed to cast shadows.
+ *
+ * @type {number}
+ */
+beestat.component.scene.interior_light_shadow_max = 1;
 
 /**
  * Number of star sprites generated in the sky dome.
@@ -509,9 +523,12 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     'watcher': false,
     'roof_edges': false,
     'straight_skeleton': false,
-    'openings': true,
-    'opening_cutters': false
+    'openings': false,
+    'opening_cutters': false,
+    'hide_tree_branches': false,
+    'light_source_orbs': false
   };
+  this.room_interaction_enabled_ = true;
 
   this.width_ = this.state_.scene_width || 800;
   this.height_ = 500;
@@ -715,6 +732,20 @@ beestat.component.scene.prototype.add_raycaster_ = function() {
  */
 beestat.component.scene.prototype.update_raycaster_ = function() {
   if (this.raycaster_ !== undefined) {
+    if (this.room_interaction_enabled_ !== true) {
+      if (this.intersected_mesh_ !== undefined) {
+        document.body.style.cursor = '';
+        if (
+          this.intersected_mesh_.material !== undefined &&
+          this.intersected_mesh_.material.emissive !== undefined
+        ) {
+          this.intersected_mesh_.material.emissive.setHex(0x000000);
+        }
+        delete this.intersected_mesh_;
+      }
+      return;
+    }
+
     this.raycaster_.setFromCamera(this.raycaster_pointer_, this.camera_);
     const intersects = this.raycaster_.intersectObject(this.scene_);
 
@@ -736,7 +767,9 @@ beestat.component.scene.prototype.update_raycaster_ = function() {
         intersects[i].object.type === 'Mesh' &&
         intersects[i].object.material !== undefined &&
         intersects[i].object.material.emissive !== undefined &&
+        intersects[i].object.userData.room !== undefined &&
         intersects[i].object.userData.is_wall !== true &&
+        intersects[i].object.userData.is_opening !== true &&
         intersects[i].object.userData.is_surface !== true &&
         intersects[i].object.userData.is_roof !== true &&
         intersects[i].object.userData.is_environment !== true &&
@@ -1167,7 +1200,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_visual_group_.layers.set(beestat.component.scene.layer_visible);
   this.celestial_light_group_.add(this.sun_visual_group_);
 
-  const sun_core_geometry = new THREE.SphereGeometry(180, 24, 24);
+  const sun_core_geometry = new THREE.SphereGeometry(146, 24, 24);
   const sun_core_material = new THREE.MeshBasicMaterial({
     'color': 0xffffff,
     'transparent': true,
@@ -1189,7 +1222,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   });
   this.sun_glow_sprite_ = new THREE.Sprite(sun_glow_material);
   this.sun_glow_sprite_.userData.is_celestial_object = true;
-  this.sun_glow_sprite_.scale.set(1280, 1280, 1);
+  this.sun_glow_sprite_.scale.set(1037, 1037, 1);
   this.sun_visual_group_.add(this.sun_glow_sprite_);
 
   if (this.debug_.sun_light_helper === true) {
@@ -1244,7 +1277,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   });
   this.moon_sprite_ = new THREE.Sprite(moon_material);
   this.moon_sprite_.userData.is_celestial_object = true;
-  this.moon_sprite_.scale.set(500, 500, 1);
+  this.moon_sprite_.scale.set(405, 405, 1);
   this.moon_visual_group_.add(this.moon_sprite_);
 
   if (this.debug_.moon_light_helper === true) {
@@ -1438,6 +1471,14 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     Math.min(1, (-sun_pos.altitude - 0.05) / 0.25)
   );
 
+  const interior_night_factor = Math.max(
+    0,
+    Math.min(1, (-sun_pos.altitude + 0.03) / 0.3)
+  );
+  this.target_interior_light_intensity_ =
+    beestat.component.scene.interior_light_intensity * interior_night_factor;
+  this.target_light_source_intensity_multiplier_ = interior_night_factor;
+
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
   // Keep moon conversion consistent with the sun conversion.
@@ -1512,6 +1553,18 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   if (this.target_moon_intensity_ === undefined) {
     this.target_moon_intensity_ = 0;
   }
+  if (this.target_interior_light_intensity_ === undefined) {
+    const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
+    this.target_interior_light_intensity_ = (
+      (hour >= 19 || hour <= 5)
+        ? beestat.component.scene.interior_light_intensity
+        : 0
+    );
+  }
+  if (this.target_light_source_intensity_multiplier_ === undefined) {
+    const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
+    this.target_light_source_intensity_multiplier_ = (hour >= 19 || hour <= 5) ? 1 : 0;
+  }
 
   // Lerp factor - lower = smoother but slower, higher = faster but jumpier
   const lerp_factor = 0.05;
@@ -1521,6 +1574,19 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
 
   // Lerp moon intensity
   this.moon_light_.intensity += (this.target_moon_intensity_ - this.moon_light_.intensity) * lerp_factor;
+
+  if (this.interior_lights_ !== undefined) {
+    this.interior_lights_.forEach((light) => {
+      light.intensity += (this.target_interior_light_intensity_ - light.intensity) * lerp_factor;
+    });
+  }
+  if (Array.isArray(this.light_sources_) === true) {
+    this.light_sources_.forEach((light) => {
+      const base_intensity = Number(light.userData.base_intensity || 0);
+      const target_intensity = base_intensity * this.target_light_source_intensity_multiplier_;
+      light.intensity += (target_intensity - light.intensity) * lerp_factor;
+    });
+  }
 
   // Match visible sun brightness to actual sun light intensity, with smooth
   // fade at/under the horizon.
@@ -2163,11 +2229,15 @@ beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, o
     return null;
   }
 
-  const width = Math.max(12, Number(opening.width || 0));
-  const height = Math.max(1, Number(opening.height || 0));
+  const opening_line = this.get_opening_line_params_(opening);
+  const width = opening_line.width;
+  const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
   const wall_thickness = Number(beestat.component.scene.wall_thickness || 4);
-  const depth = Math.max(0.5, wall_thickness);
-  const elevation = Number(group.elevation || 0);
+  // Slightly oversize cutter depth so CSG fully clears wall thickness even when
+  // a snapped opening is numerically near-coplanar with one wall face.
+  const cutter_depth_padding = 4;
+  const depth = Math.max(0.5, wall_thickness + cutter_depth_padding);
+  const center_z = this.get_opening_center_z_(group, opening, height);
 
   if (this.csg_cutter_material_ === undefined) {
     this.csg_cutter_material_ = new THREE.MeshBasicMaterial({
@@ -2178,14 +2248,103 @@ beestat.component.scene.prototype.build_opening_cutter_mesh_ = function(group, o
   const geometry = new THREE.BoxGeometry(width, depth, height);
   const cutter = new THREE.Mesh(geometry, this.csg_cutter_material_);
   cutter.position.set(
-    Number(opening.x || 0),
-    Number(opening.y || 0),
-    -elevation - (height / 2)
+    opening_line.center_x,
+    opening_line.center_y,
+    center_z
   );
+  cutter.rotation.z = opening_line.rotation_radians;
   cutter.updateMatrix();
   cutter.updateMatrixWorld(true);
 
   return cutter;
+};
+
+/**
+ * Get default opening width by type.
+ *
+ * @param {string} type
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_opening_default_width_ = function(type) {
+  return (type === 'window' || type === 'glass') ? 48 : 36;
+};
+
+/**
+ * Get default opening height by type.
+ *
+ * @param {string} type
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_opening_default_height_ = function(type) {
+  return (type === 'window' || type === 'glass') ? 42 : 78;
+};
+
+/**
+ * Get default opening elevation by type.
+ *
+ * @param {string} type
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_opening_default_elevation_ = function(type) {
+  return (type === 'window' || type === 'glass') ? 36 : 0;
+};
+
+/**
+ * Resolve opening line parameters from endpoint data.
+ *
+ * @param {object} opening
+ *
+ * @return {{center_x:number, center_y:number, width:number, rotation_radians:number}}
+ */
+beestat.component.scene.prototype.get_opening_line_params_ = function(opening) {
+  if (
+    opening.points !== undefined &&
+    Array.isArray(opening.points) === true &&
+    opening.points.length === 2
+  ) {
+    const p1 = opening.points[0];
+    const p2 = opening.points[1];
+    const dx = Number(p2.x || 0) - Number(p1.x || 0);
+    const dy = Number(p2.y || 0) - Number(p1.y || 0);
+    return {
+      'center_x': (Number(p1.x || 0) + Number(p2.x || 0)) / 2,
+      'center_y': (Number(p1.y || 0) + Number(p2.y || 0)) / 2,
+      'width': Math.max(12, Math.sqrt((dx * dx) + (dy * dy))),
+      'rotation_radians': Math.atan2(dy, dx)
+    };
+  }
+
+  const width = Math.max(12, Number(opening.width || this.get_opening_default_width_(opening.type)));
+  return {
+    'center_x': Number(opening.x || 0),
+    'center_y': Number(opening.y || 0),
+    'width': width,
+    'rotation_radians': (Number(opening.rotation || 0) * Math.PI) / 180
+  };
+};
+
+/**
+ * Get the opening center Z. Opening elevation is measured from the bottom of
+ * the room reference plane, matching existing floor-plan behavior.
+ *
+ * @param {object} group The floor plan group.
+ * @param {object} opening The opening.
+ * @param {number} height The opening height.
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_opening_center_z_ = function(group, opening, height) {
+  const group_elevation = Number(group.elevation || 0);
+  const floor_thickness = Number(beestat.component.scene.room_floor_thickness || 0);
+  const opening_elevation = Number(
+    opening.elevation !== undefined
+      ? opening.elevation
+      : this.get_opening_default_elevation_(opening.type)
+  );
+  return -group_elevation - floor_thickness - opening_elevation - (height / 2);
 };
 
 /**
@@ -2324,9 +2483,10 @@ beestat.component.scene.prototype.add_openings_debug_ = function(layer, group) {
       return;
     }
 
-    const width = Math.max(12, Number(opening.width || 0));
-    const height = Math.max(1, Number(opening.height || 0));
-    const elevation = group.elevation || 0;
+    const opening_line = this.get_opening_line_params_(opening);
+    const width = opening_line.width;
+    const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
+    const center_z = this.get_opening_center_z_(group, opening, height);
 
     const geometry = new THREE.BoxGeometry(
       width,
@@ -2342,13 +2502,359 @@ beestat.component.scene.prototype.add_openings_debug_ = function(layer, group) {
       })
     );
 
-    wireframe.position.x = Number(opening.x || 0);
-    wireframe.position.y = Number(opening.y || 0);
-    wireframe.position.z = -elevation - (height / 2);
+    wireframe.position.x = opening_line.center_x;
+    wireframe.position.y = opening_line.center_y;
+    wireframe.position.z = center_z;
+    wireframe.rotation.z = opening_line.rotation_radians;
     wireframe.layers.set(beestat.component.scene.layer_visible);
 
     layer.add(wireframe);
-  });
+  }, this);
+};
+
+/**
+ * Add 3D opening fixtures.
+ *
+ * @param {THREE.Group} layer The layer to add fixtures to.
+ * @param {object} group The floor plan group.
+ */
+beestat.component.scene.prototype.add_opening_fixtures_ = function(layer, group) {
+  if (group.openings === undefined || group.openings.length === 0) {
+    return;
+  }
+
+  const wall_thickness = Number(beestat.component.scene.wall_thickness || 4);
+  const frame_thickness = Math.max(1, wall_thickness * 0.3);
+
+  if (this.opening_frame_material_ === undefined) {
+    this.opening_frame_material_ = new THREE.MeshStandardMaterial({
+      'color': 0xf5f7fb,
+      'roughness': 0.92,
+      'metalness': 0.0
+    });
+  }
+  if (this.window_pane_material_ === undefined) {
+    this.window_pane_material_ = new THREE.MeshPhysicalMaterial({
+      'color': 0xbfe6ff,
+      'transparent': true,
+      'opacity': 0.95,
+      'roughness': 0.12,
+      'metalness': 0.0,
+      'reflectivity': 0.35,
+      'clearcoat': 0.3,
+      'clearcoatRoughness': 0.12,
+      'transmission': 0.15
+    });
+  }
+
+  group.openings.forEach(function(opening) {
+    if (opening.editor_hidden === true) {
+      return;
+    }
+    if (opening.type !== 'door' && opening.type !== 'window' && opening.type !== 'glass') {
+      return;
+    }
+
+    const opening_line = this.get_opening_line_params_(opening);
+    const width = opening_line.width;
+    const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
+    const center_z = this.get_opening_center_z_(group, opening, height);
+
+    const fixture_group = new THREE.Group();
+    fixture_group.position.set(
+      opening_line.center_x,
+      opening_line.center_y,
+      center_z
+    );
+    fixture_group.rotation.z = opening_line.rotation_radians;
+
+    const side_geometry = new THREE.BoxGeometry(frame_thickness, wall_thickness, height);
+    const left_side = new THREE.Mesh(side_geometry, this.opening_frame_material_);
+    left_side.position.x = -(width / 2) + (frame_thickness / 2);
+    left_side.castShadow = true;
+    left_side.receiveShadow = true;
+    left_side.userData.is_opening = true;
+    fixture_group.add(left_side);
+
+    const right_side = new THREE.Mesh(side_geometry, this.opening_frame_material_);
+    right_side.position.x = (width / 2) - (frame_thickness / 2);
+    right_side.castShadow = true;
+    right_side.receiveShadow = true;
+    right_side.userData.is_opening = true;
+    fixture_group.add(right_side);
+
+    const top_geometry = new THREE.BoxGeometry(width, wall_thickness, frame_thickness);
+    const top_frame = new THREE.Mesh(top_geometry, this.opening_frame_material_);
+    top_frame.position.z = (height / 2) - (frame_thickness / 2);
+    top_frame.castShadow = true;
+    top_frame.receiveShadow = true;
+    top_frame.userData.is_opening = true;
+    fixture_group.add(top_frame);
+
+    if (opening.type === 'window' || opening.type === 'glass') {
+      const bottom_frame = new THREE.Mesh(top_geometry, this.opening_frame_material_);
+      bottom_frame.position.z = -(height / 2) + (frame_thickness / 2);
+      bottom_frame.castShadow = true;
+      bottom_frame.receiveShadow = true;
+      bottom_frame.userData.is_opening = true;
+      fixture_group.add(bottom_frame);
+
+      // Keep pane nearly flush to the inner frame; only leave a tiny inset to
+      // avoid edge z-fighting/flicker.
+      const pane_inset = 0.05;
+      const pane_width = Math.max(6, width - (frame_thickness * 2) - pane_inset);
+      const pane_height = Math.max(6, height - (frame_thickness * 2) - pane_inset);
+      const pane_depth = Math.max(0.25, wall_thickness * 0.18);
+      const pane = new THREE.Mesh(
+        new THREE.BoxGeometry(pane_width, pane_depth, pane_height),
+        this.window_pane_material_
+      );
+      pane.castShadow = false;
+      pane.receiveShadow = false;
+      pane.userData.is_opening = true;
+      fixture_group.add(pane);
+
+      if (opening.type === 'window') {
+        const divider_thickness = Math.max(1.4, frame_thickness * 0.7);
+        const divider_overhang = Math.max(0.35, wall_thickness * 0.12);
+        const divider_depth = wall_thickness + (divider_overhang * 2);
+        const divider = new THREE.Mesh(
+          new THREE.BoxGeometry(
+            pane_width,
+            divider_depth,
+            divider_thickness
+          ),
+          this.opening_frame_material_
+        );
+        divider.position.z = 0;
+        // Keep centered so the mullion protrudes equally from front/back faces.
+        divider.position.y = 0;
+        divider.castShadow = true;
+        divider.receiveShadow = true;
+        divider.userData.is_opening = true;
+        fixture_group.add(divider);
+      }
+    } else if (opening.type === 'door') {
+      const bottom_frame = new THREE.Mesh(top_geometry, this.opening_frame_material_);
+      bottom_frame.position.z = -(height / 2) + (frame_thickness / 2);
+      bottom_frame.castShadow = true;
+      bottom_frame.receiveShadow = true;
+      bottom_frame.userData.is_opening = true;
+      fixture_group.add(bottom_frame);
+
+      const door_clearance = 0.25;
+      const door_width = Math.max(10, width - (frame_thickness * 2) - door_clearance);
+      const door_height = Math.max(12, height - (frame_thickness * 2) - door_clearance);
+      const door_depth = Math.max(0.6, wall_thickness * 0.35);
+      const raw_door_color = String(opening.color || '#7a573b').toLowerCase();
+      const door_color = ['#2d2d2d', '#3f3f3f'].includes(raw_door_color)
+        ? '#4a4a4a'
+        : raw_door_color;
+      const door_material = new THREE.MeshStandardMaterial({
+        'color': door_color,
+        'roughness': 0.72,
+        'metalness': 0.0
+      });
+      const door = new THREE.Mesh(
+        new THREE.BoxGeometry(door_width, door_depth, door_height),
+        door_material
+      );
+      door.position.z = 0;
+      door.castShadow = true;
+      door.receiveShadow = true;
+      door.userData.is_opening = true;
+      fixture_group.add(door);
+
+    }
+
+    layer.add(fixture_group);
+  }, this);
+};
+
+/**
+ * Convert color temperature in Kelvin to RGB color.
+ *
+ * @param {number} temperature_k
+ *
+ * @return {THREE.Color}
+ */
+beestat.component.scene.prototype.get_light_color_from_temperature_ = function(temperature_k) {
+  const kelvin = Math.max(1000, Math.min(12000, Number(temperature_k || 4000)));
+  const temp = kelvin / 100;
+
+  let red;
+  let green;
+  let blue;
+
+  if (temp <= 66) {
+    red = 255;
+    green = 99.4708025861 * Math.log(temp) - 161.1195681661;
+    blue = temp <= 19 ? 0 : (138.5177312231 * Math.log(temp - 10) - 305.0447927307);
+  } else {
+    red = 329.698727446 * Math.pow(temp - 60, -0.1332047592);
+    green = 288.1221695283 * Math.pow(temp - 60, -0.0755148492);
+    blue = 255;
+  }
+
+  const clamp_channel = function(value) {
+    return Math.max(0, Math.min(255, Number(value || 0)));
+  };
+
+  return new THREE.Color(
+    clamp_channel(red) / 255,
+    clamp_channel(green) / 255,
+    clamp_channel(blue) / 255
+  );
+};
+
+/**
+ * Add floor-plan light sources.
+ *
+ * @param {THREE.Group} layer The layer to add light sources to.
+ * @param {object} group The floor plan group.
+ */
+beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
+  if (Array.isArray(group.light_sources) !== true || group.light_sources.length === 0) {
+    return;
+  }
+  if (Array.isArray(this.light_sources_) !== true) {
+    this.light_sources_ = [];
+  }
+
+  if (this.debug_.light_source_orbs === true) {
+    if (this.light_source_marker_geometry_ === undefined) {
+      this.light_source_marker_geometry_ = new THREE.SphereGeometry(2.2, 12, 12);
+    }
+    if (this.light_source_glow_geometry_ === undefined) {
+      this.light_source_glow_geometry_ = new THREE.SphereGeometry(6, 16, 16);
+    }
+    if (this.light_source_marker_material_ === undefined) {
+      this.light_source_marker_material_ = new THREE.MeshStandardMaterial({
+        'roughness': 0.2,
+        'metalness': 0.05
+      });
+    }
+    if (this.light_source_glow_material_ === undefined) {
+      this.light_source_glow_material_ = new THREE.MeshBasicMaterial({
+        'transparent': true,
+        'opacity': 0.28,
+        'depthWrite': false,
+        'blending': THREE.AdditiveBlending
+      });
+    }
+  }
+
+  const group_elevation = Number(group.elevation || 0);
+  const floor_thickness = Number(beestat.component.scene.room_floor_thickness || 0);
+
+  group.light_sources.forEach(function(light_source) {
+    const x = Number(light_source.x || 0);
+    const y = Number(light_source.y || 0);
+    const elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 84);
+    const z = -group_elevation - floor_thickness - elevation;
+    let intensity_level = 2;
+    if (light_source.intensity === 'dim') {
+      intensity_level = 1;
+    } else if (light_source.intensity === 'bright') {
+      intensity_level = 3;
+    }
+    const light_intensity = 0.9 * intensity_level;
+    const light_color = this.get_light_color_from_temperature_(light_source.temperature_k);
+
+    if (this.debug_.light_source_orbs === true) {
+      const marker = new THREE.Mesh(
+        this.light_source_marker_geometry_,
+        this.light_source_marker_material_.clone()
+      );
+      marker.material.color.copy(light_color);
+      marker.material.emissive.copy(light_color);
+      marker.material.emissiveIntensity = 0.9 + (intensity_level * 0.35);
+      marker.position.set(x, y, z);
+      marker.castShadow = false;
+      marker.receiveShadow = false;
+      marker.userData.is_light_source = true;
+      layer.add(marker);
+
+      const glow = new THREE.Mesh(
+        this.light_source_glow_geometry_,
+        this.light_source_glow_material_.clone()
+      );
+      glow.material.color.copy(light_color);
+      glow.material.opacity = 0.15 + (intensity_level * 0.08);
+      glow.position.set(x, y, z);
+      glow.castShadow = false;
+      glow.receiveShadow = false;
+      glow.userData.is_light_source = true;
+      layer.add(glow);
+    }
+
+    const light = new THREE.PointLight(light_color, light_intensity, 240, 2);
+    light.userData.base_intensity = light_intensity;
+    light.intensity = light_intensity * Number(this.target_light_source_intensity_multiplier_ || 0);
+    light.position.set(x, y, z);
+    light.castShadow = false;
+    light.userData.is_light_source = true;
+    layer.add(light);
+    this.light_sources_.push(light);
+  }, this);
+};
+
+/**
+ * Add warm interior point lights, one per room. Lights are invisible and their
+ * intensity is animated based on night/day state.
+ *
+ * @param {object} floor_plan The floor plan data.
+ */
+beestat.component.scene.prototype.add_interior_lights_ = function(floor_plan) {
+  this.interior_lights_ = [];
+  this.interior_light_group_ = new THREE.Group();
+  this.floor_plan_group_.add(this.interior_light_group_);
+  this.layers_['interior_lights'] = this.interior_light_group_;
+  let shadowed_light_count = 0;
+
+  floor_plan.data.groups.forEach(function(group) {
+    group.rooms.forEach((room) => {
+      if (room.points === undefined || room.points.length < 3) {
+        return;
+      }
+
+      const geojson_polygon = [];
+      room.points.forEach(function(point) {
+        geojson_polygon.push([
+          point.x,
+          point.y
+        ]);
+      });
+      const light_point = polylabel([geojson_polygon]);
+
+      const group_elevation = Number(group.elevation || 0);
+      const room_height = Number(room.height || group.height || 96);
+      const room_elevation = Number(room.elevation !== undefined ? room.elevation : group_elevation);
+
+      const light = new THREE.PointLight(0xffd79a, 0, 170, 2);
+      light.position.set(
+        Number(room.x || 0) + light_point[0],
+        Number(room.y || 0) + light_point[1],
+        -room_elevation - (room_height * 0.45)
+      );
+      if (shadowed_light_count < beestat.component.scene.interior_light_shadow_max) {
+        light.castShadow = true;
+        light.shadow.mapSize.width = 512;
+        light.shadow.mapSize.height = 512;
+        light.shadow.bias = -0.0012;
+        light.shadow.normalBias = 0.025;
+        light.shadow.radius = 2;
+        light.shadow.camera.near = 1;
+        light.shadow.camera.far = 220;
+        shadowed_light_count++;
+      } else {
+        light.castShadow = false;
+      }
+
+      this.interior_light_group_.add(light);
+      this.interior_lights_.push(light);
+    });
+  }, this);
 };
 
 /**
@@ -2483,6 +2989,21 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     floor_plan,
     opening_cutter_debug_layer
   );
+
+  const openings_layer = new THREE.Group();
+  this.floor_plan_group_.add(openings_layer);
+  this.layers_['openings'] = openings_layer;
+  floor_plan.data.groups.forEach(function(group) {
+    self.add_opening_fixtures_(openings_layer, group);
+  });
+
+  this.light_sources_ = [];
+  const light_sources_layer = new THREE.Group();
+  this.floor_plan_group_.add(light_sources_layer);
+  this.layers_['light_sources'] = light_sources_layer;
+  floor_plan.data.groups.forEach(function(group) {
+    self.add_light_sources_(light_sources_layer, group);
+  });
 
   if (this.debug_.openings === true) {
     const openings_debug_layer = new THREE.Group();
@@ -4177,7 +4698,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   if (foliage_enabled === true) {
     this.tree_branch_groups_.push(branches);
   }
-  branches.visible = foliage_enabled !== true;
+  branches.visible = this.debug_.hide_tree_branches !== true && foliage_enabled !== true;
   tree.add(branches);
   if (foliage_enabled === true) {
     tree.add(foliage);
@@ -4272,7 +4793,8 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       const branch_group = this.tree_branch_groups_[i];
       if (branch_group !== undefined) {
         // Hide branches when canopy is visible; show them when canopy is not visible.
-        branch_group.visible = state.visible !== true;
+        // Debug override can force branch meshes hidden at all times.
+        branch_group.visible = this.debug_.hide_tree_branches !== true && state.visible !== true;
       }
     }
   }
@@ -4683,6 +5205,38 @@ beestat.component.scene.prototype.set_labels = function(labels) {
 };
 
 /**
+ * Set whether room floor meshes can be hovered/selected.
+ *
+ * @param {boolean} enabled
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_room_interaction_enabled = function(enabled) {
+  this.room_interaction_enabled_ = enabled !== false;
+
+  if (this.room_interaction_enabled_ !== true) {
+    if (this.intersected_mesh_ !== undefined) {
+      if (
+        this.intersected_mesh_.material !== undefined &&
+        this.intersected_mesh_.material.emissive !== undefined
+      ) {
+        this.intersected_mesh_.material.emissive.setHex(0x000000);
+      }
+      delete this.intersected_mesh_;
+    }
+    if (this.active_mesh_ !== undefined) {
+      delete this.active_mesh_;
+    }
+    document.body.style.cursor = '';
+    if (this.rendered_ === true) {
+      this.update_();
+    }
+  }
+
+  return this;
+};
+
+/**
  * Set the gradient.
  *
  * @param {boolean} gradient
@@ -4874,6 +5428,24 @@ beestat.component.scene.prototype.dispose = function() {
   }
   if (this.csg_cutter_material_ !== undefined) {
     this.csg_cutter_material_.dispose();
+  }
+  if (this.opening_frame_material_ !== undefined) {
+    this.opening_frame_material_.dispose();
+  }
+  if (this.window_pane_material_ !== undefined) {
+    this.window_pane_material_.dispose();
+  }
+  if (this.light_source_marker_material_ !== undefined) {
+    this.light_source_marker_material_.dispose();
+  }
+  if (this.light_source_glow_material_ !== undefined) {
+    this.light_source_glow_material_.dispose();
+  }
+  if (this.light_source_marker_geometry_ !== undefined) {
+    this.light_source_marker_geometry_.dispose();
+  }
+  if (this.light_source_glow_geometry_ !== undefined) {
+    this.light_source_glow_geometry_.dispose();
   }
 
   // Clean up THREE.js scene resources
