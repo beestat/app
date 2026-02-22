@@ -16,7 +16,44 @@ beestat.component.scene.prototype.set_weather = function(weather) {
     floor_plan.data.appearance = {};
   }
   floor_plan.data.appearance.weather = weather;
-  this.update_weather_targets_();
+
+  // Backward-compatible weather mode support by translating to density values.
+  let weather_settings;
+  switch (weather) {
+  case 'snow':
+    weather_settings = {
+      'cloud_density': 1,
+      'rain_density': 0,
+      'snow_density': 1
+    };
+    break;
+  case 'rain':
+    weather_settings = {
+      'cloud_density': 1,
+      'rain_density': 1,
+      'snow_density': 0
+    };
+    break;
+  case 'cloudy':
+    weather_settings = {
+      'cloud_density': 1,
+      'rain_density': 0,
+      'snow_density': 0
+    };
+    break;
+  case 'sunny':
+  case 'none':
+  default:
+    weather_settings = {
+      'cloud_density': 0,
+      'rain_density': 0,
+      'snow_density': 0
+    };
+    break;
+  }
+  this.set_scene_settings(weather_settings, {
+    'rerender': false
+  });
 
   if (this.rendered_ === true) {
     this.update_();
@@ -27,41 +64,74 @@ beestat.component.scene.prototype.set_weather = function(weather) {
 
 
 /**
- * Get weather transition profile for visuals.
+ * Get design count at density 1 for a weather channel.
  *
- * @param {string} weather
+ * @param {string} density_key
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_weather_design_count_ = function(density_key) {
+  switch (density_key) {
+  case 'cloud_density':
+    return Math.max(1, Number(beestat.component.scene.weather_cloud_max_count || 1));
+  case 'rain_density':
+    return Math.max(1, Number(beestat.component.scene.weather_rain_max_count || 1));
+  case 'snow_density':
+    return Math.max(1, Number(beestat.component.scene.weather_snow_max_count || 1));
+  default:
+    return 1;
+  }
+};
+
+/**
+ * Get design capacity count (density 1) for a weather channel and area.
+ *
+ * @param {string} density_key
+ * @param {number=} opt_area
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_weather_design_capacity_count_ = function(density_key, opt_area) {
+  const design_count = this.get_weather_design_count_(density_key);
+  const area = Math.max(
+    1,
+    Number(opt_area || this.weather_area_ || beestat.component.scene.weather_density_unit_area)
+  );
+  const unit_area = Math.max(1, Number(beestat.component.scene.weather_density_unit_area || 1));
+  return Math.max(0, Math.round(design_count * (area / unit_area)));
+};
+
+/**
+ * Convert density setting to particle count using scene area.
+ *
+ * @param {string} density_key
+ * @param {number=} opt_area
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_weather_count_from_density_ = function(density_key, opt_area) {
+  const density = Math.max(0, Number(this.get_scene_setting_(density_key) || 0));
+  const design_count = this.get_weather_design_count_(density_key);
+  const area = Math.max(
+    1,
+    Number(opt_area || this.weather_area_ || beestat.component.scene.weather_density_unit_area)
+  );
+  const unit_area = Math.max(1, Number(beestat.component.scene.weather_density_unit_area || 1));
+
+  return Math.max(0, Math.round(design_count * density * (area / unit_area)));
+};
+
+/**
+ * Get weather transition profile for visuals.
  *
  * @return {object}
  */
-beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
-  switch (weather) {
-  case 'snow':
-    return {
-      'cloud_count': beestat.component.scene.weather_cloud_max_count,
-      'rain_count': 0,
-      'snow_count': beestat.component.scene.weather_snow_max_count
-    };
-  case 'rain':
-    return {
-      'cloud_count': Math.round(beestat.component.scene.weather_cloud_max_count * 0.92),
-      'rain_count': beestat.component.scene.weather_rain_max_count,
-      'snow_count': 0
-    };
-  case 'cloudy':
-    return {
-      'cloud_count': Math.round(beestat.component.scene.weather_cloud_max_count * 0.72),
-      'rain_count': 0,
-      'snow_count': 0
-    };
-  case 'sunny':
-  case 'none':
-  default:
-    return {
-      'cloud_count': 0,
-      'rain_count': 0,
-      'snow_count': 0
-    };
-  }
+beestat.component.scene.prototype.get_weather_profile_ = function() {
+  return {
+    'cloud_count': this.get_weather_count_from_density_('cloud_density'),
+    'rain_count': this.get_weather_count_from_density_('rain_density'),
+    'snow_count': this.get_weather_count_from_density_('snow_density')
+  };
 };
 
 
@@ -71,6 +141,10 @@ beestat.component.scene.prototype.get_weather_profile_ = function(weather) {
  * @return {number}
  */
 beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
+  const configured_cloud_count = Math.max(
+    1,
+    this.get_weather_design_capacity_count_('cloud_density')
+  );
   const current_cloud_count = this.current_cloud_count_ === undefined
     ? 0
     : this.current_cloud_count_;
@@ -78,7 +152,7 @@ beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
     0,
     Math.min(
       1,
-      current_cloud_count / beestat.component.scene.weather_cloud_max_count
+      current_cloud_count / configured_cloud_count
     )
   );
 
@@ -90,7 +164,7 @@ beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
  * Update weather transition targets based on appearance weather.
  */
 beestat.component.scene.prototype.update_weather_targets_ = function() {
-  this.weather_profile_target_ = this.get_weather_profile_(this.get_appearance_value_('weather'));
+  this.weather_profile_target_ = this.get_weather_profile_();
 
   this.weather_transition_start_profile_ = {
     'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
@@ -107,9 +181,10 @@ beestat.component.scene.prototype.update_weather_targets_ = function() {
  * @return {number}
  */
 beestat.component.scene.prototype.get_snow_cover_blend_ = function() {
+  const configured_snow_count = this.get_weather_design_capacity_count_('snow_density');
   if (
     this.current_snow_count_ === undefined ||
-    beestat.component.scene.weather_snow_max_count <= 0
+    configured_snow_count <= 0
   ) {
     return 0;
   }
@@ -118,7 +193,7 @@ beestat.component.scene.prototype.get_snow_cover_blend_ = function() {
     0,
     Math.min(
       1,
-      this.current_snow_count_ / beestat.component.scene.weather_snow_max_count
+      this.current_snow_count_ / configured_snow_count
     )
   );
 };
@@ -340,6 +415,10 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     'min_z': -780,
     'max_z': 140
   };
+  this.weather_area_ = Math.max(
+    1,
+    (bounds.max_x - bounds.min_x) * (bounds.max_y - bounds.min_y)
+  );
 
   this.weather_group_ = new THREE.Group();
   this.weather_group_.userData.is_environment = true;
@@ -356,7 +435,14 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     this.rain_particle_texture_ = this.create_rain_particle_texture_();
   }
 
-  const cloud_count = beestat.component.scene.weather_cloud_max_count;
+  const configured_cloud_count = this.get_weather_count_from_density_(
+    'cloud_density',
+    this.weather_area_
+  );
+  const cloud_capacity = Math.max(
+    this.get_weather_design_capacity_count_('cloud_density', this.weather_area_),
+    configured_cloud_count
+  );
   const cloud_opacity = 0.2;
   const cloud_bounds = {
     'min_x': bounds.min_x - 260,
@@ -370,7 +456,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   this.cloud_sprites_ = [];
   this.cloud_motion_ = [];
 
-  for (let i = 0; i < cloud_count; i++) {
+  for (let i = 0; i < cloud_capacity; i++) {
     const cloud_material = new THREE.SpriteMaterial({
       'map': this.cloud_texture_,
       'color': 0xdce3ee,
@@ -415,7 +501,10 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
 
   this.rain_particles_ = this.create_precipitation_system_(
     bounds,
-    beestat.component.scene.weather_rain_max_count,
+    Math.max(
+      this.get_weather_design_capacity_count_('rain_density', this.weather_area_),
+      this.get_weather_count_from_density_('rain_density', this.weather_area_)
+    ),
     {
       'size': 11,
       'color': 0xa8c7ff,
@@ -430,7 +519,10 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
 
   this.snow_particles_ = this.create_precipitation_system_(
     bounds,
-    beestat.component.scene.weather_snow_max_count,
+    Math.max(
+      this.get_weather_design_capacity_count_('snow_density', this.weather_area_),
+      this.get_weather_count_from_density_('snow_density', this.weather_area_)
+    ),
     {
       'size': 10,
       'color': 0xffffff,
@@ -445,7 +537,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
 
   this.weather_last_update_ms_ = window.performance.now();
 
-  const initial_weather_profile = this.get_weather_profile_(this.get_appearance_value_('weather'));
+  const initial_weather_profile = this.get_weather_profile_();
   this.weather_profile_target_ = initial_weather_profile;
   this.current_cloud_count_ = initial_weather_profile.cloud_count;
   this.current_rain_count_ = initial_weather_profile.rain_count;
@@ -517,11 +609,15 @@ beestat.component.scene.prototype.update_weather_ = function() {
 
   if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
     const now_seconds = now_ms / 1000;
+    const cloud_normalization_count = Math.max(
+      1,
+      this.get_weather_design_capacity_count_('cloud_density')
+    );
     const cloud_density = Math.max(
       0,
       Math.min(
         1,
-        this.current_cloud_count_ / beestat.component.scene.weather_cloud_max_count
+        this.current_cloud_count_ / cloud_normalization_count
       )
     );
     for (let i = 0; i < this.cloud_sprites_.length; i++) {

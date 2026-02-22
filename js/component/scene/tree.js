@@ -319,7 +319,7 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
       : (radius_bottom * resolved_top_ratio)
   );
   const radial_segments = Math.max(3, config.radial_segments || 7);
-  const height_segments = Math.max(1, config.height_segments || 6);
+  const segments = Math.max(1, Math.round(height / 12));
   const control_count = Math.max(2, config.control_count || 5);
   const max_drift = Math.max(0, config.max_drift || 0);
   const direction_jitter = config.direction_jitter || (radius_bottom * 0.15);
@@ -353,7 +353,7 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
     radius_bottom,
     height,
     radial_segments,
-    height_segments
+    segments
   );
   geometry.rotateX(-Math.PI / 2);
 
@@ -492,7 +492,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'height': trunk_height,
     'radius_bottom': trunk_radius_bottom,
     'radial_segments': 7,
-    'height_segments': 8,
     'control_count': 6,
     'max_drift': 8,
     'direction_jitter': 3,
@@ -627,7 +626,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     };
   };
   const branch_height_samples = [];
-  const recursive_depth_limit = 1;
+  const recursive_depth_limit = Math.max(
+    0,
+    Math.round(Number(this.get_scene_setting_('tree_branch_depth') || 0))
+  );
   const children_per_branch = 2;
   if (foliage_enabled === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
@@ -696,7 +698,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       'height': length,
       'radius_bottom': radius_bottom,
       'radial_segments': 7,
-      'height_segments': 6,
       'control_count': 6,
       'max_drift': length * 0.24,
       'direction_jitter': length * 0.12,
@@ -787,7 +788,13 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   }
 
   if (foliage_enabled === true) {
-    const canopy_result = create_canopy_from_branch_function_();
+    const canopy_seed = this.get_seed_from_parts_([
+      this.active_tree_seed_ === undefined ? this.get_scene_setting_('random_seed') : this.active_tree_seed_,
+      'canopy'
+    ]);
+    const canopy_result = this.with_random_seed_(canopy_seed, function() {
+      return create_canopy_from_branch_function_();
+    });
     const canopy_mesh = canopy_result.mesh;
     canopy_mesh.castShadow = true;
     canopy_mesh.receiveShadow = true;
@@ -799,7 +806,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   if (foliage_enabled === true) {
     this.tree_branch_groups_.push(branches);
   }
-  branches.visible = this.debug_.hide_tree_branches !== true && foliage_enabled !== true;
+  branches.visible =
+    this.debug_.hide_tree_branches !== true;
   tree.add(branches);
   if (foliage_enabled === true) {
     tree.add(foliage);

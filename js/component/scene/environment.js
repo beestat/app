@@ -56,6 +56,8 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
   }
 
   const state = this.get_tree_foliage_state_();
+  const tree_foliage_enabled = state.visible === true;
+  const tree_branch_enabled = state.visible !== true;
   if (has_foliage_meshes === true) {
     for (let i = 0; i < this.tree_foliage_meshes_.length; i++) {
       const mesh = this.tree_foliage_meshes_[i];
@@ -68,7 +70,7 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       mesh.material.transparent = beestat.component.scene.debug_tree_canopy_opacity < 1;
       mesh.material.depthWrite = beestat.component.scene.debug_tree_canopy_opacity >= 1;
       mesh.material.needsUpdate = true;
-      mesh.visible = state.visible;
+      mesh.visible = tree_foliage_enabled === true;
     }
   }
 
@@ -78,7 +80,9 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       if (branch_group !== undefined) {
         // Hide branches when canopy is visible; show them when canopy is not visible.
         // Debug override can force branch meshes hidden at all times.
-        branch_group.visible = this.debug_.hide_tree_branches !== true && state.visible !== true;
+        branch_group.visible =
+          this.debug_.hide_tree_branches !== true &&
+          tree_branch_enabled === true;
       }
     }
   }
@@ -91,14 +95,16 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
  * @param {number} ground_surface_z
  */
 beestat.component.scene.prototype.add_trees_ = function(ground_surface_z) {
+  if (this.get_scene_setting_('tree_enabled') !== true) {
+    return;
+  }
+
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const tree_group = new THREE.Group();
   tree_group.userData.is_environment = true;
   this.environment_group_.add(tree_group);
   this.tree_foliage_meshes_ = [];
   this.tree_branch_groups_ = [];
-
-  const foliage_enabled = beestat.component.scene.environment_tree_foliage_enabled;
 
   const trees = [];
   floor_plan.data.groups.forEach(function(group) {
@@ -109,7 +115,7 @@ beestat.component.scene.prototype.add_trees_ = function(ground_surface_z) {
     }
   });
 
-  trees.forEach(function(tree_data) {
+  trees.forEach(function(tree_data, tree_index) {
     const tree_type = ['conical', 'round', 'oval'].includes(tree_data.type)
       ? tree_data.type
       : 'round';
@@ -118,14 +124,27 @@ beestat.component.scene.prototype.add_trees_ = function(ground_surface_z) {
     const tree_x = Number(tree_data.x || 0);
     const tree_y = Number(tree_data.y || 0);
 
-    let tree;
-    if (tree_type === 'conical') {
-      tree = this.create_conical_tree_(tree_height, tree_diameter, foliage_enabled);
-    } else if (tree_type === 'oval') {
-      tree = this.create_oval_tree_(tree_height, tree_diameter, foliage_enabled);
-    } else {
-      tree = this.create_round_tree_(tree_height, tree_diameter, foliage_enabled);
-    }
+    const tree_seed = this.get_seed_from_parts_([
+      this.get_scene_setting_('random_seed'),
+      'tree',
+      tree_index,
+      tree_type,
+      tree_x,
+      tree_y,
+      tree_height,
+      tree_diameter
+    ]);
+
+    const tree = this.with_random_seed_(tree_seed, function() {
+      this.active_tree_seed_ = tree_seed;
+
+      if (tree_type === 'conical') {
+        return this.create_conical_tree_(tree_height, tree_diameter, true);
+      } else if (tree_type === 'oval') {
+        return this.create_oval_tree_(tree_height, tree_diameter, true);
+      }
+      return this.create_round_tree_(tree_height, tree_diameter, true);
+    }.bind(this));
 
     tree.position.set(tree_x, tree_y, ground_surface_z);
     tree.rotation.z = 0;

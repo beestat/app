@@ -264,20 +264,184 @@ beestat.component.scene.sidereal_day_seconds = 86164.0905;
 beestat.component.scene.star_drift_visual_factor = 0.12;
 
 /**
+ * Runtime scene settings exposed through the scene settings panel.
+ *
+ * @type {{
+ *   cloud_density: number,
+ *   rain_density: number,
+ *   snow_density: number,
+ *   tree_enabled: boolean,
+ *   tree_branch_depth: number,
+ *   star_density: number,
+ *   light_user_enabled: boolean,
+ *   random_seed: number
+ * }}
+ */
+beestat.component.scene.default_settings = {
+  'cloud_density': 1,
+  'rain_density': 1,
+  'snow_density': 1,
+  'tree_enabled': true,
+  'tree_branch_depth': 1,
+  'star_density': 1,
+  'light_user_enabled': true,
+  'random_seed': 1
+};
+
+/**
+ * Normalization area used to convert weather density to particle counts.
+ *
+ * @type {number}
+ */
+beestat.component.scene.weather_density_unit_area = 2500000;
+
+/**
+ * Build deterministic PRNG from a numeric seed.
+ *
+ * @param {number} seed
+ *
+ * @return {function(): number}
+ */
+beestat.component.scene.prototype.create_seeded_random_generator_ = function(seed) {
+  let state = (seed >>> 0);
+  if (state === 0) {
+    state = 0x6d2b79f5;
+  }
+
+  return function() {
+    state += 0x6d2b79f5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+/**
+ * Reset random generator for this scene from current seed setting.
+ */
+beestat.component.scene.prototype.reset_random_generator_ = function() {
+  const raw_seed = Number(this.get_scene_setting_('random_seed'));
+  const normalized_seed = Number.isFinite(raw_seed)
+    ? Math.max(1, Math.round(raw_seed))
+    : 1;
+  this.random_seed_ = normalized_seed;
+  this.random_generator_ = this.create_seeded_random_generator_(normalized_seed);
+};
+
+/**
+ * Get deterministic random number in [0, 1).
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.random_ = function() {
+  if (typeof this.random_generator_ !== 'function') {
+    this.reset_random_generator_();
+  }
+  return this.random_generator_();
+};
+
+/**
+ * Run scene-generation logic using deterministic Math.random.
+ *
+ * @param {function()} callback
+ */
+beestat.component.scene.prototype.with_seeded_random_ = function(callback) {
+  const original_random = Math.random;
+  this.reset_random_generator_();
+  Math.random = this.random_.bind(this);
+  try {
+    callback();
+  } finally {
+    Math.random = original_random;
+  }
+};
+
+/**
+ * Build deterministic unsigned seed from string parts.
+ *
+ * @param {Array<*>} parts
+ *
+ * @return {number}
+ */
+beestat.component.scene.prototype.get_seed_from_parts_ = function(parts) {
+  const input = parts.map((part) => String(part)).join('|');
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  hash >>>= 0;
+  return hash === 0 ? 1 : hash;
+};
+
+/**
+ * Run callback with a temporary deterministic random source.
+ *
+ * @param {number} seed
+ * @param {function()} callback
+ *
+ * @return {*}
+ */
+beestat.component.scene.prototype.with_random_seed_ = function(seed, callback) {
+  const normalized_seed = Math.max(1, Number(seed || 1) >>> 0);
+  const original_random = Math.random;
+  const local_random = this.create_seeded_random_generator_(normalized_seed);
+  Math.random = local_random;
+  try {
+    return callback();
+  } finally {
+    Math.random = original_random;
+  }
+};
+
+/**
  * Rerender the scene by removing the primary group, then re-adding it and the
  * floor plan. This avoids having to reconstruct everything and then also
  * having to manually save camera info etc.
  */
 beestat.component.scene.prototype.rerender = function() {
+  this.reset_celestial_lights_for_rerender_();
   this.scene_.remove(this.main_group_);
-  this.add_main_group_();
-  this.add_floor_plan_();
+  this.with_seeded_random_(function() {
+    this.add_main_group_();
+    this.add_floor_plan_();
+  }.bind(this));
   this.apply_appearance_rotation_to_lights_();
 
   // Ensure everything gets updated with the latest info.
   if (this.rendered_ === true) {
     this.update_();
   }
+};
+
+/**
+ * Reset celestial objects so rerender can rebuild stars/lights from settings.
+ */
+beestat.component.scene.prototype.reset_celestial_lights_for_rerender_ = function() {
+  if (this.sun_light_ !== undefined && this.sun_light_.target !== undefined && this.sun_light_.target.parent !== null) {
+    this.sun_light_.target.parent.remove(this.sun_light_.target);
+  }
+  if (this.moon_light_ !== undefined && this.moon_light_.target !== undefined && this.moon_light_.target.parent !== null) {
+    this.moon_light_.target.parent.remove(this.moon_light_.target);
+  }
+  if (this.celestial_light_group_ !== undefined && this.celestial_light_group_.parent !== null) {
+    this.celestial_light_group_.parent.remove(this.celestial_light_group_);
+  }
+
+  delete this.celestial_light_group_;
+  delete this.sun_light_;
+  delete this.moon_light_;
+  delete this.sun_light_helper_;
+  delete this.moon_light_helper_;
+  delete this.sun_path_line_;
+  delete this.sun_visual_group_;
+  delete this.sun_core_mesh_;
+  delete this.sun_glow_sprite_;
+  delete this.moon_visual_group_;
+  delete this.moon_sprite_;
+  delete this.star_group_;
+  delete this.stars_;
 };
 
 /**
@@ -293,6 +457,65 @@ beestat.component.scene.prototype.get_appearance_value_ = function(key) {
     return floor_plan.data.appearance[key];
   }
   return beestat.component.scene.default_appearance[key];
+};
+
+/**
+ * Get a scene setting value with default fallback.
+ *
+ * @param {string} key
+ *
+ * @return {*}
+ */
+beestat.component.scene.prototype.get_scene_setting_ = function(key) {
+  if (this.scene_settings_ !== undefined && this.scene_settings_[key] !== undefined) {
+    return this.scene_settings_[key];
+  }
+  return beestat.component.scene.default_settings[key];
+};
+
+/**
+ * Get all currently effective scene settings.
+ *
+ * @return {object}
+ */
+beestat.component.scene.prototype.get_scene_settings = function() {
+  const current_settings = Object.assign({}, beestat.component.scene.default_settings);
+  if (this.scene_settings_ !== undefined) {
+    Object.assign(current_settings, this.scene_settings_);
+  }
+  return current_settings;
+};
+
+/**
+ * Update scene settings.
+ *
+ * @param {object} scene_settings
+ * @param {object=} options
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_scene_settings = function(scene_settings, options) {
+  if (scene_settings === undefined || scene_settings === null) {
+    return this;
+  }
+
+  if (this.scene_settings_ === undefined) {
+    this.scene_settings_ = {};
+  }
+  Object.assign(this.scene_settings_, scene_settings);
+
+  const rerender = options !== undefined && options.rerender === true;
+  if (this.rendered_ === true) {
+    if (rerender === true) {
+      this.rerender();
+    } else {
+      this.update_weather_targets_();
+      this.update_tree_foliage_season_();
+      this.update_weather_();
+    }
+  }
+
+  return this;
 };
 
 /**
@@ -325,6 +548,10 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   // Dark background to help reduce apparant flicker when resizing
   parent.style('background', '#202a30');
 
+  if (this.scene_settings_ === undefined) {
+    this.scene_settings_ = {};
+  }
+
   this.debug_ = {
     'axes': false,
     'directional_light_helpers': false,
@@ -351,8 +578,10 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   this.add_skybox_(parent);
   this.add_static_lights_();
 
-  this.add_main_group_();
-  this.add_floor_plan_();
+  this.with_seeded_random_(function() {
+    this.add_main_group_();
+    this.add_floor_plan_();
+  }.bind(this));
 
   this.fps_ = 0;
   this.fps_frame_count_ = 0;

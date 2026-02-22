@@ -259,7 +259,9 @@ beestat.component.scene.prototype.add_stars_ = function() {
   this.stars_ = [];
 
   const radius = 4200;
-  for (let i = 0; i < beestat.component.scene.star_count; i++) {
+  const star_density = Math.max(0, Number(this.get_scene_setting_('star_density') || 0));
+  const star_count = Math.max(0, Math.round(1000 * star_density));
+  for (let i = 0; i < star_count; i++) {
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos((Math.random() * 2) - 1);
 
@@ -667,6 +669,10 @@ beestat.component.scene.prototype.get_light_color_from_temperature_ = function(t
  * @param {object} group The floor plan group.
  */
 beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
+  if (this.get_scene_setting_('light_user_enabled') !== true) {
+    return;
+  }
+
   if (Array.isArray(group.light_sources) !== true || group.light_sources.length === 0) {
     return;
   }

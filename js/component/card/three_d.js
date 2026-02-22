@@ -40,6 +40,9 @@ beestat.component.card.three_d = function() {
     change_function
   );
 
+  this.scene_settings_menu_open_ = false;
+  this.scene_settings_values_ = undefined;
+
   beestat.component.card.apply(this, arguments);
 };
 beestat.extend(beestat.component.card.three_d, beestat.component.card);
@@ -117,6 +120,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   });
   parent.appendChild(fps_container);
   this.decorate_fps_ticker_(fps_container);
+  this.update_fps_visibility_();
 
   // Toolbar
   const toolbar_container = document.createElement('div');
@@ -128,6 +132,19 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   });
   parent.appendChild(toolbar_container);
   this.decorate_toolbar_(toolbar_container);
+
+  // Scene settings panel
+  const scene_settings_container = document.createElement('div');
+  Object.assign(scene_settings_container.style, {
+    'position': 'absolute',
+    'top': `${beestat.style.size.gutter + 72}px`,
+    'right': `${beestat.style.size.gutter}px`,
+    'min-width': '220px',
+    'max-width': '250px',
+    'z-index': 2
+  });
+  parent.appendChild(scene_settings_container);
+  this.decorate_scene_settings_panel_(scene_settings_container);
 
   // Environment date slider (shown only in environment view)
   const environment_date_container = document.createElement('div');
@@ -374,11 +391,14 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   if (this.scene_ !== undefined) {
     this.scene_.dispose();
   }
+  this.ensure_scene_settings_values_();
   this.scene_ = new beestat.component.scene(
     beestat.setting('visualize.floor_plan_id'),
     this.get_data_()
   );
-  this.apply_weather_setting_to_scene_();
+  this.scene_.set_scene_settings(this.scene_settings_values_, {
+    'rerender': false
+  });
 
   this.scene_.addEventListener('change_active_room', function() {
     self.update_hud_();
@@ -515,23 +535,39 @@ beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
 };
 
 /**
- * Map UI weather mode to scene weather effect.
+ * Map weather mode to weather property values.
  *
  * @param {string} weather_mode
  *
- * @return {string} none|cloudy|rain|snow
+ * @return {{cloud_density: number, rain_density: number, snow_density: number}}
  */
-beestat.component.card.three_d.prototype.get_weather_from_mode_ = function(weather_mode) {
+beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = function(weather_mode) {
   switch (weather_mode) {
   case 'cloudy':
-    return 'cloudy';
+    return {
+      'cloud_density': 1,
+      'rain_density': 0,
+      'snow_density': 0
+    };
   case 'raining':
-    return 'rain';
+    return {
+      'cloud_density': 1,
+      'rain_density': 1,
+      'snow_density': 0
+    };
   case 'snowing':
-    return 'snow';
+    return {
+      'cloud_density': 1,
+      'rain_density': 0,
+      'snow_density': 1
+    };
   case 'sunny':
   default:
-    return 'none';
+    return {
+      'cloud_density': 0,
+      'rain_density': 0,
+      'snow_density': 0
+    };
   }
 };
 
@@ -543,8 +579,220 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
     return;
   }
 
-  const weather = this.get_weather_from_mode_(this.get_weather_mode_());
-  this.scene_.set_weather(weather);
+  this.ensure_scene_settings_values_();
+  const weather_settings = this.get_weather_settings_from_mode_(this.get_weather_mode_());
+  Object.assign(this.scene_settings_values_, weather_settings);
+  this.scene_.set_scene_settings(weather_settings, {
+    'rerender': false
+  });
+
+  if (this.scene_settings_container_ !== undefined) {
+    this.decorate_scene_settings_panel_();
+  }
+};
+
+/**
+ * Get whether or not this user can access scene settings controls.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.can_access_scene_settings_ = function() {
+  return (
+    beestat.user.get() !== undefined &&
+    Number(beestat.user.get().user_id) === 1
+  );
+};
+
+/**
+ * Ensure local scene settings state exists.
+ */
+beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = function() {
+  if (this.scene_settings_values_ !== undefined) {
+    return;
+  }
+
+  this.scene_settings_values_ = Object.assign({}, beestat.component.scene.default_settings);
+  if (
+    this.scene_settings_values_.tree_branch_depth === undefined &&
+    this.scene_settings_values_.tree_branch_recursion_depth !== undefined
+  ) {
+    this.scene_settings_values_.tree_branch_depth = this.scene_settings_values_.tree_branch_recursion_depth;
+  }
+  if (
+    Number.isFinite(Number(this.scene_settings_values_.random_seed)) !== true ||
+    Number(this.scene_settings_values_.random_seed) <= 0
+  ) {
+    this.scene_settings_values_.random_seed = Math.floor(Math.random() * 2147483646) + 1;
+  }
+  Object.assign(
+    this.scene_settings_values_,
+    this.get_weather_settings_from_mode_(this.get_weather_mode_())
+  );
+};
+
+/**
+ * Set one scene setting from the settings panel and force rerender.
+ *
+ * @param {string} key
+ * @param {*} value
+ */
+beestat.component.card.three_d.prototype.set_scene_setting_from_panel_ = function(key, value) {
+  this.ensure_scene_settings_values_();
+  this.scene_settings_values_[key] = value;
+
+  if (this.scene_ !== undefined) {
+    this.scene_.set_scene_settings({
+      [key]: value
+    }, {
+      'rerender': true,
+      'source': 'panel'
+    });
+  }
+};
+
+/**
+ * Decorate scene settings panel.
+ *
+ * @param {HTMLDivElement=} parent
+ */
+beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = function(parent) {
+  if (parent !== undefined) {
+    this.scene_settings_container_ = parent;
+  }
+  if (this.scene_settings_container_ === undefined) {
+    return;
+  }
+
+  this.scene_settings_container_.innerHTML = '';
+  if (this.can_access_scene_settings_() !== true || this.scene_settings_menu_open_ !== true) {
+    this.scene_settings_container_.style.display = 'none';
+    this.update_fps_visibility_();
+    return;
+  }
+  this.scene_settings_container_.style.display = 'block';
+
+  this.ensure_scene_settings_values_();
+
+  const panel = document.createElement('div');
+  Object.assign(panel.style, {
+    'background': 'rgba(32, 42, 48, 0.94)',
+    'border': '1px solid rgba(255,255,255,0.16)',
+    'border-radius': '8px',
+    'padding': '10px',
+    'color': '#fff',
+    'font-size': beestat.style.font_size.small,
+    'display': 'flex',
+    'flex-direction': 'column',
+    'grid-gap': '8px'
+  });
+  this.scene_settings_container_.appendChild(panel);
+
+  const get_title_case_label = (key) => {
+    return key
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+
+  const add_boolean_setting = (label, key) => {
+    const row = document.createElement('label');
+    Object.assign(row.style, {
+      'display': 'flex',
+      'justify-content': 'space-between',
+      'align-items': 'center',
+      'grid-gap': '10px'
+    });
+    const text = document.createElement('span');
+    text.innerText = label;
+    row.appendChild(text);
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = this.scene_settings_values_[key] === true;
+    Object.assign(input.style, {
+      'visibility': 'visible',
+      'appearance': 'auto',
+      '-webkit-appearance': 'checkbox',
+      'accent-color': beestat.style.color.lightblue.base,
+      'width': '16px',
+      'height': '16px',
+      'margin': '0'
+    });
+    input.addEventListener('change', () => {
+      this.set_scene_setting_from_panel_(key, input.checked === true);
+    });
+    row.appendChild(input);
+    panel.appendChild(row);
+  };
+
+  const add_number_setting = (label, key, min, max, step) => {
+    const row = document.createElement('label');
+    Object.assign(row.style, {
+      'display': 'flex',
+      'justify-content': 'space-between',
+      'align-items': 'center',
+      'grid-gap': '10px'
+    });
+    const text = document.createElement('span');
+    text.innerText = label;
+    row.appendChild(text);
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.value = String(this.scene_settings_values_[key]);
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    Object.assign(input.style, {
+      'width': '62px',
+      'background': '#1a242a',
+      'color': '#fff',
+      'border': '1px solid rgba(255,255,255,0.2)',
+      'border-radius': '4px',
+      'padding': '2px 4px'
+    });
+    input.addEventListener('change', () => {
+      const parsed = Number(input.value);
+      if (Number.isFinite(parsed) !== true) {
+        input.value = String(this.scene_settings_values_[key]);
+        return;
+      }
+      const clamped = Math.max(min, Math.min(max, parsed));
+      const normalized = step >= 1 ? Math.round(clamped) : clamped;
+      input.value = String(normalized);
+      this.set_scene_setting_from_panel_(key, normalized);
+    });
+    row.appendChild(input);
+    panel.appendChild(row);
+  };
+
+  const add_separator = () => {
+    const separator = document.createElement('div');
+    Object.assign(separator.style, {
+      'height': '1px',
+      'background': 'rgba(255,255,255,0.16)',
+      'margin': '2px 0'
+    });
+    panel.appendChild(separator);
+  };
+
+  // Weather
+  add_number_setting(get_title_case_label('cloud_density'), 'cloud_density', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('rain_density'), 'rain_density', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('snow_density'), 'snow_density', 0, 2, 0.1);
+
+  add_separator();
+
+  // Tree
+  add_boolean_setting(get_title_case_label('tree_enabled'), 'tree_enabled');
+  add_number_setting(get_title_case_label('tree_branch_depth'), 'tree_branch_depth', 0, 4, 1);
+
+  add_separator();
+
+  // Light / Sky
+  add_number_setting(get_title_case_label('star_density'), 'star_density', 0, 2, 0.1);
+  add_boolean_setting(get_title_case_label('light_user_enabled'), 'light_user_enabled');
+  this.update_fps_visibility_();
 };
 
 /**
@@ -1113,6 +1361,21 @@ beestat.component.card.three_d.prototype.decorate_fps_ticker_ = function(parent)
 };
 
 /**
+ * Show FPS only while scene settings are open.
+ */
+beestat.component.card.three_d.prototype.update_fps_visibility_ = function() {
+  if (this.fps_container_ === undefined) {
+    return;
+  }
+
+  const show = (
+    this.can_access_scene_settings_() === true &&
+    this.scene_settings_menu_open_ === true
+  );
+  this.fps_container_.style.display = show ? 'block' : 'none';
+};
+
+/**
  * Toolbar.
  *
  * @param {HTMLDivElement} parent
@@ -1196,6 +1459,23 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
         e.stopPropagation();
         self.weather_menu_open_ = self.weather_menu_open_ !== true;
         self.decorate_toolbar_();
+      })
+    );
+  }
+
+  if (this.can_access_scene_settings_() === true) {
+    tile_group.add_tile(new beestat.component.tile()
+      .set_icon('tune')
+      .set_title('Scene Settings')
+      .set_text_color(beestat.style.color.gray.light)
+      .set_background_color(this.scene_settings_menu_open_ === true ? beestat.style.color.lightblue.base : beestat.style.color.bluegray.base)
+      .set_background_hover_color(this.scene_settings_menu_open_ === true ? beestat.style.color.lightblue.light : beestat.style.color.bluegray.light)
+      .addEventListener('click', function(e) {
+        e.stopPropagation();
+        self.scene_settings_menu_open_ = self.scene_settings_menu_open_ !== true;
+        self.decorate_toolbar_();
+        self.decorate_scene_settings_panel_();
+        self.update_fps_visibility_();
       })
     );
   }
