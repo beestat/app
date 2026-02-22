@@ -403,6 +403,41 @@ beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = functio
 
 
 /**
+ * Build target sun colors from altitude.
+ * Warmer near horizon and more neutral when the sun is high.
+ *
+ * @param {number} sun_altitude_radians
+ *
+ * @return {{light_color: THREE.Color, core_color: THREE.Color, glow_color: THREE.Color}}
+ */
+beestat.component.scene.prototype.get_sun_color_profile_ = function(sun_altitude_radians) {
+  const warm_start_altitude = THREE.MathUtils.degToRad(-2);
+  const warm_end_altitude = THREE.MathUtils.degToRad(26);
+  const daylight_t = Math.max(
+    0,
+    Math.min(
+      1,
+      (sun_altitude_radians - warm_start_altitude) / Math.max(0.0001, warm_end_altitude - warm_start_altitude)
+    )
+  );
+  const warmth = 1 - daylight_t;
+
+  const light_day = new THREE.Color(0xfff5de);
+  const light_horizon = new THREE.Color(0xffa66c);
+  const core_day = new THREE.Color(0xffffff);
+  const core_horizon = new THREE.Color(0xffcf98);
+  const glow_day = new THREE.Color(0xfff0b0);
+  const glow_horizon = new THREE.Color(0xff8a4f);
+
+  return {
+    'light_color': light_day.clone().lerp(light_horizon, warmth),
+    'core_color': core_day.clone().lerp(core_horizon, warmth * 0.9),
+    'glow_color': glow_day.clone().lerp(glow_horizon, warmth)
+  };
+};
+
+
+/**
  * Update sun and moon light positions based on date and location using SunCalc.
  * Adjusts light intensities based on altitude and moon phase.
  *
@@ -434,6 +469,10 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     this.sun_visual_group_.visible = true;
     this.sun_visual_horizon_fade_ = Math.max(0, Math.min(1, (sun_pos.altitude + 0.15) / 0.3));
   }
+  const sun_color_profile = this.get_sun_color_profile_(sun_pos.altitude);
+  this.target_sun_light_color_ = sun_color_profile.light_color;
+  this.target_sun_core_color_ = sun_color_profile.core_color;
+  this.target_sun_glow_color_ = sun_color_profile.glow_color;
 
   const cloud_dimming = this.get_cloud_dimming_factor_();
 
@@ -567,6 +606,15 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
     const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
     this.target_light_source_intensity_multiplier_ = (hour >= 19 || hour <= 5) ? 1 : 0;
   }
+  if (this.target_sun_light_color_ === undefined) {
+    this.target_sun_light_color_ = new THREE.Color(0xffffdd);
+  }
+  if (this.target_sun_core_color_ === undefined) {
+    this.target_sun_core_color_ = new THREE.Color(0xffffff);
+  }
+  if (this.target_sun_glow_color_ === undefined) {
+    this.target_sun_glow_color_ = new THREE.Color(0xfff0b0);
+  }
 
   // Lerp factor - lower = smoother but slower, higher = faster but jumpier
   const lerp_factor = 0.05;
@@ -576,6 +624,8 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
 
   // Lerp moon intensity
   this.moon_light_.intensity += (this.target_moon_intensity_ - this.moon_light_.intensity) * lerp_factor;
+  const color_lerp_factor = 0.08;
+  this.sun_light_.color.lerp(this.target_sun_light_color_, color_lerp_factor);
 
   if (this.interior_lights_ !== undefined) {
     this.interior_lights_.forEach((light) => {
@@ -603,6 +653,8 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
 
     this.sun_core_mesh_.material.opacity = Math.min(1, (0.65 + visual_strength * 0.8) * visual_strength);
     this.sun_glow_sprite_.material.opacity = Math.min(1, (0.45 + visual_strength * 1.4) * visual_strength);
+    this.sun_core_mesh_.material.color.lerp(this.target_sun_core_color_, color_lerp_factor);
+    this.sun_glow_sprite_.material.color.lerp(this.target_sun_glow_color_, color_lerp_factor);
   }
 
   if (this.moon_sprite_ !== undefined) {
