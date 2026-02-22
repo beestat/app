@@ -4,6 +4,25 @@
 beestat.component.card.three_d = function() {
   const self = this;
 
+  if (
+    beestat.component.card.three_d.active_instance_ !== undefined &&
+    beestat.component.card.three_d.active_instance_ !== null &&
+    beestat.component.card.three_d.active_instance_ !== this
+  ) {
+    beestat.component.card.three_d.active_instance_.force_dispose_stale_instance_();
+  }
+  beestat.component.card.three_d.active_instance_ = this;
+
+  this.disposed_ = false;
+
+  this.handle_scene_settings_change_ = function() {
+    if (self.disposed_ === true || self.scene_ === undefined) {
+      return;
+    }
+    self.update_scene_();
+    self.update_hud_();
+  };
+
   // Things that update the scene that don't require a rerender.
   // TODO these probably need moved to the layer instead of here
   beestat.dispatcher.addEventListener(
@@ -14,20 +33,27 @@ beestat.component.card.three_d = function() {
       'setting.visualize.heat_map_static.temperature.max',
       'setting.visualize.heat_map_static.occupancy.min',
       'setting.visualize.heat_map_static.occupancy.max'
-    ], function() {
-      self.update_scene_();
-      self.update_hud_();
-    });
+    ],
+    this.handle_scene_settings_change_
+  );
 
-  // Rerender the scene when the floor plan changes.
-  beestat.dispatcher.addEventListener('cache.floor_plan', function() {
+  this.handle_floor_plan_cache_change_ = function() {
+    if (self.disposed_ === true || self.scene_ === undefined) {
+      return;
+    }
     self.scene_.rerender();
     self.apply_layer_visibility_();
     self.update_scene_();
     self.update_hud_();
-  });
+  };
 
-  const change_function = beestat.debounce(function() {
+  // Rerender the scene when the floor plan changes.
+  beestat.dispatcher.addEventListener('cache.floor_plan', this.handle_floor_plan_cache_change_);
+
+  this.handle_runtime_data_change_ = beestat.debounce(function() {
+    if (self.disposed_ === true || self.scene_ === undefined) {
+      return;
+    }
     self.state_.scene_camera_state = self.scene_.get_camera_state();
     self.rerender();
   }, 10);
@@ -37,7 +63,7 @@ beestat.component.card.three_d = function() {
       'cache.data.three_d__runtime_sensor',
       'cache.data.three_d__runtime_thermostat'
     ],
-    change_function
+    this.handle_runtime_data_change_
   );
 
   this.scene_settings_menu_open_ = false;
@@ -396,6 +422,18 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     beestat.setting('visualize.floor_plan_id'),
     this.get_data_()
   );
+
+  const initial_width = parent.getBoundingClientRect().width;
+  if (this.state_.width === undefined && initial_width > 0) {
+    this.state_.width = initial_width;
+  }
+  if (this.state_.width !== undefined && this.state_.width > 0) {
+    this.scene_.set_initial_width(this.state_.width);
+  }
+  if (this.state_.scene_camera_state !== undefined) {
+    this.scene_.set_initial_camera_state(this.state_.scene_camera_state);
+  }
+
   this.scene_.set_scene_settings(this.scene_settings_values_, {
     'rerender': false
   });
@@ -483,10 +521,6 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
     this.scene_.set_width(this.state_.width);
   }
 
-  if (this.state_.scene_camera_state !== undefined) {
-    this.scene_.set_camera_state(this.state_.scene_camera_state);
-  }
-
   beestat.dispatcher.removeEventListener('resize.three_d');
   beestat.dispatcher.addEventListener('resize.three_d', function() {
     self.state_.width = parent.getBoundingClientRect().width;
@@ -545,7 +579,7 @@ beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = funct
   switch (weather_mode) {
   case 'cloudy':
     return {
-      'cloud_density': 1,
+      'cloud_density': 0.5,
       'rain_density': 0,
       'snow_density': 0
     };
@@ -2011,8 +2045,82 @@ beestat.component.card.three_d.prototype.get_most_recent_time_with_data_ = funct
   return null;
 };
 
-beestat.component.card.three_d.prototype.dispose = function() {
+/**
+ * Remove global listeners registered by this card instance.
+ */
+beestat.component.card.three_d.prototype.remove_global_listeners_ = function() {
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.data_type',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.heat_map_values',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.heat_map_static.temperature.min',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.heat_map_static.temperature.max',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.heat_map_static.occupancy.min',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'setting.visualize.heat_map_static.occupancy.max',
+    this.handle_scene_settings_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'cache.floor_plan',
+    this.handle_floor_plan_cache_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'cache.data.three_d__runtime_sensor',
+    this.handle_runtime_data_change_
+  );
+  beestat.dispatcher.removeEventListener(
+    'cache.data.three_d__runtime_thermostat',
+    this.handle_runtime_data_change_
+  );
+  beestat.dispatcher.removeEventListener('resize.three_d');
+};
+
+/**
+ * Force teardown for stale card instances that were not formally disposed.
+ */
+beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = function() {
+  if (this.disposed_ === true) {
+    return;
+  }
+
+  this.disposed_ = true;
   window.clearInterval(this.fps_interval_);
   delete this.fps_interval_;
+  this.remove_global_listeners_();
+
+  if (this.scene_ !== undefined) {
+    this.scene_.dispose();
+    delete this.scene_;
+  }
+};
+
+beestat.component.card.three_d.prototype.dispose = function() {
+  this.disposed_ = true;
+
+  window.clearInterval(this.fps_interval_);
+  delete this.fps_interval_;
+  this.remove_global_listeners_();
+
+  if (this.scene_ !== undefined) {
+    this.scene_.dispose();
+    delete this.scene_;
+  }
+  if (beestat.component.card.three_d.active_instance_ === this) {
+    delete beestat.component.card.three_d.active_instance_;
+  }
+
   beestat.component.card.prototype.dispose.apply(this, arguments);
 };

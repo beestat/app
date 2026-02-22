@@ -67,15 +67,18 @@ beestat.component.scene.prototype.add_raycaster_ = function() {
    */
   this.raycaster_pointer_ = new THREE.Vector2(10000, 10000);
 
-  // TODO remove event listener on dispose
-  document.addEventListener('mousemove', function(e) {
+  this.raycaster_document_mousemove_handler_ = function(e) {
     const rect = self.renderer_.domElement.getBoundingClientRect();
     self.raycaster_pointer_.x = ( ( e.clientX - rect.left ) / ( rect.right - rect.left ) ) * 2 - 1;
     self.raycaster_pointer_.y = - ( ( e.clientY - rect.top ) / ( rect.bottom - rect.top) ) * 2 + 1;
-  });
-  // TODO remove event listener on dispose
-  this.renderer_.domElement.addEventListener('mousedown', this.mousedown_handler_.bind(this));
-  this.renderer_.domElement.addEventListener('touchstart', this.mousedown_handler_.bind(this));
+  };
+  document.addEventListener('mousemove', this.raycaster_document_mousemove_handler_);
+
+  this.raycaster_dom_element_ = this.renderer_.domElement;
+  this.raycaster_dom_mousedown_handler_ = this.mousedown_handler_.bind(this);
+  this.raycaster_dom_touchstart_handler_ = this.mousedown_handler_.bind(this);
+  this.raycaster_dom_element_.addEventListener('mousedown', this.raycaster_dom_mousedown_handler_);
+  this.raycaster_dom_element_.addEventListener('touchstart', this.raycaster_dom_touchstart_handler_);
 };
 
 

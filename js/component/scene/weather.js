@@ -36,7 +36,7 @@ beestat.component.scene.prototype.set_weather = function(weather) {
     break;
   case 'cloudy':
     weather_settings = {
-      'cloud_density': 1,
+      'cloud_density': 0.5,
       'rain_density': 0,
       'snow_density': 0
     };

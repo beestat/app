@@ -402,7 +402,11 @@ beestat.component.scene.prototype.with_random_seed_ = function(seed, callback) {
  */
 beestat.component.scene.prototype.rerender = function() {
   this.reset_celestial_lights_for_rerender_();
-  this.scene_.remove(this.main_group_);
+  if (this.main_group_ !== undefined) {
+    this.dispose_object3d_resources_(this.main_group_);
+    this.scene_.remove(this.main_group_);
+  }
+  this.reset_runtime_scene_references_for_rerender_();
   this.with_seeded_random_(function() {
     this.add_main_group_();
     this.add_floor_plan_();
@@ -413,6 +417,91 @@ beestat.component.scene.prototype.rerender = function() {
   if (this.rendered_ === true) {
     this.update_();
   }
+};
+
+/**
+ * Dispose geometries/materials/textures under an Object3D subtree.
+ *
+ * @param {THREE.Object3D} root
+ */
+beestat.component.scene.prototype.dispose_object3d_resources_ = function(root) {
+  if (root === undefined || root === null || typeof root.traverse !== 'function') {
+    return;
+  }
+
+  const disposed_textures = new Set();
+  const disposed_materials = new Set();
+  const dispose_texture = function(texture) {
+    if (
+      texture !== undefined &&
+      texture !== null &&
+      texture.isTexture === true &&
+      disposed_textures.has(texture) !== true
+    ) {
+      disposed_textures.add(texture);
+      texture.dispose();
+    }
+  };
+  const dispose_material = function(material) {
+    if (material === undefined || material === null) {
+      return;
+    }
+    if (disposed_materials.has(material) === true) {
+      return;
+    }
+    disposed_materials.add(material);
+
+    for (const key in material) {
+      if (Object.prototype.hasOwnProperty.call(material, key) !== true) {
+        continue;
+      }
+      const value = material[key];
+      if (value !== undefined && value !== null && value.isTexture === true) {
+        dispose_texture(value);
+      }
+    }
+    material.dispose();
+  };
+
+  root.traverse(function(object) {
+    if (object.geometry !== undefined && object.geometry !== null) {
+      object.geometry.dispose();
+    }
+    if (object.material !== undefined && object.material !== null) {
+      if (Array.isArray(object.material) === true) {
+        object.material.forEach(function(material) {
+          dispose_material(material);
+        });
+      } else {
+        dispose_material(object.material);
+      }
+    }
+  });
+};
+
+/**
+ * Clear references that are recreated each rerender.
+ */
+beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ = function() {
+  this.meshes_ = {};
+  this.layers_ = {};
+  this.light_sources_ = [];
+  this.tree_foliage_meshes_ = [];
+  this.tree_branch_groups_ = [];
+
+  delete this.floor_plan_group_;
+  delete this.environment_group_;
+  delete this.environment_surface_group_;
+  delete this.weather_group_;
+  delete this.rain_particles_;
+  delete this.snow_particles_;
+  delete this.cloud_sprites_;
+  delete this.cloud_motion_;
+  delete this.weather_profile_target_;
+  delete this.weather_transition_start_profile_;
+  delete this.active_mesh_;
+  delete this.intersected_mesh_;
+  delete this.tree_ground_contact_material_;
 };
 
 /**
@@ -567,13 +656,16 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
   };
   this.room_interaction_enabled_ = true;
 
-  this.width_ = this.state_.scene_width || 800;
+  this.width_ = this.initial_width_ || this.state_.scene_width || 800;
   this.height_ = 500;
 
   this.add_scene_(parent);
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
+  if (this.initial_camera_state_ !== undefined) {
+    this.set_camera_state(this.initial_camera_state_);
+  }
   this.add_raycaster_(parent);
   this.add_skybox_(parent);
   this.add_static_lights_();
@@ -604,6 +696,34 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     self.renderer_.render(self.scene_, self.camera_);
   };
   animate();
+};
+
+/**
+ * Set width to use when scene first decorates/renders.
+ *
+ * @param {number} width
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_initial_width = function(width) {
+  if (Number.isFinite(width) === true && width > 0) {
+    this.initial_width_ = width;
+  }
+  return this;
+};
+
+/**
+ * Set camera state to apply before first rendered frame.
+ *
+ * @param {object} camera_state
+ *
+ * @return {beestat.component.scene}
+ */
+beestat.component.scene.prototype.set_initial_camera_state = function(camera_state) {
+  if (camera_state !== undefined) {
+    this.initial_camera_state_ = camera_state;
+  }
+  return this;
 };
 
 /**
@@ -1246,7 +1366,13 @@ beestat.component.scene.prototype.get_fps = function() {
  * @return {object}
  */
 beestat.component.scene.prototype.get_camera_state = function() {
-  return this.camera_.matrix.toArray();
+  const state = {
+    'matrix': this.camera_.matrix.toArray()
+  };
+  if (this.controls_ !== undefined && this.controls_.target !== undefined) {
+    state.target = this.controls_.target.toArray();
+  }
+  return state;
 };
 
 /**
@@ -1255,12 +1381,40 @@ beestat.component.scene.prototype.get_camera_state = function() {
  * @param {object} camera_state
  */
 beestat.component.scene.prototype.set_camera_state = function(camera_state) {
-  this.camera_.matrix.fromArray(camera_state);
+  let matrix_state = camera_state;
+  let target_state;
+  if (
+    camera_state !== undefined &&
+    camera_state !== null &&
+    Array.isArray(camera_state) !== true
+  ) {
+    matrix_state = camera_state.matrix;
+    target_state = camera_state.target;
+  }
+
+  if (Array.isArray(matrix_state) !== true) {
+    return;
+  }
+
+  this.camera_.matrix.fromArray(matrix_state);
   this.camera_.matrix.decompose(
     this.camera_.position,
     this.camera_.quaternion,
     this.camera_.scale
   );
+
+  if (
+    Array.isArray(target_state) === true &&
+    target_state.length >= 3 &&
+    this.controls_ !== undefined
+  ) {
+    this.controls_.target.set(
+      Number(target_state[0]) || 0,
+      Number(target_state[1]) || 0,
+      Number(target_state[2]) || 0
+    );
+    this.controls_.update();
+  }
 };
 
 /**
@@ -1437,6 +1591,20 @@ beestat.component.scene.prototype.dispose = function() {
   }
   if (this.light_source_glow_geometry_ !== undefined) {
     this.light_source_glow_geometry_.dispose();
+  }
+  if (this.raycaster_document_mousemove_handler_ !== undefined) {
+    document.removeEventListener('mousemove', this.raycaster_document_mousemove_handler_);
+    delete this.raycaster_document_mousemove_handler_;
+  }
+  if (
+    this.raycaster_dom_element_ !== undefined &&
+    this.raycaster_dom_mousedown_handler_ !== undefined
+  ) {
+    this.raycaster_dom_element_.removeEventListener('mousedown', this.raycaster_dom_mousedown_handler_);
+    this.raycaster_dom_element_.removeEventListener('touchstart', this.raycaster_dom_touchstart_handler_);
+    delete this.raycaster_dom_mousedown_handler_;
+    delete this.raycaster_dom_touchstart_handler_;
+    delete this.raycaster_dom_element_;
   }
 
   // Clean up THREE.js scene resources
