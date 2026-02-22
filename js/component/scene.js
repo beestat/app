@@ -1571,6 +1571,9 @@ beestat.component.scene.prototype.dispose = function() {
   if (this.sun_glow_texture_ !== undefined) {
     this.sun_glow_texture_.dispose();
   }
+  if (this.sun_core_texture_ !== undefined) {
+    this.sun_core_texture_.dispose();
+  }
   if (this.snow_particle_texture_ !== undefined) {
     this.snow_particle_texture_.dispose();
   }

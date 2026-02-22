@@ -70,6 +70,43 @@ beestat.component.scene.prototype.create_sun_glow_texture_ = function() {
 
 
 /**
+ * Create a compact bright sun-core texture.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_sun_core_texture_ = function() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+
+  gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  gradient.addColorStop(0.28, 'rgba(255, 247, 220, 1.0)');
+  gradient.addColorStop(0.56, 'rgba(255, 225, 165, 0.82)');
+  gradient.addColorStop(0.78, 'rgba(255, 190, 110, 0.28)');
+  gradient.addColorStop(1.0, 'rgba(255, 150, 90, 0.0)');
+
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  return texture;
+};
+
+
+/**
  * Create a soft star sprite texture.
  *
  * @return {THREE.Texture}

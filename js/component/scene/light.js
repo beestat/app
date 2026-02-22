@@ -178,14 +178,19 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_visual_group_.layers.set(beestat.component.scene.layer_visible);
   this.celestial_light_group_.add(this.sun_visual_group_);
 
-  const sun_core_geometry = new THREE.SphereGeometry(146, 24, 24);
-  const sun_core_material = new THREE.MeshBasicMaterial({
+  this.sun_core_texture_ = this.create_sun_core_texture_();
+  const sun_core_material = new THREE.SpriteMaterial({
+    'map': this.sun_core_texture_,
     'color': 0xffffff,
     'transparent': true,
+    'depthWrite': false,
+    'depthTest': true,
     'opacity': 1
   });
-  this.sun_core_mesh_ = new THREE.Mesh(sun_core_geometry, sun_core_material);
+  this.sun_core_mesh_ = new THREE.Sprite(sun_core_material);
   this.sun_core_mesh_.userData.is_celestial_object = true;
+  this.sun_core_mesh_.scale.set(320, 320, 1);
+  this.sun_core_mesh_.renderOrder = 12;
   this.sun_visual_group_.add(this.sun_core_mesh_);
 
   this.sun_glow_texture_ = this.create_sun_glow_texture_();
@@ -201,6 +206,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_glow_sprite_ = new THREE.Sprite(sun_glow_material);
   this.sun_glow_sprite_.userData.is_celestial_object = true;
   this.sun_glow_sprite_.scale.set(1037, 1037, 1);
+  this.sun_glow_sprite_.renderOrder = 11;
   this.sun_visual_group_.add(this.sun_glow_sprite_);
 
   if (this.debug_.sun_light_helper === true) {
@@ -526,6 +532,7 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   const moon_illumination = SunCalc.getMoonIllumination(js_date);
   const moon_fraction = moon_illumination.fraction;
   const moon_phase = moon_illumination.phase;
+  this.current_moon_fraction_ = moon_fraction;
   this.moon_light_.position.set(
     moon_distance * Math.cos(moon_pos.altitude) * Math.sin(rotated_moon_azimuth),    // East-West
     moon_distance * Math.sin(moon_pos.altitude),                                  // Up-Down (altitude)
@@ -658,16 +665,16 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   }
 
   if (this.moon_sprite_ !== undefined) {
-    const max_moon_intensity = beestat.component.scene.moon_light_intensity;
-    const moon_intensity_ratio = max_moon_intensity > 0
-      ? Math.max(0, Math.min(1, this.moon_light_.intensity / max_moon_intensity))
-      : 0;
-    const moon_horizon_fade = this.moon_visual_horizon_fade_ !== undefined
-      ? this.moon_visual_horizon_fade_
-      : 1;
-    const moon_visual_strength = moon_intensity_ratio * moon_horizon_fade;
-
-    this.moon_sprite_.material.opacity = Math.min(1, 0.2 + (moon_visual_strength * 0.95));
+    // Keep moon visible at all times. This visual opacity is phase-driven and
+    // intentionally decoupled from moon light intensity and horizon fade.
+    const moon_phase_visibility = Math.max(
+      0.25,
+      Math.min(1, Number(this.current_moon_fraction_ === undefined ? 1 : this.current_moon_fraction_))
+    );
+    this.moon_sprite_.material.opacity = Math.min(1, 0.2 + (moon_phase_visibility * 0.6));
+    if (this.moon_visual_group_ !== undefined) {
+      this.moon_visual_group_.visible = true;
+    }
   }
 
   this.update_stars_();
