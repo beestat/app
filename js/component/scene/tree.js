@@ -637,22 +637,53 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     this.tree_branch_groups_ = [];
   }
 
-  const initial_branch_direction = new THREE.Vector3(1, 0, -0.2).normalize();
-  const branch_rotation_axis = new THREE.Vector3(0, 0, 1);
   const min_sub_branch_fork_angle_radians = THREE.MathUtils.degToRad(15);
   const max_sub_branch_fork_angle_radians = THREE.MathUtils.degToRad(30);
-  const get_next_branch_direction = function(previous_direction) {
-    const direction = previous_direction.clone().multiplyScalar(-1);
-    const angle_offset = (Math.PI / 18) + (Math.random() * ((Math.PI / 4) - (Math.PI / 18)));
-    direction.applyQuaternion(
-      new THREE.Quaternion().setFromAxisAngle(
-        branch_rotation_axis,
-        (Math.random() < 0.5 ? -1 : 1) * angle_offset
-      )
-    );
-    // Keep branches more strongly biased upward in this scene's coordinate system (-Z is up).
-    direction.z = -Math.max(0.34, Math.abs(direction.z));
-    return direction.normalize();
+  const recent_primary_branch_angle_limit = 10;
+  const get_angle_distance = function(angle_a, angle_b) {
+    return Math.abs(Math.atan2(Math.sin(angle_a - angle_b), Math.cos(angle_a - angle_b)));
+  };
+  const get_weighted_primary_branch_theta = function(existing_angles) {
+    if (existing_angles.length === 0) {
+      return Math.random() * Math.PI * 2;
+    }
+
+    const candidate_count = Math.max(18, Math.min(56, branch_count * 4));
+    const candidates = [];
+    let total_weight = 0;
+    for (let i = 0; i < candidate_count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      let min_distance = Math.PI;
+      for (let j = 0; j < existing_angles.length; j++) {
+        min_distance = Math.min(min_distance, get_angle_distance(theta, existing_angles[j]));
+      }
+      // Any angle is possible, but wider gaps get a higher chance.
+      const normalized_distance = min_distance / Math.PI;
+      const weight = 0.08 + Math.pow(normalized_distance, 2.4);
+      total_weight += weight;
+      candidates.push({
+        'theta': theta,
+        'weight': weight
+      });
+    }
+
+    let pick = Math.random() * total_weight;
+    for (let i = 0; i < candidates.length; i++) {
+      pick -= candidates[i].weight;
+      if (pick <= 0) {
+        return candidates[i].theta;
+      }
+    }
+
+    return candidates[candidates.length - 1].theta;
+  };
+  const get_primary_branch_direction = function(existing_angles) {
+    const theta = get_weighted_primary_branch_theta(existing_angles);
+    const upward_bias = -(0.34 + (Math.random() * 0.26));
+    return {
+      'theta': theta,
+      'direction': new THREE.Vector3(Math.cos(theta), Math.sin(theta), upward_bias).normalize()
+    };
   };
   const get_forked_child_direction = function(parent_direction, child_index, child_count) {
     const parent = parent_direction.clone().normalize();
@@ -776,7 +807,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     }
   };
 
-  let previous_primary_direction = initial_branch_direction;
+  const primary_branch_angles = [];
   for (let i = 0; i < branch_count; i++) {
     const base_height_ratio = branch_height_samples[i];
     const base_height = trunk_height * base_height_ratio;
@@ -796,7 +827,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       base_offset.y,
       trunk.position.z + (trunk_height / 2) - base_height
     );
-    const primary_direction = get_next_branch_direction(previous_primary_direction);
+    const primary_direction_result = get_primary_branch_direction(primary_branch_angles);
+    const primary_direction = primary_direction_result.direction;
 
     const primary_branch = create_branch(
       base,
@@ -807,7 +839,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     if (primary_branch === null) {
       continue;
     }
-    previous_primary_direction = primary_direction;
+    primary_branch_angles.push(primary_direction_result.theta);
+    if (primary_branch_angles.length > recent_primary_branch_angle_limit) {
+      primary_branch_angles.shift();
+    }
     add_sub_branches(primary_branch, 0);
   }
 
