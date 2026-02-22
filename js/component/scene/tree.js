@@ -100,7 +100,7 @@ beestat.component.scene.prototype.add_tree_ground_contact_ = function(tree, trun
   collar.position.z = (collar_height / 2) - (Math.max(0.2, base_radius * 0.08));
   collar.rotation.z = Math.random() * Math.PI * 2;
   collar.castShadow = true;
-  collar.receiveShadow = true;
+  collar.receiveShadow = false;
   collar.userData.is_environment = true;
   tree.add(collar);
 
@@ -242,7 +242,7 @@ beestat.component.scene.prototype.create_conical_tree_ = function(height, max_di
     foliage_mesh.rotation.y = Math.sin(tilt_direction) * tilt_amount;
     foliage_mesh.rotation.z = (Math.random() - 0.5) * 0.2;
     foliage_mesh.castShadow = true;
-    foliage_mesh.receiveShadow = true;
+    foliage_mesh.receiveShadow = false;
     foliage_mesh.userData.is_environment = true;
     foliage_mesh.userData.is_tree_foliage = true;
     foliage_mesh.userData.base_tree_foliage_color = foliage_mesh.material.color.getHex();
@@ -387,8 +387,8 @@ beestat.component.scene.prototype.create_stick_mesh_ = function(config) {
   geometry.computeVertexNormals();
 
   const mesh = new THREE.Mesh(geometry, config.material);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  mesh.castShadow = config.cast_shadow !== false;
+  mesh.receiveShadow = config.receive_shadow === true;
   mesh.userData.is_environment = true;
 
   return {
@@ -497,7 +497,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     'direction_jitter': 3,
     'taper_start_ratio': 0.35,
     'taper_max_ratio': 0.72,
-    'material': wood_material
+    'material': wood_material,
+    'receive_shadow': true
   });
   const trunk = trunk_stick.mesh;
   trunk.position.z = -(trunk_height / 2) + Math.max(0.7, trunk_radius_bottom * 0.14);
@@ -704,7 +705,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       'straight_start_ratio': 0.2,
       'taper_start_ratio': 0.2,
       'taper_max_ratio': 1,
-      'material': wood_material
+      'material': wood_material,
+      'receive_shadow': false
     });
     const branch = branch_stick.mesh;
     branch.position.copy(base).addScaledVector(direction, (length / 2) - (radius_bottom * 0.45));
@@ -797,7 +799,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     });
     const canopy_mesh = canopy_result.mesh;
     canopy_mesh.castShadow = true;
-    canopy_mesh.receiveShadow = true;
+    canopy_mesh.receiveShadow = false;
     canopy_mesh.userData.is_environment = true;
     foliage.add(canopy_mesh);
     this.tree_foliage_meshes_.push(canopy_mesh);
