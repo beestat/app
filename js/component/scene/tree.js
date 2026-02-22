@@ -639,6 +639,8 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
 
   const initial_branch_direction = new THREE.Vector3(1, 0, -0.2).normalize();
   const branch_rotation_axis = new THREE.Vector3(0, 0, 1);
+  const min_sub_branch_fork_angle_radians = THREE.MathUtils.degToRad(15);
+  const max_sub_branch_fork_angle_radians = THREE.MathUtils.degToRad(30);
   const get_next_branch_direction = function(previous_direction) {
     const direction = previous_direction.clone().multiplyScalar(-1);
     const angle_offset = (Math.PI / 18) + (Math.random() * ((Math.PI / 4) - (Math.PI / 18)));
@@ -651,6 +653,29 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     // Keep branches more strongly biased upward in this scene's coordinate system (-Z is up).
     direction.z = -Math.max(0.34, Math.abs(direction.z));
     return direction.normalize();
+  };
+  const get_forked_child_direction = function(parent_direction, child_index, child_count) {
+    const parent = parent_direction.clone().normalize();
+    const world_up = new THREE.Vector3(0, 0, 1);
+    let fork_axis = new THREE.Vector3().crossVectors(parent, world_up);
+    if (fork_axis.lengthSq() < 1e-6) {
+      fork_axis = new THREE.Vector3().crossVectors(parent, new THREE.Vector3(1, 0, 0));
+    }
+    fork_axis.normalize();
+
+    const side = child_count <= 1 ? 1 : (child_index % 2 === 0 ? -1 : 1);
+    const fork_angle =
+      min_sub_branch_fork_angle_radians +
+      (Math.random() * (max_sub_branch_fork_angle_radians - min_sub_branch_fork_angle_radians));
+    const forked = parent.clone().applyQuaternion(
+      new THREE.Quaternion().setFromAxisAngle(fork_axis, side * fork_angle)
+    );
+    // Add a small roll around the parent axis so forks don't look planar.
+    const roll_angle = (Math.random() - 0.5) * THREE.MathUtils.degToRad(8);
+    forked.applyQuaternion(
+      new THREE.Quaternion().setFromAxisAngle(parent, roll_angle)
+    );
+    return forked.normalize();
   };
   for (let i = 0; i < branch_count; i++) {
     const stratified = branch_count <= 1 ? 0.5 : (i / (branch_count - 1));
@@ -726,7 +751,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       return;
     }
 
-    let previous_child_direction = parent_branch.direction;
     for (let j = 0; j < children_per_branch; j++) {
       const attach_ratio = children_per_branch <= 1
         ? 0.6
@@ -734,7 +758,11 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       const attach_point = get_stick_point_world(parent_branch, attach_ratio);
       const child_length = parent_branch.length * 0.62;
       const child_radius_bottom = Math.max(0.15, parent_branch.radius_bottom * 0.62);
-      const child_direction = get_next_branch_direction(previous_child_direction);
+      const child_direction = get_forked_child_direction(
+        parent_branch.direction,
+        j,
+        children_per_branch
+      );
       const child_branch = create_branch(
         attach_point,
         child_direction,
@@ -744,7 +772,6 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       if (child_branch === null) {
         continue;
       }
-      previous_child_direction = child_direction;
       add_sub_branches(child_branch, depth + 1);
     }
   };
