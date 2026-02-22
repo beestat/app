@@ -283,6 +283,7 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
  *   tree_enabled: boolean,
  *   star_density: number,
  *   light_user_enabled: boolean,
+ *   light_user_cast_shadows: boolean,
  *   random_seed: number
  * }}
  */
@@ -296,6 +297,7 @@ beestat.component.scene.default_settings = {
   'tree_enabled': true,
   'star_density': 1,
   'light_user_enabled': true,
+  'light_user_cast_shadows': false,
   'random_seed': 1
 };
 
