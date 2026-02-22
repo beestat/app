@@ -9,6 +9,8 @@ beestat.weather = {};
  * `icon_color`: UI accent color for the weather icon.
  * `cloud_density`: Controls cloud particle count/intensity in the scene.
  * `cloud_darkness`: Controls cloud shading/dimming (0 clear -> 2 very dark).
+ * `fog_density`: Controls low-altitude volumetric fog cloud density.
+ * `fog_color`: Hex color used to tint low-altitude fog volumes.
  * `rain_density`: Controls rain particle count/intensity.
  * `snow_density`: Controls snow particle count/intensity and snow-cover blend.
  * `lightning_frequency`: Controls frequency/intensity of lightning effects.
@@ -221,6 +223,8 @@ beestat.weather.settings_ = {
     'icon_color': beestat.style.color.gray.base,
     'cloud_density': 0.6,
     'cloud_darkness': 0.2,
+    'fog_density': 1.2,
+    'fog_color': '#d6dde8',
     'rain_density': 0,
     'snow_density': 0,
     'lightning_frequency': 0,
@@ -232,6 +236,8 @@ beestat.weather.settings_ = {
     'icon_color': beestat.style.color.gray.base,
     'cloud_density': 0.45,
     'cloud_darkness': 0.35,
+    'fog_density': 0.8,
+    'fog_color': '#d9d4c8',
     'rain_density': 0,
     'snow_density': 0,
     'lightning_frequency': 0,
@@ -243,6 +249,8 @@ beestat.weather.settings_ = {
     'icon_color': beestat.style.color.gray.base,
     'cloud_density': 0.45,
     'cloud_darkness': 0.35,
+    'fog_density': 1.05,
+    'fog_color': '#cbc7c3',
     'rain_density': 0,
     'snow_density': 0,
     'lightning_frequency': 0,
@@ -254,6 +262,8 @@ beestat.weather.settings_ = {
     'icon_color': beestat.style.color.gray.base,
     'cloud_density': 0.45,
     'cloud_darkness': 0.35,
+    'fog_density': 0.95,
+    'fog_color': '#d9c7a8',
     'rain_density': 0,
     'snow_density': 0,
     'lightning_frequency': 0,
@@ -271,6 +281,8 @@ beestat.weather.default_settings_ = {
   'icon_color': beestat.style.color.gray.base,
   'cloud_density': 0.03,
   'cloud_darkness': 0,
+  'fog_density': 0,
+  'fog_color': '#d6dde8',
   'rain_density': 0,
   'snow_density': 0,
   'lightning_frequency': 0,
@@ -335,6 +347,37 @@ beestat.weather.get_cloud_density = function(condition) {
  */
 beestat.weather.get_cloud_darkness = function(condition) {
   return beestat.weather.get_settings_(condition).cloud_darkness;
+};
+
+/**
+ * Get fog density for a condition.
+ * Higher values increase low-altitude volumetric fog presence.
+ *
+ * @param {string} condition
+ *
+ * @return {number}
+ */
+beestat.weather.get_fog_density = function(condition) {
+  const fog_density = beestat.weather.get_settings_(condition).fog_density;
+  if (fog_density !== undefined) {
+    return fog_density;
+  }
+  return beestat.weather.default_settings_.fog_density;
+};
+
+/**
+ * Get fog color tint for a condition.
+ *
+ * @param {string} condition
+ *
+ * @return {string}
+ */
+beestat.weather.get_fog_color = function(condition) {
+  const fog_color = beestat.weather.get_settings_(condition).fog_color;
+  if (typeof fog_color === 'string' && fog_color.length > 0) {
+    return fog_color;
+  }
+  return beestat.weather.default_settings_.fog_color;
 };
 
 /**

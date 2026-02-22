@@ -18,6 +18,8 @@ beestat.component.scene.prototype.get_weather_design_count_ = function(density_k
     return Math.max(1, Number(beestat.component.scene.weather_rain_max_count || 1));
   case 'snow_density':
     return Math.max(1, Number(beestat.component.scene.weather_snow_max_count || 1));
+  case 'fog_density':
+    return Math.max(1, Number(beestat.component.scene.weather_fog_max_count || 1));
   default:
     return 1;
   }
@@ -69,6 +71,9 @@ beestat.component.scene.prototype.get_weather_count_from_density_ = function(den
 beestat.component.scene.prototype.get_weather_profile_ = function() {
   return {
     'cloud_count': this.get_weather_count_from_density_('cloud_density'),
+    // Fog uses fixed sprite population; density controls opacity.
+    'fog_count': this.get_weather_design_capacity_count_('fog_density'),
+    'fog_density': Math.max(0, Math.min(2, Number(this.get_scene_setting_('fog_density') || 0))),
     'rain_count': this.get_weather_count_from_density_('rain_density'),
     'snow_count': this.get_weather_count_from_density_('snow_density')
   };
@@ -113,6 +118,22 @@ beestat.component.scene.prototype.get_cloud_color_ = function() {
   return base_color.lerp(dark_gray_color, blend);
 };
 
+/**
+ * Get low-altitude fog volume sprite tint color.
+ *
+ * @return {THREE.Color}
+ */
+beestat.component.scene.prototype.get_fog_color_ = function() {
+  const fog_color = this.get_scene_setting_('fog_color');
+  if (
+    typeof fog_color === 'string' ||
+    typeof fog_color === 'number'
+  ) {
+    return new THREE.Color(fog_color);
+  }
+  return new THREE.Color(beestat.component.scene.default_settings.fog_color);
+};
+
 
 /**
  * Update weather transition targets based on appearance weather.
@@ -122,6 +143,8 @@ beestat.component.scene.prototype.update_weather_targets_ = function() {
 
   this.weather_transition_start_profile_ = {
     'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+    'fog_count': this.current_fog_count_ === undefined ? 0 : this.current_fog_count_,
+    'fog_density': this.current_fog_density_ === undefined ? 0 : this.current_fog_density_,
     'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
     'snow_count': this.current_snow_count_ === undefined ? 0 : this.current_snow_count_
   };
@@ -130,7 +153,7 @@ beestat.component.scene.prototype.update_weather_targets_ = function() {
 
 
 /**
- * Get current snow cover blend amount (0-1) from precipitation transition.
+ * Get current snow cover blend amount (0-2) from precipitation transition.
  *
  * @return {number}
  */
@@ -146,7 +169,7 @@ beestat.component.scene.prototype.get_snow_cover_blend_ = function() {
   return Math.max(
     0,
     Math.min(
-      1,
+      2,
       this.current_snow_count_ / configured_snow_count
     )
   );
@@ -165,14 +188,16 @@ beestat.component.scene.prototype.update_snow_surface_colors_ = function(snow_bl
 
   // Keep a small amount of base color visible at peak snow for definition.
   const normalized_blend = Math.max(0, Math.min(1, snow_blend));
+  const grass_normalized_blend = Math.max(0, Math.min(1, snow_blend * 0.5));
   const blend = normalized_blend * 0.9;
+  const grass_blend = grass_normalized_blend * 0.9;
   const foliage_blend = normalized_blend * 0.75;
   const snow_color = new THREE.Color(beestat.component.scene.snow_surface_color);
   const base_roof_color = new THREE.Color(this.get_appearance_value_('roof_color'));
   const base_ground_color = new THREE.Color(this.get_appearance_value_('ground_color'));
 
   const roof_color = base_roof_color.clone().lerp(snow_color, blend);
-  const ground_color = base_ground_color.clone().lerp(snow_color, blend);
+  const ground_color = base_ground_color.clone().lerp(snow_color, grass_blend);
 
   if (this.layers_.roof !== undefined) {
     this.layers_.roof.traverse(function(object) {
@@ -287,7 +312,8 @@ beestat.component.scene.prototype.create_precipitation_system_ = function(bounds
     'static_opacity': config.static_opacity === true,
     'max_wind_angle': config.max_wind_angle || 0,
     'max_wind_speed_scale': config.max_wind_speed_scale || 2,
-    'wind_motion_multiplier': config.wind_motion_multiplier || 1
+    'wind_motion_multiplier': config.wind_motion_multiplier || 1,
+    'wind_speed_curve': config.wind_speed_curve || 'linear'
   };
 };
 
@@ -357,13 +383,21 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(
   );
   const wind_speed_scale = 1 + ((clamped_wind_speed / 2) * (max_wind_speed_scale - 1));
   const wind_motion_multiplier = Math.max(0, Number(precipitation.wind_motion_multiplier || 1));
+  const wind_speed_curve_scale = precipitation.wind_speed_curve === 'half_same_double'
+    ? Math.pow(2, clamped_wind_speed - 1)
+    : 1;
   const direction_velocity_x = horizontal_scale * wind_x;
   const direction_velocity_y = horizontal_scale * wind_y;
   const direction_velocity_z = vertical_scale;
 
   for (let i = 0; i < clamped_count; i++) {
     const offset = i * 3;
-    const speed = precipitation.speeds[i] * delta_seconds * wind_speed_scale * wind_motion_multiplier;
+    const speed =
+      precipitation.speeds[i] *
+      delta_seconds *
+      wind_speed_scale *
+      wind_motion_multiplier *
+      wind_speed_curve_scale;
     positions[offset + 2] += speed * direction_velocity_z;
     positions[offset] += speed * direction_velocity_x;
     positions[offset + 1] += speed * direction_velocity_y;
@@ -688,6 +722,9 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   if (this.cloud_texture_ === undefined) {
     this.cloud_texture_ = this.create_cloud_texture_();
   }
+  if (this.fog_volume_texture_ === undefined) {
+    this.fog_volume_texture_ = this.create_fog_volume_texture_();
+  }
 
   if (this.snow_particle_texture_ === undefined) {
     this.snow_particle_texture_ = this.create_snow_particle_texture_();
@@ -761,6 +798,65 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     });
   }
 
+  const fog_capacity = this.get_weather_design_capacity_count_('fog_density', this.weather_area_);
+  const fog_bounds = {
+    'min_x': bounds.min_x - 140,
+    'max_x': bounds.max_x + 140,
+    'min_y': bounds.min_y - 140,
+    'max_y': bounds.max_y + 140,
+    // Keep fog cards well above the ground plane to avoid seam artifacts.
+    'min_z': -420,
+    'max_z': -120
+  };
+
+  this.fog_bounds_ = fog_bounds;
+  this.fog_sprites_ = [];
+  this.fog_motion_ = [];
+
+  // Pre-build low-altitude volumetric fog sprites.
+  for (let i = 0; i < fog_capacity; i++) {
+    const fog_material = new THREE.SpriteMaterial({
+      'map': this.fog_volume_texture_,
+      'color': 0xd6dde8,
+      'transparent': true,
+      'opacity': 0,
+      'depthWrite': false,
+      'depthTest': true
+    });
+
+    const fog = new THREE.Sprite(fog_material);
+    fog.position.set(
+      fog_bounds.min_x + Math.random() * (fog_bounds.max_x - fog_bounds.min_x),
+      fog_bounds.min_y + Math.random() * (fog_bounds.max_y - fog_bounds.min_y),
+      fog_bounds.min_z + Math.random() * (fog_bounds.max_z - fog_bounds.min_z)
+    );
+    const fog_size = 680 + Math.random() * 980;
+    fog.scale.set(fog_size * 1.7, fog_size * 0.45, 1);
+    fog.layers.set(beestat.component.scene.layer_visible);
+    fog.userData.is_environment = true;
+    this.weather_group_.add(fog);
+    this.fog_sprites_.push(fog);
+    this.fog_motion_.push({
+      'base_x': fog.position.x,
+      'base_y': fog.position.y,
+      'base_z': fog.position.z,
+      'base_scale_x': fog.scale.x,
+      'base_scale_y': fog.scale.y,
+      'base_opacity': 0.34 + (Math.random() * 0.12),
+      'phase': Math.random() * Math.PI * 2,
+      'pulse_speed': 0.12 + (Math.random() * 0.1),
+      'scale_wobble_x': 0.03 + (Math.random() * 0.02),
+      'scale_wobble_y': 0.02 + (Math.random() * 0.02),
+      'opacity_wobble': 0.04 + (Math.random() * 0.03),
+      'wiggle_x': 18 + (Math.random() * 26),
+      'wiggle_y': 16 + (Math.random() * 24),
+      'wiggle_z': 4 + (Math.random() * 8),
+      'wiggle_freq_x': 0.55 + (Math.random() * 0.4),
+      'wiggle_freq_y': 0.45 + (Math.random() * 0.35),
+      'wiggle_freq_z': 0.35 + (Math.random() * 0.3)
+    });
+  }
+
   // Build precipitation systems (rain and snow) at design-capacity scale.
   this.rain_particles_ = this.create_precipitation_system_(
     bounds,
@@ -773,8 +869,8 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
       'color': 0xa8c7ff,
       'opacity': 0.5,
       'static_opacity': true,
-      'speed_min': 280,
-      'speed_max': 430,
+      'speed_min': 560,
+      'speed_max': 860,
       'drift': 28,
       'texture': this.rain_particle_texture_,
       'max_wind_angle': 45,
@@ -799,7 +895,8 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
       'texture': this.snow_particle_texture_,
       'max_wind_angle': 75,
       'max_wind_speed_scale': 3,
-      'wind_motion_multiplier': 2.5
+      'wind_motion_multiplier': 2.5,
+      'wind_speed_curve': 'half_same_double'
     }
   );
   this.weather_group_.add(this.snow_particles_.points);
@@ -816,6 +913,8 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   const initial_weather_profile = this.get_weather_profile_();
   this.weather_profile_target_ = initial_weather_profile;
   this.current_cloud_count_ = initial_weather_profile.cloud_count;
+  this.current_fog_count_ = initial_weather_profile.fog_count;
+  this.current_fog_density_ = initial_weather_profile.fog_density;
   this.current_rain_count_ = initial_weather_profile.rain_count;
   this.current_snow_count_ = initial_weather_profile.snow_count;
   this.update_weather_targets_();
@@ -852,6 +951,8 @@ beestat.component.scene.prototype.update_weather_ = function() {
   if (this.weather_transition_start_profile_ === undefined) {
     this.weather_transition_start_profile_ = {
       'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+      'fog_count': this.current_fog_count_ === undefined ? 0 : this.current_fog_count_,
+      'fog_density': this.current_fog_density_ === undefined ? 0 : this.current_fog_density_,
       'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
       'snow_count': this.current_snow_count_ === undefined ? 0 : this.current_snow_count_
     };
@@ -879,6 +980,14 @@ beestat.component.scene.prototype.update_weather_ = function() {
   this.current_cloud_count_ = transition(
     this.weather_transition_start_profile_.cloud_count,
     this.weather_profile_target_.cloud_count
+  );
+  this.current_fog_count_ = transition(
+    this.weather_transition_start_profile_.fog_count,
+    this.weather_profile_target_.fog_count
+  );
+  this.current_fog_density_ = transition(
+    this.weather_transition_start_profile_.fog_density,
+    this.weather_profile_target_.fog_density
   );
   this.current_rain_count_ = transition(
     this.weather_transition_start_profile_.rain_count,
@@ -934,6 +1043,51 @@ beestat.component.scene.prototype.update_weather_ = function() {
           Math.min(
             1,
             (motion.base_opacity + Math.sin(phase * 0.72) * motion.opacity_wobble) * cloud_density
+          )
+        );
+      }
+    }
+  }
+
+  // Update low-altitude volumetric fog sprites.
+  if (this.fog_sprites_ !== undefined && this.fog_motion_ !== undefined) {
+    const now_seconds = now_ms / 1000;
+    const fog_color = this.get_fog_color_();
+    const fog_density = Math.max(
+      0,
+      Math.min(
+        1,
+        (this.current_fog_density_ === undefined ? 0 : this.current_fog_density_) / 2
+      )
+    );
+
+    for (let i = 0; i < this.fog_sprites_.length; i++) {
+      const sprite = this.fog_sprites_[i];
+      const motion = this.fog_motion_[i];
+      const phase = now_seconds * motion.pulse_speed + motion.phase;
+
+      const scale_x_wobble = 1 + (Math.sin(phase) * motion.scale_wobble_x);
+      const scale_y_wobble = 1 + (Math.cos(phase * 0.88) * motion.scale_wobble_y);
+      const fog_scale_transition = 0.62 + (0.38 * fog_density);
+      sprite.scale.set(
+        motion.base_scale_x * scale_x_wobble * fog_scale_transition,
+        motion.base_scale_y * scale_y_wobble * fog_scale_transition,
+        1
+      );
+
+      sprite.position.x = motion.base_x + Math.sin(phase * motion.wiggle_freq_x) * motion.wiggle_x;
+      sprite.position.y = motion.base_y + Math.cos(phase * motion.wiggle_freq_y) * motion.wiggle_y;
+      sprite.position.z = motion.base_z + Math.sin(phase * motion.wiggle_freq_z) * motion.wiggle_z;
+
+      if (sprite.material !== undefined) {
+        if (sprite.material.color !== undefined) {
+          sprite.material.color.copy(fog_color);
+        }
+        sprite.material.opacity = Math.max(
+          0,
+          Math.min(
+            1,
+            (motion.base_opacity + Math.sin(phase * 0.61) * motion.opacity_wobble) * fog_density
           )
         );
       }

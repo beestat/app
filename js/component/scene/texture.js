@@ -252,6 +252,49 @@ beestat.component.scene.prototype.create_cloud_texture_ = function() {
 
 
 /**
+ * Create a broad soft texture used for low-altitude fog volume sprites.
+ *
+ * @return {THREE.Texture}
+ */
+beestat.component.scene.prototype.create_fog_volume_texture_ = function() {
+  const size = 320;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+
+  const lobes = [
+    {'x': 0.26, 'y': 0.56, 'r': 0.27, 'alpha': 0.5},
+    {'x': 0.46, 'y': 0.5, 'r': 0.3, 'alpha': 0.6},
+    {'x': 0.66, 'y': 0.57, 'r': 0.28, 'alpha': 0.54},
+    {'x': 0.52, 'y': 0.67, 'r': 0.31, 'alpha': 0.42}
+  ];
+
+  lobes.forEach(function(lobe) {
+    const gradient = context.createRadialGradient(
+      size * lobe.x,
+      size * lobe.y,
+      0,
+      size * lobe.x,
+      size * lobe.y,
+      size * lobe.r
+    );
+    gradient.addColorStop(0.0, `rgba(255,255,255,${lobe.alpha})`);
+    gradient.addColorStop(0.55, `rgba(245,249,255,${lobe.alpha * 0.5})`);
+    gradient.addColorStop(1.0, 'rgba(245,249,255,0.0)');
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.arc(size * lobe.x, size * lobe.y, size * lobe.r, 0, Math.PI * 2);
+    context.fill();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+};
+
+
+/**
  * Draw the moon phase into the reusable moon canvas texture.
  *
  * @param {number} phase Moon phase from SunCalc (0=new, 0.25=first quarter,

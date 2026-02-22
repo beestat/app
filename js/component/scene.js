@@ -91,6 +91,13 @@ beestat.component.scene.weather_snow_max_count = 1500;
 beestat.component.scene.weather_cloud_max_count = 140;
 
 /**
+ * Maximum low-altitude fog volume sprite count at full fog intensity.
+ *
+ * @type {number}
+ */
+beestat.component.scene.weather_fog_max_count = 18;
+
+/**
  * Time in seconds for weather effects to fully transition to a new mode.
  *
  * @type {number}
@@ -222,16 +229,18 @@ beestat.component.scene.sidereal_day_seconds = 86164.0905;
 beestat.component.scene.star_drift_visual_factor = 0.12;
 
 /**
- * Runtime scene settings exposed through the scene settings panel.
+ * Runtime scene settings used by environment rendering.
  *
  * @type {{
  *   cloud_density: number,
  *   cloud_darkness: number,
+ *   fog_density: number,
  *   rain_density: number,
  *   snow_density: number,
  *   lightning_frequency: number,
  *   wind_speed: number,
  *   wind_direction: number,
+ *   fog_color: string,
  *   tree_wobble: boolean,
  *   tree_enabled: boolean,
  *   star_density: number,
@@ -243,11 +252,13 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
 beestat.component.scene.default_settings = {
   'cloud_density': 1,
   'cloud_darkness': 0,
+  'fog_density': 0,
   'rain_density': 1,
   'snow_density': 1,
   'lightning_frequency': 0,
   'wind_speed': 0.4,
   'wind_direction': 0,
+  'fog_color': '#d6dde8',
   'tree_wobble': true,
   'tree_enabled': true,
   'star_density': 1,
@@ -465,6 +476,11 @@ beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ =
   delete this.snow_particles_;
   delete this.cloud_sprites_;
   delete this.cloud_motion_;
+  delete this.fog_sprites_;
+  delete this.fog_motion_;
+  delete this.fog_bounds_;
+  delete this.current_fog_count_;
+  delete this.current_fog_density_;
   delete this.weather_profile_target_;
   delete this.weather_transition_start_profile_;
   delete this.lightning_flash_light_;
@@ -1345,6 +1361,9 @@ beestat.component.scene.prototype.dispose = function() {
   }
   if (this.cloud_texture_ !== undefined) {
     this.cloud_texture_.dispose();
+  }
+  if (this.fog_volume_texture_ !== undefined) {
+    this.fog_volume_texture_.dispose();
   }
   if (this.moon_phase_texture_ !== undefined) {
     this.moon_phase_texture_.dispose();

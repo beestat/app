@@ -210,7 +210,8 @@ beestat.component.scene.prototype.add_environment_ = function() {
     if (index === 0) {
       mesh.userData.is_ground = true;
     }
-    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = index === 0;
 
     this.environment_group_.add(mesh);
     current_z += stratum.thickness;

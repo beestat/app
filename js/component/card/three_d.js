@@ -76,7 +76,7 @@ beestat.component.card.three_d = function() {
     if (self.get_weather_() !== 'auto') {
       return;
     }
-    self.apply_weather_setting_to_scene_();
+    self.apply_weather_setting_to_scene_(false);
     self.decorate_toolbar_();
   };
   beestat.dispatcher.addEventListener('cache.thermostat', this.handle_thermostat_cache_change_);
@@ -111,6 +111,15 @@ beestat.component.card.three_d.rerender_delay_scene_setting_ms = 1000;
  * @type {number}
  */
 beestat.component.card.three_d.rerender_loading_min_visible_ms = 350;
+
+/**
+ * Debug-only weather override.
+ * Set to `null` to use the scene-selected weather mode.
+ * Set to a weather condition string (e.g. `fog`, `rain`) to force it.
+ *
+ * @type {?string}
+ */
+beestat.component.card.three_d.debug_weather_override = null;
 
 /**
  * Scene setting keys that require a full rerender.
@@ -667,6 +676,26 @@ beestat.component.card.three_d.prototype.get_auto_weather_from_thermostat_ = fun
 };
 
 /**
+ * Get a normalized debug weather override condition.
+ *
+ * @return {?string}
+ */
+beestat.component.card.three_d.prototype.get_debug_weather_override_condition_ = function() {
+  const override = beestat.component.card.three_d.debug_weather_override;
+  if (typeof override !== 'string') {
+    return null;
+  }
+  const normalized_override = override.trim().toLowerCase();
+  if (normalized_override.length === 0) {
+    return null;
+  }
+  if (normalized_override === 'auto') {
+    return this.get_auto_weather_from_thermostat_();
+  }
+  return beestat.weather.get_settings_(normalized_override).condition;
+};
+
+/**
  * Resolve selected weather mode into a weather condition.
  *
  * @param {string} weather
@@ -674,6 +703,10 @@ beestat.component.card.three_d.prototype.get_auto_weather_from_thermostat_ = fun
  * @return {string}
  */
 beestat.component.card.three_d.prototype.get_weather_condition_from_mode_ = function(weather) {
+  const debug_override_condition = this.get_debug_weather_override_condition_();
+  if (debug_override_condition !== null) {
+    return debug_override_condition;
+  }
   if (weather === 'auto') {
     return this.get_auto_weather_from_thermostat_();
   }
@@ -798,6 +831,8 @@ beestat.component.card.three_d.prototype.set_show_group_ = function(group_id, vi
  * @return {{
  *   cloud_density: number,
  *   cloud_darkness: number,
+ *   fog_density: number,
+ *   fog_color: string,
  *   rain_density: number,
  *   snow_density: number,
  *   lightning_frequency: number,
@@ -809,6 +844,8 @@ beestat.component.card.three_d.prototype.get_weather_settings_from_weather_ = fu
   return {
     'cloud_density': beestat.weather.get_cloud_density(condition),
     'cloud_darkness': beestat.weather.get_cloud_darkness(condition),
+    'fog_density': beestat.weather.get_fog_density(condition),
+    'fog_color': beestat.weather.get_fog_color(condition),
     'rain_density': beestat.weather.get_rain_density(condition),
     'snow_density': beestat.weather.get_snow_density(condition),
     'lightning_frequency': beestat.weather.get_lightning_frequency(condition),
@@ -818,8 +855,10 @@ beestat.component.card.three_d.prototype.get_weather_settings_from_weather_ = fu
 
 /**
  * Apply current weather settings to the scene.
+ *
+ * @param {boolean=} opt_persist Persist weather settings to floor-plan scene data.
  */
-beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = function() {
+beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = function(opt_persist) {
   if (this.scene_ === undefined) {
     return;
   }
@@ -827,6 +866,18 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
   this.ensure_scene_settings_values_();
   const weather_settings = this.get_weather_settings_from_weather_(this.get_weather_());
   Object.assign(this.scene_settings_values_, weather_settings);
+  const persist = opt_persist === true;
+  if (persist === true) {
+    const scene_visualize = this.get_scene_visualize_state_();
+    if (scene_visualize !== null) {
+      const previous_settings_json = JSON.stringify(scene_visualize.settings || {});
+      Object.assign(scene_visualize.settings, weather_settings);
+      const next_settings_json = JSON.stringify(scene_visualize.settings);
+      if (previous_settings_json !== next_settings_json) {
+        this.save_scene_visualize_state_();
+      }
+    }
+  }
   this.scene_.set_scene_settings(weather_settings, {
     'rerender': false
   });
@@ -871,10 +922,6 @@ beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = functio
       this.save_scene_visualize_state_();
     }
   }
-  Object.assign(
-    this.scene_settings_values_,
-    this.get_weather_settings_from_weather_(this.get_weather_())
-  );
 };
 
 /**
@@ -1205,6 +1252,7 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   add_section_title('Weather');
   add_number_setting(get_title_case_label('cloud_density'), 'cloud_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('cloud_darkness'), 'cloud_darkness', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('fog_density'), 'fog_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('rain_density'), 'rain_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('snow_density'), 'snow_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('lightning_frequency'), 'lightning_frequency', 0, 2, 0.1);
@@ -1960,7 +2008,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
           tile.addEventListener('click', (e) => {
             e.stopPropagation();
             this.set_weather_(mode.value);
-            this.apply_weather_setting_to_scene_();
+            this.apply_weather_setting_to_scene_(true);
             this.weather_menu_open_ = false;
             this.decorate_toolbar_();
           });
@@ -1981,7 +2029,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
         auto_tile.addEventListener('click', (e) => {
           e.stopPropagation();
           this.set_weather_('auto');
-          this.apply_weather_setting_to_scene_();
+          this.apply_weather_setting_to_scene_(true);
           this.weather_menu_open_ = false;
           this.decorate_toolbar_();
         });
