@@ -483,13 +483,19 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   const cloud_dimming = this.get_cloud_dimming_factor_();
 
   // Calculate target intensity for smooth transitions.
-  // Keep most of the falloff near the horizon so direct highlights don't look
-  // "full sun" once the sun disk visually fades.
+  // Keep the transition tight around the horizon so sunrise "pops in" with
+  // the same quick behavior as sunset "drops out".
+  const sun_transition_start_altitude = -0.015;
+  const sun_transition_end_altitude = 0.075;
   const sun_horizon_visibility = Math.max(
     0,
-    Math.min(1, (sun_pos.altitude + 0.06) / 0.18)
+    Math.min(
+      1,
+      (sun_pos.altitude - sun_transition_start_altitude) /
+      Math.max(0.0001, sun_transition_end_altitude - sun_transition_start_altitude)
+    )
   );
-  const sun_intensity_factor = Math.pow(sun_horizon_visibility, 1.7);
+  const sun_intensity_factor = Math.pow(sun_horizon_visibility, 2.4);
   this.target_sun_intensity_ =
     beestat.component.scene.sun_light_intensity * sun_intensity_factor;
   this.target_sun_intensity_ *= cloud_dimming;
@@ -869,6 +875,38 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
     layer.add(light);
     this.light_sources_.push(light);
   }, this);
+};
+
+
+/**
+ * Apply the current user-light shadow setting to existing user lights.
+ */
+beestat.component.scene.prototype.update_user_light_shadow_settings_ = function() {
+  if (Array.isArray(this.light_sources_) !== true) {
+    return;
+  }
+
+  const user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
+  this.light_sources_.forEach(function(light) {
+    if (light === undefined || light === null || light.isPointLight !== true) {
+      return;
+    }
+
+    light.castShadow = user_light_cast_shadows;
+    if (user_light_cast_shadows === true) {
+      light.shadow.mapSize.width = 512;
+      light.shadow.mapSize.height = 512;
+      light.shadow.bias = -0.0012;
+      light.shadow.normalBias = 0.025;
+      light.shadow.radius = 2;
+      light.shadow.camera.near = 1;
+      light.shadow.camera.far = 240;
+    }
+  });
+
+  if (this.renderer_ !== undefined && this.renderer_.shadowMap !== undefined) {
+    this.renderer_.shadowMap.needsUpdate = true;
+  }
 };
 
 

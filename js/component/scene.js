@@ -184,7 +184,7 @@ beestat.component.scene.default_appearance = {
   'roof_style': 'hip',
   'siding_color': '#889aaa',
   'ground_color': '#4a7c3f',
-  'weather': 'none'
+  'weather': 'sunny'
 };
 /**
  * Snow cover tint used to blend roof/ground surfaces during snowfall.
@@ -295,7 +295,7 @@ beestat.component.scene.default_settings = {
   'rain_density': 1,
   'snow_density': 1,
   'lightning_frequency': 0,
-  'wind_speed': 1,
+  'wind_speed': 0.4,
   'wind_direction': 0,
   'tree_wobble': true,
   'tree_enabled': true,
@@ -617,10 +617,20 @@ beestat.component.scene.prototype.set_scene_settings = function(scene_settings, 
     return this;
   }
 
+  const previous_lightning_frequency = Number(this.get_scene_setting_('lightning_frequency') || 0);
+  const previous_user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
+
   if (this.scene_settings_ === undefined) {
     this.scene_settings_ = {};
   }
   Object.assign(this.scene_settings_, scene_settings);
+  const current_lightning_frequency = Number(this.get_scene_setting_('lightning_frequency') || 0);
+  const current_user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
+  const lightning_frequency_changed = Math.abs(
+    current_lightning_frequency - previous_lightning_frequency
+  ) > 0.0001;
+  const user_light_cast_shadows_changed =
+    current_user_light_cast_shadows !== previous_user_light_cast_shadows;
 
   const rerender = options !== undefined && options.rerender === true;
   if (this.rendered_ === true) {
@@ -630,6 +640,21 @@ beestat.component.scene.prototype.set_scene_settings = function(scene_settings, 
       this.update_weather_targets_();
       this.update_tree_foliage_season_();
       this.update_weather_();
+      if (
+        lightning_frequency_changed === true &&
+        typeof this.sync_lightning_schedule_for_frequency_change_ === 'function'
+      ) {
+        this.sync_lightning_schedule_for_frequency_change_(
+          previous_lightning_frequency,
+          current_lightning_frequency
+        );
+      }
+      if (
+        user_light_cast_shadows_changed === true &&
+        typeof this.update_user_light_shadow_settings_ === 'function'
+      ) {
+        this.update_user_light_shadow_settings_();
+      }
     }
   }
 

@@ -86,11 +86,11 @@ beestat.component.scene.prototype.update_tree_wind_ = function() {
     return;
   }
 
-  const wind_speed = Math.max(0, Math.min(5, Number(this.get_scene_setting_('wind_speed') || 0)));
+  const wind_speed = Math.max(0, Math.min(2, Number(this.get_scene_setting_('wind_speed') || 0)));
   const wind_direction = Math.max(0, Math.min(360, Number(this.get_scene_setting_('wind_direction') || 0)));
   const tree_wobble_enabled = this.get_scene_setting_('tree_wobble') !== false;
   // Keep overall tree effect lower than prior tuning while preserving responsiveness.
-  const wind_strength = wind_speed * 0.5;
+  const wind_strength = wind_speed * 1.25;
   const time_seconds = window.performance.now() / 1000;
   const wind_radians = THREE.MathUtils.degToRad(wind_direction);
   const wind_direction_x = Math.cos(wind_radians);

@@ -6,7 +6,7 @@
 /**
  * Set weather on the floor-plan appearance.
  *
- * @param {string} weather none|sunny|cloudy|rain|snow|storm
+ * @param {string} weather
  *
  * @return {beestat.component.scene}
  */
@@ -17,17 +17,160 @@ beestat.component.scene.prototype.set_weather = function(weather) {
   }
   floor_plan.data.appearance.weather = weather;
 
-  // Backward-compatible weather mode support by translating to density values.
+  // Translate weather presets to scene density values.
   let weather_settings;
   switch (weather) {
-  case 'storm':
+  case 'few_clouds':
+    weather_settings = {
+      'cloud_density': 0.18,
+      'cloud_darkness': 0,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.45
+    };
+    break;
+  case 'partly_cloudy':
+    weather_settings = {
+      'cloud_density': 0.3,
+      'cloud_darkness': 0.1,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.55
+    };
+    break;
+  case 'mostly_cloudy':
+    weather_settings = {
+      'cloud_density': 0.75,
+      'cloud_darkness': 0.45,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.7
+    };
+    break;
+  case 'drizzle':
+    weather_settings = {
+      'cloud_density': 0.9,
+      'cloud_darkness': 0.7,
+      'rain_density': 0.35,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.75
+    };
+    break;
+  case 'showers':
+    weather_settings = {
+      'cloud_density': 1.2,
+      'cloud_darkness': 1.1,
+      'rain_density': 1.2,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 1
+    };
+    break;
+  case 'freezing_rain':
+    weather_settings = {
+      'cloud_density': 1.2,
+      'cloud_darkness': 1.2,
+      'rain_density': 1.1,
+      'snow_density': 0.2,
+      'lightning_frequency': 0,
+      'wind_speed': 1
+    };
+    break;
+  case 'hail':
+  case 'pellets':
+    weather_settings = {
+      'cloud_density': 1.25,
+      'cloud_darkness': 1.25,
+      'rain_density': 1.2,
+      'snow_density': 0.15,
+      'lightning_frequency': 0.1,
+      'wind_speed': 1.1
+    };
+    break;
+  case 'flurries':
+    weather_settings = {
+      'cloud_density': 0.85,
+      'cloud_darkness': 0.7,
+      'rain_density': 0,
+      'snow_density': 0.55,
+      'lightning_frequency': 0,
+      'wind_speed': 0.65
+    };
+    break;
+  case 'freezing_snow':
+    weather_settings = {
+      'cloud_density': 1.1,
+      'cloud_darkness': 1,
+      'rain_density': 0.05,
+      'snow_density': 1.1,
+      'lightning_frequency': 0,
+      'wind_speed': 0.7
+    };
+    break;
+  case 'blizzard':
+    weather_settings = {
+      'cloud_density': 1.4,
+      'cloud_darkness': 1.5,
+      'rain_density': 0.1,
+      'snow_density': 1.8,
+      'lightning_frequency': 0,
+      'wind_speed': 1.6
+    };
+    break;
+  case 'windy':
+    weather_settings = {
+      'cloud_density': 0.55,
+      'cloud_darkness': 0.3,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 1.5
+    };
+    break;
+  case 'tornado':
+    weather_settings = {
+      'cloud_density': 1.35,
+      'cloud_darkness': 1.6,
+      'rain_density': 1.3,
+      'snow_density': 0,
+      'lightning_frequency': 0.5,
+      'wind_speed': 2
+    };
+    break;
+  case 'fog':
+    weather_settings = {
+      'cloud_density': 0.6,
+      'cloud_darkness': 0.2,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.25
+    };
+    break;
+  case 'haze':
+  case 'smoke':
+  case 'dust':
+    weather_settings = {
+      'cloud_density': 0.45,
+      'cloud_darkness': 0.35,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.6
+    };
+    break;
+  case 'thunderstorm':
     weather_settings = {
       'cloud_density': 1.5,
       'cloud_darkness': 2,
       'rain_density': 2,
       'snow_density': 0,
       'lightning_frequency': 1,
-      'wind_speed': 4
+      'wind_speed': 1.6
     };
     break;
   case 'snow':
@@ -37,7 +180,7 @@ beestat.component.scene.prototype.set_weather = function(weather) {
       'rain_density': 0,
       'snow_density': 1,
       'lightning_frequency': 0,
-      'wind_speed': 1
+      'wind_speed': 0.4
     };
     break;
   case 'rain':
@@ -47,21 +190,20 @@ beestat.component.scene.prototype.set_weather = function(weather) {
       'rain_density': 1,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 2
+      'wind_speed': 0.8
     };
     break;
-  case 'cloudy':
+  case 'overcast':
     weather_settings = {
       'cloud_density': 0.5,
       'cloud_darkness': 0.4,
       'rain_density': 0,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 2
+      'wind_speed': 0.8
     };
     break;
   case 'sunny':
-  case 'none':
   default:
     weather_settings = {
       'cloud_density': 0.03,
@@ -69,7 +211,7 @@ beestat.component.scene.prototype.set_weather = function(weather) {
       'rain_density': 0,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 1
+      'wind_speed': 0.4
     };
     break;
   }
@@ -423,13 +565,13 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(
   const span_y = bounds.max_y - bounds.min_y;
   const span_z = bounds.max_z - bounds.min_z;
   const positions = precipitation.points.geometry.attributes.position.array;
-  const clamped_wind_speed = Math.max(0, Math.min(5, Number(wind_speed || 0)));
+  const clamped_wind_speed = Math.max(0, Math.min(2, Number(wind_speed || 0)));
   const clamped_wind_direction = Math.max(0, Math.min(360, Number(wind_direction || 0)));
   const wind_direction_radians = THREE.MathUtils.degToRad(clamped_wind_direction);
   const wind_x = Math.cos(wind_direction_radians);
   const wind_y = Math.sin(wind_direction_radians);
   const max_wind_angle = Number(precipitation.max_wind_angle || 0);
-  const wind_angle = (clamped_wind_speed / 5) * max_wind_angle;
+  const wind_angle = (clamped_wind_speed / 2) * max_wind_angle;
   const wind_angle_radians = THREE.MathUtils.degToRad(wind_angle);
   const vertical_scale = Math.cos(wind_angle_radians);
   const horizontal_scale = Math.sin(wind_angle_radians);
@@ -437,7 +579,7 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(
     1,
     Number(precipitation.max_wind_speed_scale || 2)
   );
-  const wind_speed_scale = 1 + ((clamped_wind_speed / 5) * (max_wind_speed_scale - 1));
+  const wind_speed_scale = 1 + ((clamped_wind_speed / 2) * (max_wind_speed_scale - 1));
   const wind_motion_multiplier = Math.max(0, Number(precipitation.wind_motion_multiplier || 1));
   const direction_velocity_x = horizontal_scale * wind_x;
   const direction_velocity_y = horizontal_scale * wind_y;
@@ -504,6 +646,56 @@ beestat.component.scene.prototype.schedule_next_lightning_cluster_ = function(no
   const jitter = ((Math.random() * 2) - 1) * base_interval_ms * jitter_ratio;
   const next_interval_ms = Math.max(300, base_interval_ms + jitter);
   this.lightning_next_strike_ms_ = now_ms + next_interval_ms;
+};
+
+
+/**
+ * Sync lightning timing state after lightning frequency changes without rerender.
+ *
+ * @param {number} previous_frequency
+ * @param {number} current_frequency
+ */
+beestat.component.scene.prototype.sync_lightning_schedule_for_frequency_change_ = function(
+  previous_frequency,
+  current_frequency
+) {
+  const previous = Math.max(0, Math.min(2, Number(previous_frequency || 0)));
+  const current = Math.max(0, Math.min(2, Number(current_frequency || 0)));
+  const now_ms = window.performance.now();
+
+  if (current <= 0) {
+    if (this.lightning_flash_light_ !== undefined) {
+      this.lightning_flash_light_.intensity = 0;
+    }
+    this.lightning_flash_remaining_s_ = 0;
+    this.lightning_next_strike_ms_ = undefined;
+    this.lightning_next_pulse_ms_ = undefined;
+    this.lightning_cluster_pulses_remaining_ = 0;
+    this.lightning_cluster_anchor_ = null;
+    return;
+  }
+
+  // Turning lightning on should feel immediate even though strike cadence is stochastic.
+  if (previous <= 0 && current > 0) {
+    this.lightning_next_strike_ms_ = now_ms + (120 + (Math.random() * 420));
+    this.lightning_next_pulse_ms_ = undefined;
+    this.lightning_cluster_pulses_remaining_ = 0;
+    this.lightning_cluster_anchor_ = null;
+    this.lightning_cluster_frequency_ = current;
+    return;
+  }
+
+  // For active lightning, apply new frequency promptly rather than waiting for old cadence.
+  if (Math.abs(current - previous) > 0.0001) {
+    this.lightning_cluster_frequency_ = current;
+    this.schedule_next_lightning_cluster_(now_ms, current);
+    if (this.lightning_next_strike_ms_ !== undefined) {
+      this.lightning_next_strike_ms_ = Math.min(
+        this.lightning_next_strike_ms_,
+        now_ms + (350 + (Math.random() * 650))
+      );
+    }
+  }
 };
 
 
@@ -864,7 +1056,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
   if (delta_seconds <= 0) {
     return;
   }
-  const wind_speed = Math.max(0, Math.min(5, Number(this.get_scene_setting_('wind_speed') || 0)));
+  const wind_speed = Math.max(0, Math.min(2, Number(this.get_scene_setting_('wind_speed') || 0)));
   const wind_direction = Math.max(0, Math.min(360, Number(this.get_scene_setting_('wind_direction') || 0)));
 
   if (this.weather_profile_target_ === undefined) {

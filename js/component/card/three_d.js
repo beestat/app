@@ -14,6 +14,11 @@ beestat.component.card.three_d = function() {
   beestat.component.card.three_d.active_instance_ = this;
 
   this.disposed_ = false;
+  this.rerender_timeout_id_ = undefined;
+  this.rerender_pending_delay_ms_ = undefined;
+  this.rerender_waiting_for_visibility_ = false;
+  this.visibility_observer_ = undefined;
+  this.is_in_viewport_ = true;
 
   this.handle_scene_settings_change_ = function() {
     if (self.disposed_ === true || self.scene_ === undefined) {
@@ -38,13 +43,12 @@ beestat.component.card.three_d = function() {
   );
 
   this.handle_floor_plan_cache_change_ = function() {
-    if (self.disposed_ === true || self.scene_ === undefined) {
+    if (self.disposed_ === true) {
       return;
     }
-    self.scene_.rerender();
-    self.apply_layer_visibility_();
-    self.update_scene_();
-    self.update_hud_();
+    // Force settings to be rehydrated from persisted floor plan data.
+    self.scene_settings_values_ = undefined;
+    self.request_rerender(beestat.component.card.three_d.rerender_delay_floor_plan_ms);
   };
 
   // Rerender the scene when the floor plan changes.
@@ -66,12 +70,73 @@ beestat.component.card.three_d = function() {
     this.handle_runtime_data_change_
   );
 
+  this.handle_thermostat_cache_change_ = function() {
+    if (self.disposed_ === true || self.scene_ === undefined) {
+      return;
+    }
+    if (self.get_weather_() !== 'auto') {
+      return;
+    }
+    self.apply_weather_setting_to_scene_();
+    self.decorate_toolbar_();
+  };
+  beestat.dispatcher.addEventListener('cache.thermostat', this.handle_thermostat_cache_change_);
+
   this.scene_settings_menu_open_ = false;
   this.scene_settings_values_ = undefined;
+  this.scene_settings_scroll_top_ = 0;
+  this.scene_settings_panel_content_ = undefined;
+  this.scene_visualize_save_timeout_ = undefined;
 
   beestat.component.card.apply(this, arguments);
 };
 beestat.extend(beestat.component.card.three_d, beestat.component.card);
+
+/**
+ * Debounce delay in milliseconds for floor plan-triggered rerenders.
+ *
+ * @type {number}
+ */
+beestat.component.card.three_d.rerender_delay_floor_plan_ms = 5000;
+
+/**
+ * Debounce delay in milliseconds for scene setting-triggered rerenders.
+ *
+ * @type {number}
+ */
+beestat.component.card.three_d.rerender_delay_scene_setting_ms = 1000;
+
+/**
+ * Minimum time to keep the render loading mask visible (ms).
+ *
+ * @type {number}
+ */
+beestat.component.card.three_d.rerender_loading_min_visible_ms = 350;
+
+/**
+ * Scene setting keys that require a full rerender.
+ *
+ * @type {!Object<string, boolean>}
+ */
+beestat.component.card.three_d.rerender_required_scene_settings = {
+  'tree_enabled': true,
+  'star_density': true,
+  'light_user_enabled': true
+};
+
+/**
+ * Valid persisted weather values for the 3D scene.
+ *
+ * @type {!Array<string>}
+ */
+beestat.component.card.three_d.weather_values = [
+  'auto',
+  'sunny',
+  'overcast',
+  'rain',
+  'thunderstorm',
+  'snow'
+];
 
 /**
  * Decorate
@@ -103,6 +168,7 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
   parent.appendChild(this.contents_);
 
   this.decorate_contents_(this.contents_);
+  this.init_visibility_observer_();
 };
 
 /**
@@ -112,6 +178,7 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
  */
 beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   delete this.data_;
+  this.scene_settings_values_ = undefined;
   window.clearInterval(this.fps_interval_);
   delete this.fps_interval_;
 
@@ -488,10 +555,10 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   this.scene_.set_labels(
     this.get_show_environment_() === true
       ? false
-      : beestat.setting('visualize.three_d.show_labels')
+      : this.get_show_labels_()
   );
   this.scene_.set_room_interaction_enabled(this.get_show_environment_() === false);
-  this.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
+  this.scene_.set_auto_rotate(this.get_auto_rotate_());
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
@@ -531,8 +598,93 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 };
 
 /**
- * Get environment view state, with backward-compatible migration from
- * legacy show_exterior setting.
+ * Get (and initialize if needed) persisted scene settings.
+ *
+ * @return {object|null}
+ */
+beestat.component.card.three_d.prototype.get_scene_visualize_state_ = function() {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (floor_plan === undefined || floor_plan.data === undefined) {
+    return null;
+  }
+
+  if (floor_plan.data.scene === undefined || floor_plan.data.scene === null) {
+    floor_plan.data.scene = {};
+  }
+
+  // Migrate legacy storage from floor_plan.data.visualize.scene to floor_plan.data.scene.
+  if (
+    floor_plan.data.visualize !== undefined &&
+    floor_plan.data.visualize !== null &&
+    floor_plan.data.visualize.scene !== undefined &&
+    floor_plan.data.visualize.scene !== null &&
+    typeof floor_plan.data.visualize.scene === 'object'
+  ) {
+    floor_plan.data.scene = Object.assign(
+      {},
+      floor_plan.data.visualize.scene,
+      floor_plan.data.scene
+    );
+    delete floor_plan.data.visualize.scene;
+    this.save_scene_visualize_state_();
+  }
+
+  if (typeof floor_plan.data.scene !== 'object') {
+    floor_plan.data.scene = {};
+  }
+
+  const scene_visualize = floor_plan.data.scene;
+  if (scene_visualize.settings === undefined || scene_visualize.settings === null) {
+    scene_visualize.settings = {};
+  }
+  if (scene_visualize.show_group === undefined || scene_visualize.show_group === null) {
+    scene_visualize.show_group = {};
+  }
+  if (scene_visualize.mode === undefined) {
+    scene_visualize.mode = 'floor_plan';
+  }
+  if (scene_visualize.auto_rotate === undefined) {
+    scene_visualize.auto_rotate = false;
+  }
+  if (scene_visualize.show_labels === undefined) {
+    scene_visualize.show_labels = true;
+  }
+  if (scene_visualize.weather === undefined) {
+    scene_visualize.weather = 'auto';
+  }
+
+  return scene_visualize;
+};
+
+/**
+ * Persist current floor plan data after scene-visualize changes.
+ */
+beestat.component.card.three_d.prototype.save_scene_visualize_state_ = function() {
+  const self = this;
+  window.clearTimeout(this.scene_visualize_save_timeout_);
+  this.scene_visualize_save_timeout_ = window.setTimeout(function() {
+    const floor_plan = beestat.cache.floor_plan[self.floor_plan_id_];
+    if (floor_plan === undefined || floor_plan.data === undefined) {
+      return;
+    }
+    new beestat.api()
+      .add_call(
+        'floor_plan',
+        'update',
+        {
+          'attributes': {
+            'floor_plan_id': self.floor_plan_id_,
+            'data': beestat.clone(floor_plan.data)
+          }
+        },
+        'update_floor_plan'
+      )
+      .send();
+  }, 300);
+};
+
+/**
+ * Get whether environment mode is enabled.
  *
  * @return {boolean}
  */
@@ -540,40 +692,265 @@ beestat.component.card.three_d.prototype.get_show_environment_ = function() {
   if (beestat.user.has_early_access() !== true) {
     return false;
   }
-
-  const show_environment = beestat.setting('visualize.three_d.show_environment');
-  if (show_environment !== undefined) {
-    return show_environment !== false;
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return false;
   }
-
-  const legacy_show_exterior = beestat.setting('visualize.three_d.show_exterior');
-  if (legacy_show_exterior !== undefined) {
-    const migrated_value = legacy_show_exterior !== false;
-    beestat.setting('visualize.three_d.show_environment', migrated_value);
-    return migrated_value;
-  }
-
-  return true;
+  return scene_visualize.mode === 'environment';
 };
 
 /**
- * Get selected weather mode.
+ * Set environment mode.
+ *
+ * @param {boolean} show_environment
+ */
+beestat.component.card.three_d.prototype.set_show_environment_ = function(show_environment) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return;
+  }
+  scene_visualize.mode = show_environment === true ? 'environment' : 'floor_plan';
+  this.save_scene_visualize_state_();
+};
+
+/**
+ * Get selected weather value.
  *
  * @return {string}
  */
-beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
-  const weather_mode = beestat.setting('visualize.three_d.weather_mode');
-  if (weather_mode === 'current') {
-    beestat.setting('visualize.three_d.weather_mode', 'sunny');
-    return 'sunny';
+beestat.component.card.three_d.prototype.get_weather_ = function() {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return 'auto';
   }
-  return weather_mode || 'sunny';
+  const weather = scene_visualize.weather;
+  if (beestat.component.card.three_d.weather_values.includes(weather) !== true) {
+    scene_visualize.weather = 'auto';
+    this.save_scene_visualize_state_();
+    return 'auto';
+  }
+  return weather;
 };
 
 /**
- * Map weather mode to weather property values.
+ * Set weather value.
  *
- * @param {string} weather_mode
+ * @param {string} weather
+ */
+beestat.component.card.three_d.prototype.set_weather_ = function(weather) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return;
+  }
+  const normalized_weather = beestat.component.card.three_d.weather_values.includes(weather)
+    ? weather
+    : 'auto';
+  scene_visualize.weather = normalized_weather;
+  this.save_scene_visualize_state_();
+};
+
+/**
+ * Get normalized thermostat weather condition for auto scene weather.
+ *
+ * @return {string}
+ */
+beestat.component.card.three_d.prototype.get_auto_weather_from_thermostat_ = function() {
+  const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
+  const condition = thermostat?.weather?.condition;
+  switch (condition) {
+  case 'sunny':
+  case 'few_clouds':
+  case 'partly_cloudy':
+  case 'mostly_cloudy':
+  case 'overcast':
+  case 'drizzle':
+  case 'rain':
+  case 'showers':
+  case 'freezing_rain':
+  case 'hail':
+  case 'pellets':
+  case 'snow':
+  case 'flurries':
+  case 'freezing_snow':
+  case 'blizzard':
+  case 'thunderstorm':
+  case 'windy':
+  case 'tornado':
+  case 'fog':
+  case 'haze':
+  case 'smoke':
+  case 'dust':
+    return condition;
+  default:
+    return 'sunny';
+  }
+};
+
+/**
+ * Get weather icon from weather condition using modal weather icon mapping.
+ *
+ * @param {string} condition
+ *
+ * @return {string}
+ */
+beestat.component.card.three_d.prototype.get_weather_icon_from_condition_ = function(condition) {
+  switch (condition) {
+  case 'sunny':
+    return 'weather_sunny';
+  case 'few_clouds':
+  case 'partly_cloudy':
+    return 'weather_partly_cloudy';
+  case 'mostly_cloudy':
+  case 'overcast':
+    return 'weather_cloudy';
+  case 'drizzle':
+  case 'rain':
+  case 'showers':
+    return 'weather_pouring';
+  case 'freezing_rain':
+  case 'hail':
+  case 'pellets':
+    return 'weather_hail';
+  case 'snow':
+  case 'flurries':
+  case 'freezing_snow':
+    return 'weather_snowy';
+  case 'blizzard':
+    return 'weather_snowy_heavy';
+  case 'thunderstorm':
+    return 'weather_lightning_rainy';
+  case 'windy':
+    return 'weather_windy';
+  case 'tornado':
+    return 'weather_tornado';
+  case 'fog':
+    return 'weather_fog';
+  case 'haze':
+  case 'smoke':
+  case 'dust':
+    return 'weather_hazy';
+  default:
+    return 'cloud_question';
+  }
+};
+
+/**
+ * Get sidebar weather icon for a selected mode.
+ *
+ * @param {string} weather
+ *
+ * @return {string}
+ */
+beestat.component.card.three_d.prototype.get_weather_icon_from_mode_ = function(weather) {
+  const condition = weather === 'auto'
+    ? this.get_auto_weather_from_thermostat_()
+    : weather;
+  return this.get_weather_icon_from_condition_(condition);
+};
+
+/**
+ * Get explicit weather mode list for expanded weather picker.
+ *
+ * @return {!Array<!{value: string, icon: string, title: string}>}
+ */
+beestat.component.card.three_d.prototype.get_weather_mode_tiles_ = function() {
+  return [
+    {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
+    {'value': 'overcast', 'icon': 'weather_cloudy', 'title': 'Weather: Overcast'},
+    {'value': 'rain', 'icon': 'weather_pouring', 'title': 'Weather: Rain'},
+    {'value': 'thunderstorm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Thunderstorm'},
+    {'value': 'snow', 'icon': 'weather_snowy', 'title': 'Weather: Snow'}
+  ];
+};
+
+/**
+ * Get whether labels are enabled in floor plan mode.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.get_show_labels_ = function() {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return true;
+  }
+  return scene_visualize.show_labels !== false;
+};
+
+/**
+ * Set labels visibility in floor plan mode.
+ *
+ * @param {boolean} show_labels
+ */
+beestat.component.card.three_d.prototype.set_show_labels_ = function(show_labels) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return;
+  }
+  scene_visualize.show_labels = show_labels === true;
+  this.save_scene_visualize_state_();
+};
+
+/**
+ * Get whether auto-rotate is enabled.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.get_auto_rotate_ = function() {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return false;
+  }
+  return scene_visualize.auto_rotate === true;
+};
+
+/**
+ * Set auto-rotate.
+ *
+ * @param {boolean} auto_rotate
+ */
+beestat.component.card.three_d.prototype.set_auto_rotate_ = function(auto_rotate) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return;
+  }
+  scene_visualize.auto_rotate = auto_rotate === true;
+  this.save_scene_visualize_state_();
+};
+
+/**
+ * Get visibility state for one floor/group layer.
+ *
+ * @param {number} group_id
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.get_show_group_ = function(group_id) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return true;
+  }
+  return scene_visualize.show_group[group_id] !== false;
+};
+
+/**
+ * Set visibility state for one floor/group layer.
+ *
+ * @param {number} group_id
+ * @param {boolean} visible
+ */
+beestat.component.card.three_d.prototype.set_show_group_ = function(group_id, visible) {
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize === null) {
+    return;
+  }
+  scene_visualize.show_group[group_id] = visible === true;
+  this.save_scene_visualize_state_();
+};
+
+/**
+ * Map weather to scene weather property values.
+ *
+ * @param {string} weather
  *
  * @return {{
  *   cloud_density: number,
@@ -584,43 +961,175 @@ beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
  *   wind_speed: number
  * }}
  */
-beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = function(weather_mode) {
-  switch (weather_mode) {
-  case 'storm':
+beestat.component.card.three_d.prototype.get_weather_settings_from_weather_ = function(weather) {
+  const effective_weather = weather === 'auto'
+    ? this.get_auto_weather_from_thermostat_()
+    : weather;
+  switch (effective_weather) {
+  case 'few_clouds':
+    return {
+      'cloud_density': 0.18,
+      'cloud_darkness': 0,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.45
+    };
+  case 'partly_cloudy':
+    return {
+      'cloud_density': 0.3,
+      'cloud_darkness': 0.1,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.55
+    };
+  case 'mostly_cloudy':
+    return {
+      'cloud_density': 0.75,
+      'cloud_darkness': 0.45,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.7
+    };
+  case 'drizzle':
+    return {
+      'cloud_density': 0.9,
+      'cloud_darkness': 0.7,
+      'rain_density': 0.35,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.75
+    };
+  case 'showers':
+    return {
+      'cloud_density': 1.2,
+      'cloud_darkness': 1.1,
+      'rain_density': 1.2,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 1
+    };
+  case 'freezing_rain':
+    return {
+      'cloud_density': 1.2,
+      'cloud_darkness': 1.2,
+      'rain_density': 1.1,
+      'snow_density': 0.2,
+      'lightning_frequency': 0,
+      'wind_speed': 1
+    };
+  case 'hail':
+  case 'pellets':
+    return {
+      'cloud_density': 1.25,
+      'cloud_darkness': 1.25,
+      'rain_density': 1.2,
+      'snow_density': 0.15,
+      'lightning_frequency': 0.1,
+      'wind_speed': 1.1
+    };
+  case 'flurries':
+    return {
+      'cloud_density': 0.85,
+      'cloud_darkness': 0.7,
+      'rain_density': 0,
+      'snow_density': 0.55,
+      'lightning_frequency': 0,
+      'wind_speed': 0.65
+    };
+  case 'freezing_snow':
+    return {
+      'cloud_density': 1.1,
+      'cloud_darkness': 1,
+      'rain_density': 0.05,
+      'snow_density': 1.1,
+      'lightning_frequency': 0,
+      'wind_speed': 0.7
+    };
+  case 'blizzard':
+    return {
+      'cloud_density': 1.4,
+      'cloud_darkness': 1.5,
+      'rain_density': 0.1,
+      'snow_density': 1.8,
+      'lightning_frequency': 0,
+      'wind_speed': 1.6
+    };
+  case 'thunderstorm':
     return {
       'cloud_density': 1.5,
       'cloud_darkness': 2,
       'rain_density': 2,
       'snow_density': 0,
       'lightning_frequency': 1,
-      'wind_speed': 4
+      'wind_speed': 1.6
     };
-  case 'cloudy':
+  case 'windy':
+    return {
+      'cloud_density': 0.55,
+      'cloud_darkness': 0.3,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 1.5
+    };
+  case 'tornado':
+    return {
+      'cloud_density': 1.35,
+      'cloud_darkness': 1.6,
+      'rain_density': 1.3,
+      'snow_density': 0,
+      'lightning_frequency': 0.5,
+      'wind_speed': 2
+    };
+  case 'fog':
+    return {
+      'cloud_density': 0.6,
+      'cloud_darkness': 0.2,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.25
+    };
+  case 'haze':
+  case 'smoke':
+  case 'dust':
+    return {
+      'cloud_density': 0.45,
+      'cloud_darkness': 0.35,
+      'rain_density': 0,
+      'snow_density': 0,
+      'lightning_frequency': 0,
+      'wind_speed': 0.6
+    };
+  case 'overcast':
     return {
       'cloud_density': 0.5,
       'cloud_darkness': 0.4,
       'rain_density': 0,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 2
+      'wind_speed': 0.8
     };
-  case 'raining':
+  case 'rain':
     return {
       'cloud_density': 1,
       'cloud_darkness': 1,
       'rain_density': 1,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 2
+      'wind_speed': 0.8
     };
-  case 'snowing':
+  case 'snow':
     return {
       'cloud_density': 1,
       'cloud_darkness': 1,
       'rain_density': 0,
       'snow_density': 1,
       'lightning_frequency': 0,
-      'wind_speed': 1
+      'wind_speed': 0.4
     };
   case 'sunny':
   default:
@@ -630,7 +1139,7 @@ beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = funct
       'rain_density': 0,
       'snow_density': 0,
       'lightning_frequency': 0,
-      'wind_speed': 1
+      'wind_speed': 0.4
     };
   }
 };
@@ -644,7 +1153,7 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
   }
 
   this.ensure_scene_settings_values_();
-  const weather_settings = this.get_weather_settings_from_mode_(this.get_weather_mode_());
+  const weather_settings = this.get_weather_settings_from_weather_(this.get_weather_());
   Object.assign(this.scene_settings_values_, weather_settings);
   this.scene_.set_scene_settings(weather_settings, {
     'rerender': false
@@ -672,16 +1181,36 @@ beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = functio
     return;
   }
 
+  const scene_visualize = this.get_scene_visualize_state_();
   this.scene_settings_values_ = Object.assign({}, beestat.component.scene.default_settings);
+  if (scene_visualize !== null && scene_visualize.settings !== undefined) {
+    Object.assign(this.scene_settings_values_, scene_visualize.settings);
+  }
+  if (this.scene_settings_values_.seed !== undefined) {
+    this.scene_settings_values_.random_seed = this.scene_settings_values_.seed;
+    delete this.scene_settings_values_.seed;
+  }
   if (
     Number.isFinite(Number(this.scene_settings_values_.random_seed)) !== true ||
     Number(this.scene_settings_values_.random_seed) <= 0
   ) {
     this.scene_settings_values_.random_seed = Math.floor(Math.random() * 2147483646) + 1;
   }
+  if (scene_visualize !== null) {
+    const normalized_settings = Object.assign({}, this.scene_settings_values_, {
+      'seed': this.scene_settings_values_.random_seed
+    });
+    delete normalized_settings.random_seed;
+    const previous_settings_json = JSON.stringify(scene_visualize.settings || {});
+    const next_settings_json = JSON.stringify(normalized_settings);
+    scene_visualize.settings = normalized_settings;
+    if (previous_settings_json !== next_settings_json) {
+      this.save_scene_visualize_state_();
+    }
+  }
   Object.assign(
     this.scene_settings_values_,
-    this.get_weather_settings_from_mode_(this.get_weather_mode_())
+    this.get_weather_settings_from_weather_(this.get_weather_())
   );
 };
 
@@ -694,15 +1223,150 @@ beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = functio
 beestat.component.card.three_d.prototype.set_scene_setting_from_panel_ = function(key, value) {
   this.ensure_scene_settings_values_();
   this.scene_settings_values_[key] = value;
+  const scene_visualize = this.get_scene_visualize_state_();
+  if (scene_visualize !== null) {
+    const persisted_key = key === 'random_seed' ? 'seed' : key;
+    scene_visualize.settings[persisted_key] = value;
+    this.save_scene_visualize_state_();
+  }
 
   if (this.scene_ !== undefined) {
     this.scene_.set_scene_settings({
       [key]: value
     }, {
-      'rerender': true,
+      'rerender': false,
       'source': 'panel'
     });
+    if (beestat.component.card.three_d.rerender_required_scene_settings[key] === true) {
+      this.request_rerender(beestat.component.card.three_d.rerender_delay_scene_setting_ms);
+    }
   }
+};
+
+/**
+ * Request a full scene rerender after a delay. New requests reset the timer.
+ *
+ * @param {number} milliseconds
+ */
+beestat.component.card.three_d.prototype.request_rerender = function(milliseconds) {
+  let delay = Number(milliseconds);
+  if (Number.isFinite(delay) !== true || delay < 0) {
+    delay = 0;
+  }
+  delay = Math.floor(delay);
+
+  this.rerender_pending_delay_ms_ = delay;
+  this.rerender_waiting_for_visibility_ = false;
+
+  if (this.rerender_timeout_id_ !== undefined) {
+    window.clearTimeout(this.rerender_timeout_id_);
+    this.rerender_timeout_id_ = undefined;
+  }
+
+  this.rerender_timeout_id_ = window.setTimeout(function() {
+    this.rerender_timeout_id_ = undefined;
+    this.rerender_pending_delay_ms_ = undefined;
+
+    if (this.disposed_ === true || this.scene_ === undefined) {
+      return;
+    }
+
+    if (this.is_scene_in_viewport_() !== true) {
+      this.rerender_waiting_for_visibility_ = true;
+      return;
+    }
+
+    this.show_loading_('Rendering');
+    const loading_started_ms = window.performance.now();
+    const run_rerender = function() {
+      if (this.disposed_ === true || this.scene_ === undefined) {
+        this.hide_loading_();
+        return;
+      }
+
+      try {
+        this.scene_.rerender();
+        this.apply_layer_visibility_();
+        this.update_scene_();
+        this.update_hud_();
+      } finally {
+        const elapsed_ms = window.performance.now() - loading_started_ms;
+        const min_visible_ms = Number(
+          beestat.component.card.three_d.rerender_loading_min_visible_ms || 0
+        );
+        const remaining_ms = Math.max(0, min_visible_ms - elapsed_ms);
+        window.setTimeout(function() {
+          this.hide_loading_();
+        }.bind(this), remaining_ms);
+      }
+    }.bind(this);
+
+    // Yield at least one paint so the loading mask appears before heavy work.
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(function() {
+        window.requestAnimationFrame(run_rerender);
+      });
+    } else {
+      window.setTimeout(run_rerender, 16);
+    }
+  }.bind(this), delay);
+};
+
+/**
+ * Whether this card is currently visible in the viewport.
+ *
+ * @return {boolean}
+ */
+beestat.component.card.three_d.prototype.is_scene_in_viewport_ = function() {
+  if (this.contents_ === undefined || this.contents_[0] === undefined) {
+    return true;
+  }
+
+  const rect = this.contents_[0].getBoundingClientRect();
+  const viewport_height = window.innerHeight || document.documentElement.clientHeight;
+  const viewport_width = window.innerWidth || document.documentElement.clientWidth;
+
+  return (
+    rect.bottom > 0 &&
+    rect.right > 0 &&
+    rect.top < viewport_height &&
+    rect.left < viewport_width
+  );
+};
+
+/**
+ * Track whether the card is visible and flush deferred rerenders when visible.
+ */
+beestat.component.card.three_d.prototype.init_visibility_observer_ = function() {
+  if (
+    typeof window.IntersectionObserver !== 'function' ||
+    this.contents_ === undefined ||
+    this.contents_[0] === undefined
+  ) {
+    return;
+  }
+
+  if (this.visibility_observer_ !== undefined) {
+    this.visibility_observer_.disconnect();
+  }
+
+  this.visibility_observer_ = new window.IntersectionObserver(function(entries) {
+    if (entries === undefined || entries.length === 0) {
+      return;
+    }
+
+    const entry = entries[entries.length - 1];
+    this.is_in_viewport_ = entry.isIntersecting === true && entry.intersectionRatio > 0;
+
+    if (this.is_in_viewport_ === true && this.rerender_waiting_for_visibility_ === true) {
+      this.rerender_waiting_for_visibility_ = false;
+      this.request_rerender(0);
+    }
+  }.bind(this), {
+    'threshold': 0
+  });
+
+  this.visibility_observer_.observe(this.contents_[0]);
 };
 
 /**
@@ -718,7 +1382,14 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
     return;
   }
 
+  if (this.scene_settings_panel_content_ !== undefined) {
+    this.scene_settings_scroll_top_ = this.scene_settings_panel_content_.scrollTop;
+  } else {
+    this.scene_settings_scroll_top_ = this.scene_settings_container_.scrollTop;
+  }
+
   this.scene_settings_container_.innerHTML = '';
+  this.scene_settings_panel_content_ = undefined;
   if (
     this.can_access_scene_settings_() !== true ||
     this.get_show_environment_() !== true ||
@@ -747,7 +1418,25 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
     'overflow-y': 'auto',
     'box-sizing': 'border-box'
   });
+  panel.addEventListener('scroll', () => {
+    this.scene_settings_scroll_top_ = panel.scrollTop;
+  });
   this.scene_settings_container_.appendChild(panel);
+  this.scene_settings_panel_content_ = panel;
+  this.scene_settings_container_.scrollTop = this.scene_settings_scroll_top_;
+  panel.scrollTop = this.scene_settings_scroll_top_;
+  const restore_scroll = () => {
+    this.scene_settings_container_.scrollTop = this.scene_settings_scroll_top_;
+    panel.scrollTop = this.scene_settings_scroll_top_;
+  };
+  if (typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => {
+      restore_scroll();
+      window.requestAnimationFrame(restore_scroll);
+    });
+  } else {
+    window.setTimeout(restore_scroll, 0);
+  }
 
   const get_title_case_label = (key) => {
     return key
@@ -860,7 +1549,7 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
 
   add_separator();
   add_section_title('Wind');
-  add_number_setting(get_title_case_label('wind_speed'), 'wind_speed', 0, 5, 0.1);
+  add_number_setting(get_title_case_label('wind_speed'), 'wind_speed', 0, 2, 0.1);
   add_number_setting(get_title_case_label('wind_direction'), 'wind_direction', 0, 360, 1);
 
   add_separator();
@@ -878,16 +1567,6 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   add_boolean_setting(get_title_case_label('light_user_enabled'), 'light_user_enabled');
   add_boolean_setting(get_title_case_label('light_user_cast_shadows'), 'light_user_cast_shadows');
   this.update_fps_visibility_();
-};
-
-/**
- * Set environment view state and mirror to legacy key for compatibility.
- *
- * @param {boolean} show_environment
- */
-beestat.component.card.three_d.prototype.set_show_environment_ = function(show_environment) {
-  beestat.setting('visualize.three_d.show_environment', show_environment);
-  beestat.setting('visualize.three_d.show_exterior', show_environment);
 };
 
 /**
@@ -917,8 +1596,7 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   this.scene_.set_layer_visible('light_sources', show_environment);
 
   Object.values(floor_plan.data.groups).forEach((group) => {
-    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
-    const group_visible = beestat.setting(setting_key) !== false;
+    const group_visible = this.get_show_group_(group.group_id);
     this.scene_.set_layer_visible(
       group.group_id,
       group_visible
@@ -928,7 +1606,7 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   this.scene_.set_labels(
     show_environment === true
       ? false
-      : beestat.setting('visualize.three_d.show_labels')
+      : this.get_show_labels_()
   );
   this.scene_.set_room_interaction_enabled(show_environment === false);
 
@@ -1511,38 +2189,28 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
   // Auto-rotate
   tile_group.add_tile(new beestat.component.tile()
-    .set_icon(beestat.setting('visualize.three_d.auto_rotate') === false ? 'restart_off' : 'restart')
+    .set_icon(this.get_auto_rotate_() === false ? 'restart_off' : 'restart')
     .set_title('Toggle Auto-Rotate')
     .set_text_color(beestat.style.color.gray.light)
     .set_background_color(beestat.style.color.bluegray.base)
     .set_background_hover_color(beestat.style.color.bluegray.light)
     .addEventListener('click', function(e) {
       e.stopPropagation();
-      beestat.setting(
-        'visualize.three_d.auto_rotate',
-        !beestat.setting('visualize.three_d.auto_rotate')
-      );
+      const next_auto_rotate = self.get_auto_rotate_() !== true;
+      self.set_auto_rotate_(next_auto_rotate);
       this.set_icon(
-        'restart' + (beestat.setting('visualize.three_d.auto_rotate') === false ? '_off' : '')
+        'restart' + (next_auto_rotate === true ? '' : '_off')
       );
-      self.scene_.set_auto_rotate(beestat.setting('visualize.three_d.auto_rotate'));
+      self.scene_.set_auto_rotate(next_auto_rotate);
     })
   );
 
   // Weather controls (environment view only)
   if (show_environment === true) {
-    const selected_mode = this.get_weather_mode_();
-    const weather_modes = [
-      {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
-      {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
-      {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
-      {'value': 'storm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Storm'},
-      {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
-    ];
-    const selected_weather_mode = weather_modes.find((mode) => mode.value === selected_mode) || weather_modes[0];
+    const selected_mode = this.get_weather_();
 
     tile_group.add_tile(new beestat.component.tile()
-      .set_icon(selected_weather_mode.icon)
+      .set_icon(this.get_weather_icon_from_mode_(selected_mode))
       .set_title('Weather')
       .set_text_color(beestat.style.color.gray.light)
       .set_background_color(this.weather_menu_open_ === true ? beestat.style.color.lightblue.base : beestat.style.color.bluegray.base)
@@ -1575,21 +2243,19 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   // Labels (hidden while environment view is on)
   if (show_environment === false) {
     tile_group.add_tile(new beestat.component.tile()
-      .set_icon(beestat.setting('visualize.three_d.show_labels') === false ? 'label_off' : 'label')
+      .set_icon(this.get_show_labels_() === false ? 'label_off' : 'label')
       .set_title('Toggle Labels')
       .set_text_color(beestat.style.color.gray.light)
       .set_background_color(beestat.style.color.bluegray.base)
       .set_background_hover_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function(e) {
         e.stopPropagation();
-        beestat.setting(
-          'visualize.three_d.show_labels',
-          !beestat.setting('visualize.three_d.show_labels')
-        );
+        const next_show_labels = self.get_show_labels_() !== true;
+        self.set_show_labels_(next_show_labels);
         this.set_icon(
-          'label' + (beestat.setting('visualize.three_d.show_labels') === false ? '_off' : '')
+          'label' + (next_show_labels === true ? '' : '_off')
         );
-        self.scene_.set_labels(beestat.setting('visualize.three_d.show_labels'));
+        self.scene_.set_labels(next_show_labels);
       })
     );
   }
@@ -1601,14 +2267,8 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     if (weather_tile_element !== null) {
       const toolbar_rect = this.toolbar_container_.getBoundingClientRect();
       const weather_tile_rect = weather_tile_element.getBoundingClientRect();
-      const selected_mode = this.get_weather_mode_();
-      const weather_modes = [
-        {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
-        {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
-        {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
-        {'value': 'storm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Storm'},
-        {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
-      ];
+      const selected_mode = this.get_weather_();
+      const weather_modes = this.get_weather_mode_tiles_();
 
       const popup = document.createElement('div');
       Object.assign(popup.style, {
@@ -1635,7 +2295,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
         if (is_selected === false) {
           tile.addEventListener('click', (e) => {
             e.stopPropagation();
-            beestat.setting('visualize.three_d.weather_mode', mode.value);
+            this.set_weather_(mode.value);
             this.apply_weather_setting_to_scene_();
             this.weather_menu_open_ = false;
             this.decorate_toolbar_();
@@ -1644,6 +2304,26 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
         tile.render($(popup));
       });
+
+      const auto_selected = selected_mode === 'auto';
+      const auto_tile = new beestat.component.tile()
+        .set_text('Auto')
+        .set_title('Weather: Auto')
+        .set_text_color(auto_selected ? beestat.style.color.gray.dark : beestat.style.color.gray.light)
+        .set_background_color(auto_selected ? beestat.style.color.bluegray.light : beestat.style.color.bluegray.base)
+        .set_background_hover_color(beestat.style.color.bluegray.light);
+
+      if (auto_selected === false) {
+        auto_tile.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.set_weather_('auto');
+          this.apply_weather_setting_to_scene_();
+          this.weather_menu_open_ = false;
+          this.decorate_toolbar_();
+        });
+      }
+
+      auto_tile.render($(popup));
     }
   }
 };
@@ -1680,17 +2360,14 @@ beestat.component.card.three_d.prototype.decorate_floors_ = function(parent) {
       icon = 'numeric_' + icon_number++;
     }
 
-    const setting_key = 'visualize.three_d.show_group.' + group.group_id;
     button
-      .set_icon(icon + (beestat.setting(setting_key) === false ? '' : '_box'))
+      .set_icon(icon + (self.get_show_group_(group.group_id) === false ? '' : '_box'))
       .addEventListener('click', function() {
-        beestat.setting(
-          setting_key,
-          beestat.setting(setting_key) === false
-        );
-        self.scene_.set_layer_visible(group.group_id, beestat.setting(setting_key));
+        const next_visible = self.get_show_group_(group.group_id) !== true;
+        self.set_show_group_(group.group_id, next_visible);
+        self.scene_.set_layer_visible(group.group_id, next_visible);
         this.set_icon(
-          icon + (beestat.setting(setting_key) === false ? '' : '_box')
+          icon + (next_visible === true ? '_box' : '')
         );
       });
 
@@ -2001,6 +2678,7 @@ beestat.component.card.three_d.prototype.update_hud_ = function() {
  */
 beestat.component.card.three_d.prototype.set_floor_plan_id = function(floor_plan_id) {
   this.floor_plan_id_ = floor_plan_id;
+  this.scene_settings_values_ = undefined;
 
   if (this.rendered_ === true) {
     this.rerender();
@@ -2144,6 +2822,10 @@ beestat.component.card.three_d.prototype.remove_global_listeners_ = function() {
     'cache.data.three_d__runtime_thermostat',
     this.handle_runtime_data_change_
   );
+  beestat.dispatcher.removeEventListener(
+    'cache.thermostat',
+    this.handle_thermostat_cache_change_
+  );
   beestat.dispatcher.removeEventListener('resize.three_d');
 };
 
@@ -2156,6 +2838,21 @@ beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = functio
   }
 
   this.disposed_ = true;
+  if (this.rerender_timeout_id_ !== undefined) {
+    window.clearTimeout(this.rerender_timeout_id_);
+    this.rerender_timeout_id_ = undefined;
+    this.rerender_pending_delay_ms_ = undefined;
+  }
+  if (this.scene_visualize_save_timeout_ !== undefined) {
+    window.clearTimeout(this.scene_visualize_save_timeout_);
+    this.scene_visualize_save_timeout_ = undefined;
+  }
+  this.rerender_waiting_for_visibility_ = false;
+  if (this.visibility_observer_ !== undefined) {
+    this.visibility_observer_.disconnect();
+    this.visibility_observer_ = undefined;
+  }
+  this.hide_loading_();
   window.clearInterval(this.fps_interval_);
   delete this.fps_interval_;
   this.remove_global_listeners_();
@@ -2168,6 +2865,21 @@ beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = functio
 
 beestat.component.card.three_d.prototype.dispose = function() {
   this.disposed_ = true;
+  if (this.rerender_timeout_id_ !== undefined) {
+    window.clearTimeout(this.rerender_timeout_id_);
+    this.rerender_timeout_id_ = undefined;
+    this.rerender_pending_delay_ms_ = undefined;
+  }
+  if (this.scene_visualize_save_timeout_ !== undefined) {
+    window.clearTimeout(this.scene_visualize_save_timeout_);
+    this.scene_visualize_save_timeout_ = undefined;
+  }
+  this.rerender_waiting_for_visibility_ = false;
+  if (this.visibility_observer_ !== undefined) {
+    this.visibility_observer_.disconnect();
+    this.visibility_observer_ = undefined;
+  }
+  this.hide_loading_();
 
   window.clearInterval(this.fps_interval_);
   delete this.fps_interval_;
