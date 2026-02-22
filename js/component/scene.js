@@ -148,6 +148,13 @@ beestat.component.scene.debug_show_branches_with_foliage = true;
 beestat.component.scene.round_tree_branches_per_height = 0.15;
 
 /**
+ * Fixed recursive branch depth for round/oval tree generation.
+ *
+ * @type {number}
+ */
+beestat.component.scene.fixed_tree_branch_depth = 1;
+
+/**
  * Seasonal foliage colors for round/oval trees.
  *
  * @type {{summer: number, fall_early: number, fall_late: number, winter: number}}
@@ -270,8 +277,8 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
  *   cloud_density: number,
  *   rain_density: number,
  *   snow_density: number,
+ *   wind_speed: number,
  *   tree_enabled: boolean,
- *   tree_branch_depth: number,
  *   star_density: number,
  *   light_user_enabled: boolean,
  *   random_seed: number
@@ -281,8 +288,8 @@ beestat.component.scene.default_settings = {
   'cloud_density': 1,
   'rain_density': 1,
   'snow_density': 1,
+  'wind_speed': 1,
   'tree_enabled': true,
-  'tree_branch_depth': 1,
   'star_density': 1,
   'light_user_enabled': true,
   'random_seed': 1

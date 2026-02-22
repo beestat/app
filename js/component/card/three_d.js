@@ -647,12 +647,6 @@ beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = functio
 
   this.scene_settings_values_ = Object.assign({}, beestat.component.scene.default_settings);
   if (
-    this.scene_settings_values_.tree_branch_depth === undefined &&
-    this.scene_settings_values_.tree_branch_recursion_depth !== undefined
-  ) {
-    this.scene_settings_values_.tree_branch_depth = this.scene_settings_values_.tree_branch_recursion_depth;
-  }
-  if (
     Number.isFinite(Number(this.scene_settings_values_.random_seed)) !== true ||
     Number(this.scene_settings_values_.random_seed) <= 0
   ) {
@@ -814,12 +808,12 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   add_number_setting(get_title_case_label('cloud_density'), 'cloud_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('rain_density'), 'rain_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('snow_density'), 'snow_density', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('wind_speed'), 'wind_speed', 0, 2, 0.1);
 
   add_separator();
 
   // Tree
   add_boolean_setting(get_title_case_label('tree_enabled'), 'tree_enabled');
-  add_number_setting(get_title_case_label('tree_branch_depth'), 'tree_branch_depth', 0, 4, 1);
 
   add_separator();
 

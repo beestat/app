@@ -627,7 +627,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   const branch_height_samples = [];
   const recursive_depth_limit = Math.max(
     0,
-    Math.round(Number(this.get_scene_setting_('tree_branch_depth') || 0))
+    Math.round(Number(beestat.component.scene.fixed_tree_branch_depth || 0))
   );
   const children_per_branch = 1;
   if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
