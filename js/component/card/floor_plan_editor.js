@@ -2563,27 +2563,11 @@ beestat.component.card.floor_plan_editor.prototype.get_title_ = function() {
  * only run so fast.
  */
 beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function() {
-  const self = this;
+  const floor_plan_id = beestat.setting('visualize.floor_plan_id');
 
   // Fake this event since the cache is being directly modified.
   beestat.dispatcher.dispatchEvent('cache.floor_plan');
-
-  window.clearTimeout(this.update_timeout_);
-  this.update_timeout_ = window.setTimeout(function() {
-    new beestat.api()
-      .add_call(
-        'floor_plan',
-        'update',
-        {
-          'attributes': {
-            'floor_plan_id': beestat.setting('visualize.floor_plan_id'),
-            'data': self.get_floor_plan_data_(beestat.setting('visualize.floor_plan_id'))
-          }
-        },
-        'update_floor_plan'
-      )
-      .send();
-  }, 1000);
+  beestat.floor_plan.queue_data_save_(floor_plan_id, 1000);
 };
 
 /**

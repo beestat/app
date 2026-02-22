@@ -1,6 +1,63 @@
 beestat.floor_plan = {};
 
 /**
+ * Pending save timeouts keyed by floor_plan_id.
+ *
+ * @type {Object<string, number>}
+ */
+beestat.floor_plan.data_save_timeouts_ = {};
+
+/**
+ * Queue a floor plan data save, debounced per floor plan.
+ *
+ * @param {number} floor_plan_id
+ * @param {number} delay_ms
+ */
+beestat.floor_plan.queue_data_save_ = function(floor_plan_id, delay_ms = 300) {
+  if (floor_plan_id === undefined || floor_plan_id === null || floor_plan_id === '') {
+    return;
+  }
+
+  const normalized_floor_plan_id = Number(floor_plan_id);
+  if (Number.isFinite(normalized_floor_plan_id) !== true || normalized_floor_plan_id <= 0) {
+    return;
+  }
+
+  let normalized_delay_ms = Number(delay_ms);
+  if (Number.isFinite(normalized_delay_ms) !== true || normalized_delay_ms < 0) {
+    normalized_delay_ms = 0;
+  }
+  normalized_delay_ms = Math.round(normalized_delay_ms);
+
+  if (beestat.floor_plan.data_save_timeouts_[normalized_floor_plan_id] !== undefined) {
+    window.clearTimeout(beestat.floor_plan.data_save_timeouts_[normalized_floor_plan_id]);
+  }
+
+  beestat.floor_plan.data_save_timeouts_[normalized_floor_plan_id] = window.setTimeout(function() {
+    delete beestat.floor_plan.data_save_timeouts_[normalized_floor_plan_id];
+
+    const floor_plan = beestat.cache.floor_plan[normalized_floor_plan_id];
+    if (floor_plan === undefined || floor_plan.data === undefined) {
+      return;
+    }
+
+    new beestat.api()
+      .add_call(
+        'floor_plan',
+        'update',
+        {
+          'attributes': {
+            'floor_plan_id': normalized_floor_plan_id,
+            'data': beestat.clone(floor_plan.data)
+          }
+        },
+        'update_floor_plan'
+      )
+      .send();
+  }, normalized_delay_ms);
+};
+
+/**
  * Get the area of an entire floor plan.
  *
  * @param {number} floor_plan_id

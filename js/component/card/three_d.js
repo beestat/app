@@ -86,7 +86,7 @@ beestat.component.card.three_d = function() {
   this.scene_settings_values_ = undefined;
   this.scene_settings_scroll_top_ = 0;
   this.scene_settings_panel_content_ = undefined;
-  this.scene_visualize_save_timeout_ = undefined;
+  this.weather_values_ = ['auto', 'sunny', 'overcast', 'rain', 'thunderstorm', 'snow'];
 
   beestat.component.card.apply(this, arguments);
 };
@@ -123,20 +123,6 @@ beestat.component.card.three_d.rerender_required_scene_settings = {
   'star_density': true,
   'light_user_enabled': true
 };
-
-/**
- * Valid persisted weather values for the 3D scene.
- *
- * @type {!Array<string>}
- */
-beestat.component.card.three_d.weather_values = [
-  'auto',
-  'sunny',
-  'overcast',
-  'rain',
-  'thunderstorm',
-  'snow'
-];
 
 /**
  * Decorate
@@ -660,27 +646,7 @@ beestat.component.card.three_d.prototype.get_scene_visualize_state_ = function()
  * Persist current floor plan data after scene-visualize changes.
  */
 beestat.component.card.three_d.prototype.save_scene_visualize_state_ = function() {
-  const self = this;
-  window.clearTimeout(this.scene_visualize_save_timeout_);
-  this.scene_visualize_save_timeout_ = window.setTimeout(function() {
-    const floor_plan = beestat.cache.floor_plan[self.floor_plan_id_];
-    if (floor_plan === undefined || floor_plan.data === undefined) {
-      return;
-    }
-    new beestat.api()
-      .add_call(
-        'floor_plan',
-        'update',
-        {
-          'attributes': {
-            'floor_plan_id': self.floor_plan_id_,
-            'data': beestat.clone(floor_plan.data)
-          }
-        },
-        'update_floor_plan'
-      )
-      .send();
-  }, 300);
+  beestat.floor_plan.queue_data_save_(this.floor_plan_id_, 300);
 };
 
 /**
@@ -724,7 +690,7 @@ beestat.component.card.three_d.prototype.get_weather_ = function() {
     return 'auto';
   }
   const weather = scene_visualize.weather;
-  if (beestat.component.card.three_d.weather_values.includes(weather) !== true) {
+  if (this.weather_values_.includes(weather) !== true) {
     scene_visualize.weather = 'auto';
     this.save_scene_visualize_state_();
     return 'auto';
@@ -742,7 +708,7 @@ beestat.component.card.three_d.prototype.set_weather_ = function(weather) {
   if (scene_visualize === null) {
     return;
   }
-  const normalized_weather = beestat.component.card.three_d.weather_values.includes(weather)
+  const normalized_weather = this.weather_values_.includes(weather)
     ? weather
     : 'auto';
   scene_visualize.weather = normalized_weather;
@@ -756,82 +722,21 @@ beestat.component.card.three_d.prototype.set_weather_ = function(weather) {
  */
 beestat.component.card.three_d.prototype.get_auto_weather_from_thermostat_ = function() {
   const thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
-  const condition = thermostat?.weather?.condition;
-  switch (condition) {
-  case 'sunny':
-  case 'few_clouds':
-  case 'partly_cloudy':
-  case 'mostly_cloudy':
-  case 'overcast':
-  case 'drizzle':
-  case 'rain':
-  case 'showers':
-  case 'freezing_rain':
-  case 'hail':
-  case 'pellets':
-  case 'snow':
-  case 'flurries':
-  case 'freezing_snow':
-  case 'blizzard':
-  case 'thunderstorm':
-  case 'windy':
-  case 'tornado':
-  case 'fog':
-  case 'haze':
-  case 'smoke':
-  case 'dust':
-    return condition;
-  default:
-    return 'sunny';
-  }
+  return beestat.weather.get_settings_(thermostat?.weather?.condition).condition;
 };
 
 /**
- * Get weather icon from weather condition using modal weather icon mapping.
+ * Resolve selected weather mode into a weather condition.
  *
- * @param {string} condition
+ * @param {string} weather
  *
  * @return {string}
  */
-beestat.component.card.three_d.prototype.get_weather_icon_from_condition_ = function(condition) {
-  switch (condition) {
-  case 'sunny':
-    return 'weather_sunny';
-  case 'few_clouds':
-  case 'partly_cloudy':
-    return 'weather_partly_cloudy';
-  case 'mostly_cloudy':
-  case 'overcast':
-    return 'weather_cloudy';
-  case 'drizzle':
-  case 'rain':
-  case 'showers':
-    return 'weather_pouring';
-  case 'freezing_rain':
-  case 'hail':
-  case 'pellets':
-    return 'weather_hail';
-  case 'snow':
-  case 'flurries':
-  case 'freezing_snow':
-    return 'weather_snowy';
-  case 'blizzard':
-    return 'weather_snowy_heavy';
-  case 'thunderstorm':
-    return 'weather_lightning_rainy';
-  case 'windy':
-    return 'weather_windy';
-  case 'tornado':
-    return 'weather_tornado';
-  case 'fog':
-    return 'weather_fog';
-  case 'haze':
-  case 'smoke':
-  case 'dust':
-    return 'weather_hazy';
-  default:
-    return 'cloud_question';
+beestat.component.card.three_d.prototype.get_weather_condition_from_mode_ = function(weather) {
+  if (weather === 'auto') {
+    return this.get_auto_weather_from_thermostat_();
   }
+  return beestat.weather.get_settings_(weather).condition;
 };
 
 /**
@@ -842,10 +747,7 @@ beestat.component.card.three_d.prototype.get_weather_icon_from_condition_ = func
  * @return {string}
  */
 beestat.component.card.three_d.prototype.get_weather_icon_from_mode_ = function(weather) {
-  const condition = weather === 'auto'
-    ? this.get_auto_weather_from_thermostat_()
-    : weather;
-  return this.get_weather_icon_from_condition_(condition);
+  return beestat.weather.get_icon(this.get_weather_condition_from_mode_(weather));
 };
 
 /**
@@ -855,11 +757,11 @@ beestat.component.card.three_d.prototype.get_weather_icon_from_mode_ = function(
  */
 beestat.component.card.three_d.prototype.get_weather_mode_tiles_ = function() {
   return [
-    {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
-    {'value': 'overcast', 'icon': 'weather_cloudy', 'title': 'Weather: Overcast'},
-    {'value': 'rain', 'icon': 'weather_pouring', 'title': 'Weather: Rain'},
-    {'value': 'thunderstorm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Thunderstorm'},
-    {'value': 'snow', 'icon': 'weather_snowy', 'title': 'Weather: Snow'}
+    {'value': 'sunny', 'icon': beestat.weather.get_icon('sunny'), 'title': 'Weather: Sunny'},
+    {'value': 'overcast', 'icon': beestat.weather.get_icon('overcast'), 'title': 'Weather: Overcast'},
+    {'value': 'rain', 'icon': beestat.weather.get_icon('rain'), 'title': 'Weather: Rain'},
+    {'value': 'thunderstorm', 'icon': beestat.weather.get_icon('thunderstorm'), 'title': 'Weather: Thunderstorm'},
+    {'value': 'snow', 'icon': beestat.weather.get_icon('snow'), 'title': 'Weather: Snow'}
   ];
 };
 
@@ -962,186 +864,15 @@ beestat.component.card.three_d.prototype.set_show_group_ = function(group_id, vi
  * }}
  */
 beestat.component.card.three_d.prototype.get_weather_settings_from_weather_ = function(weather) {
-  const effective_weather = weather === 'auto'
-    ? this.get_auto_weather_from_thermostat_()
-    : weather;
-  switch (effective_weather) {
-  case 'few_clouds':
-    return {
-      'cloud_density': 0.18,
-      'cloud_darkness': 0,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.45
-    };
-  case 'partly_cloudy':
-    return {
-      'cloud_density': 0.3,
-      'cloud_darkness': 0.1,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.55
-    };
-  case 'mostly_cloudy':
-    return {
-      'cloud_density': 0.75,
-      'cloud_darkness': 0.45,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.7
-    };
-  case 'drizzle':
-    return {
-      'cloud_density': 0.9,
-      'cloud_darkness': 0.7,
-      'rain_density': 0.35,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.75
-    };
-  case 'showers':
-    return {
-      'cloud_density': 1.2,
-      'cloud_darkness': 1.1,
-      'rain_density': 1.2,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 1
-    };
-  case 'freezing_rain':
-    return {
-      'cloud_density': 1.2,
-      'cloud_darkness': 1.2,
-      'rain_density': 1.1,
-      'snow_density': 0.2,
-      'lightning_frequency': 0,
-      'wind_speed': 1
-    };
-  case 'hail':
-  case 'pellets':
-    return {
-      'cloud_density': 1.25,
-      'cloud_darkness': 1.25,
-      'rain_density': 1.2,
-      'snow_density': 0.15,
-      'lightning_frequency': 0.1,
-      'wind_speed': 1.1
-    };
-  case 'flurries':
-    return {
-      'cloud_density': 0.85,
-      'cloud_darkness': 0.7,
-      'rain_density': 0,
-      'snow_density': 0.55,
-      'lightning_frequency': 0,
-      'wind_speed': 0.65
-    };
-  case 'freezing_snow':
-    return {
-      'cloud_density': 1.1,
-      'cloud_darkness': 1,
-      'rain_density': 0.05,
-      'snow_density': 1.1,
-      'lightning_frequency': 0,
-      'wind_speed': 0.7
-    };
-  case 'blizzard':
-    return {
-      'cloud_density': 1.4,
-      'cloud_darkness': 1.5,
-      'rain_density': 0.1,
-      'snow_density': 1.8,
-      'lightning_frequency': 0,
-      'wind_speed': 1.6
-    };
-  case 'thunderstorm':
-    return {
-      'cloud_density': 1.5,
-      'cloud_darkness': 2,
-      'rain_density': 2,
-      'snow_density': 0,
-      'lightning_frequency': 1,
-      'wind_speed': 1.6
-    };
-  case 'windy':
-    return {
-      'cloud_density': 0.55,
-      'cloud_darkness': 0.3,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 1.5
-    };
-  case 'tornado':
-    return {
-      'cloud_density': 1.35,
-      'cloud_darkness': 1.6,
-      'rain_density': 1.3,
-      'snow_density': 0,
-      'lightning_frequency': 0.5,
-      'wind_speed': 2
-    };
-  case 'fog':
-    return {
-      'cloud_density': 0.6,
-      'cloud_darkness': 0.2,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.25
-    };
-  case 'haze':
-  case 'smoke':
-  case 'dust':
-    return {
-      'cloud_density': 0.45,
-      'cloud_darkness': 0.35,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.6
-    };
-  case 'overcast':
-    return {
-      'cloud_density': 0.5,
-      'cloud_darkness': 0.4,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.8
-    };
-  case 'rain':
-    return {
-      'cloud_density': 1,
-      'cloud_darkness': 1,
-      'rain_density': 1,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.8
-    };
-  case 'snow':
-    return {
-      'cloud_density': 1,
-      'cloud_darkness': 1,
-      'rain_density': 0,
-      'snow_density': 1,
-      'lightning_frequency': 0,
-      'wind_speed': 0.4
-    };
-  case 'sunny':
-  default:
-    return {
-      'cloud_density': 0.03,
-      'cloud_darkness': 0,
-      'rain_density': 0,
-      'snow_density': 0,
-      'lightning_frequency': 0,
-      'wind_speed': 0.4
-    };
-  }
+  const condition = this.get_weather_condition_from_mode_(weather);
+  return {
+    'cloud_density': beestat.weather.get_cloud_density(condition),
+    'cloud_darkness': beestat.weather.get_cloud_darkness(condition),
+    'rain_density': beestat.weather.get_rain_density(condition),
+    'snow_density': beestat.weather.get_snow_density(condition),
+    'lightning_frequency': beestat.weather.get_lightning_frequency(condition),
+    'wind_speed': beestat.weather.get_wind_speed(condition)
+  };
 };
 
 /**
@@ -2342,7 +2073,7 @@ beestat.component.card.three_d.prototype.decorate_floors_ = function(parent) {
 
   const sorted_groups = Object.values(floor_plan.data.groups)
     .sort(function(a, b) {
-      return a.elevation > b.elevation;
+      return (a.elevation || 0) - (b.elevation || 0);
     });
 
   let icon_number = 1;
@@ -2843,10 +2574,6 @@ beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = functio
     this.rerender_timeout_id_ = undefined;
     this.rerender_pending_delay_ms_ = undefined;
   }
-  if (this.scene_visualize_save_timeout_ !== undefined) {
-    window.clearTimeout(this.scene_visualize_save_timeout_);
-    this.scene_visualize_save_timeout_ = undefined;
-  }
   this.rerender_waiting_for_visibility_ = false;
   if (this.visibility_observer_ !== undefined) {
     this.visibility_observer_.disconnect();
@@ -2869,10 +2596,6 @@ beestat.component.card.three_d.prototype.dispose = function() {
     window.clearTimeout(this.rerender_timeout_id_);
     this.rerender_timeout_id_ = undefined;
     this.rerender_pending_delay_ms_ = undefined;
-  }
-  if (this.scene_visualize_save_timeout_ !== undefined) {
-    window.clearTimeout(this.scene_visualize_save_timeout_);
-    this.scene_visualize_save_timeout_ = undefined;
   }
   this.rerender_waiting_for_visibility_ = false;
   if (this.visibility_observer_ !== undefined) {

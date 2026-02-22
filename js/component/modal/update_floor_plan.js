@@ -67,7 +67,7 @@ beestat.component.modal.update_floor_plan.prototype.decorate_contents_ = functio
 
   const sorted_groups = Object.values(floor_plan.data.groups)
     .sort(function(a, b) {
-      return a.elevation > b.elevation;
+      return (a.elevation || 0) - (b.elevation || 0);
     });
 
   sorted_groups.forEach(function(group) {

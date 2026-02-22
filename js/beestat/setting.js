@@ -80,12 +80,6 @@ beestat.setting = function(argument_1, opt_value, opt_callback) {
     'visualize.heat_map_static.occupancy.min': 0,
     'visualize.heat_map_static.occupancy.max': 100,
     'visualize.hide_affiliate': false,
-    'visualize.three_d.show_labels': true,
-    'visualize.three_d.auto_rotate': false,
-    'visualize.three_d.show_walls': false,
-    'visualize.three_d.show_roof': false,
-    'visualize.three_d.show_environment': true,
-    'visualize.three_d.weather_mode': 'sunny',
 
     'date_format': 'M/D/YYYY',
 

@@ -804,7 +804,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
 
     const sorted_groups = Object.values(floor_plan.data.groups)
       .sort(function(a, b) {
-        return a.elevation > b.elevation;
+        return (a.elevation || 0) - (b.elevation || 0);
       });
 
     let icon_number = 1;
@@ -1709,7 +1709,7 @@ beestat.component.floor_plan.prototype.get_tree_group_ = function() {
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const sorted_groups = Object.values(floor_plan.data.groups)
     .sort(function(a, b) {
-      return a.elevation > b.elevation;
+      return (a.elevation || 0) - (b.elevation || 0);
     });
 
   const first_floor = sorted_groups.find(function(group) {

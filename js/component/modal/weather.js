@@ -18,75 +18,9 @@ beestat.extend(beestat.component.modal.weather, beestat.component.modal);
 beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 
-  var icon;
-  var icon_color;
-  switch (thermostat.weather.condition) {
-  case 'sunny':
-    icon = 'weather_sunny';
-    icon_color = beestat.style.color.yellow.base;
-    break;
-  case 'few_clouds':
-  case 'partly_cloudy':
-    icon = 'weather_partly_cloudy';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  case 'mostly_cloudy':
-  case 'overcast':
-    icon = 'weather_cloudy';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  case 'drizzle':
-  case 'rain':
-  case 'showers':
-    icon = 'weather_pouring';
-    icon_color = beestat.style.color.blue.light;
-    break;
-  case 'freezing_rain':
-  case 'hail':
-  case 'pellets':
-    icon_color = beestat.style.color.lightblue.base;
-    icon = 'weather_hail';
-    break;
-  case 'snow':
-  case 'flurries':
-  case 'freezing_snow':
-    icon_color = beestat.style.color.lightblue.light;
-    icon = 'weather_snowy';
-    break;
-  case 'blizzard':
-    icon = 'weather_snowy_heavy';
-    icon_color = beestat.style.color.lightblue.light;
-    break;
-  case 'thunderstorm':
-    icon = 'weather_lightning_rainy';
-    icon_color = beestat.style.color.red.base;
-    break;
-  case 'windy':
-    icon = 'weather_windy';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  case 'tornado':
-    icon = 'weather_tornado';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  case 'fog':
-    icon = 'weather_fog';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  case 'haze':
-  case 'smoke':
-  case 'dust':
-    icon = 'weather_hazy';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  default:
-    icon = 'cloud_question';
-    icon_color = beestat.style.color.gray.base;
-    break;
-  }
-
-  var condition = thermostat.weather.condition.replace('_', ' ');
-  condition = condition.charAt(0).toUpperCase() + condition.slice(1);
+  var icon = beestat.weather.get_icon(thermostat.weather.condition);
+  var icon_color = beestat.weather.get_icon_color(thermostat.weather.condition);
+  var condition = beestat.weather.get_condition_label(thermostat.weather.condition);
 
   var tr;
   var td;
