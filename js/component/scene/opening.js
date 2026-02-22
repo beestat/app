@@ -161,39 +161,14 @@ beestat.component.scene.prototype.get_opening_center_z_ = function(group, openin
 
 
 /**
- * Add a debug wireframe for an opening cutter.
- *
- * @param {THREE.Group} layer The debug layer.
- * @param {THREE.Mesh} cutter The cutter mesh.
- */
-beestat.component.scene.prototype.add_opening_cutter_debug_ = function(layer, cutter) {
-  const edges_geometry = new THREE.EdgesGeometry(cutter.geometry);
-  const wireframe = new THREE.LineSegments(
-    edges_geometry,
-    new THREE.LineBasicMaterial({
-      'color': 0xff7700
-    })
-  );
-  wireframe.position.copy(cutter.position);
-  wireframe.rotation.copy(cutter.rotation);
-  wireframe.scale.copy(cutter.scale);
-  wireframe.layers.set(beestat.component.scene.layer_visible);
-
-  layer.add(wireframe);
-};
-
-
-/**
  * Subtract opening cutters from wall meshes.
  *
  * @param {THREE.Group} walls_layer The wall mesh layer.
  * @param {object} floor_plan The floor plan data.
- * @param {THREE.Group=} opening_cutter_debug_layer Optional debug cutter layer.
  */
 beestat.component.scene.prototype.apply_opening_cuts_ = function(
   walls_layer,
-  floor_plan,
-  opening_cutter_debug_layer
+  floor_plan
 ) {
   if (window.CSG === undefined || typeof window.CSG.subtract !== 'function') {
     return;
@@ -225,10 +200,6 @@ beestat.component.scene.prototype.apply_opening_cuts_ = function(
       const cutter = this.build_opening_cutter_mesh_(group, opening);
       if (cutter === null) {
         return;
-      }
-
-      if (opening_cutter_debug_layer !== undefined) {
-        this.add_opening_cutter_debug_(opening_cutter_debug_layer, cutter);
       }
 
       const cutter_box = new THREE.Box3().setFromObject(cutter);
@@ -276,50 +247,6 @@ beestat.component.scene.prototype.apply_opening_cuts_ = function(
 
       cutter.geometry.dispose();
     });
-  }, this);
-};
-
-
-/**
- * Add red wireframe boxes to visualize opening placement in 3D.
- *
- * @param {THREE.Group} layer The layer to add opening debug to.
- * @param {object} group The floor plan group.
- */
-beestat.component.scene.prototype.add_openings_debug_ = function(layer, group) {
-  if (group.openings === undefined || group.openings.length === 0) {
-    return;
-  }
-
-  const wall_thickness = beestat.component.scene.wall_thickness;
-
-  group.openings.forEach(function(opening) {
-    const opening_line = this.get_opening_line_params_(opening);
-    const width = opening_line.width;
-    const height = Math.max(1, Number(opening.height || this.get_opening_default_height_(opening.type)));
-    const center_z = this.get_opening_center_z_(group, opening, height);
-
-    const geometry = new THREE.BoxGeometry(
-      width,
-      wall_thickness,
-      height
-    );
-
-    const edges_geometry = new THREE.EdgesGeometry(geometry);
-    const wireframe = new THREE.LineSegments(
-      edges_geometry,
-      new THREE.LineBasicMaterial({
-        'color': 0xff0000
-      })
-    );
-
-    wireframe.position.x = opening_line.center_x;
-    wireframe.position.y = opening_line.center_y;
-    wireframe.position.z = center_z;
-    wireframe.rotation.z = opening_line.rotation_radians;
-    wireframe.layers.set(beestat.component.scene.layer_visible);
-
-    layer.add(wireframe);
   }, this);
 };
 

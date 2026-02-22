@@ -256,3 +256,80 @@ beestat.component.floor_plan_entity.prototype.get_x = function() {
 beestat.component.floor_plan_entity.prototype.get_y = function() {
   return this.y_;
 };
+
+/**
+ * Collect snap x/y coordinates from selected shape collections.
+ *
+ * @param {{
+ *   groups: object[],
+ *   shape_specs: Array<{collection: string, point_mode: string}>,
+ *   should_skip_shape: (function(object, object, object): boolean)=
+ * }} options
+ *
+ * @return {{snap_x: number[], snap_y: number[]}}
+ */
+beestat.component.floor_plan_entity.prototype.collect_snap_points_ = function(options) {
+  const snap_x = {};
+  const snap_y = {};
+  const groups = Array.isArray(options.groups) ? options.groups : [];
+  const shape_specs = Array.isArray(options.shape_specs) ? options.shape_specs : [];
+  const should_skip_shape = typeof options.should_skip_shape === 'function'
+    ? options.should_skip_shape
+    : function() {
+      return false;
+    };
+
+  groups.forEach(function(group) {
+    if (group === undefined || group === null) {
+      return;
+    }
+
+    shape_specs.forEach(function(shape_spec) {
+      const shapes = group[shape_spec.collection];
+      if (Array.isArray(shapes) !== true) {
+        return;
+      }
+
+      shapes.forEach(function(shape) {
+        if (shape === undefined || shape.editor_hidden === true) {
+          return;
+        }
+        if (should_skip_shape(shape, shape_spec, group) === true) {
+          return;
+        }
+
+        if (shape_spec.point_mode === 'point') {
+          snap_x[Number(shape.x || 0)] = true;
+          snap_y[Number(shape.y || 0)] = true;
+          return;
+        }
+
+        if (Array.isArray(shape.points) !== true) {
+          return;
+        }
+
+        shape.points.forEach(function(point) {
+          const point_x = Number(point.x || 0);
+          const point_y = Number(point.y || 0);
+          if (shape_spec.point_mode === 'absolute') {
+            snap_x[point_x] = true;
+            snap_y[point_y] = true;
+            return;
+          }
+
+          snap_x[point_x + Number(shape.x || 0)] = true;
+          snap_y[point_y + Number(shape.y || 0)] = true;
+        });
+      });
+    });
+  });
+
+  return {
+    'snap_x': Object.keys(snap_x).map(function(key) {
+      return Number(key);
+    }),
+    'snap_y': Object.keys(snap_y).map(function(key) {
+      return Number(key);
+    })
+  };
+};

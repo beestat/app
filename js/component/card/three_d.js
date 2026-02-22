@@ -29,7 +29,6 @@ beestat.component.card.three_d = function() {
   };
 
   // Things that update the scene that don't require a rerender.
-  // TODO these probably need moved to the layer instead of here
   beestat.dispatcher.addEventListener(
     [
       'setting.visualize.data_type',
@@ -325,137 +324,74 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
     );
   }
 
-  // Don't go before there's data.
-/*  required_begin = moment.max(
-    required_begin,
-    moment.utc(thermostat.data_begin)
-  );*/
-
-  // Don't go after now.
-/*  required_end = moment.min(
-    required_end,
-    moment().subtract(1, 'hour')
-  );*/
-
-  /**
-   * If the needed data exists in the database and the runtime_sensor
-   * cache is empty, then query the data. If the needed data does not exist in
-   * the database, check every 2 seconds until it does.
-   */
-  // TODO somewhat problematic because I need to check if data is synced from multiple thermostats now
-  // if (beestat.thermostat.data_synced(this.thermostat_id_, required_begin, required_end) === true) {
   const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
   if (sensor_ids.length > 0) {
-    if (true) {
-      if (
-        beestat.cache.data.three_d__runtime_sensor === undefined ||
-        beestat.cache.data.three_d__runtime_thermostat === undefined
-      ) {
-        // console.log('data is undefined need to load it');
-        this.show_loading_('Fetching');
+    if (
+      beestat.cache.data.three_d__runtime_sensor === undefined ||
+      beestat.cache.data.three_d__runtime_thermostat === undefined
+    ) {
+      this.show_loading_('Fetching');
 
-        const value = [
-          required_begin.format(),
-          required_end.format()
-        ];
-        const operator = 'between';
+      const value = [
+        required_begin.format(),
+        required_end.format()
+      ];
+      const operator = 'between';
 
-        const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
-        const thermostat_ids = Object.keys(beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_));
-        // if (sensor_ids.length > 0) {
-          const api_call = new beestat.api();
+      const thermostat_ids = Object.keys(beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_));
+      const api_call = new beestat.api();
 
-          // Sensor data
-          sensor_ids.forEach(function(sensor_id) {
-            api_call.add_call(
-              'runtime_sensor',
-              'read',
-              {
-                'attributes': {
-                  'sensor_id': sensor_id,
-                  'timestamp': {
-                    'value': value,
-                    'operator': operator
-                  }
-                }
-              },
-              'runtime_sensor_' + sensor_id
-            );
-          });
-
-          // Thermostat data
-          thermostat_ids.forEach(function(thermostat_id) {
-            api_call.add_call(
-              'runtime_thermostat',
-              'read',
-              {
-                'attributes': {
-                  'thermostat_id': thermostat_id,
-                  'timestamp': {
-                    'value': value,
-                    'operator': operator
-                  }
-                }
-              },
-              'runtime_thermostat_' + thermostat_id
-            );
-          });
-
-          api_call.set_callback(function(response) {
-            let runtime_sensors = [];
-            let runtime_thermostats = [];
-            for (let alias in response) {
-              if (alias.includes('runtime_sensor_') === true) {
-                runtime_sensors = runtime_sensors.concat(response[alias]);
-              } else {
-                runtime_thermostats = runtime_thermostats.concat(response[alias]);
+      // Sensor data
+      sensor_ids.forEach(function(sensor_id) {
+        api_call.add_call(
+          'runtime_sensor',
+          'read',
+          {
+            'attributes': {
+              'sensor_id': sensor_id,
+              'timestamp': {
+                'value': value,
+                'operator': operator
               }
             }
-            beestat.cache.set('data.three_d__runtime_sensor', runtime_sensors);
-            beestat.cache.set('data.three_d__runtime_thermostat', runtime_thermostats);
-          });
+          },
+          'runtime_sensor_' + sensor_id
+        );
+      });
 
-          api_call.send();
-
-        // }
-      } else if (this.has_data_() === false) {
-        console.info('has data false');
-        /*chart_container.style('filter', 'blur(3px)');
-        var no_data = $.createElement('div');
-        no_data.style({
-          'position': 'absolute',
-          'top': 0,
-          'left': 0,
-          'width': '100%',
-          'height': '100%',
-          'display': 'flex',
-          'flex-direction': 'column',
-          'justify-content': 'center',
-          'text-align': 'center'
-        });
-        no_data.innerText('No data to display');
-        container.appendChild(no_data);*/
-      }
-    } else {
-      this.show_loading_('Syncing');
-      window.setTimeout(function() {
-        new beestat.api()
-          .add_call(
-            'thermostat',
-            'read_id',
-            {
-              'attributes': {
-                'inactive': 0
+      // Thermostat data
+      thermostat_ids.forEach(function(thermostat_id) {
+        api_call.add_call(
+          'runtime_thermostat',
+          'read',
+          {
+            'attributes': {
+              'thermostat_id': thermostat_id,
+              'timestamp': {
+                'value': value,
+                'operator': operator
               }
-            },
-            'thermostat'
-          )
-          .set_callback(function(response) {
-            beestat.cache.set('thermostat', response);
-            self.rerender();
-          })
-          .send();
-      }, 2000);
+            }
+          },
+          'runtime_thermostat_' + thermostat_id
+        );
+      });
+
+      api_call.set_callback(function(response) {
+        let runtime_sensors = [];
+        let runtime_thermostats = [];
+        for (let alias in response) {
+          if (alias.includes('runtime_sensor_') === true) {
+            runtime_sensors = runtime_sensors.concat(response[alias]);
+          } else {
+            runtime_thermostats = runtime_thermostats.concat(response[alias]);
+          }
+        }
+        beestat.cache.set('data.three_d__runtime_sensor', runtime_sensors);
+        beestat.cache.set('data.three_d__runtime_thermostat', runtime_thermostats);
+      });
+
+      api_call.send();
     }
   }
 };
@@ -498,7 +434,6 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   });
 
   // Set the initial date.
-  // if (this.has_data_() === true) {
   this.update_scene_();
   this.scene_.render($(parent));
 
@@ -896,15 +831,6 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
 };
 
 /**
- * Get whether or not this user can access scene settings controls.
- *
- * @return {boolean}
- */
-beestat.component.card.three_d.prototype.can_access_scene_settings_ = function() {
-  return true;
-};
-
-/**
  * Ensure local scene settings state exists.
  */
 beestat.component.card.three_d.prototype.ensure_scene_settings_values_ = function() {
@@ -1122,7 +1048,6 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   this.scene_settings_container_.innerHTML = '';
   this.scene_settings_panel_content_ = undefined;
   if (
-    this.can_access_scene_settings_() !== true ||
     this.get_show_environment_() !== true ||
     this.scene_settings_menu_open_ !== true
   ) {
@@ -1868,7 +1793,6 @@ beestat.component.card.three_d.prototype.update_fps_visibility_ = function() {
   }
 
   const show = (
-    this.can_access_scene_settings_() === true &&
     this.get_show_environment_() === true &&
     this.scene_settings_menu_open_ === true
   );
@@ -1954,7 +1878,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     );
   }
 
-  if (this.can_access_scene_settings_() === true && show_environment === true) {
+  if (show_environment === true) {
     tile_group.add_tile(new beestat.component.tile()
       .set_icon('tune')
       .set_title('Scene Settings')
@@ -2561,14 +2485,9 @@ beestat.component.card.three_d.prototype.remove_global_listeners_ = function() {
 };
 
 /**
- * Force teardown for stale card instances that were not formally disposed.
+ * Shared teardown path for stale-instance disposal and normal disposal.
  */
-beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = function() {
-  if (this.disposed_ === true) {
-    return;
-  }
-
-  this.disposed_ = true;
+beestat.component.card.three_d.prototype.teardown_ = function() {
   if (this.rerender_timeout_id_ !== undefined) {
     window.clearTimeout(this.rerender_timeout_id_);
     this.rerender_timeout_id_ = undefined;
@@ -2590,28 +2509,21 @@ beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = functio
   }
 };
 
+/**
+ * Force teardown for stale card instances that were not formally disposed.
+ */
+beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = function() {
+  if (this.disposed_ === true) {
+    return;
+  }
+
+  this.disposed_ = true;
+  this.teardown_();
+};
+
 beestat.component.card.three_d.prototype.dispose = function() {
   this.disposed_ = true;
-  if (this.rerender_timeout_id_ !== undefined) {
-    window.clearTimeout(this.rerender_timeout_id_);
-    this.rerender_timeout_id_ = undefined;
-    this.rerender_pending_delay_ms_ = undefined;
-  }
-  this.rerender_waiting_for_visibility_ = false;
-  if (this.visibility_observer_ !== undefined) {
-    this.visibility_observer_.disconnect();
-    this.visibility_observer_ = undefined;
-  }
-  this.hide_loading_();
-
-  window.clearInterval(this.fps_interval_);
-  delete this.fps_interval_;
-  this.remove_global_listeners_();
-
-  if (this.scene_ !== undefined) {
-    this.scene_.dispose();
-    delete this.scene_;
-  }
+  this.teardown_();
   if (beestat.component.card.three_d.active_instance_ === this) {
     delete beestat.component.card.three_d.active_instance_;
   }

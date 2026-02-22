@@ -195,9 +195,6 @@ beestat.component.floor_plan_entity.prototype.decorate_walls_ = function(parent)
     wall_entity.addEventListener('mousedown', function() {
       wall_entity.set_active(true);
     });
-    wall_entity.addEventListener('mousedown', function() {
-      wall_entity.set_active(true);
-    });
 
     // Add toolbar button on activate.
     wall_entity.addEventListener('activate', function() {
@@ -305,60 +302,26 @@ beestat.component.floor_plan_entity.room.prototype.set_active = function(active)
  * Pre-generate a list of snappable x/y values.
  */
 beestat.component.floor_plan_entity.room.prototype.update_snap_points_ = function() {
-  const snap_x = {};
-  const snap_y = {};
-
-  // Snap to rooms in this group.
-  this.group_.rooms.forEach(function(room) {
-    if (room.editor_hidden === true) {
-      return;
-    }
-    room.points.forEach(function(point) {
-      snap_x[point.x + room.x] = true;
-      snap_y[point.y + room.y] = true;
-    });
-  });
-  (this.group_.openings || []).forEach(function(opening) {
-    if (opening.editor_hidden === true || Array.isArray(opening.points) !== true) {
-      return;
-    }
-    opening.points.forEach(function(point) {
-      // Opening points are stored in absolute editor coordinates.
-      snap_x[point.x] = true;
-      snap_y[point.y] = true;
-    });
-  });
-
-  // Snap to rooms in the group under this one.
   const group_below = this.floor_plan_.get_group_below(this.group_);
+  const groups = [this.group_];
   if (group_below !== undefined) {
-    group_below.rooms.forEach(function(room) {
-      if (room.editor_hidden === true) {
-        return;
-      }
-      room.points.forEach(function(point) {
-        snap_x[point.x + room.x] = true;
-        snap_y[point.y + room.y] = true;
-      });
-    });
-    (group_below.openings || []).forEach(function(opening) {
-      if (opening.editor_hidden === true || Array.isArray(opening.points) !== true) {
-        return;
-      }
-      opening.points.forEach(function(point) {
-        // Opening points are stored in absolute editor coordinates.
-        snap_x[point.x] = true;
-        snap_y[point.y] = true;
-      });
-    });
+    groups.push(group_below);
   }
-
-  this.snap_x_ = Object.keys(snap_x).map(function(key) {
-    return Number(key);
+  const snap_points = this.collect_snap_points_({
+    'groups': groups,
+    'shape_specs': [
+      {
+        'collection': 'rooms',
+        'point_mode': 'relative'
+      },
+      {
+        'collection': 'openings',
+        'point_mode': 'absolute'
+      }
+    ]
   });
-  this.snap_y_ = Object.keys(snap_y).map(function(key) {
-    return Number(key);
-  });
+  this.snap_x_ = snap_points.snap_x;
+  this.snap_y_ = snap_points.snap_y;
 };
 
 /**

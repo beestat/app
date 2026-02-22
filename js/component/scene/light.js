@@ -40,15 +40,6 @@ beestat.component.scene.prototype.add_directional_lights_ = function() {
   this.static_light_group_.add(top_light);
   this.directional_lights_.push(top_light);
 
-  // Add helpers for debugging
-  if (this.debug_.directional_light_helpers === true) {
-    this.directional_light_helpers_ = [];
-    this.directional_lights_.forEach((light) => {
-      const helper = new THREE.DirectionalLightHelper(light, 100);
-      this.static_light_group_.add(helper);
-      this.directional_light_helpers_.push(helper);
-    });
-  }
 };
 
 
@@ -80,7 +71,6 @@ beestat.component.scene.prototype.add_static_lights_ = function() {
 
   // Add directional fill lights
   this.add_directional_lights_();
-  this.apply_appearance_rotation_to_lights_();
 };
 
 
@@ -209,14 +199,6 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_glow_sprite_.renderOrder = 11;
   this.sun_visual_group_.add(this.sun_glow_sprite_);
 
-  if (this.debug_.sun_light_helper === true) {
-    this.sun_light_helper_ = new THREE.DirectionalLightHelper(
-      this.sun_light_,
-      100
-    );
-    this.celestial_light_group_.add(this.sun_light_helper_);
-  }
-
   // Moon light
   this.moon_light_ = new THREE.DirectionalLight(
     0xaaccff, // Cool bluish color for moonlight
@@ -258,17 +240,7 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.moon_sprite_.scale.set(405, 405, 1);
   this.moon_visual_group_.add(this.moon_sprite_);
 
-  if (this.debug_.moon_light_helper === true) {
-    this.moon_light_helper_ = new THREE.DirectionalLightHelper(
-      this.moon_light_,
-      100
-    );
-    this.celestial_light_group_.add(this.moon_light_helper_);
-  }
-
   this.add_stars_();
-
-  this.apply_appearance_rotation_to_lights_();
 };
 
 
@@ -398,17 +370,6 @@ beestat.component.scene.prototype.update_sun_path_arc_ = function(date, latitude
 
 
 /**
- * Static (ambient/directional fill) lights should not rotate with floor-plan
- * appearance. Celestial lights are handled in update_celestial_lights_.
- */
-beestat.component.scene.prototype.apply_appearance_rotation_to_lights_ = function() {
-  if (this.static_light_group_ !== undefined) {
-    this.static_light_group_.rotation.y = 0;
-  }
-};
-
-
-/**
  * Build target sun colors from altitude.
  * Warmer near horizon and more neutral when the sun is high.
  *
@@ -506,12 +467,6 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
     Math.min(1, (-sun_pos.altitude - 0.05) / 0.25)
   );
 
-  const interior_night_factor = Math.max(
-    0,
-    Math.min(1, (-sun_pos.altitude + 0.03) / 0.3)
-  );
-  this.target_interior_light_intensity_ =
-    beestat.component.scene.interior_light_intensity * interior_night_factor;
   const max_sun_intensity = Math.max(0.0001, Number(beestat.component.scene.sun_light_intensity || 0.0001));
   const normalized_sun_brightness = Math.max(
     0,
@@ -576,18 +531,6 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
       : moon_intensity;
   }
   this.target_moon_intensity_ *= cloud_dimming;
-
-  // Update helpers
-  if (this.debug_.sun_light_helper) {
-    this.sun_light_.updateMatrixWorld();
-    this.sun_light_.target.updateMatrixWorld();
-    this.sun_light_helper_.update();
-  }
-  if (this.debug_.moon_light_helper) {
-    this.moon_light_.updateMatrixWorld();
-    this.moon_light_.target.updateMatrixWorld();
-    this.moon_light_helper_.update();
-  }
 };
 
 
@@ -606,14 +549,6 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   }
   if (this.target_moon_intensity_ === undefined) {
     this.target_moon_intensity_ = 0;
-  }
-  if (this.target_interior_light_intensity_ === undefined) {
-    const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
-    this.target_interior_light_intensity_ = (
-      (hour >= 19 || hour <= 5)
-        ? beestat.component.scene.interior_light_intensity
-        : 0
-    );
   }
   if (this.target_light_source_intensity_multiplier_ === undefined) {
     const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
@@ -640,11 +575,6 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   const color_lerp_factor = 0.08;
   this.sun_light_.color.lerp(this.target_sun_light_color_, color_lerp_factor);
 
-  if (this.interior_lights_ !== undefined) {
-    this.interior_lights_.forEach((light) => {
-      light.intensity += (this.target_interior_light_intensity_ - light.intensity) * lerp_factor;
-    });
-  }
   if (Array.isArray(this.light_sources_) === true) {
     this.light_sources_.forEach((light) => {
       const base_intensity = Number(light.userData.base_intensity || 0);
@@ -789,29 +719,6 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
     this.light_sources_ = [];
   }
 
-  if (this.debug_.light_source_orbs === true) {
-    if (this.light_source_marker_geometry_ === undefined) {
-      this.light_source_marker_geometry_ = new THREE.SphereGeometry(2.2, 12, 12);
-    }
-    if (this.light_source_glow_geometry_ === undefined) {
-      this.light_source_glow_geometry_ = new THREE.SphereGeometry(6, 16, 16);
-    }
-    if (this.light_source_marker_material_ === undefined) {
-      this.light_source_marker_material_ = new THREE.MeshStandardMaterial({
-        'roughness': 0.2,
-        'metalness': 0.05
-      });
-    }
-    if (this.light_source_glow_material_ === undefined) {
-      this.light_source_glow_material_ = new THREE.MeshBasicMaterial({
-        'transparent': true,
-        'opacity': 0.28,
-        'depthWrite': false,
-        'blending': THREE.AdditiveBlending
-      });
-    }
-  }
-
   const group_elevation = Number(group.elevation || 0);
   const floor_thickness = Number(beestat.component.scene.room_floor_thickness || 0);
   const user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
@@ -829,33 +736,6 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
     }
     const light_intensity = 0.9 * intensity_level;
     const light_color = this.get_light_color_from_temperature_(light_source.temperature_k);
-
-    if (this.debug_.light_source_orbs === true) {
-      const marker = new THREE.Mesh(
-        this.light_source_marker_geometry_,
-        this.light_source_marker_material_.clone()
-      );
-      marker.material.color.copy(light_color);
-      marker.material.emissive.copy(light_color);
-      marker.material.emissiveIntensity = 0.9 + (intensity_level * 0.35);
-      marker.position.set(x, y, z);
-      marker.castShadow = false;
-      marker.receiveShadow = false;
-      marker.userData.is_light_source = true;
-      layer.add(marker);
-
-      const glow = new THREE.Mesh(
-        this.light_source_glow_geometry_,
-        this.light_source_glow_material_.clone()
-      );
-      glow.material.color.copy(light_color);
-      glow.material.opacity = 0.15 + (intensity_level * 0.08);
-      glow.position.set(x, y, z);
-      glow.castShadow = false;
-      glow.receiveShadow = false;
-      glow.userData.is_light_source = true;
-      layer.add(glow);
-    }
 
     const light = new THREE.PointLight(light_color, light_intensity, 240, 2);
     light.userData.base_intensity = light_intensity;
@@ -910,61 +790,4 @@ beestat.component.scene.prototype.update_user_light_shadow_settings_ = function(
 };
 
 
-/**
- * Add warm interior point lights, one per room. Lights are invisible and their
- * intensity is animated based on night/day state.
- *
- * @param {object} floor_plan The floor plan data.
- */
-beestat.component.scene.prototype.add_interior_lights_ = function(floor_plan) {
-  this.interior_lights_ = [];
-  this.interior_light_group_ = new THREE.Group();
-  this.floor_plan_group_.add(this.interior_light_group_);
-  this.layers_['interior_lights'] = this.interior_light_group_;
-  let shadowed_light_count = 0;
-
-  floor_plan.data.groups.forEach(function(group) {
-    group.rooms.forEach((room) => {
-      if (room.points === undefined || room.points.length < 3) {
-        return;
-      }
-
-      const geojson_polygon = [];
-      room.points.forEach(function(point) {
-        geojson_polygon.push([
-          point.x,
-          point.y
-        ]);
-      });
-      const light_point = polylabel([geojson_polygon]);
-
-      const group_elevation = Number(group.elevation || 0);
-      const room_height = Number(room.height || group.height || 96);
-      const room_elevation = Number(room.elevation !== undefined ? room.elevation : group_elevation);
-
-      const light = new THREE.PointLight(0xffd79a, 0, 170, 2);
-      light.position.set(
-        Number(room.x || 0) + light_point[0],
-        Number(room.y || 0) + light_point[1],
-        -room_elevation - (room_height * 0.45)
-      );
-      if (shadowed_light_count < beestat.component.scene.interior_light_shadow_max) {
-        light.castShadow = true;
-        light.shadow.mapSize.width = 512;
-        light.shadow.mapSize.height = 512;
-        light.shadow.bias = -0.0012;
-        light.shadow.normalBias = 0.025;
-        light.shadow.radius = 2;
-        light.shadow.camera.near = 1;
-        light.shadow.camera.far = 220;
-        shadowed_light_count++;
-      } else {
-        light.castShadow = false;
-      }
-
-      this.interior_light_group_.add(light);
-      this.interior_lights_.push(light);
-    });
-  }, this);
-};
 

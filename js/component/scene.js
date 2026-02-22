@@ -113,34 +113,6 @@ beestat.component.scene.room_floor_thickness = 6;
 beestat.component.scene.surface_z_lift = 0.75;
 
 /**
- * Default number of decorative trees to place around the environment.
- *
- * @type {number}
- */
-beestat.component.scene.environment_tree_count = 14;
-
-/**
- * Toggle tree foliage visibility for environment trees.
- *
- * @type {boolean}
- */
-beestat.component.scene.environment_tree_foliage_enabled = true;
-
-/**
- * Debug opacity for round/oval canopies when foliage is visible.
- *
- * @type {number}
- */
-beestat.component.scene.debug_tree_canopy_opacity = 1;
-
-/**
- * Keep round/oval branch meshes visible even when foliage is visible.
- *
- * @type {boolean}
- */
-beestat.component.scene.debug_show_branches_with_foliage = true;
-
-/**
  * Round/oval primary branch density in branches per height unit.
  *
  * @type {number}
@@ -220,27 +192,6 @@ beestat.component.scene.sun_light_intensity = 0.6;
  * @type {number}
  */
 beestat.component.scene.moon_light_intensity = 0.13125;
-
-/**
- * Peak per-room interior light intensity used at night.
- *
- * @type {number}
- */
-beestat.component.scene.interior_light_intensity = 0.9;
-
-/**
- * Max number of interior point lights allowed to cast shadows.
- *
- * @type {number}
- */
-beestat.component.scene.interior_light_shadow_max = 1;
-
-/**
- * Number of star sprites generated in the sky dome.
- *
- * @type {number}
- */
-beestat.component.scene.star_count = 900;
 
 /**
  * Minimum star sprite size.
@@ -428,7 +379,6 @@ beestat.component.scene.prototype.rerender = function() {
     this.add_main_group_();
     this.add_floor_plan_();
   }.bind(this));
-  this.apply_appearance_rotation_to_lights_();
 
   // Ensure everything gets updated with the latest info.
   if (this.rendered_ === true) {
@@ -550,8 +500,6 @@ beestat.component.scene.prototype.reset_celestial_lights_for_rerender_ = functio
   delete this.celestial_light_group_;
   delete this.sun_light_;
   delete this.moon_light_;
-  delete this.sun_light_helper_;
-  delete this.moon_light_helper_;
   delete this.sun_path_line_;
   delete this.sun_visual_group_;
   delete this.sun_core_mesh_;
@@ -589,19 +537,6 @@ beestat.component.scene.prototype.get_scene_setting_ = function(key) {
     return this.scene_settings_[key];
   }
   return beestat.component.scene.default_settings[key];
-};
-
-/**
- * Get all currently effective scene settings.
- *
- * @return {object}
- */
-beestat.component.scene.prototype.get_scene_settings = function() {
-  const current_settings = Object.assign({}, beestat.component.scene.default_settings);
-  if (this.scene_settings_ !== undefined) {
-    Object.assign(current_settings, this.scene_settings_);
-  }
-  return current_settings;
 };
 
 /**
@@ -695,25 +630,12 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     this.scene_settings_ = {};
   }
 
-  this.debug_ = {
-    'axes': false,
-    'directional_light_helpers': false,
-    'sun_light_helper': false,
-    'moon_light_helper': false,
-    'watcher': false,
-    'roof_edges': false,
-    'straight_skeleton': false,
-    'openings': false,
-    'opening_cutters': false,
-    'hide_tree_branches': false,
-    'light_source_orbs': false
-  };
   this.room_interaction_enabled_ = true;
 
   this.width_ = this.initial_width_ || this.state_.scene_width || 800;
   this.height_ = 500;
 
-  this.add_scene_(parent);
+  this.add_scene_();
   this.add_renderer_(parent);
   this.add_camera_();
   this.add_controls_(parent);
@@ -783,37 +705,9 @@ beestat.component.scene.prototype.set_initial_camera_state = function(camera_sta
 
 /**
  * Add the scene. Everything gets added to the scene.
- *
- * @param {rocket.Elements} parent Parent
  */
-beestat.component.scene.prototype.add_scene_ = function(parent) {
+beestat.component.scene.prototype.add_scene_ = function() {
   this.scene_ = new THREE.Scene();
-
-  if (this.debug_.axes === true) {
-    this.scene_.add(
-      new THREE.AxesHelper(800)
-        .setColors(
-          0xff0000,
-          0x00ff00,
-          0x0000ff
-        )
-    );
-  }
-
-  if (this.debug_.watcher === true) {
-    this.debug_info_ = {};
-    this.debug_container_ = $.createElement('div').style({
-      'position': 'absolute',
-      'top': (beestat.style.size.gutter / 2),
-      'left': (beestat.style.size.gutter / 2),
-      'padding': (beestat.style.size.gutter / 2),
-      'background': 'rgba(0, 0, 0, 0.5)',
-      'color': '#fff',
-      'font-family': 'Consolas, Courier, Monospace',
-      'white-space': 'pre'
-    });
-    parent.appendChild(this.debug_container_);
-  }
 };
 
 /**
@@ -1034,185 +928,6 @@ beestat.component.scene.prototype.update_ = function() {
   }
 
   this.update_tree_foliage_season_();
-
-  // Update debug watcher
-  if (this.debug_.watcher === true) {
-    this.debug_info_.sun_light_intensity = this.sun_light_ !== undefined ? this.sun_light_.intensity.toFixed(3) : 'N/A';
-    this.debug_info_.moon_light_intensity = this.moon_light_ !== undefined ? this.moon_light_.intensity.toFixed(3) : 'N/A';
-    this.update_debug_();
-  }
-};
-
-/**
- * Add a helpful debug window that can be refreshed with the contents of
- * this.debug_info_.
- *
- * @param {rocket.Elements} parent
- */
-beestat.component.scene.prototype.add_debug_ = function(parent) {
-  if (this.debug_.watcher === true) {
-    this.debug_info_ = {};
-    this.debug_container_ = $.createElement('div').style({
-      'position': 'absolute',
-      'top': (beestat.style.size.gutter / 2),
-      'left': (beestat.style.size.gutter / 2),
-      'padding': (beestat.style.size.gutter / 2),
-      'background': 'rgba(0, 0, 0, 0.5)',
-      'color': '#fff',
-      'font-family': 'Consolas, Courier, Monospace',
-      'white-space': 'pre'
-    });
-    parent.appendChild(this.debug_container_);
-  }
-};
-
-/**
- * Update the debug window.
- */
-beestat.component.scene.prototype.update_debug_ = function() {
-  if (this.debug_.watcher === true) {
-    this.debug_container_.innerHTML(
-      JSON.stringify(this.debug_info_, null, 2)
-    );
-  }
-};
-
-/**
- * Add red outline visualization for exposed ceiling areas (future roof locations).
- */
-beestat.component.scene.prototype.add_roof_outline_debug_ = function() {
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-
-  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
-
-  // Create layer for roof outlines
-  const roof_outlines_layer = new THREE.Group();
-  this.floor_plan_group_.add(roof_outlines_layer);
-  this.layers_['roof_outlines'] = roof_outlines_layer;
-
-  // Render each exposed area as red outline
-  exposed_areas.forEach(function(area) {
-    area.polygons.forEach(function(polygon) {
-      if (polygon.length < 3) {
-        return;
-      }
-
-      // Create line points
-      const points = [];
-      polygon.forEach(function(point) {
-        points.push(new THREE.Vector3(point.x, point.y, area.ceiling_z));
-      });
-      // Close the loop
-      points.push(new THREE.Vector3(polygon[0].x, polygon[0].y, area.ceiling_z));
-
-      // Create red line
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const material = new THREE.LineBasicMaterial({
-        'color': 0xff0000,  // Red
-        'linewidth': 2
-      });
-
-      const line = new THREE.Line(geometry, material);
-      line.layers.set(beestat.component.scene.layer_visible);
-      roof_outlines_layer.add(line);
-    });
-  });
-};
-
-/**
- * Visualize the straight skeleton for each roof polygon with debug lines.
- */
-beestat.component.scene.prototype.add_roof_skeleton_debug_ = function() {
-  const skeleton_builder = this.get_skeleton_builder_();
-  if (skeleton_builder === undefined) {
-    return;
-  }
-
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
-
-  // Create layer for skeleton debug lines
-  const skeleton_debug_layer = new THREE.Group();
-  this.floor_plan_group_.add(skeleton_debug_layer);
-  this.layers_['roof_skeleton_debug'] = skeleton_debug_layer;
-
-  let total_polygons = 0;
-  let successful_skeletons = 0;
-
-  // Process each exposed area
-  exposed_areas.forEach(function(area) {
-    area.polygons.forEach(function(polygon) {
-      if (polygon.length < 3) {
-        return;
-      }
-
-      total_polygons++;
-
-      try {
-        // Simplify polygon to remove self-intersections and clean up topology
-        // This splits complex polygons (L-shapes, T-shapes) into simpler ones
-        const simplified = ClipperLib.Clipper.SimplifyPolygon(
-          polygon,
-          ClipperLib.PolyFillType.pftNonZero
-        );
-
-        // SimplifyPolygon can return multiple polygons if the original was self-intersecting
-        simplified.forEach(function(simple_polygon) {
-          if (simple_polygon.length < 3) {
-            return;
-          }
-
-          // Convert ClipperLib format {x, y} to SkeletonBuilder format [[x, y], ...]
-          const ring = simple_polygon.map(function(point) {
-            return [point.x, point.y];
-          });
-          // Close the ring by repeating the first point
-          ring.push([simple_polygon[0].x, simple_polygon[0].y]);
-
-          // Build the straight skeleton
-          const coordinates = [ring];  // Array of rings (outer ring only, no holes)
-          const result = skeleton_builder.buildFromPolygon(coordinates);
-
-          if (!result) {
-            return;
-          }
-
-          successful_skeletons++;
-
-          // Visualize each skeleton polygon face with blue lines
-          result.polygons.forEach(function(face) {
-            if (face.length < 2) {
-              return;
-            }
-
-            // Create line points from the face vertices
-            const points = [];
-            face.forEach(function(vertex_index) {
-              const vertex = result.vertices[vertex_index];
-              points.push(new THREE.Vector3(vertex[0], vertex[1], area.ceiling_z));
-            });
-            // Close the loop
-            const first_vertex = result.vertices[face[0]];
-            points.push(new THREE.Vector3(first_vertex[0], first_vertex[1], area.ceiling_z));
-
-            // Create blue line for skeleton edges
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({
-              'color': 0x00ffff,  // Cyan
-              'linewidth': 1
-            });
-
-            const line = new THREE.Line(geometry, material);
-            line.layers.set(beestat.component.scene.layer_visible);
-            skeleton_debug_layer.add(line);
-          });
-        }); // End simplified.forEach
-      } catch (error) {
-        console.error('Error building skeleton for polygon:', error, polygon);
-      }
-    });
-  });
-
 };
 
 /**

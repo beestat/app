@@ -441,58 +441,39 @@ beestat.component.floor_plan_entity.opening.prototype.clear_snap_lines_ = functi
  */
 beestat.component.floor_plan_entity.opening.prototype.update_snap_points_ = function() {
   const self = this;
-  const snap_x = {};
-  const snap_y = {};
-
-  const append_shapes = function(shapes, skip_self_opening) {
-    if (Array.isArray(shapes) !== true) {
-      return;
-    }
-
-    shapes.forEach(function(shape) {
-      if (shape.editor_hidden === true || Array.isArray(shape.points) !== true) {
-        return;
+  const group_below = this.floor_plan_.get_group_below(this.group_);
+  const groups = [this.group_];
+  if (group_below !== undefined) {
+    groups.push(group_below);
+  }
+  const snap_points = this.collect_snap_points_({
+    'groups': groups,
+    'shape_specs': [
+      {
+        'collection': 'rooms',
+        'point_mode': 'relative'
+      },
+      {
+        'collection': 'surfaces',
+        'point_mode': 'relative'
+      },
+      {
+        'collection': 'openings',
+        'point_mode': 'absolute'
       }
-      if (
-        skip_self_opening === true &&
+    ],
+    'should_skip_shape': function(shape, shape_spec) {
+      return (
+        shape_spec.collection === 'openings' &&
         self.opening_ !== undefined &&
         shape.opening_id !== undefined &&
         self.opening_.opening_id !== undefined &&
         shape.opening_id === self.opening_.opening_id
-      ) {
-        return;
-      }
-      shape.points.forEach(function(point) {
-        const is_opening = shape.opening_id !== undefined;
-        const absolute_x = is_opening
-          ? Number(point.x || 0)
-          : Number(point.x || 0) + Number(shape.x || 0);
-        const absolute_y = is_opening
-          ? Number(point.y || 0)
-          : Number(point.y || 0) + Number(shape.y || 0);
-        snap_x[absolute_x] = true;
-        snap_y[absolute_y] = true;
-      });
-    });
-  };
-
-  append_shapes(this.group_.rooms, false);
-  append_shapes(this.group_.surfaces, false);
-  append_shapes(this.group_.openings, true);
-
-  const group_below = this.floor_plan_.get_group_below(this.group_);
-  if (group_below !== undefined) {
-    append_shapes(group_below.rooms, false);
-    append_shapes(group_below.surfaces, false);
-    append_shapes(group_below.openings, false);
-  }
-
-  this.snap_x_ = Object.keys(snap_x).map(function(key) {
-    return Number(key);
+      );
+    }
   });
-  this.snap_y_ = Object.keys(snap_y).map(function(key) {
-    return Number(key);
-  });
+  this.snap_x_ = snap_points.snap_x;
+  this.snap_y_ = snap_points.snap_y;
 };
 
 /**

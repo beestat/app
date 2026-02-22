@@ -91,18 +91,7 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_walls_(walls_layer, group);
   });
 
-  let opening_cutter_debug_layer;
-  if (this.debug_.opening_cutters === true) {
-    opening_cutter_debug_layer = new THREE.Group();
-    this.floor_plan_group_.add(opening_cutter_debug_layer);
-    this.layers_['opening_cutters_debug'] = opening_cutter_debug_layer;
-  }
-
-  this.apply_opening_cuts_(
-    walls_layer,
-    floor_plan,
-    opening_cutter_debug_layer
-  );
+  this.apply_opening_cuts_(walls_layer, floor_plan);
 
   const openings_layer = new THREE.Group();
   this.floor_plan_group_.add(openings_layer);
@@ -119,26 +108,8 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_light_sources_(light_sources_layer, group);
   });
 
-  if (this.debug_.openings === true) {
-    const openings_debug_layer = new THREE.Group();
-    this.floor_plan_group_.add(openings_debug_layer);
-    this.layers_['openings_debug'] = openings_debug_layer;
-
-    floor_plan.data.groups.forEach(function(group) {
-      self.add_openings_debug_(openings_debug_layer, group);
-    });
-  }
-
   // Add roofs using straight skeleton
   this.add_roofs_();
-
-  if (this.debug_.roof_edges) {
-    this.add_roof_outline_debug_();
-  }
-
-  if (this.debug_.straight_skeleton) {
-    this.add_roof_skeleton_debug_();
-  }
 
   this.add_environment_();
 };

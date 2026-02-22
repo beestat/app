@@ -670,15 +670,11 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   const branch_axis = new THREE.Vector3(0, 0, -1);
   const foliage = new THREE.Group();
   foliage.userData.is_environment = true;
-  const canopy_opacity = beestat.component.scene.debug_tree_canopy_opacity;
   const foliage_material = new THREE.MeshStandardMaterial({
     'color': 0x4f9f2f,
     'roughness': 0.82,
     'metalness': 0.0,
     'flatShading': true,
-    'transparent': canopy_opacity < 1,
-    'opacity': canopy_opacity,
-    'depthWrite': canopy_opacity >= 1,
     'side': THREE.DoubleSide
   });
   const create_canopy_from_branch_function_ = function() {
@@ -1063,8 +1059,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   if (has_foliage === true) {
     this.tree_branch_groups_.push(branches);
   }
-  branches.visible =
-    this.debug_.hide_tree_branches !== true;
+  branches.visible = true;
   tree.add(branches);
   if (has_foliage === true) {
     tree.add(foliage);

@@ -165,43 +165,28 @@ beestat.component.floor_plan_entity.surface.prototype.set_active = function(acti
  * Pre-generate a list of snappable x/y values.
  */
 beestat.component.floor_plan_entity.surface.prototype.update_snap_points_ = function() {
-  const snap_x = {};
-  const snap_y = {};
-
-  const append_shapes = function(shapes) {
-    if (shapes === undefined) {
-      return;
-    }
-
-    shapes.forEach(function(shape) {
-      if (shape.editor_hidden === true || Array.isArray(shape.points) !== true) {
-        return;
-      }
-      shape.points.forEach(function(point) {
-        const is_opening = shape.opening_id !== undefined;
-        const absolute_x = is_opening ? Number(point.x || 0) : Number(point.x || 0) + Number(shape.x || 0);
-        const absolute_y = is_opening ? Number(point.y || 0) : Number(point.y || 0) + Number(shape.y || 0);
-        snap_x[absolute_x] = true;
-        snap_y[absolute_y] = true;
-      });
-    });
-  };
-
-  append_shapes(this.group_.rooms);
-  append_shapes(this.group_.surfaces);
-  append_shapes(this.group_.openings);
-
   const group_below = this.floor_plan_.get_group_below(this.group_);
+  const groups = [this.group_];
   if (group_below !== undefined) {
-    append_shapes(group_below.rooms);
-    append_shapes(group_below.surfaces);
-    append_shapes(group_below.openings);
+    groups.push(group_below);
   }
-
-  this.snap_x_ = Object.keys(snap_x).map(function(key) {
-    return Number(key);
+  const snap_points = this.collect_snap_points_({
+    'groups': groups,
+    'shape_specs': [
+      {
+        'collection': 'rooms',
+        'point_mode': 'relative'
+      },
+      {
+        'collection': 'surfaces',
+        'point_mode': 'relative'
+      },
+      {
+        'collection': 'openings',
+        'point_mode': 'absolute'
+      }
+    ]
   });
-  this.snap_y_ = Object.keys(snap_y).map(function(key) {
-    return Number(key);
-  });
+  this.snap_x_ = snap_points.snap_x;
+  this.snap_y_ = snap_points.snap_y;
 };

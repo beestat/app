@@ -66,9 +66,6 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
       }
       mesh.material.color.copy(state.color);
       mesh.userData.base_tree_foliage_color = state.color.getHex();
-      mesh.material.opacity = beestat.component.scene.debug_tree_canopy_opacity;
-      mesh.material.transparent = beestat.component.scene.debug_tree_canopy_opacity < 1;
-      mesh.material.depthWrite = beestat.component.scene.debug_tree_canopy_opacity >= 1;
       mesh.material.needsUpdate = true;
       mesh.visible = tree_foliage_enabled === true;
     }
@@ -78,11 +75,7 @@ beestat.component.scene.prototype.update_tree_foliage_season_ = function() {
     for (let i = 0; i < this.tree_branch_groups_.length; i++) {
       const branch_group = this.tree_branch_groups_[i];
       if (branch_group !== undefined) {
-        // Hide branches when canopy is visible; show them when canopy is not visible.
-        // Debug override can force branch meshes hidden at all times.
-        branch_group.visible =
-          this.debug_.hide_tree_branches !== true &&
-          tree_branch_enabled === true;
+        branch_group.visible = tree_branch_enabled === true;
       }
     }
   }

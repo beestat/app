@@ -4,40 +4,6 @@
 
 
 /**
- * Set weather on the floor-plan appearance.
- *
- * @param {string} weather
- *
- * @return {beestat.component.scene}
- */
-beestat.component.scene.prototype.set_weather = function(weather) {
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  if (floor_plan.data.appearance === undefined) {
-    floor_plan.data.appearance = {};
-  }
-  const normalized_weather = beestat.weather.get_settings_(weather).condition;
-  floor_plan.data.appearance.weather = normalized_weather;
-  const weather_settings = {
-    'cloud_density': beestat.weather.get_cloud_density(normalized_weather),
-    'cloud_darkness': beestat.weather.get_cloud_darkness(normalized_weather),
-    'rain_density': beestat.weather.get_rain_density(normalized_weather),
-    'snow_density': beestat.weather.get_snow_density(normalized_weather),
-    'lightning_frequency': beestat.weather.get_lightning_frequency(normalized_weather),
-    'wind_speed': beestat.weather.get_wind_speed(normalized_weather)
-  };
-  this.set_scene_settings(weather_settings, {
-    'rerender': false
-  });
-
-  if (this.rendered_ === true) {
-    this.update_();
-  }
-
-  return this;
-};
-
-
-/**
  * Get design count at density 1 for a weather channel.
  *
  * @param {string} density_key

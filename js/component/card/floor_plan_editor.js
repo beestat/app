@@ -13,23 +13,6 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
     beestat.setting('visualize.floor_plan_id')
   ).x === Infinity;
 
-/*  const change_function = beestat.debounce(function() {
-    // todo replace these with (if entity set active false?)
-    delete self.state_.active_group;
-
-    self.rerender();
-
-    // Center the content if the floor plan changed.
-    if (self.floor_plan_ !== undefined) {
-      self.floor_plan_.center_content();
-    }
-  }, 10);
-
-  beestat.dispatcher.addEventListener(
-    'setting.visualize.floor_plan_id',
-    change_function
-  );*/
-
   beestat.component.card.apply(this, arguments);
 
   // Snapping initial
@@ -57,6 +40,39 @@ beestat.component.card.floor_plan_editor = function(thermostat_id) {
   });
 };
 beestat.extend(beestat.component.card.floor_plan_editor, beestat.component.card);
+
+beestat.component.card.floor_plan_editor.layer_type_meta_ = {
+  'rooms': {
+    'active_state_key': 'active_room_entity',
+    'id_key': 'room_id',
+    'getter_name': 'get_room',
+    'clears_geometry_selection': true
+  },
+  'surfaces': {
+    'active_state_key': 'active_surface_entity',
+    'id_key': 'surface_id',
+    'getter_name': 'get_surface',
+    'clears_geometry_selection': true
+  },
+  'openings': {
+    'active_state_key': 'active_opening_entity',
+    'id_key': 'opening_id',
+    'getter_name': 'get_opening',
+    'clears_geometry_selection': false
+  },
+  'trees': {
+    'active_state_key': 'active_tree_entity',
+    'id_key': 'tree_id',
+    'getter_name': 'get_tree',
+    'clears_geometry_selection': false
+  },
+  'light_sources': {
+    'active_state_key': 'active_light_source_entity',
+    'id_key': 'light_source_id',
+    'getter_name': 'get_light_source',
+    'clears_geometry_selection': false
+  }
+};
 
 /**
  * Decorate.
@@ -474,58 +490,28 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.floor_plan_.set_width(drawing_canvas_container.getBoundingClientRect().width);
   });
 
-  // Rerender when stuff happens
-  this.floor_plan_.addEventListener('add_room', function() {
+  // Rerender when floor-plan model changes.
+  const rerender_events = [
+    'add_room',
+    'remove_room',
+    'remove_point',
+    'add_surface',
+    'remove_surface',
+    'add_tree',
+    'remove_tree',
+    'add_opening',
+    'remove_opening',
+    'add_light_source',
+    'remove_light_source',
+    'undo',
+    'redo'
+  ];
+  const handle_floor_plan_mutation = function() {
     self.update_floor_plan_();
     self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_room', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_point', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('add_surface', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_surface', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('add_tree', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_tree', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('add_opening', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_opening', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('add_light_source', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('remove_light_source', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('undo', function() {
-    self.update_floor_plan_();
-    self.rerender();
-  });
-  this.floor_plan_.addEventListener('redo', function() {
-    self.update_floor_plan_();
-    self.rerender();
+  };
+  rerender_events.forEach(function(event_name) {
+    self.floor_plan_.addEventListener(event_name, handle_floor_plan_mutation);
   });
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
 
@@ -887,48 +873,10 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_visibility_ 
   object.editor_hidden = visible !== true;
 
   if (visible !== true) {
-    if (
-      type === 'rooms' &&
-      this.state_.active_room_entity !== undefined &&
-      this.state_.active_room_entity.get_room().room_id === object_id
-    ) {
-      this.state_.active_room_entity.set_active(false);
-    }
-    if (
-      type === 'surfaces' &&
-      this.state_.active_surface_entity !== undefined &&
-      this.state_.active_surface_entity.get_surface().surface_id === object_id
-    ) {
-      this.state_.active_surface_entity.set_active(false);
-    }
-    if (
-      type === 'trees' &&
-      this.state_.active_tree_entity !== undefined &&
-      this.state_.active_tree_entity.get_tree().tree_id === object_id
-    ) {
-      this.state_.active_tree_entity.set_active(false);
-    }
-    if (
-      type === 'openings' &&
-      this.state_.active_opening_entity !== undefined &&
-      this.state_.active_opening_entity.get_opening().opening_id === object_id
-    ) {
-      this.state_.active_opening_entity.set_active(false);
-    }
-    if (
-      type === 'light_sources' &&
-      this.state_.active_light_source_entity !== undefined &&
-      this.state_.active_light_source_entity.get_light_source().light_source_id === object_id
-    ) {
-      this.state_.active_light_source_entity.set_active(false);
-    }
+    this.deactivate_active_entity_for_layer_object_(type, object_id);
   }
 
-  this.floor_plan_.update_infobox();
-  this.floor_plan_.update_toolbar();
-  this.update_info_pane_();
-  this.update_floor_plan_();
-  this.rerender();
+  this.sync_after_layer_change_();
 };
 
 /**
@@ -948,48 +896,10 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_object_locked_ = fu
   object.editor_locked = locked;
 
   if (locked === true) {
-    if (
-      type === 'rooms' &&
-      this.state_.active_room_entity !== undefined &&
-      this.state_.active_room_entity.get_room().room_id === object_id
-    ) {
-      this.state_.active_room_entity.set_active(false);
-    }
-    if (
-      type === 'surfaces' &&
-      this.state_.active_surface_entity !== undefined &&
-      this.state_.active_surface_entity.get_surface().surface_id === object_id
-    ) {
-      this.state_.active_surface_entity.set_active(false);
-    }
-    if (
-      type === 'trees' &&
-      this.state_.active_tree_entity !== undefined &&
-      this.state_.active_tree_entity.get_tree().tree_id === object_id
-    ) {
-      this.state_.active_tree_entity.set_active(false);
-    }
-    if (
-      type === 'openings' &&
-      this.state_.active_opening_entity !== undefined &&
-      this.state_.active_opening_entity.get_opening().opening_id === object_id
-    ) {
-      this.state_.active_opening_entity.set_active(false);
-    }
-    if (
-      type === 'light_sources' &&
-      this.state_.active_light_source_entity !== undefined &&
-      this.state_.active_light_source_entity.get_light_source().light_source_id === object_id
-    ) {
-      this.state_.active_light_source_entity.set_active(false);
-    }
+    this.deactivate_active_entity_for_layer_object_(type, object_id);
   }
 
-  this.floor_plan_.update_infobox();
-  this.floor_plan_.update_toolbar();
-  this.update_info_pane_();
-  this.update_floor_plan_();
-  this.rerender();
+  this.sync_after_layer_change_();
 };
 
 /**
@@ -1039,7 +949,7 @@ beestat.component.card.floor_plan_editor.prototype.set_layer_visible_ = function
  * @param {boolean} locked
  */
 beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(group, locked) {
-  ['rooms', 'surfaces', 'openings', 'trees', 'light_sources'].forEach(function(type) {
+  this.get_layer_types_().forEach(function(type) {
     const collection = group[type] || [];
     collection.forEach(function(object) {
       object.editor_locked = locked;
@@ -1047,11 +957,9 @@ beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(
   });
 
   if (locked === true) {
-    this.deactivate_active_entity_for_group_type_(group, 'rooms');
-    this.deactivate_active_entity_for_group_type_(group, 'surfaces');
-    this.deactivate_active_entity_for_group_type_(group, 'openings');
-    this.deactivate_active_entity_for_group_type_(group, 'trees');
-    this.deactivate_active_entity_for_group_type_(group, 'light_sources');
+    this.get_layer_types_().forEach(function(type) {
+      this.deactivate_active_entity_for_group_type_(group, type);
+    }, this);
   }
 
   this.sync_after_layer_change_();
@@ -1064,7 +972,7 @@ beestat.component.card.floor_plan_editor.prototype.set_group_locked_ = function(
  * @param {boolean} visible
  */
 beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function(group, visible) {
-  ['rooms', 'surfaces', 'openings', 'trees', 'light_sources'].forEach(function(type) {
+  this.get_layer_types_().forEach(function(type) {
     const collection = group[type] || [];
     collection.forEach(function(object) {
       object.editor_hidden = visible !== true;
@@ -1072,11 +980,9 @@ beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function
   });
 
   if (visible !== true) {
-    this.deactivate_active_entity_for_group_type_(group, 'rooms');
-    this.deactivate_active_entity_for_group_type_(group, 'surfaces');
-    this.deactivate_active_entity_for_group_type_(group, 'openings');
-    this.deactivate_active_entity_for_group_type_(group, 'trees');
-    this.deactivate_active_entity_for_group_type_(group, 'light_sources');
+    this.get_layer_types_().forEach(function(type) {
+      this.deactivate_active_entity_for_group_type_(group, type);
+    }, this);
   }
 
   this.sync_after_layer_change_();
@@ -1089,38 +995,13 @@ beestat.component.card.floor_plan_editor.prototype.set_group_visible_ = function
  * @param {string} type rooms|surfaces|openings|trees
  */
 beestat.component.card.floor_plan_editor.prototype.deactivate_active_entity_for_group_type_ = function(group, type) {
-  if (type === 'rooms' && this.state_.active_room_entity !== undefined) {
-    if (this.state_.active_room_entity.group_ === group) {
-      this.state_.active_room_entity.set_active(false);
-    }
+  const metadata = this.get_layer_type_meta_(type);
+  if (metadata === undefined) {
     return;
   }
-
-  if (type === 'surfaces' && this.state_.active_surface_entity !== undefined) {
-    if (this.state_.active_surface_entity.group_ === group) {
-      this.state_.active_surface_entity.set_active(false);
-    }
-    return;
-  }
-
-  if (type === 'trees' && this.state_.active_tree_entity !== undefined) {
-    if (this.state_.active_tree_entity.group_ === group) {
-      this.state_.active_tree_entity.set_active(false);
-    }
-    return;
-  }
-
-  if (type === 'openings' && this.state_.active_opening_entity !== undefined) {
-    if (this.state_.active_opening_entity.group_ === group) {
-      this.state_.active_opening_entity.set_active(false);
-    }
-    return;
-  }
-
-  if (type === 'light_sources' && this.state_.active_light_source_entity !== undefined) {
-    if (this.state_.active_light_source_entity.group_ === group) {
-      this.state_.active_light_source_entity.set_active(false);
-    }
+  const active_entity = this.state_[metadata.active_state_key];
+  if (active_entity !== undefined && active_entity.group_ === group) {
+    active_entity.set_active(false);
   }
 };
 
@@ -1175,59 +1056,28 @@ beestat.component.card.floor_plan_editor.prototype.reorder_layer_object_ = funct
  * Ensure hidden active entities are cleared.
  */
 beestat.component.card.floor_plan_editor.prototype.ensure_active_entity_visibility_ = function() {
-  if (
-    this.state_.active_room_entity !== undefined &&
-    (
-      this.state_.active_room_entity.get_room().editor_hidden === true ||
-      this.state_.active_room_entity.get_room().editor_locked === true
-    )
-  ) {
-    delete this.state_.active_room_entity;
-    delete this.state_.active_wall_entity;
-    delete this.state_.active_point_entity;
-  }
-
-  if (
-    this.state_.active_surface_entity !== undefined &&
-    (
-      this.state_.active_surface_entity.get_surface().editor_hidden === true ||
-      this.state_.active_surface_entity.get_surface().editor_locked === true
-    )
-  ) {
-    delete this.state_.active_surface_entity;
-    delete this.state_.active_wall_entity;
-    delete this.state_.active_point_entity;
-  }
-
-  if (
-    this.state_.active_tree_entity !== undefined &&
-    (
-      this.state_.active_tree_entity.get_tree().editor_hidden === true ||
-      this.state_.active_tree_entity.get_tree().editor_locked === true
-    )
-  ) {
-    delete this.state_.active_tree_entity;
-  }
-
-  if (
-    this.state_.active_opening_entity !== undefined &&
-    (
-      this.state_.active_opening_entity.get_opening().editor_hidden === true ||
-      this.state_.active_opening_entity.get_opening().editor_locked === true
-    )
-  ) {
-    delete this.state_.active_opening_entity;
-  }
-
-  if (
-    this.state_.active_light_source_entity !== undefined &&
-    (
-      this.state_.active_light_source_entity.get_light_source().editor_hidden === true ||
-      this.state_.active_light_source_entity.get_light_source().editor_locked === true
-    )
-  ) {
-    delete this.state_.active_light_source_entity;
-  }
+  this.get_layer_types_().forEach(function(type) {
+    const metadata = this.get_layer_type_meta_(type);
+    const active_entity = this.state_[metadata.active_state_key];
+    if (active_entity === undefined) {
+      return;
+    }
+    const getter = active_entity[metadata.getter_name];
+    if (typeof getter !== 'function') {
+      return;
+    }
+    const active_object = getter.call(active_entity);
+    if (
+      active_object !== undefined &&
+      (active_object.editor_hidden === true || active_object.editor_locked === true)
+    ) {
+      delete this.state_[metadata.active_state_key];
+      if (metadata.clears_geometry_selection === true) {
+        delete this.state_.active_wall_entity;
+        delete this.state_.active_point_entity;
+      }
+    }
+  }, this);
 };
 
 /**
@@ -1261,26 +1111,51 @@ beestat.component.card.floor_plan_editor.prototype.apply_pending_layer_selection
 };
 
 /**
- * Get the id key by object type.
+ * Layer metadata by type.
  *
- * @param {string} type rooms|surfaces|trees
+ * @param {string} type rooms|surfaces|openings|trees|light_sources
  *
- * @return {string}
+ * @return {object|undefined}
  */
-beestat.component.card.floor_plan_editor.prototype.get_layer_object_id_key_ = function(type) {
-  if (type === 'rooms') {
-    return 'room_id';
+beestat.component.card.floor_plan_editor.prototype.get_layer_type_meta_ = function(type) {
+  return beestat.component.card.floor_plan_editor.layer_type_meta_[type];
+};
+
+/**
+ * Get all supported layer types.
+ *
+ * @return {string[]}
+ */
+beestat.component.card.floor_plan_editor.prototype.get_layer_types_ = function() {
+  return Object.keys(beestat.component.card.floor_plan_editor.layer_type_meta_);
+};
+
+/**
+ * Deactivate active entity for a specific object id/type.
+ *
+ * @param {string} type rooms|surfaces|openings|trees|light_sources
+ * @param {string} object_id
+ */
+beestat.component.card.floor_plan_editor.prototype.deactivate_active_entity_for_layer_object_ = function(type, object_id) {
+  const metadata = this.get_layer_type_meta_(type);
+  if (metadata === undefined) {
+    return;
   }
-  if (type === 'surfaces') {
-    return 'surface_id';
+  const active_entity = this.state_[metadata.active_state_key];
+  if (active_entity === undefined) {
+    return;
   }
-  if (type === 'openings') {
-    return 'opening_id';
+  const getter = active_entity[metadata.getter_name];
+  if (typeof getter !== 'function') {
+    return;
   }
-  if (type === 'light_sources') {
-    return 'light_source_id';
+  const active_object = getter.call(active_entity);
+  if (
+    active_object !== undefined &&
+    active_object[metadata.id_key] === object_id
+  ) {
+    active_entity.set_active(false);
   }
-  return 'tree_id';
 };
 
 /**
@@ -1293,10 +1168,13 @@ beestat.component.card.floor_plan_editor.prototype.get_layer_object_id_key_ = fu
  * @return {object|undefined}
  */
 beestat.component.card.floor_plan_editor.prototype.get_layer_object_by_id_ = function(group, type, object_id) {
+  const metadata = this.get_layer_type_meta_(type);
+  if (metadata === undefined) {
+    return;
+  }
   const collection = group[type] || [];
-  const id_key = this.get_layer_object_id_key_(type);
   for (let i = 0; i < collection.length; i++) {
-    if (collection[i][id_key] === object_id) {
+    if (collection[i][metadata.id_key] === object_id) {
       return collection[i];
     }
   }
@@ -2568,17 +2446,6 @@ beestat.component.card.floor_plan_editor.prototype.update_floor_plan_ = function
   // Fake this event since the cache is being directly modified.
   beestat.dispatcher.dispatchEvent('cache.floor_plan');
   beestat.floor_plan.queue_data_save_(floor_plan_id, 1000);
-};
-
-/**
- * Get cloned floor plan data.
- *
- * @param {number} floor_plan_id Floor plan ID
- *
- * @return {object} The modified floor plan data.
- */
-beestat.component.card.floor_plan_editor.prototype.get_floor_plan_data_ = function(floor_plan_id) {
-  return beestat.clone(beestat.cache.floor_plan[floor_plan_id].data);
 };
 
 /**
