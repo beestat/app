@@ -89,6 +89,40 @@ beestat.component.scene.prototype.add_static_lights_ = function() {
  * visible when the environment layer is enabled. Positions are calculated based
  * on time of day and location.
  */
+beestat.component.scene.prototype.get_celestial_shadow_frustum_extent_ = function() {
+  const bounding_box = this.get_scene_bounding_box_();
+  const plan_width = Math.max(1, Number(bounding_box.right - bounding_box.left));
+  const plan_height = Math.max(1, Number(bounding_box.bottom - bounding_box.top));
+  const half_span = Math.max(plan_width, plan_height) / 2;
+  const environment_padding = Math.max(0, beestat.component.scene.environment_padding || 0);
+  const caster_margin = 420;
+  // Extra scale keeps long low-angle shadows inside the ortho shadow camera.
+  return Math.max(1000, (half_span + environment_padding + caster_margin) * 1.45);
+};
+
+
+/**
+ * Configure a directional light shadow camera to cover the current scene size.
+ *
+ * @param {THREE.DirectionalLight} light
+ */
+beestat.component.scene.prototype.configure_celestial_shadow_camera_ = function(light) {
+  const extent = this.get_celestial_shadow_frustum_extent_();
+  light.shadow.camera.left = -extent;
+  light.shadow.camera.right = extent;
+  light.shadow.camera.top = extent;
+  light.shadow.camera.bottom = -extent;
+  light.shadow.camera.near = 0.5;
+  light.shadow.camera.far = Math.max(5000, extent * 6);
+  light.shadow.camera.updateProjectionMatrix();
+};
+
+
+/**
+ * Directional sun and moon lights that provide natural lighting. Only
+ * visible when the environment layer is enabled. Positions are calculated based
+ * on time of day and location.
+ */
 beestat.component.scene.prototype.add_celestial_lights_ = function() {
   // Prevent re-initialization if lights already exist
   if (this.sun_light_ !== undefined) {
@@ -116,14 +150,8 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.sun_light_.shadow.mapSize.set(2048, 2048);
   this.sun_light_.shadow.bias = -0.001;
 
-  // Configure shadow camera frustum
-  this.sun_light_.shadow.camera.left = -1000;
-  this.sun_light_.shadow.camera.right = 1000;
-  this.sun_light_.shadow.camera.top = 1000;
-  this.sun_light_.shadow.camera.bottom = -1000;
-  this.sun_light_.shadow.camera.near = 0.5;
-  this.sun_light_.shadow.camera.far = 5000;
-  this.sun_light_.shadow.camera.updateProjectionMatrix();
+  // Configure shadow camera frustum based on scene size.
+  this.configure_celestial_shadow_camera_(this.sun_light_);
 
   // Set target to world origin (0,0,0) so light always points there
   this.sun_light_.target.position.set(0, 0, 0);
@@ -197,14 +225,8 @@ beestat.component.scene.prototype.add_celestial_lights_ = function() {
   this.moon_light_.shadow.mapSize.set(2048, 2048);
   this.moon_light_.shadow.bias = -0.001;
 
-  // Configure shadow camera frustum
-  this.moon_light_.shadow.camera.left = -1000;
-  this.moon_light_.shadow.camera.right = 1000;
-  this.moon_light_.shadow.camera.top = 1000;
-  this.moon_light_.shadow.camera.bottom = -1000;
-  this.moon_light_.shadow.camera.near = 0.5;
-  this.moon_light_.shadow.camera.far = 5000;
-  this.moon_light_.shadow.camera.updateProjectionMatrix();
+  // Configure shadow camera frustum based on scene size.
+  this.configure_celestial_shadow_camera_(this.moon_light_);
 
   // Set target to world origin
   this.moon_light_.target.position.set(0, 0, 0);
