@@ -275,8 +275,10 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
  *
  * @type {{
  *   cloud_density: number,
+ *   cloud_darkness: number,
  *   rain_density: number,
  *   snow_density: number,
+ *   lightning_frequency: number,
  *   wind_speed: number,
  *   wind_direction: number,
  *   tree_wobble: boolean,
@@ -289,8 +291,10 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
  */
 beestat.component.scene.default_settings = {
   'cloud_density': 1,
+  'cloud_darkness': 0,
   'rain_density': 1,
   'snow_density': 1,
+  'lightning_frequency': 0,
   'wind_speed': 1,
   'wind_direction': 0,
   'tree_wobble': true,
@@ -513,6 +517,17 @@ beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ =
   delete this.cloud_motion_;
   delete this.weather_profile_target_;
   delete this.weather_transition_start_profile_;
+  delete this.lightning_flash_light_;
+  delete this.lightning_next_strike_ms_;
+  delete this.lightning_flash_remaining_s_;
+  delete this.lightning_flash_duration_s_;
+  delete this.lightning_flash_peak_intensity_;
+  delete this.lightning_next_pulse_ms_;
+  delete this.lightning_cluster_pulses_remaining_;
+  delete this.lightning_cluster_total_pulses_;
+  delete this.lightning_cluster_anchor_;
+  delete this.lightning_cluster_frequency_;
+  delete this.lightning_cluster_peak_scale_;
   delete this.active_mesh_;
   delete this.intersected_mesh_;
   delete this.tree_ground_contact_material_;

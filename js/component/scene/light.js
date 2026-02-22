@@ -671,7 +671,7 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
       0.25,
       Math.min(1, Number(this.current_moon_fraction_ === undefined ? 1 : this.current_moon_fraction_))
     );
-    this.moon_sprite_.material.opacity = Math.min(1, 0.2 + (moon_phase_visibility * 0.6));
+    this.moon_sprite_.material.opacity = Math.min(1, 0.08 + (moon_phase_visibility * 0.28));
     if (this.moon_visual_group_ !== undefined) {
       this.moon_visual_group_.visible = true;
     }

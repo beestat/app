@@ -6,7 +6,7 @@
 /**
  * Set weather on the floor-plan appearance.
  *
- * @param {string} weather none|sunny|cloudy|rain|snow
+ * @param {string} weather none|sunny|cloudy|rain|snow|storm
  *
  * @return {beestat.component.scene}
  */
@@ -20,27 +20,43 @@ beestat.component.scene.prototype.set_weather = function(weather) {
   // Backward-compatible weather mode support by translating to density values.
   let weather_settings;
   switch (weather) {
+  case 'storm':
+    weather_settings = {
+      'cloud_density': 1.5,
+      'cloud_darkness': 2,
+      'rain_density': 2,
+      'snow_density': 0,
+      'lightning_frequency': 1,
+      'wind_speed': 4
+    };
+    break;
   case 'snow':
     weather_settings = {
       'cloud_density': 1,
+      'cloud_darkness': 1,
       'rain_density': 0,
       'snow_density': 1,
+      'lightning_frequency': 0,
       'wind_speed': 1
     };
     break;
   case 'rain':
     weather_settings = {
       'cloud_density': 1,
+      'cloud_darkness': 1,
       'rain_density': 1,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 2
     };
     break;
   case 'cloudy':
     weather_settings = {
       'cloud_density': 0.5,
+      'cloud_darkness': 0.4,
       'rain_density': 0,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 2
     };
     break;
@@ -49,8 +65,10 @@ beestat.component.scene.prototype.set_weather = function(weather) {
   default:
     weather_settings = {
       'cloud_density': 0.03,
+      'cloud_darkness': 0,
       'rain_density': 0,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 1
     };
     break;
@@ -161,6 +179,20 @@ beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
   );
 
   return 1 - (cloud_density * 0.92);
+};
+
+
+/**
+ * Get cloud sprite color based on cloud darkness setting.
+ *
+ * @return {THREE.Color}
+ */
+beestat.component.scene.prototype.get_cloud_color_ = function() {
+  const darkness = Math.max(0, Math.min(2, Number(this.get_scene_setting_('cloud_darkness') || 0)));
+  const blend = darkness / 2;
+  const base_color = new THREE.Color(0xdce3ee);
+  const dark_gray_color = new THREE.Color(0x67717b);
+  return base_color.lerp(dark_gray_color, blend);
 };
 
 
@@ -438,6 +470,221 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(
 
 
 /**
+ * Ensure the lightning flash light exists in the weather group.
+ */
+beestat.component.scene.prototype.ensure_lightning_flash_light_ = function() {
+  if (this.weather_group_ === undefined) {
+    return;
+  }
+  if (this.lightning_flash_light_ !== undefined) {
+    return;
+  }
+
+  this.lightning_flash_light_ = new THREE.PointLight(0xe7f0ff, 0, 7000, 2);
+  this.lightning_flash_light_.castShadow = false;
+  this.lightning_flash_light_.userData.is_environment = true;
+  this.weather_group_.add(this.lightning_flash_light_);
+};
+
+
+/**
+ * Schedule the next lightning strike-cluster timestamp.
+ *
+ * @param {number} now_ms
+ * @param {number} lightning_frequency
+ */
+beestat.component.scene.prototype.schedule_next_lightning_cluster_ = function(now_ms, lightning_frequency) {
+  if (lightning_frequency <= 0) {
+    this.lightning_next_strike_ms_ = undefined;
+    return;
+  }
+
+  const base_interval_ms = 15000 / lightning_frequency;
+  const jitter_ratio = 0.25;
+  const jitter = ((Math.random() * 2) - 1) * base_interval_ms * jitter_ratio;
+  const next_interval_ms = Math.max(300, base_interval_ms + jitter);
+  this.lightning_next_strike_ms_ = now_ms + next_interval_ms;
+};
+
+
+/**
+ * Trigger one lightning pulse.
+ *
+ * @param {number} now_ms
+ * @param {number} lightning_frequency
+ */
+beestat.component.scene.prototype.trigger_lightning_pulse_ = function(now_ms, lightning_frequency) {
+  this.ensure_lightning_flash_light_();
+  if (this.lightning_flash_light_ === undefined) {
+    return;
+  }
+
+  // First pulse in a cluster chooses the strike anchor; follow-up pulses jitter
+  // around it to mimic rapid branch/fork illumination.
+  if (this.lightning_cluster_anchor_ === undefined || this.lightning_cluster_anchor_ === null) {
+    let anchor_x = 0;
+    let anchor_y = 0;
+    let anchor_z = -700;
+    if (this.cloud_bounds_ !== undefined) {
+      anchor_x = this.cloud_bounds_.min_x + (Math.random() * (this.cloud_bounds_.max_x - this.cloud_bounds_.min_x));
+      anchor_y = this.cloud_bounds_.min_y + (Math.random() * (this.cloud_bounds_.max_y - this.cloud_bounds_.min_y));
+      anchor_z = Number(this.cloud_bounds_.z || -700) + (Math.random() * 90);
+    }
+    this.lightning_cluster_anchor_ = {
+      'x': anchor_x,
+      'y': anchor_y,
+      'z': anchor_z
+    };
+  }
+  const jitter_radius = 60;
+  const anchor = this.lightning_cluster_anchor_;
+  const x = anchor.x + ((Math.random() * 2 - 1) * jitter_radius);
+  const y = anchor.y + ((Math.random() * 2 - 1) * jitter_radius);
+  const z = anchor.z + ((Math.random() * 2 - 1) * 18);
+  this.lightning_flash_light_.position.set(x, y, z);
+
+  const total_pulses = Math.max(1, Number(this.lightning_cluster_total_pulses_ || 1));
+  const remaining_pulses = Math.max(0, Number(this.lightning_cluster_pulses_remaining_ || 0));
+  const pulse_index = Math.max(1, total_pulses - remaining_pulses);
+  const sequence_fade = Math.max(0.52, 1 - ((pulse_index - 1) * 0.08));
+  const cluster_peak_scale = Number(this.lightning_cluster_peak_scale_ === undefined
+    ? 1
+    : this.lightning_cluster_peak_scale_);
+  const pulse_variation = 0.58 + (Math.random() * 1.0);
+
+  this.lightning_flash_duration_s_ = 0.045 + (Math.random() * 0.095);
+  this.lightning_flash_remaining_s_ = this.lightning_flash_duration_s_;
+  this.lightning_flash_peak_intensity_ =
+    (8.5 + (Math.random() * 7.5)) *
+    (0.8 + (0.28 * lightning_frequency)) *
+    cluster_peak_scale *
+    pulse_variation *
+    sequence_fade;
+};
+
+
+/**
+ * Start a lightning strike cluster (1-3 rapid pulses).
+ *
+ * @param {number} now_ms
+ * @param {number} lightning_frequency
+ */
+beestat.component.scene.prototype.start_lightning_cluster_ = function(now_ms, lightning_frequency) {
+  const pulse_roll = Math.random();
+  let pulse_count;
+  // Most strikes are multi-pulse, with occasional 5-6 pulse storms.
+  if (pulse_roll < 0.1) {
+    pulse_count = 1;
+  } else if (pulse_roll < 0.45) {
+    pulse_count = 2;
+  } else if (pulse_roll < 0.75) {
+    pulse_count = 3;
+  } else if (pulse_roll < 0.9) {
+    pulse_count = 4;
+  } else if (pulse_roll < 0.97) {
+    pulse_count = 5;
+  } else {
+    pulse_count = 6;
+  }
+  this.lightning_cluster_total_pulses_ = pulse_count;
+  this.lightning_cluster_pulses_remaining_ = pulse_count;
+  this.lightning_cluster_peak_scale_ = 0.72 + (Math.random() * 0.96);
+  this.lightning_cluster_anchor_ = null;
+  this.lightning_next_pulse_ms_ = now_ms;
+  this.lightning_cluster_frequency_ = lightning_frequency;
+};
+
+
+/**
+ * Update lightning flash timing and intensity.
+ *
+ * @param {number} now_ms
+ * @param {number} delta_seconds
+ */
+beestat.component.scene.prototype.update_lightning_ = function(now_ms, delta_seconds) {
+  const lightning_frequency = Math.max(
+    0,
+    Math.min(2, Number(this.get_scene_setting_('lightning_frequency') || 0))
+  );
+
+  if (lightning_frequency <= 0) {
+    if (this.lightning_flash_light_ !== undefined) {
+      this.lightning_flash_light_.intensity = 0;
+    }
+    this.lightning_flash_remaining_s_ = 0;
+    this.lightning_next_strike_ms_ = undefined;
+    this.lightning_next_pulse_ms_ = undefined;
+    this.lightning_cluster_pulses_remaining_ = 0;
+    this.lightning_cluster_anchor_ = null;
+    return;
+  }
+
+  if (this.lightning_next_strike_ms_ === undefined) {
+    this.schedule_next_lightning_cluster_(now_ms, lightning_frequency);
+  }
+
+  this.ensure_lightning_flash_light_();
+  if (this.lightning_flash_light_ === undefined) {
+    return;
+  }
+
+  if (
+    this.lightning_flash_remaining_s_ !== undefined &&
+    this.lightning_flash_remaining_s_ > 0
+  ) {
+    this.lightning_flash_remaining_s_ = Math.max(
+      0,
+      this.lightning_flash_remaining_s_ - delta_seconds
+    );
+
+    const duration = Math.max(0.001, Number(this.lightning_flash_duration_s_ || 0.2));
+    const progress = 1 - (this.lightning_flash_remaining_s_ / duration);
+    const decay = Math.pow(Math.max(0, 1 - progress), 2.3);
+    const micro_flicker = 0.86 + (Math.random() * 0.28);
+    this.lightning_flash_light_.intensity =
+      Math.max(0, Number(this.lightning_flash_peak_intensity_ || 0)) * decay * micro_flicker;
+
+    if (this.lightning_flash_remaining_s_ <= 0) {
+      this.lightning_flash_light_.intensity = 0;
+      if (
+        this.lightning_cluster_pulses_remaining_ !== undefined &&
+        this.lightning_cluster_pulses_remaining_ > 0
+      ) {
+        const intra_cluster_gap_ms = 45 + (Math.random() * 160);
+        this.lightning_next_pulse_ms_ = now_ms + intra_cluster_gap_ms;
+      }
+    }
+    return;
+  }
+
+  this.lightning_flash_light_.intensity = 0;
+
+  if (now_ms >= this.lightning_next_strike_ms_) {
+    this.start_lightning_cluster_(now_ms, lightning_frequency);
+    this.schedule_next_lightning_cluster_(now_ms, lightning_frequency);
+  }
+
+  if (
+    this.lightning_cluster_pulses_remaining_ !== undefined &&
+    this.lightning_cluster_pulses_remaining_ > 0 &&
+    this.lightning_next_pulse_ms_ !== undefined &&
+    now_ms >= this.lightning_next_pulse_ms_
+  ) {
+    this.lightning_cluster_pulses_remaining_--;
+    this.trigger_lightning_pulse_(
+      now_ms,
+      this.lightning_cluster_frequency_ === undefined
+        ? lightning_frequency
+        : this.lightning_cluster_frequency_
+    );
+    if (this.lightning_cluster_pulses_remaining_ <= 0) {
+      this.lightning_cluster_anchor_ = null;
+    }
+  }
+};
+
+
+/**
  * Add procedural weather particles based on floor plan appearance.
  *
  * @param {number} center_x
@@ -584,6 +831,12 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   );
   this.weather_group_.add(this.snow_particles_.points);
 
+  // Pre-create lightning light so the first strike doesn't hitch on creation.
+  this.ensure_lightning_flash_light_();
+  if (this.lightning_flash_light_ !== undefined) {
+    this.lightning_flash_light_.intensity = 0;
+  }
+
   this.weather_last_update_ms_ = window.performance.now();
 
   const initial_weather_profile = this.get_weather_profile_();
@@ -660,6 +913,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
 
   if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
     const now_seconds = now_ms / 1000;
+    const cloud_color = this.get_cloud_color_();
     const cloud_normalization_count = Math.max(
       1,
       this.get_weather_design_capacity_count_('cloud_density')
@@ -693,6 +947,9 @@ beestat.component.scene.prototype.update_weather_ = function() {
 
       // Slight opacity shifting.
       if (sprite.material !== undefined) {
+        if (sprite.material.color !== undefined) {
+          sprite.material.color.copy(cloud_color);
+        }
         sprite.material.opacity = Math.max(
           0,
           Math.min(
@@ -718,6 +975,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
     wind_speed,
     wind_direction
   );
+  this.update_lightning_(now_ms, delta_seconds);
   this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 
   if (

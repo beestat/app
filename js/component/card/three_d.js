@@ -575,37 +575,61 @@ beestat.component.card.three_d.prototype.get_weather_mode_ = function() {
  *
  * @param {string} weather_mode
  *
- * @return {{cloud_density: number, rain_density: number, snow_density: number}}
+ * @return {{
+ *   cloud_density: number,
+ *   cloud_darkness: number,
+ *   rain_density: number,
+ *   snow_density: number,
+ *   lightning_frequency: number,
+ *   wind_speed: number
+ * }}
  */
 beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = function(weather_mode) {
   switch (weather_mode) {
+  case 'storm':
+    return {
+      'cloud_density': 1.5,
+      'cloud_darkness': 2,
+      'rain_density': 2,
+      'snow_density': 0,
+      'lightning_frequency': 1,
+      'wind_speed': 4
+    };
   case 'cloudy':
     return {
       'cloud_density': 0.5,
+      'cloud_darkness': 0.4,
       'rain_density': 0,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 2
     };
   case 'raining':
     return {
       'cloud_density': 1,
+      'cloud_darkness': 1,
       'rain_density': 1,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 2
     };
   case 'snowing':
     return {
       'cloud_density': 1,
+      'cloud_darkness': 1,
       'rain_density': 0,
       'snow_density': 1,
+      'lightning_frequency': 0,
       'wind_speed': 1
     };
   case 'sunny':
   default:
     return {
       'cloud_density': 0.03,
+      'cloud_darkness': 0,
       'rain_density': 0,
       'snow_density': 0,
+      'lightning_frequency': 0,
       'wind_speed': 1
     };
   }
@@ -637,10 +661,7 @@ beestat.component.card.three_d.prototype.apply_weather_setting_to_scene_ = funct
  * @return {boolean}
  */
 beestat.component.card.three_d.prototype.can_access_scene_settings_ = function() {
-  return (
-    beestat.user.get() !== undefined &&
-    Number(beestat.user.get().user_id) === 1
-  );
+  return true;
 };
 
 /**
@@ -698,7 +719,11 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   }
 
   this.scene_settings_container_.innerHTML = '';
-  if (this.can_access_scene_settings_() !== true || this.scene_settings_menu_open_ !== true) {
+  if (
+    this.can_access_scene_settings_() !== true ||
+    this.get_show_environment_() !== true ||
+    this.scene_settings_menu_open_ !== true
+  ) {
     this.scene_settings_container_.style.display = 'none';
     this.update_fps_visibility_();
     return;
@@ -828,8 +853,10 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   // Weather
   add_section_title('Weather');
   add_number_setting(get_title_case_label('cloud_density'), 'cloud_density', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('cloud_darkness'), 'cloud_darkness', 0, 2, 0.1);
   add_number_setting(get_title_case_label('rain_density'), 'rain_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('snow_density'), 'snow_density', 0, 2, 0.1);
+  add_number_setting(get_title_case_label('lightning_frequency'), 'lightning_frequency', 0, 2, 0.1);
 
   add_separator();
   add_section_title('Wind');
@@ -880,6 +907,7 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   const show_environment = this.get_show_environment_();
   if (show_environment === false) {
     this.weather_menu_open_ = false;
+    this.scene_settings_menu_open_ = false;
   }
 
   this.scene_.set_layer_visible('walls', show_environment);
@@ -915,6 +943,10 @@ beestat.component.card.three_d.prototype.apply_layer_visibility_ = function() {
   if (this.toolbar_container_ !== undefined) {
     this.decorate_toolbar_();
   }
+  if (this.scene_settings_container_ !== undefined) {
+    this.decorate_scene_settings_panel_();
+  }
+  this.update_fps_visibility_();
 };
 
 /**
@@ -1428,6 +1460,7 @@ beestat.component.card.three_d.prototype.update_fps_visibility_ = function() {
 
   const show = (
     this.can_access_scene_settings_() === true &&
+    this.get_show_environment_() === true &&
     this.scene_settings_menu_open_ === true
   );
   this.fps_container_.style.display = show ? 'block' : 'none';
@@ -1503,6 +1536,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
       {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
       {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
       {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
+      {'value': 'storm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Storm'},
       {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
     ];
     const selected_weather_mode = weather_modes.find((mode) => mode.value === selected_mode) || weather_modes[0];
@@ -1521,7 +1555,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
     );
   }
 
-  if (this.can_access_scene_settings_() === true) {
+  if (this.can_access_scene_settings_() === true && show_environment === true) {
     tile_group.add_tile(new beestat.component.tile()
       .set_icon('tune')
       .set_title('Scene Settings')
@@ -1572,6 +1606,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
         {'value': 'sunny', 'icon': 'weather_sunny', 'title': 'Weather: Sunny'},
         {'value': 'cloudy', 'icon': 'weather_cloudy', 'title': 'Weather: Cloudy'},
         {'value': 'raining', 'icon': 'weather_pouring', 'title': 'Weather: Raining'},
+        {'value': 'storm', 'icon': 'weather_lightning_rainy', 'title': 'Weather: Storm'},
         {'value': 'snowing', 'icon': 'weather_snowy', 'title': 'Weather: Snowing'}
       ];
 
