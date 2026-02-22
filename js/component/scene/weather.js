@@ -24,30 +24,34 @@ beestat.component.scene.prototype.set_weather = function(weather) {
     weather_settings = {
       'cloud_density': 1,
       'rain_density': 0,
-      'snow_density': 1
+      'snow_density': 1,
+      'wind_speed': 1
     };
     break;
   case 'rain':
     weather_settings = {
       'cloud_density': 1,
       'rain_density': 1,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 2
     };
     break;
   case 'cloudy':
     weather_settings = {
       'cloud_density': 0.5,
       'rain_density': 0,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 2
     };
     break;
   case 'sunny':
   case 'none':
   default:
     weather_settings = {
-      'cloud_density': 0,
+      'cloud_density': 0.03,
       'rain_density': 0,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 1
     };
     break;
   }
@@ -329,7 +333,11 @@ beestat.component.scene.prototype.create_precipitation_system_ = function(bounds
     'drift_x': drift_x,
     'drift_y': drift_y,
     'max_count': max_count,
-    'target_opacity': config.opacity
+    'target_opacity': config.opacity,
+    'static_opacity': config.static_opacity === true,
+    'max_wind_angle': config.max_wind_angle || 0,
+    'max_wind_speed_scale': config.max_wind_speed_scale || 2,
+    'wind_motion_multiplier': config.wind_motion_multiplier || 1
   };
 };
 
@@ -340,8 +348,16 @@ beestat.component.scene.prototype.create_precipitation_system_ = function(bounds
  * @param {object} precipitation
  * @param {number} target_count
  * @param {number} delta_seconds
+ * @param {number} wind_speed
+ * @param {number} wind_direction
  */
-beestat.component.scene.prototype.update_precipitation_system_ = function(precipitation, target_count, delta_seconds) {
+beestat.component.scene.prototype.update_precipitation_system_ = function(
+  precipitation,
+  target_count,
+  delta_seconds,
+  wind_speed,
+  wind_direction
+) {
   if (
     precipitation === undefined ||
     precipitation.points === undefined ||
@@ -357,7 +373,9 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(precip
   );
   precipitation.points.geometry.setDrawRange(0, clamped_count);
 
-  if (precipitation.max_count > 0) {
+  if (precipitation.static_opacity === true) {
+    precipitation.points.material.opacity = precipitation.target_opacity;
+  } else if (precipitation.max_count > 0) {
     precipitation.points.material.opacity =
       precipitation.target_opacity * (clamped_count / precipitation.max_count);
   } else {
@@ -373,10 +391,32 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(precip
   const span_y = bounds.max_y - bounds.min_y;
   const span_z = bounds.max_z - bounds.min_z;
   const positions = precipitation.points.geometry.attributes.position.array;
+  const clamped_wind_speed = Math.max(0, Math.min(5, Number(wind_speed || 0)));
+  const clamped_wind_direction = Math.max(0, Math.min(360, Number(wind_direction || 0)));
+  const wind_direction_radians = THREE.MathUtils.degToRad(clamped_wind_direction);
+  const wind_x = Math.cos(wind_direction_radians);
+  const wind_y = Math.sin(wind_direction_radians);
+  const max_wind_angle = Number(precipitation.max_wind_angle || 0);
+  const wind_angle = (clamped_wind_speed / 5) * max_wind_angle;
+  const wind_angle_radians = THREE.MathUtils.degToRad(wind_angle);
+  const vertical_scale = Math.cos(wind_angle_radians);
+  const horizontal_scale = Math.sin(wind_angle_radians);
+  const max_wind_speed_scale = Math.max(
+    1,
+    Number(precipitation.max_wind_speed_scale || 2)
+  );
+  const wind_speed_scale = 1 + ((clamped_wind_speed / 5) * (max_wind_speed_scale - 1));
+  const wind_motion_multiplier = Math.max(0, Number(precipitation.wind_motion_multiplier || 1));
+  const direction_velocity_x = horizontal_scale * wind_x;
+  const direction_velocity_y = horizontal_scale * wind_y;
+  const direction_velocity_z = vertical_scale;
 
   for (let i = 0; i < clamped_count; i++) {
     const offset = i * 3;
-    positions[offset + 2] += precipitation.speeds[i] * delta_seconds;
+    const speed = precipitation.speeds[i] * delta_seconds * wind_speed_scale * wind_motion_multiplier;
+    positions[offset + 2] += speed * direction_velocity_z;
+    positions[offset] += speed * direction_velocity_x;
+    positions[offset + 1] += speed * direction_velocity_y;
     positions[offset] += precipitation.drift_x[i] * delta_seconds;
     positions[offset + 1] += precipitation.drift_y[i] * delta_seconds;
 
@@ -407,11 +447,14 @@ beestat.component.scene.prototype.update_precipitation_system_ = function(precip
  */
 beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, plan_width, plan_height) {
   const padding = beestat.component.scene.environment_padding + 120;
+  const weather_span_multiplier = 1.25;
+  const weather_width = (plan_width + (padding * 2)) * weather_span_multiplier;
+  const weather_height = (plan_height + (padding * 2)) * weather_span_multiplier;
   const bounds = {
-    'min_x': center_x - ((plan_width + padding * 2) / 2),
-    'max_x': center_x + ((plan_width + padding * 2) / 2),
-    'min_y': center_y - ((plan_height + padding * 2) / 2),
-    'max_y': center_y + ((plan_height + padding * 2) / 2),
+    'min_x': center_x - (weather_width / 2),
+    'max_x': center_x + (weather_width / 2),
+    'min_y': center_y - (weather_height / 2),
+    'max_y': center_y + (weather_height / 2),
     'min_z': -780,
     'max_z': 140
   };
@@ -508,11 +551,14 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     {
       'size': 11,
       'color': 0xa8c7ff,
-      'opacity': 0.7,
+      'opacity': 0.5,
+      'static_opacity': true,
       'speed_min': 280,
       'speed_max': 430,
       'drift': 28,
-      'texture': this.rain_particle_texture_
+      'texture': this.rain_particle_texture_,
+      'max_wind_angle': 45,
+      'max_wind_speed_scale': 2
     }
   );
   this.weather_group_.add(this.rain_particles_.points);
@@ -530,7 +576,10 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
       'speed_min': 18,
       'speed_max': 44,
       'drift': 12,
-      'texture': this.snow_particle_texture_
+      'texture': this.snow_particle_texture_,
+      'max_wind_angle': 75,
+      'max_wind_speed_scale': 3,
+      'wind_motion_multiplier': 2.5
     }
   );
   this.weather_group_.add(this.snow_particles_.points);
@@ -562,6 +611,8 @@ beestat.component.scene.prototype.update_weather_ = function() {
   if (delta_seconds <= 0) {
     return;
   }
+  const wind_speed = Math.max(0, Math.min(5, Number(this.get_scene_setting_('wind_speed') || 0)));
+  const wind_direction = Math.max(0, Math.min(360, Number(this.get_scene_setting_('wind_direction') || 0)));
 
   if (this.weather_profile_target_ === undefined) {
     this.update_weather_targets_();
@@ -653,8 +704,20 @@ beestat.component.scene.prototype.update_weather_ = function() {
     }
   }
 
-  this.update_precipitation_system_(this.rain_particles_, this.current_rain_count_, delta_seconds);
-  this.update_precipitation_system_(this.snow_particles_, this.current_snow_count_, delta_seconds);
+  this.update_precipitation_system_(
+    this.rain_particles_,
+    this.current_rain_count_,
+    delta_seconds,
+    wind_speed,
+    wind_direction
+  );
+  this.update_precipitation_system_(
+    this.snow_particles_,
+    this.current_snow_count_,
+    delta_seconds,
+    wind_speed,
+    wind_direction
+  );
   this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 
   if (

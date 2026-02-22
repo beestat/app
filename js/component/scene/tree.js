@@ -2,6 +2,154 @@
  * Scene methods split from scene.js.
  */
 
+/**
+ * Register a tree mesh for procedural wind bending.
+ *
+ * @param {THREE.Mesh} mesh
+ * @param {{stiffness:number, max_sway_ratio:number}=} options
+ */
+beestat.component.scene.prototype.register_tree_wind_mesh_ = function(mesh, options) {
+  if (
+    mesh === undefined ||
+    mesh.geometry === undefined ||
+    mesh.geometry.attributes === undefined ||
+    mesh.geometry.attributes.position === undefined
+  ) {
+    return;
+  }
+
+  const position_attribute = mesh.geometry.attributes.position;
+  const source_positions = position_attribute.array;
+  if (source_positions === undefined || source_positions.length === 0) {
+    return;
+  }
+
+  if (this.tree_wind_meshes_ === undefined) {
+    this.tree_wind_meshes_ = [];
+  }
+
+  const count = position_attribute.count;
+  const base_positions = new Float32Array(source_positions.length);
+  base_positions.set(source_positions);
+  const weights = new Float32Array(count);
+  const phase_offsets = new Float32Array(count);
+
+  const mesh_offset_z = Number(mesh.position !== undefined ? mesh.position.z : 0);
+  let min_world_z = Infinity;
+  let max_world_z = -Infinity;
+  for (let i = 0; i < count; i++) {
+    const world_z = base_positions[(i * 3) + 2] + mesh_offset_z;
+    min_world_z = Math.min(min_world_z, world_z);
+    max_world_z = Math.max(max_world_z, world_z);
+  }
+  const height = Math.max(0.0001, max_world_z - min_world_z);
+
+  for (let i = 0; i < count; i++) {
+    const offset = i * 3;
+    const x = base_positions[offset];
+    const y = base_positions[offset + 1];
+    const world_z = base_positions[offset + 2] + mesh_offset_z;
+    const height_ratio = (max_world_z - world_z) / height;
+    const clamped_ratio = Math.max(0, Math.min(1, height_ratio));
+
+    // Keep trunk/branch bases anchored and increase bending toward tips.
+    weights[i] = Math.pow(clamped_ratio, 1.75);
+    phase_offsets[i] = ((x * 0.02) + (y * 0.015)) * 0.4;
+  }
+
+  const resolved_options = options || {};
+  const stiffness = Math.max(0.1, Number(resolved_options.stiffness || 1));
+  const max_sway_ratio = Math.max(
+    0,
+    Number(resolved_options.max_sway_ratio === undefined ? 0.03 : resolved_options.max_sway_ratio)
+  );
+
+  this.tree_wind_meshes_.push({
+    'mesh': mesh,
+    'base_positions': base_positions,
+    'weights': weights,
+    'phase_offsets': phase_offsets,
+    'height': height,
+    'stiffness': stiffness,
+    'max_sway_ratio': max_sway_ratio,
+    'phase_seed': Math.random() * Math.PI * 2
+  });
+};
+
+
+/**
+ * Update tree vertex sway for current wind speed.
+ * Wind direction is single-axis to keep motion physically directional.
+ */
+beestat.component.scene.prototype.update_tree_wind_ = function() {
+  if (this.tree_wind_meshes_ === undefined || this.tree_wind_meshes_.length === 0) {
+    return;
+  }
+
+  const wind_speed = Math.max(0, Math.min(5, Number(this.get_scene_setting_('wind_speed') || 0)));
+  const wind_direction = Math.max(0, Math.min(360, Number(this.get_scene_setting_('wind_direction') || 0)));
+  const tree_wobble_enabled = this.get_scene_setting_('tree_wobble') !== false;
+  // Keep overall tree effect lower than prior tuning while preserving responsiveness.
+  const wind_strength = wind_speed * 0.5;
+  const time_seconds = window.performance.now() / 1000;
+  const wind_radians = THREE.MathUtils.degToRad(wind_direction);
+  const wind_direction_x = Math.cos(wind_radians);
+  const wind_direction_y = Math.sin(wind_radians);
+  const gust = 0.78 + (0.22 * Math.sin(time_seconds * 0.16));
+
+  for (let i = 0; i < this.tree_wind_meshes_.length; i++) {
+    const wind_mesh = this.tree_wind_meshes_[i];
+    const mesh = wind_mesh.mesh;
+    if (
+      mesh === undefined ||
+      mesh.geometry === undefined ||
+      mesh.geometry.attributes === undefined ||
+      mesh.geometry.attributes.position === undefined
+    ) {
+      continue;
+    }
+
+    const position_attribute = mesh.geometry.attributes.position;
+    const positions = position_attribute.array;
+    const base_positions = wind_mesh.base_positions;
+    const weights = wind_mesh.weights;
+    const phase_offsets = wind_mesh.phase_offsets;
+    const count = position_attribute.count;
+
+    if (tree_wobble_enabled !== true || wind_strength <= 0) {
+      for (let vertex_index = 0; vertex_index < count; vertex_index++) {
+        const offset = vertex_index * 3;
+        positions[offset] = base_positions[offset];
+        positions[offset + 1] = base_positions[offset + 1];
+        positions[offset + 2] = base_positions[offset + 2];
+      }
+      position_attribute.needsUpdate = true;
+      continue;
+    }
+
+    const max_sway = wind_mesh.height * wind_mesh.max_sway_ratio * (wind_strength / wind_mesh.stiffness);
+    const steady_lean = max_sway * 0.28;
+    const oscillation_strength = max_sway * (0.58 + (0.24 * gust));
+    const frequency = (0.75 + (wind_strength * 0.42)) / Math.max(0.25, wind_mesh.stiffness);
+
+    for (let vertex_index = 0; vertex_index < count; vertex_index++) {
+      const offset = vertex_index * 3;
+      const weight = weights[vertex_index];
+      const phase = (time_seconds * frequency) + wind_mesh.phase_seed + phase_offsets[vertex_index];
+      const oscillation =
+        Math.sin(phase) +
+        (Math.sin((phase * 2.1) + 0.6) * 0.25);
+      const along_wind = (steady_lean + (oscillation * oscillation_strength)) * weight;
+
+      positions[offset] = base_positions[offset] + (wind_direction_x * along_wind);
+      positions[offset + 1] = base_positions[offset + 1] + (wind_direction_y * along_wind);
+      positions[offset + 2] = base_positions[offset + 2];
+    }
+
+    position_attribute.needsUpdate = true;
+  }
+};
+
 
 /**
  * Build a radial alpha texture used for soft tree-ground contact decals.
@@ -156,6 +304,10 @@ beestat.component.scene.prototype.create_conical_tree_ = function(height, max_di
   trunk.receiveShadow = true;
   trunk.userData.is_environment = true;
   tree.add(trunk);
+  this.register_tree_wind_mesh_(trunk, {
+    'stiffness': 2.4,
+    'max_sway_ratio': 0.01
+  });
   this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x5d4226);
 
   if (has_foliage === false) {
@@ -247,6 +399,10 @@ beestat.component.scene.prototype.create_conical_tree_ = function(height, max_di
     foliage_mesh.userData.is_tree_foliage = true;
     foliage_mesh.userData.base_tree_foliage_color = foliage_mesh.material.color.getHex();
     tree.add(foliage_mesh);
+    this.register_tree_wind_mesh_(foliage_mesh, {
+      'stiffness': 1.1,
+      'max_sway_ratio': 0.045
+    });
 
     previous_apex_height = segment_base_height + segment_height;
     previous_radius = radius;
@@ -502,6 +658,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   const trunk = trunk_stick.mesh;
   trunk.position.z = -(trunk_height / 2) + Math.max(0.7, trunk_radius_bottom * 0.14);
   tree.add(trunk);
+  this.register_tree_wind_mesh_(trunk, {
+    'stiffness': 2.2,
+    'max_sway_ratio': 0.012
+  });
   this.add_tree_ground_contact_(tree, trunk_radius_bottom, 0x6a4d2f);
 
   // Single branch layer: starts halfway up trunk and thins/shortens toward the top.
@@ -767,6 +927,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     branch.quaternion.setFromUnitVectors(branch_axis, direction);
     branches.add(branch);
     branch.updateMatrixWorld(true);
+    self.register_tree_wind_mesh_(branch, {
+      'stiffness': 1.7,
+      'max_sway_ratio': 0.02
+    });
 
     return {
       'mesh': branch,
@@ -860,6 +1024,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     canopy_mesh.userData.is_environment = true;
     foliage.add(canopy_mesh);
     this.tree_foliage_meshes_.push(canopy_mesh);
+    this.register_tree_wind_mesh_(canopy_mesh, {
+      'stiffness': 1.0,
+      'max_sway_ratio': 0.04
+    });
   }
 
   if (has_foliage === true) {

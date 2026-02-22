@@ -163,10 +163,12 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   const scene_settings_container = document.createElement('div');
   Object.assign(scene_settings_container.style, {
     'position': 'absolute',
-    'top': `${beestat.style.size.gutter + 72}px`,
+    'top': `${beestat.style.size.gutter + 52}px`,
     'right': `${beestat.style.size.gutter}px`,
     'min-width': '220px',
     'max-width': '250px',
+    'height': '375px',
+    'overflow-y': 'auto',
     'z-index': 2
   });
   parent.appendChild(scene_settings_container);
@@ -581,26 +583,30 @@ beestat.component.card.three_d.prototype.get_weather_settings_from_mode_ = funct
     return {
       'cloud_density': 0.5,
       'rain_density': 0,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 2
     };
   case 'raining':
     return {
       'cloud_density': 1,
       'rain_density': 1,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 2
     };
   case 'snowing':
     return {
       'cloud_density': 1,
       'rain_density': 0,
-      'snow_density': 1
+      'snow_density': 1,
+      'wind_speed': 1
     };
   case 'sunny':
   default:
     return {
-      'cloud_density': 0,
+      'cloud_density': 0.03,
       'rain_density': 0,
-      'snow_density': 0
+      'snow_density': 0,
+      'wind_speed': 1
     };
   }
 };
@@ -803,21 +809,41 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
     });
     panel.appendChild(separator);
   };
+  const add_section_title = (title) => {
+    const heading = document.createElement('div');
+    Object.assign(heading.style, {
+      'font-size': '11px',
+      'letter-spacing': '0.06em',
+      'text-transform': 'uppercase',
+      'color': 'rgba(255,255,255,0.75)',
+      'margin-top': '2px'
+    });
+    heading.innerText = title;
+    panel.appendChild(heading);
+  };
 
   // Weather
+  add_section_title('Weather');
   add_number_setting(get_title_case_label('cloud_density'), 'cloud_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('rain_density'), 'rain_density', 0, 2, 0.1);
   add_number_setting(get_title_case_label('snow_density'), 'snow_density', 0, 2, 0.1);
-  add_number_setting(get_title_case_label('wind_speed'), 'wind_speed', 0, 2, 0.1);
+
+  add_separator();
+  add_section_title('Wind');
+  add_number_setting(get_title_case_label('wind_speed'), 'wind_speed', 0, 5, 0.1);
+  add_number_setting(get_title_case_label('wind_direction'), 'wind_direction', 0, 360, 1);
 
   add_separator();
 
   // Tree
+  add_section_title('Tree');
   add_boolean_setting(get_title_case_label('tree_enabled'), 'tree_enabled');
+  add_boolean_setting(get_title_case_label('tree_wobble'), 'tree_wobble');
 
   add_separator();
 
   // Light / Sky
+  add_section_title('Light / Sky');
   add_number_setting(get_title_case_label('star_density'), 'star_density', 0, 2, 0.1);
   add_boolean_setting(get_title_case_label('light_user_enabled'), 'light_user_enabled');
   this.update_fps_visibility_();

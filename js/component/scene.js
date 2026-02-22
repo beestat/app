@@ -74,7 +74,7 @@ beestat.component.scene.environment_padding = 400;
  *
  * @type {number}
  */
-beestat.component.scene.weather_rain_max_count = 2200;
+beestat.component.scene.weather_rain_max_count = 1100;
 
 /**
  * Maximum snow particle count at full snow intensity.
@@ -278,6 +278,8 @@ beestat.component.scene.star_drift_visual_factor = 0.12;
  *   rain_density: number,
  *   snow_density: number,
  *   wind_speed: number,
+ *   wind_direction: number,
+ *   tree_wobble: boolean,
  *   tree_enabled: boolean,
  *   star_density: number,
  *   light_user_enabled: boolean,
@@ -289,6 +291,8 @@ beestat.component.scene.default_settings = {
   'rain_density': 1,
   'snow_density': 1,
   'wind_speed': 1,
+  'wind_direction': 0,
+  'tree_wobble': true,
   'tree_enabled': true,
   'star_density': 1,
   'light_user_enabled': true,
@@ -495,6 +499,7 @@ beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ =
   this.light_sources_ = [];
   this.tree_foliage_meshes_ = [];
   this.tree_branch_groups_ = [];
+  this.tree_wind_meshes_ = [];
 
   delete this.floor_plan_group_;
   delete this.environment_group_;
@@ -699,6 +704,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     self.controls_.update();
     self.update_raycaster_();
     self.update_celestial_light_intensities_();
+    self.update_tree_wind_();
     self.update_weather_();
     self.renderer_.render(self.scene_, self.camera_);
   };

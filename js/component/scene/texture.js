@@ -138,25 +138,31 @@ beestat.component.scene.prototype.create_snow_particle_texture_ = function() {
 
 
 /**
- * Create a streak-like particle texture for rain.
+ * Create a soft circular particle texture for rain.
  *
  * @return {THREE.Texture}
  */
 beestat.component.scene.prototype.create_rain_particle_texture_ = function() {
-  const width = 24;
-  const height = 64;
+  const width = 56;
+  const height = 56;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
 
   const context = canvas.getContext('2d');
-  const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0.0, 'rgba(170, 200, 255, 0.0)');
-  gradient.addColorStop(0.25, 'rgba(185, 210, 255, 0.85)');
-  gradient.addColorStop(1.0, 'rgba(170, 200, 255, 0.0)');
-
+  const gradient = context.createRadialGradient(
+    width / 2,
+    height / 2,
+    0,
+    width / 2,
+    height / 2,
+    width * 0.5
+  );
+  gradient.addColorStop(0.0, 'rgba(195, 218, 255, 0.95)');
+  gradient.addColorStop(0.55, 'rgba(175, 205, 255, 0.55)');
+  gradient.addColorStop(1.0, 'rgba(165, 198, 255, 0.0)');
   context.fillStyle = gradient;
-  context.fillRect(width / 2 - 2, 0, 4, height);
+  context.fillRect(0, 0, width, height);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
