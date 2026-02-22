@@ -586,15 +586,14 @@ beestat.component.scene.prototype.get_round_tree_branch_count_ = function(height
 beestat.component.scene.prototype.get_branch_length = function(tree_type, x, profile_start_ratio = 0.5) {
   switch (tree_type) {
     case 'oval':
-      // Oval equation over x in [start, 1] with softer top taper than round.
-      // u = (x - start) / (1 - start), t = 2u - 1, base = sqrt(max(0, 1 - t^2))
-      const oval_start = Math.max(0, Math.min(0.95, profile_start_ratio));
+      // Same circular profile as round, but start lower to elongate canopy.
+      const oval_start = Math.max(0, Math.min(0.9999, profile_start_ratio - 0.2));
       const oval_span = Math.max(0.0001, 1 - oval_start);
       const oval_u = (x - oval_start) / oval_span;
       const oval_t = (oval_u * 2) - 1;
       return x < oval_start || x > 1
         ? 0
-        : Math.max(0, Math.min(1, Math.pow(Math.sqrt(Math.max(0, 1 - (oval_t * oval_t))), 0.82)));
+        : Math.max(0, Math.min(1, Math.sqrt(Math.max(0, 1 - (oval_t * oval_t)))));
     case 'round':
     default:
       // Round equation over x in [start, 1] using a true circle cross-section:
@@ -715,20 +714,42 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     const canopy_drift_radius = max_canopy_radius * 0.02;
     const canopy_drift_x = Math.cos(canopy_drift_theta) * canopy_drift_radius;
     const canopy_drift_y = Math.sin(canopy_drift_theta) * canopy_drift_radius;
+    // Derive where canopy profile actually begins from the active branch-length
+    // function so canopy bottom matches branches for all shapes.
+    let canopy_geometry_start_ratio = canopy_profile_start_ratio;
+    const canopy_start_samples = 40;
+    const canopy_start_threshold = 0.005;
+    for (let sample_index = 0; sample_index <= canopy_start_samples; sample_index++) {
+      const sample_ratio = (sample_index / canopy_start_samples) * canopy_profile_start_ratio;
+      const sample_length = self.get_branch_length(
+        canopy_shape,
+        sample_ratio,
+        canopy_profile_start_ratio
+      );
+      if (sample_length > canopy_start_threshold) {
+        canopy_geometry_start_ratio = sample_ratio;
+        break;
+      }
+    }
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const y = positions.getY(i);
       const z = positions.getZ(i);
       const normalized_height = Math.max(0, Math.min(1, (z + 1) / 2));
-      // Keep canopy vertices distributed across the active profile band instead
-      // of collapsing many points to zero-radius regions.
-      const mapped_ratio = canopy_profile_start_ratio + (normalized_height * (1 - canopy_profile_start_ratio));
-      const canopy_ratio = mapped_ratio;
+      // Sample canopy directly in the same profile range as branches.
+      const canopy_ratio =
+        canopy_geometry_start_ratio +
+        (normalized_height * (1 - canopy_geometry_start_ratio));
       const canopy_z = -trunk_height * canopy_ratio;
+      // Avoid exact-zero sampling at the profile start to prevent rare base pinches.
+      const canopy_sample_ratio = Math.min(1, Math.max(
+        canopy_ratio,
+        canopy_geometry_start_ratio + 0.012
+      ));
       const base_factor = Math.max(
         0,
-        Math.min(1, self.get_branch_length(canopy_shape, canopy_ratio, canopy_profile_start_ratio))
+        Math.min(1, self.get_branch_length(canopy_shape, canopy_sample_ratio, canopy_profile_start_ratio))
       );
       const canopy_factor = base_factor;
 
@@ -744,10 +765,19 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       const lobe = 1 + (Math.sin((theta * lobe_count) + (canopy_ratio * 4.4) + lobe_phase) * lobe_amplitude);
       const organic_scale = canopy_factor <= 0 ? 1 : (1 + (noise * irregularity));
       const radius = base_radius * canopy_factor * organic_scale * lobe;
+      // Minimal base guard in the first canopy slice to avoid rare pinches
+      // without materially changing taller-tree profiles.
+      const base_cover_t = Math.max(0, Math.min(1, normalized_height / 0.12));
+      const min_radius_for_base_cover =
+        trunk_radius_bottom * 0.18 * (1 - base_cover_t);
       // Ensure the canopy retains a small cap around the tip so trunk never pokes through.
       const top_cover_t = Math.max(0, Math.min(1, (canopy_ratio - 0.84) / 0.16));
       const min_radius_for_tip_cover = trunk_radius_bottom * 0.55 * top_cover_t;
-      const covered_radius = Math.max(radius, min_radius_for_tip_cover);
+      const covered_radius = Math.max(
+        radius,
+        min_radius_for_base_cover,
+        min_radius_for_tip_cover
+      );
       const radius_x = covered_radius * squash_x;
       const radius_y = covered_radius * squash_y;
       const canopy_z_offset = Math.sin((theta * (lobe_count + 1)) + lobe_phase) * z_wobble * canopy_factor;

@@ -168,7 +168,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
     'min-width': '220px',
     'max-width': '250px',
     'height': '375px',
-    'overflow-y': 'auto',
+    'overflow': 'hidden',
     'z-index': 2
   });
   parent.appendChild(scene_settings_container);
@@ -711,13 +711,16 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   Object.assign(panel.style, {
     'background': 'rgba(32, 42, 48, 0.94)',
     'border': '1px solid rgba(255,255,255,0.16)',
-    'border-radius': '8px',
+    'border-radius': `${beestat.style.size.border_radius}px`,
     'padding': '10px',
     'color': '#fff',
     'font-size': beestat.style.font_size.small,
     'display': 'flex',
     'flex-direction': 'column',
-    'grid-gap': '8px'
+    'grid-gap': '8px',
+    'height': '100%',
+    'overflow-y': 'auto',
+    'box-sizing': 'border-box'
   });
   this.scene_settings_container_.appendChild(panel);
 
@@ -846,6 +849,7 @@ beestat.component.card.three_d.prototype.decorate_scene_settings_panel_ = functi
   add_section_title('Light / Sky');
   add_number_setting(get_title_case_label('star_density'), 'star_density', 0, 2, 0.1);
   add_boolean_setting(get_title_case_label('light_user_enabled'), 'light_user_enabled');
+  add_boolean_setting(get_title_case_label('light_user_cast_shadows'), 'light_user_cast_shadows');
   this.update_fps_visibility_();
 };
 

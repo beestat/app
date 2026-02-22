@@ -297,7 +297,7 @@ beestat.component.scene.default_settings = {
   'tree_enabled': true,
   'star_density': 1,
   'light_user_enabled': true,
-  'light_user_cast_shadows': false,
+  'light_user_cast_shadows': true,
   'random_seed': 1
 };
 

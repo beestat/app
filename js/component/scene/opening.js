@@ -347,7 +347,7 @@ beestat.component.scene.prototype.add_opening_fixtures_ = function(layer, group)
   }
   if (this.window_pane_material_ === undefined) {
     this.window_pane_material_ = new THREE.MeshPhysicalMaterial({
-      'color': 0xbfe6ff,
+      'color': 0xcfe0ee,
       'transparent': true,
       'opacity': 0.95,
       'roughness': 0.12,

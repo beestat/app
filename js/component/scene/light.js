@@ -455,7 +455,24 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   );
   this.target_interior_light_intensity_ =
     beestat.component.scene.interior_light_intensity * interior_night_factor;
-  this.target_light_source_intensity_multiplier_ = interior_night_factor;
+  const max_sun_intensity = Math.max(0.0001, Number(beestat.component.scene.sun_light_intensity || 0.0001));
+  const normalized_sun_brightness = Math.max(
+    0,
+    Math.min(1, this.target_sun_intensity_ / max_sun_intensity)
+  );
+  const user_light_on_brightness_threshold = 0.34;
+  const user_light_off_brightness_threshold = 0.42;
+  if (this.user_lights_on_ === undefined) {
+    this.user_lights_on_ = normalized_sun_brightness <= user_light_on_brightness_threshold;
+  }
+  if (this.user_lights_on_ === true) {
+    if (normalized_sun_brightness >= user_light_off_brightness_threshold) {
+      this.user_lights_on_ = false;
+    }
+  } else if (normalized_sun_brightness <= user_light_on_brightness_threshold) {
+    this.user_lights_on_ = true;
+  }
+  this.target_light_source_intensity_multiplier_ = this.user_lights_on_ === true ? 1 : 0;
 
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
@@ -727,6 +744,7 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
 
   const group_elevation = Number(group.elevation || 0);
   const floor_thickness = Number(beestat.component.scene.room_floor_thickness || 0);
+  const user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
 
   group.light_sources.forEach(function(light_source) {
     const x = Number(light_source.x || 0);
@@ -773,7 +791,16 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
     light.userData.base_intensity = light_intensity;
     light.intensity = light_intensity * Number(this.target_light_source_intensity_multiplier_ || 0);
     light.position.set(x, y, z);
-    light.castShadow = false;
+    light.castShadow = user_light_cast_shadows;
+    if (user_light_cast_shadows === true) {
+      light.shadow.mapSize.width = 512;
+      light.shadow.mapSize.height = 512;
+      light.shadow.bias = -0.0012;
+      light.shadow.normalBias = 0.025;
+      light.shadow.radius = 2;
+      light.shadow.camera.near = 1;
+      light.shadow.camera.far = 240;
+    }
     light.userData.is_light_source = true;
     layer.add(light);
     this.light_sources_.push(light);
