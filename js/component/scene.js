@@ -105,6 +105,34 @@ beestat.component.scene.weather_fog_max_count = 18;
 beestat.component.scene.weather_transition_seconds = 2;
 
 /**
+ * Spacing between Christmas roofline bulbs (model units).
+ *
+ * @type {number}
+ */
+beestat.component.scene.christmas_light_spacing = 28;
+
+/**
+ * Radius of Christmas roofline bulb meshes (model units).
+ *
+ * @type {number}
+ */
+beestat.component.scene.christmas_light_size = 4.2;
+
+/**
+ * Repeating color palette for Christmas roofline bulbs.
+ *
+ * @type {Array<number>}
+ */
+beestat.component.scene.christmas_light_colors = [
+  0xff2b2b,
+  0x34d44e,
+  0x3f7bff,
+  0xffd93a,
+  0xff48bf,
+  0x42e3ff
+];
+
+/**
  * Default room floor slab thickness in model units (inches).
  *
  * @type {number}
@@ -494,6 +522,7 @@ beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ =
   delete this.lightning_cluster_anchor_;
   delete this.lightning_cluster_frequency_;
   delete this.lightning_cluster_peak_scale_;
+  delete this.christmas_lights_group_;
   delete this.active_mesh_;
   delete this.intersected_mesh_;
   delete this.tree_ground_contact_material_;
@@ -949,6 +978,9 @@ beestat.component.scene.prototype.update_ = function() {
 
   // Sync foliage tint/leaf state with the current season.
   this.update_tree_foliage_season_();
+  if (typeof this.update_christmas_lights_visibility_ === 'function') {
+    this.update_christmas_lights_visibility_();
+  }
 };
 
 /**

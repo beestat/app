@@ -161,6 +161,131 @@ beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floo
 
 
 /**
+ * Return whether the current scene date is Christmas Day (12/25).
+ *
+ * @return {boolean}
+ */
+beestat.component.scene.prototype.is_christmas_day_ = function() {
+  if (
+    this.date_ === undefined ||
+    typeof this.date_.month !== 'function' ||
+    typeof this.date_.date !== 'function'
+  ) {
+    return false;
+  }
+
+  return this.date_.month() === 11 && this.date_.date() === 25;
+};
+
+
+/**
+ * Toggle Christmas roofline lights visibility based on active date.
+ */
+beestat.component.scene.prototype.update_christmas_lights_visibility_ = function() {
+  if (this.christmas_lights_group_ === undefined) {
+    return;
+  }
+
+  this.christmas_lights_group_.visible = this.is_christmas_day_();
+};
+
+
+/**
+ * Add cheap Christmas roofline bulbs along resolved roof perimeter edges.
+ *
+ * @param {THREE.Group} roofs_layer
+ * @param {Array<{z: number, polygon: Array<{x:number,y:number}>}>} roofline_paths
+ */
+beestat.component.scene.prototype.add_christmas_lights_ = function(roofs_layer, roofline_paths) {
+  if (
+    roofs_layer === undefined ||
+    Array.isArray(roofline_paths) !== true ||
+    roofline_paths.length === 0
+  ) {
+    return;
+  }
+
+  const spacing = Math.max(8, Number(beestat.component.scene.christmas_light_spacing || 28));
+  const bulb_radius = Math.max(1, Number(beestat.component.scene.christmas_light_size || 4.2));
+  const colors = Array.isArray(beestat.component.scene.christmas_light_colors) === true &&
+    beestat.component.scene.christmas_light_colors.length > 0
+    ? beestat.component.scene.christmas_light_colors
+    : [0xff2b2b, 0x34d44e, 0x3f7bff, 0xffd93a];
+  const bulb_z_offset = 2.5;
+
+  const positions_by_color = {};
+  colors.forEach(function(color) {
+    positions_by_color[color] = [];
+  });
+
+  let bulb_index = 0;
+  roofline_paths.forEach(function(path) {
+    const polygon = path.polygon;
+    if (Array.isArray(polygon) !== true || polygon.length < 2) {
+      return;
+    }
+
+    for (let i = 0; i < polygon.length; i++) {
+      const a = polygon[i];
+      const b = polygon[(i + 1) % polygon.length];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const length = Math.sqrt((dx * dx) + (dy * dy));
+      const count = Math.max(1, Math.round(length / spacing));
+
+      for (let j = 0; j < count; j++) {
+        const t = j / count;
+        const x = a.x + (dx * t);
+        const y = a.y + (dy * t);
+        const z = path.z - bulb_z_offset;
+        const color = colors[bulb_index % colors.length];
+        positions_by_color[color].push({'x': x, 'y': y, 'z': z});
+        bulb_index++;
+      }
+    }
+  });
+
+  if (bulb_index === 0) {
+    return;
+  }
+
+  const christmas_group = new THREE.Group();
+  christmas_group.userData.is_roof_christmas_lights = true;
+  christmas_group.layers.set(beestat.component.scene.layer_visible);
+
+  const matrix = new THREE.Matrix4();
+  const bulb_geometry = new THREE.SphereGeometry(bulb_radius, 6, 5);
+  colors.forEach(function(color) {
+    const positions = positions_by_color[color];
+    if (Array.isArray(positions) !== true || positions.length === 0) {
+      return;
+    }
+
+    const material = new THREE.MeshBasicMaterial({
+      'color': color,
+      'toneMapped': false
+    });
+    const bulbs = new THREE.InstancedMesh(bulb_geometry, material, positions.length);
+    bulbs.castShadow = false;
+    bulbs.receiveShadow = false;
+    bulbs.layers.set(beestat.component.scene.layer_visible);
+
+    for (let i = 0; i < positions.length; i++) {
+      const position = positions[i];
+      matrix.makeTranslation(position.x, position.y, position.z);
+      bulbs.setMatrixAt(i, matrix);
+    }
+    bulbs.instanceMatrix.needsUpdate = true;
+    christmas_group.add(bulbs);
+  });
+
+  roofs_layer.add(christmas_group);
+  this.christmas_lights_group_ = christmas_group;
+  this.update_christmas_lights_visibility_();
+};
+
+
+/**
  * Add roofs to the scene based on the configured roof style.
  */
 beestat.component.scene.prototype.add_roofs_ = function() {
@@ -199,6 +324,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
   this.layers_['roof'] = roofs_layer;
 
   const roof_pitch = beestat.component.scene.roof_pitch;
+  const roofline_paths = [];
 
   // Build hip roof geometry per exposed polygon.
   exposed_areas.forEach(function(area) {
@@ -232,6 +358,10 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
 
           // Use the offset polygon if successful, otherwise use original
           const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
+          roofline_paths.push({
+            'z': area.ceiling_z,
+            'polygon': roof_polygon
+          });
 
           // Add a thin base skirt so eaves have subtle physical thickness.
           const base_shape = new THREE.Shape();
@@ -386,6 +516,8 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
       }
     });
   });
+
+  this.add_christmas_lights_(roofs_layer, roofline_paths);
 };
 
 
@@ -402,6 +534,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
   const roofs_layer = new THREE.Group();
   this.floor_plan_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
+  const roofline_paths = [];
 
   // Build flat roof geometry per exposed polygon.
   exposed_areas.forEach(function(area) {
@@ -435,6 +568,10 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
 
           // Use the offset polygon if successful, otherwise use original
           const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
+          roofline_paths.push({
+            'z': area.ceiling_z,
+            'polygon': roof_polygon
+          });
 
           // Build the flat roof footprint shape for extrusion.
           const shape = new THREE.Shape();
@@ -474,6 +611,8 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
       }
     });
   });
+
+  this.add_christmas_lights_(roofs_layer, roofline_paths);
 };
 
 
