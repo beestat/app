@@ -437,10 +437,16 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
 
   const cloud_dimming = this.get_cloud_dimming_factor_();
 
-  // Calculate target intensity for smooth transitions
-  this.target_sun_intensity_ = sun_pos.altitude < 0
-    ? Math.max(0, beestat.component.scene.sun_light_intensity * (1 + sun_pos.altitude / (Math.PI / 6)))
-    : beestat.component.scene.sun_light_intensity;
+  // Calculate target intensity for smooth transitions.
+  // Keep most of the falloff near the horizon so direct highlights don't look
+  // "full sun" once the sun disk visually fades.
+  const sun_horizon_visibility = Math.max(
+    0,
+    Math.min(1, (sun_pos.altitude + 0.06) / 0.18)
+  );
+  const sun_intensity_factor = Math.pow(sun_horizon_visibility, 1.7);
+  this.target_sun_intensity_ =
+    beestat.component.scene.sun_light_intensity * sun_intensity_factor;
   this.target_sun_intensity_ *= cloud_dimming;
 
   // Fade stars out at day and in at night.
@@ -583,7 +589,6 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
       light.intensity += (target_intensity - light.intensity) * lerp_factor;
     });
   }
-
   // Match visible sun brightness to actual sun light intensity, with smooth
   // fade at/under the horizon.
   if (this.sun_core_mesh_ !== undefined && this.sun_glow_sprite_ !== undefined) {
