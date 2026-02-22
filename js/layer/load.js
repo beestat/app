@@ -6,6 +6,11 @@ beestat.layer.load = function() {
 };
 beestat.extend(beestat.layer.load, beestat.layer);
 
+/**
+ * Decorate the loading layer.
+ *
+ * @param {rocket.Elements} parent
+ */
 beestat.layer.load.prototype.decorate_ = function(parent) {
   $('body').style({
     'overflow-y': 'scroll',

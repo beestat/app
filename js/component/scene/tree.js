@@ -6,7 +6,9 @@
  * Register a tree mesh for procedural wind bending.
  *
  * @param {THREE.Mesh} mesh
- * @param {{stiffness:number, max_sway_ratio:number}=} options
+ * @param {object=} options
+ * @param {number=} options.stiffness
+ * @param {number=} options.max_sway_ratio
  */
 beestat.component.scene.prototype.register_tree_wind_mesh_ = function(mesh, options) {
   if (
@@ -420,7 +422,9 @@ beestat.component.scene.prototype.create_conical_tree_ = function(height, max_di
 /**
  * Sample XY offset from a stick curve at a height measured from the stick base.
  *
- * @param {{controls: Array<{x: number, y: number}>, height: number}} curve
+ * @param {object} curve
+ * @param {Array<{x: number, y: number}>} curve.controls
+ * @param {number} curve.height
  * @param {number} height_from_base
  *
  * @return {{x: number, y: number}}
@@ -1081,4 +1085,3 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
 beestat.component.scene.prototype.create_oval_tree_ = function(height, max_diameter, has_foliage) {
   return this.create_round_tree_(height, max_diameter, has_foliage, 'oval');
 };
-

@@ -779,11 +779,11 @@ beestat.component.scene.prototype.add_controls_ = function(parent) {
 beestat.component.scene.prototype.update_ = function() {
   const self = this;
 
+  // Resolve the current floor-plan snapshot and time key for this frame.
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-
   const time = this.date_.format('HH:mm');
 
-  // Set the color of each room
+  // Update each room mesh: active outline, heat-map color, and label sprites.
   floor_plan.data.groups.forEach(function(group) {
     group.rooms.forEach(function(room) {
       const value_sprite = self.meshes_[room.room_id].userData.sprites.value;
@@ -802,6 +802,7 @@ beestat.component.scene.prototype.update_ = function() {
         self.data_.series[self.data_type_][room.sensor_id] !== undefined &&
         self.data_.series[self.data_type_][room.sensor_id][time] !== undefined
       ) {
+        // Resolve sensor value and map it into the configured gradient range.
         const value = self.data_.series[self.data_type_][room.sensor_id][time];
 
         /**
@@ -828,6 +829,7 @@ beestat.component.scene.prototype.update_ = function() {
           self.gradient_[Math.floor((self.gradient_.length - 1) * percentage)]
         );
 
+        // Resolve the HVAC activity icon from thermostat runtime series at this minute.
         // TODO this technically doesn't handle if both heating and cooling is active in a range
         const sensor = beestat.cache.sensor[room.sensor_id];
         let icon;
@@ -879,6 +881,7 @@ beestat.component.scene.prototype.update_ = function() {
           icon_opacity = Math.round(icon_opacity * 10) / 10;
         }
 
+        // Update room labels based on selected data type and visibility rules.
         // Labels
         if (
           self.labels_ === true ||
@@ -918,15 +921,17 @@ beestat.component.scene.prototype.update_ = function() {
         icon_sprite.material = self.get_blank_label_material_();
       }
 
+      // Apply the resolved room fill color.
       self.meshes_[room.room_id].material.color.setHex(color.replace('#', '0x'));
     });
   });
 
-  // Update celestial lights (sun and moon) based on date and location
+  // Sync celestial lights with the current date and configured location.
   if (this.date_ !== undefined && this.latitude_ !== undefined && this.longitude_ !== undefined) {
     this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
   }
 
+  // Sync foliage tint/leaf state with the current season.
   this.update_tree_foliage_season_();
 };
 
@@ -1304,6 +1309,9 @@ beestat.component.scene.prototype.get_icon_path_ = function(icon, scale = 4) {
   return scaled_path;
 };
 
+/**
+ * Dispose.
+ */
 beestat.component.scene.prototype.dispose = function() {
   if (this.skeleton_builder_ready_handler_ !== undefined) {
     window.removeEventListener('skeleton_builder_ready', this.skeleton_builder_ready_handler_);

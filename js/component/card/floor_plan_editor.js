@@ -332,6 +332,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
 beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = function(parent) {
   const self = this;
 
+  // Tear down prior drawing-pane components to avoid stale listeners.
   // Dispose existing SVG to remove any global listeners.
   if (this.floor_plan_ !== undefined) {
     this.floor_plan_.dispose();
@@ -347,6 +348,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     this.layers_sidebar_.dispose();
   }
 
+  // Build drawing canvas and floating sidebar containers.
   const drawing_canvas_container = $.createElement('div');
   drawing_canvas_container.style({
     'position': 'relative',
@@ -379,6 +381,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   });
   drawing_canvas_container.appendChild(layers_sidebar_container);
 
+  // Create and render floor plan + layer sidebar with editor callbacks.
   // Create and render a new SVG component.
   this.floor_plan_ = new beestat.component.floor_plan(
     beestat.setting('visualize.floor_plan_id'),
@@ -461,6 +464,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
 
   this.ensure_active_entity_visibility_();
 
+  // Render orientation compass when available.
   // Create and render the compass for setting orientation (early access only)
   if (beestat.user.has_early_access() === true) {
     this.compass_ = new beestat.component.compass(
@@ -479,6 +483,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     });
   }
 
+  // Keep canvas width synchronized with container resize events.
   setTimeout(function() {
     if (drawing_canvas_container.getBoundingClientRect().width > 0) {
       self.floor_plan_.set_width(drawing_canvas_container.getBoundingClientRect().width);
@@ -490,6 +495,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.floor_plan_.set_width(drawing_canvas_container.getBoundingClientRect().width);
   });
 
+  // Re-render editor shell when floor-plan model mutations occur.
   // Rerender when floor-plan model changes.
   const rerender_events = [
     'add_room',
@@ -515,6 +521,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   });
   this.floor_plan_.addEventListener('change_group', self.rerender.bind(this));
 
+  // Initialize entity index + shared entity event handlers.
   this.entity_index_ = {
     'rooms': {},
     'surfaces': {},
@@ -550,6 +557,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     self.update_layers_sidebar_();
   };
 
+  // Render non-editable context from the group below the active floor.
   const group_below = this.floor_plan_.get_group_below(this.state_.active_group);
   if (group_below !== undefined) {
     group_below.rooms.slice().reverse().forEach(function(room) {
@@ -598,6 +606,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     });
   }
 
+  // Render editable entities for the active group by type.
   // Loop over the rooms in this group and add them.
   let active_room_entity;
   this.state_.active_group.rooms.slice().reverse().forEach(function(room) {
@@ -755,6 +764,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     this.state_.active_light_source_entity.render(this.floor_plan_.get_g());
   }
 
+  // Trees are restricted to the designated tree group (typically first floor).
   // Trees are only editable on the first floor.
   const tree_group = this.floor_plan_.get_tree_group_();
   if (tree_group === this.state_.active_group) {
@@ -798,6 +808,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     }
   }
 
+  // Re-apply deferred layer selection and refresh sidebar state.
   this.apply_pending_layer_selection_();
   this.update_layers_sidebar_();
 };
@@ -1310,6 +1321,7 @@ beestat.component.card.floor_plan_editor.prototype.restore_entity_draw_order_ = 
  * @param {rocket.Elements} parent
  */
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_ = function(parent) {
+  // Route to the entity-specific pane based on the active selection state.
   if (this.state_.active_tree_entity !== undefined) {
     this.decorate_info_pane_tree_(parent);
   } else if (this.state_.active_light_source_entity !== undefined) {
@@ -1333,6 +1345,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_ = functio
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = function(parent) {
   const self = this;
 
+  // Build floor-level form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -1343,6 +1356,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_floor_ = f
 
   let div;
 
+  // Bind floor metadata inputs.
   // Group Name
   div = $.createElement('div');
   grid.appendChild(div);
@@ -1468,6 +1482,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = fu
   const self = this;
   const tree = this.state_.active_tree_entity.get_tree();
 
+  // Build tree form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -1479,6 +1494,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_tree_ = fu
 
   let div;
 
+  // Bind tree identity + geometry inputs.
   // Name
   div = $.createElement('div');
   grid.appendChild(div);
@@ -1602,6 +1618,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_light_sour
     }) || '';
   };
 
+  // Build light-source form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -1610,6 +1627,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_light_sour
     });
   parent.appendChild(grid);
 
+  // Bind light-source identity, output, and position inputs.
   const div = $.createElement('div');
   grid.appendChild(div);
   const name_input = new beestat.component.input.text()
@@ -1734,6 +1752,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
   const self = this;
   const surface = this.state_.active_surface_entity.get_surface();
 
+  // Build surface form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -1745,6 +1764,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_surface_ =
 
   let div;
 
+  // Bind surface identity, appearance, and elevation/height inputs.
   // Name
   div = $.createElement('div');
   grid.appendChild(div);
@@ -2010,6 +2030,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
     }) || '';
   };
 
+  // Build opening form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -2020,6 +2041,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
 
   let div;
 
+  // Bind opening identity, type, and dimensional inputs.
   // Name
   div = $.createElement('div');
   grid.appendChild(div);
@@ -2185,6 +2207,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_opening_ =
 beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = function(parent) {
   const self = this;
 
+  // Build room form layout.
   const grid = $.createElement('div')
     .style({
       'display': 'grid',
@@ -2195,6 +2218,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_info_pane_room_ = fu
 
   let div;
 
+  // Bind room identity, geometry, and sensor assignment inputs.
   // Room Name
   div = $.createElement('div');
   grid.appendChild(div);

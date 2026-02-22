@@ -161,16 +161,14 @@ beestat.component.scene.prototype.compute_exposed_ceiling_areas_ = function(floo
 
 
 /**
- * Generate 3D roofs using straight skeleton algorithm.
- * Creates sloped roof surfaces with proper ridge lines and hip/valley geometry.
- */
-/**
  * Add roofs to the scene based on the configured roof style.
  */
 beestat.component.scene.prototype.add_roofs_ = function() {
+  // Resolve configured roof mode and available skeleton runtime.
   const skeleton_builder = this.get_skeleton_builder_();
   const roof_style = this.get_appearance_value_('roof_style');
 
+  // Prefer requested roof style; fall back to flat until skeleton runtime is ready.
   if (roof_style === 'flat') {
     this.add_flat_roofs_();
   } else if (roof_style === 'hip' && skeleton_builder !== undefined) {
@@ -190,18 +188,19 @@ beestat.component.scene.prototype.add_roofs_ = function() {
  * @param {object} skeleton_builder
  */
 beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
+  // Gather exposed ceiling polygons and shared roof style settings.
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
   const roof_color = this.get_appearance_value_('roof_color');
 
-  // Create layer for roofs
+  // Create layer for generated roof meshes.
   const roofs_layer = new THREE.Group();
   this.floor_plan_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
   const roof_pitch = beestat.component.scene.roof_pitch;
 
-  // Process each exposed area
+  // Build hip roof geometry per exposed polygon.
   exposed_areas.forEach(function(area) {
     area.polygons.forEach(function(polygon) {
       if (polygon.length < 3) {
@@ -209,7 +208,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
       }
 
       try {
-        // Simplify polygon to handle complex shapes
+        // Normalize polygon topology before offset/skeleton operations.
         const simplified = ClipperLib.Clipper.SimplifyPolygon(
           polygon,
           ClipperLib.PolyFillType.pftNonZero
@@ -220,7 +219,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
             return;
           }
 
-          // Add roof overhang by offsetting polygon outward
+          // Expand polygon to add overhang around the exposed ceiling footprint.
           const roof_overhang = beestat.component.scene.roof_overhang;
           const clipper_offset = new ClipperLib.ClipperOffset();
           clipper_offset.AddPath(
@@ -234,7 +233,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
           // Use the offset polygon if successful, otherwise use original
           const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
 
-          // Add a thin base skirt under the hip roof to give the edge subtle thickness.
+          // Add a thin base skirt so eaves have subtle physical thickness.
           const base_shape = new THREE.Shape();
           base_shape.moveTo(roof_polygon[0].x, roof_polygon[0].y);
           for (let i = 1; i < roof_polygon.length; i++) {
@@ -263,7 +262,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
           base_mesh.receiveShadow = true;
           roofs_layer.add(base_mesh);
 
-          // Convert to skeleton format
+          // Convert polygon into straight-skeleton input format.
           const ring = roof_polygon.map(function(point) {
             return [point.x, point.y];
           });
@@ -276,14 +275,14 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
             return;
           }
 
-          // Identify boundary vertices (first N vertices match input polygon)
+          // Boundary vertices stay at ceiling level; interior vertices get raised by pitch.
           const boundary_vertex_count = roof_polygon.length;
           const boundary_set = new Set();
           for (let i = 0; i < boundary_vertex_count; i++) {
             boundary_set.add(i);
           }
 
-          // Helper function to compute distance from point to polygon boundary
+          // Helper: compute shortest distance from a point to roof footprint edges.
           const compute_distance_to_boundary = function(point_x, point_y) {
             let min_distance = Infinity;
 
@@ -322,7 +321,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
             return min_distance;
           };
 
-          // Create 3D vertices with heights based on distance from boundary
+          // Lift interior skeleton vertices to form sloped hip planes.
           const vertices_3d = result.vertices.map(function(vertex, index) {
             const is_boundary = boundary_set.has(index);
             let height = 0;
@@ -340,7 +339,7 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
             );
           });
 
-          // Create geometry from skeleton polygons
+          // Triangulate each skeleton face and emit a renderable mesh.
           result.polygons.forEach(function(face) {
             if (face.length < 3) {
               return;
@@ -394,16 +393,17 @@ beestat.component.scene.prototype.add_hip_roofs_ = function(skeleton_builder) {
  * Add flat roofs to the scene.
  */
 beestat.component.scene.prototype.add_flat_roofs_ = function() {
+  // Gather exposed ceiling polygons and shared roof style settings.
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
   const exposed_areas = this.compute_exposed_ceiling_areas_(floor_plan);
   const roof_color = this.get_appearance_value_('roof_color');
 
-  // Create layer for roofs
+  // Create layer for generated roof meshes.
   const roofs_layer = new THREE.Group();
   this.floor_plan_group_.add(roofs_layer);
   this.layers_['roof'] = roofs_layer;
 
-  // Process each exposed area
+  // Build flat roof geometry per exposed polygon.
   exposed_areas.forEach(function(area) {
     area.polygons.forEach(function(polygon) {
       if (polygon.length < 3) {
@@ -411,7 +411,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
       }
 
       try {
-        // Simplify polygon to handle complex shapes
+        // Normalize polygon topology before offset/extrusion.
         const simplified = ClipperLib.Clipper.SimplifyPolygon(
           polygon,
           ClipperLib.PolyFillType.pftNonZero
@@ -422,7 +422,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
             return;
           }
 
-          // Add roof overhang by offsetting polygon outward
+          // Expand polygon to add overhang around the exposed ceiling footprint.
           const roof_overhang = beestat.component.scene.roof_overhang;
           const clipper_offset = new ClipperLib.ClipperOffset();
           clipper_offset.AddPath(
@@ -436,7 +436,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
           // Use the offset polygon if successful, otherwise use original
           const roof_polygon = (offset_polygons.length > 0) ? offset_polygons[0] : simple_polygon;
 
-          // Create flat roof shape
+          // Build the flat roof footprint shape for extrusion.
           const shape = new THREE.Shape();
           shape.moveTo(roof_polygon[0].x, roof_polygon[0].y);
           for (let i = 1; i < roof_polygon.length; i++) {
@@ -444,7 +444,7 @@ beestat.component.scene.prototype.add_flat_roofs_ = function() {
           }
           shape.closePath();
 
-          // Create extruded geometry to give flat roof some depth
+          // Extrude the footprint so the flat roof has physical depth.
           const flat_roof_depth = 6; // 6 inches of depth
           const geometry = new THREE.ExtrudeGeometry(shape, {
             'depth': flat_roof_depth,
@@ -514,4 +514,3 @@ beestat.component.scene.prototype.listen_for_skeleton_builder_ready_ = function(
 
   window.addEventListener('skeleton_builder_ready', this.skeleton_builder_ready_handler_);
 };
-

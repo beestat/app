@@ -162,17 +162,20 @@ beestat.component.card.three_d.prototype.decorate_ = function(parent) {
  * @param {rocket.Elements} parent
  */
 beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
+  // Reset cached runtime data/state tied to prior scene instances.
   delete this.data_;
   this.scene_settings_values_ = undefined;
   window.clearInterval(this.fps_interval_);
   delete this.fps_interval_;
 
+  // Build the 3D drawing surface.
   const drawing_pane_container = document.createElement('div');
   drawing_pane_container.style.overflowX = 'hidden';
 
   parent.appendChild(drawing_pane_container);
   this.decorate_drawing_pane_(drawing_pane_container);
 
+  // Build always-visible overlay elements (watermark, FPS, toolbar, settings).
   // Watermark
   const watermark_container = document.createElement('div');
   Object.assign(watermark_container.style, {
@@ -237,6 +240,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(environment_date_container);
   this.decorate_environment_date_(environment_date_container);
 
+  // Build top-row HUD containers (floors + controls) and legend.
   const top_container = document.createElement('div');
   Object.assign(top_container.style, {
     'display': 'flex',
@@ -276,6 +280,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
   parent.appendChild(legend_container);
   this.decorate_legend_(legend_container);
 
+  // Resolve the required data range from current visualize date settings.
   let required_begin;
   let required_end;
   if (beestat.setting('visualize.range_type') === 'dynamic') {
@@ -326,6 +331,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
 
   const sensor_ids = Object.keys(beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_));
   if (sensor_ids.length > 0) {
+    // Fetch and cache runtime streams needed by get_data_ when cache is missing.
     if (
       beestat.cache.data.three_d__runtime_sensor === undefined ||
       beestat.cache.data.three_d__runtime_thermostat === undefined
@@ -1811,6 +1817,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
   }
   this.toolbar_container_.innerHTML = '';
 
+  // Build the primary toolbar tile group.
   const tile_group = new beestat.component.tile_group();
 
   // Add floor
@@ -1822,6 +1829,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
   const show_environment = this.get_show_environment_();
 
+  // View mode toggle (floor plan vs environment).
   // Toggle between environment view and floor plan view.
   if (beestat.user.has_early_access() === true) {
     const view_toggle_tile = new beestat.component.tile()
@@ -1917,6 +1925,7 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
   tile_group.render($(this.toolbar_container_));
 
+  // Render weather quick-select popup anchored to the Weather tile.
   if (show_environment === true && this.weather_menu_open_ === true) {
     const weather_tile_element = this.toolbar_container_.querySelector('[title=\"Weather\"]');
     if (weather_tile_element !== null) {
@@ -2111,13 +2120,12 @@ beestat.component.card.three_d.prototype.decorate_legend_ = function(parent) {
  * Get data. This doesn't directly or indirectly make any API calls, but it
  * caches the data so it doesn't have to loop over everything more than once.
  *
- * @param {boolean} force Force get the data?
- *
  * @return {object} The data.
  */
 beestat.component.card.three_d.prototype.get_data_ = function() {
   const self = this;
   if (this.data_ === undefined) {
+    // Initialize sensor/thermostat inclusion maps and output containers.
     const sensor_ids_map = beestat.floor_plan.get_sensor_ids_map(this.floor_plan_id_);
     const thermostat_ids_map = beestat.floor_plan.get_thermostat_ids_map(this.floor_plan_id_);
 
@@ -2175,7 +2183,7 @@ beestat.component.card.three_d.prototype.get_data_ = function() {
       }
     };
 
-    // Sensors
+    // Fold raw sensor runtime rows into per-sensor/per-minute series buckets.
     if (beestat.cache.data.three_d__runtime_sensor !== undefined) {
       // Add to data
       beestat.cache.data.three_d__runtime_sensor.forEach(function(runtime_sensor) {
@@ -2208,7 +2216,7 @@ beestat.component.card.three_d.prototype.get_data_ = function() {
       });
     }
 
-    // Thermostats
+    // Fold thermostat runtime rows into per-thermostat/per-minute equipment series.
     if (beestat.cache.data.three_d__runtime_thermostat !== undefined) {
       // Add to data
       beestat.cache.data.three_d__runtime_thermostat.forEach(function(runtime_thermostat) {
@@ -2262,7 +2270,7 @@ beestat.component.card.three_d.prototype.get_data_ = function() {
       });
     }
 
-    // Average data
+    // Average each minute bucket and update global min/max metadata.
     for (let key in this.data_.series) {
       for (let sensor_id in this.data_.series[key]) {
         for (let time in this.data_.series[key][sensor_id]) {
@@ -2400,6 +2408,11 @@ beestat.component.card.three_d.prototype.get_gradient_ = function() {
   }
 };
 
+/**
+ * Get the most recent data timestamp available for the active sensor set.
+ *
+ * @return {moment}
+ */
 beestat.component.card.three_d.prototype.get_most_recent_time_with_data_ = function() {
   const self = this;
 
@@ -2521,6 +2534,9 @@ beestat.component.card.three_d.prototype.force_dispose_stale_instance_ = functio
   this.teardown_();
 };
 
+/**
+ * Dispose.
+ */
 beestat.component.card.three_d.prototype.dispose = function() {
   this.disposed_ = true;
   this.teardown_();

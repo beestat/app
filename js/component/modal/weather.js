@@ -15,6 +15,11 @@ beestat.component.modal.weather = function() {
 };
 beestat.extend(beestat.component.modal.weather, beestat.component.modal);
 
+/**
+ * Decorate modal contents.
+ *
+ * @param {rocket.Elements} parent
+ */
 beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) {
   var thermostat = beestat.cache.thermostat[beestat.setting('thermostat_id')];
 
@@ -170,6 +175,11 @@ beestat.component.modal.weather.prototype.decorate_contents_ = function(parent) 
   });
 };
 
+/**
+ * Get the modal title.
+ *
+ * @return {string}
+ */
 beestat.component.modal.weather.prototype.get_title_ = function() {
   return 'Weather';
 };

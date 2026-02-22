@@ -260,11 +260,10 @@ beestat.component.floor_plan_entity.prototype.get_y = function() {
 /**
  * Collect snap x/y coordinates from selected shape collections.
  *
- * @param {{
- *   groups: object[],
- *   shape_specs: Array<{collection: string, point_mode: string}>,
- *   should_skip_shape: (function(object, object, object): boolean)=
- * }} options
+ * @param {object} options
+ * @param {object[]} options.groups
+ * @param {Array<{collection: string, point_mode: string}>} options.shape_specs
+ * @param {(function(object, object, object): boolean)=} options.should_skip_shape
  *
  * @return {{snap_x: number[], snap_y: number[]}}
  */

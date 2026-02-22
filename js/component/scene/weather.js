@@ -661,6 +661,7 @@ beestat.component.scene.prototype.update_lightning_ = function(now_ms, delta_sec
  * @param {number} plan_height
  */
 beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, plan_width, plan_height) {
+  // Compute world-space weather bounds from floor-plan extents.
   const padding = beestat.component.scene.environment_padding + 120;
   const weather_span_multiplier = 1.25;
   const weather_width = (plan_width + (padding * 2)) * weather_span_multiplier;
@@ -678,10 +679,12 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     (bounds.max_x - bounds.min_x) * (bounds.max_y - bounds.min_y)
   );
 
+  // Create the root weather group attached to the environment.
   this.weather_group_ = new THREE.Group();
   this.weather_group_.userData.is_environment = true;
   this.environment_group_.add(this.weather_group_);
 
+  // Lazily create shared particle/sprite textures.
   if (this.cloud_texture_ === undefined) {
     this.cloud_texture_ = this.create_cloud_texture_();
   }
@@ -714,6 +717,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   this.cloud_sprites_ = [];
   this.cloud_motion_ = [];
 
+  // Pre-build cloud sprites and motion profiles.
   for (let i = 0; i < cloud_capacity; i++) {
     const cloud_material = new THREE.SpriteMaterial({
       'map': this.cloud_texture_,
@@ -757,6 +761,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
     });
   }
 
+  // Build precipitation systems (rain and snow) at design-capacity scale.
   this.rain_particles_ = this.create_precipitation_system_(
     bounds,
     Math.max(
@@ -799,6 +804,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   );
   this.weather_group_.add(this.snow_particles_.points);
 
+  // Pre-create lightning resources and initialize weather transition state.
   // Pre-create lightning light so the first strike doesn't hitch on creation.
   this.ensure_lightning_flash_light_();
   if (this.lightning_flash_light_ !== undefined) {
@@ -821,6 +827,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
  * Animate weather particles (snow/rain) each frame.
  */
 beestat.component.scene.prototype.update_weather_ = function() {
+  // Resolve frame delta and exit early on invalid/zero elapsed time.
   const now_ms = window.performance.now();
   if (this.weather_last_update_ms_ === undefined) {
     this.weather_last_update_ms_ = now_ms;
@@ -832,9 +839,12 @@ beestat.component.scene.prototype.update_weather_ = function() {
   if (delta_seconds <= 0) {
     return;
   }
+
+  // Read wind controls from scene settings.
   const wind_speed = Math.max(0, Math.min(2, Number(this.get_scene_setting_('wind_speed') || 0)));
   const wind_direction = Math.max(0, Math.min(360, Number(this.get_scene_setting_('wind_direction') || 0)));
 
+  // Initialize weather transition targets and lerp state.
   if (this.weather_profile_target_ === undefined) {
     this.update_weather_targets_();
   }
@@ -879,6 +889,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
     this.weather_profile_target_.snow_count
   );
 
+  // Update cloud sprites (density, color, scale breathing, and positional wiggle).
   if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
     const now_seconds = now_ms / 1000;
     const cloud_color = this.get_cloud_color_();
@@ -929,6 +940,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
     }
   }
 
+  // Update precipitation + lightning systems, then re-apply snow cover tinting.
   this.update_precipitation_system_(
     this.rain_particles_,
     this.current_rain_count_,
@@ -946,6 +958,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
   this.update_lightning_(now_ms, delta_seconds);
   this.update_snow_surface_colors_(this.get_snow_cover_blend_());
 
+  // Keep sun/moon lighting aligned with current date/location in environment mode.
   if (
     this.date_ !== undefined &&
     this.latitude_ !== undefined &&
@@ -956,4 +969,3 @@ beestat.component.scene.prototype.update_weather_ = function() {
     this.update_celestial_lights_(this.date_, this.latitude_, this.longitude_);
   }
 };
-
