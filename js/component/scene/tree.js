@@ -462,6 +462,7 @@ beestat.component.scene.prototype.get_branch_length = function(tree_type, x, pro
  * @param {number} height Total tree height.
  * @param {number} max_diameter Maximum canopy diameter.
  * @param {boolean} has_foliage Whether foliage should be rendered.
+ * @param {string=} canopy_shape Canopy profile passed only to get_branch_length().
  *
  * @return {THREE.Group}
  */
@@ -475,9 +476,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
   // If height == diameter, start reaches 0 (full [0, 1] range).
   const round_canopy_span_ratio = Math.max(0, Math.min(1, max_diameter / Math.max(1, height)));
   const round_canopy_start_ratio = Math.max(0, 1 - round_canopy_span_ratio);
-  // Oval canopies should generally occupy more trunk height than round canopies.
-  const oval_canopy_start_ratio = Math.max(0, round_canopy_start_ratio - 0.18);
-  const foliage_enabled = has_foliage === true;
+  const canopy_profile_start_ratio = Math.max(0, Math.min(0.9999, round_canopy_start_ratio));
 
   const wood_material = new THREE.MeshStandardMaterial({
     'color': 0x6a4d2f,
@@ -564,14 +563,13 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
       const normalized_height = Math.max(0, Math.min(1, (z + 1) / 2));
       // Keep canopy vertices distributed across the active profile band instead
       // of collapsing many points to zero-radius regions.
-      const profile_start_ratio = canopy_shape === 'oval'
-        ? oval_canopy_start_ratio
-        : round_canopy_start_ratio;
-      const mapped_ratio = profile_start_ratio + (normalized_height * (1 - profile_start_ratio));
-      // Slightly cap the top sample for oval canopies to avoid a sharp apex.
-      const canopy_ratio = canopy_shape === 'oval' ? Math.min(0.985, mapped_ratio) : mapped_ratio;
+      const mapped_ratio = canopy_profile_start_ratio + (normalized_height * (1 - canopy_profile_start_ratio));
+      const canopy_ratio = mapped_ratio;
       const canopy_z = -trunk_height * canopy_ratio;
-      const base_factor = Math.max(0, Math.min(1, self.get_branch_length(canopy_shape, canopy_ratio, profile_start_ratio)));
+      const base_factor = Math.max(
+        0,
+        Math.min(1, self.get_branch_length(canopy_shape, canopy_ratio, canopy_profile_start_ratio))
+      );
       const canopy_factor = base_factor;
 
       const radial_length = Math.sqrt((x * x) + (y * y));
@@ -631,11 +629,11 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     0,
     Math.round(Number(this.get_scene_setting_('tree_branch_depth') || 0))
   );
-  const children_per_branch = 2;
-  if (foliage_enabled === true && this.tree_foliage_meshes_ === undefined) {
+  const children_per_branch = 1;
+  if (has_foliage === true && this.tree_foliage_meshes_ === undefined) {
     this.tree_foliage_meshes_ = [];
   }
-  if (foliage_enabled === true && this.tree_branch_groups_ === undefined) {
+  if (has_foliage === true && this.tree_branch_groups_ === undefined) {
     this.tree_branch_groups_ = [];
   }
 
@@ -756,13 +754,10 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     const base_height_ratio = branch_height_samples[i];
     const base_height = trunk_height * base_height_ratio;
     const base_offset = this.sample_stick_curve_offset_(trunk_stick.curve, base_height);
-    const branch_profile_start_ratio = canopy_shape === 'oval'
-      ? oval_canopy_start_ratio
-      : round_canopy_start_ratio;
     const branch_length_factor = this.get_branch_length(
       canopy_shape,
       base_height_ratio,
-      branch_profile_start_ratio,
+      canopy_profile_start_ratio,
     );
     const branch_length = max_canopy_radius * branch_length_factor;
     if (branch_length <= 0) {
@@ -789,7 +784,7 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     add_sub_branches(primary_branch, 0);
   }
 
-  if (foliage_enabled === true) {
+  if (has_foliage === true) {
     const canopy_seed = this.get_seed_from_parts_([
       this.active_tree_seed_ === undefined ? this.get_scene_setting_('random_seed') : this.active_tree_seed_,
       'canopy'
@@ -805,13 +800,13 @@ beestat.component.scene.prototype.create_round_tree_ = function(height, max_diam
     this.tree_foliage_meshes_.push(canopy_mesh);
   }
 
-  if (foliage_enabled === true) {
+  if (has_foliage === true) {
     this.tree_branch_groups_.push(branches);
   }
   branches.visible =
     this.debug_.hide_tree_branches !== true;
   tree.add(branches);
-  if (foliage_enabled === true) {
+  if (has_foliage === true) {
     tree.add(foliage);
   }
 
