@@ -454,8 +454,9 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 
   // Use current local time of day for initial scene lighting.
   const now = moment();
-  const current_hour = now.hour();
-  const current_minute = now.minute();
+  now
+    .minute(Math.floor(now.minute() / 5) * 5)
+    .second(0);
 
   if (beestat.setting('visualize.range_type') === 'dynamic') {
     // Set the date, then apply current time of day
@@ -464,18 +465,19 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
         beestat.setting('visualize.range_dynamic'),
         'day'
       )
-      .hour(current_hour)
-      .minute(current_minute)
+      .hour(now.hour())
+      .minute(now.minute())
       .second(0);
   } else {
     // Set the static date, then apply current time of day
     this.date_m_ = moment(
       beestat.setting('visualize.range_static.begin') + ' 00:00:00'
     )
-      .hour(current_hour)
-      .minute(current_minute)
+      .hour(now.hour())
+      .minute(now.minute())
       .second(0);
   }
+  this.try_align_time_to_recent_data_();
 
   // Default environment date to today.
   this.environment_date_m_ = moment().startOf('day');
@@ -2454,6 +2456,37 @@ beestat.component.card.three_d.prototype.get_gradient_ = function() {
       200
     );
   }
+};
+
+/**
+ * On initial draw, snap time-of-day to the latest available runtime minute
+ * when it is close enough to now.
+ *
+ * @return {boolean} Whether date_m_ was updated.
+ */
+beestat.component.card.three_d.prototype.try_align_time_to_recent_data_ = function() {
+  if (this.date_m_ === undefined) {
+    return false;
+  }
+
+  const most_recent_data_m = this.get_most_recent_time_with_data_();
+  if (most_recent_data_m === null) {
+    return false;
+  }
+
+  const now = moment();
+  const minutes_behind = now.diff(most_recent_data_m, 'minutes');
+  if (minutes_behind < 0 || minutes_behind > 30) {
+    return false;
+  }
+
+  this.date_m_
+    .hour(most_recent_data_m.hour())
+    .minute(most_recent_data_m.minute())
+    .minute(Math.floor(this.date_m_.minute() / 5) * 5)
+    .second(0);
+
+  return true;
 };
 
 /**
