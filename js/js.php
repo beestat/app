@@ -56,6 +56,7 @@ if($setting->get('environment') === 'dev' || $setting->get('environment') === 'd
   echo '<script src="/js/beestat/address.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/affiliate.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/date.js"></script>' . PHP_EOL;
+  echo '<script src="/js/beestat/date_range.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/math.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/platform.js"></script>' . PHP_EOL;
   echo '<script src="/js/beestat/text_dimensions.js"></script>' . PHP_EOL;

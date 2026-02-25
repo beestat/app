@@ -322,16 +322,23 @@ beestat.component.modal.air_quality_detail_custom.prototype.get_buttons_ = funct
       .set_text_color('#fff')
       .set_text('Save')
       .addEventListener('click', function() {
-        // Bit of a rig to fix the odd situation where somehow people are
-        // getting these values set to more than 30 days.
-        var air_quality_detail_range_static_begin_m = moment(self.state_.air_quality_detail_range_static_begin);
-        var air_quality_detail_range_static_end_m = moment(self.state_.air_quality_detail_range_static_end);
+        var range = beestat.date_range.clamp(
+          {
+            'type': self.state_.air_quality_detail_range_type,
+            'dynamic': self.state_.air_quality_detail_range_dynamic,
+            'static_begin': self.state_.air_quality_detail_range_static_begin,
+            'static_end': self.state_.air_quality_detail_range_static_end
+          },
+          {
+            'max_dynamic_days': 7,
+            'max_static_days': 7
+          }
+        );
 
-        var diff = Math.abs(air_quality_detail_range_static_begin_m.diff(air_quality_detail_range_static_end_m, 'day')) + 1;
-        if (diff > 30) {
-          air_quality_detail_range_static_end_m = air_quality_detail_range_static_begin_m.clone().add(29, 'days');
-          self.state_.air_quality_detail_range_static_end = air_quality_detail_range_static_end_m.format('M/D/YYYY');
-        }
+        self.state_.air_quality_detail_range_type = range.type;
+        self.state_.air_quality_detail_range_dynamic = range.dynamic;
+        self.state_.air_quality_detail_range_static_begin = range.static_begin;
+        self.state_.air_quality_detail_range_static_end = range.static_end;
 
         this
           .set_background_color(beestat.style.color.gray.base)
