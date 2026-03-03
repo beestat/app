@@ -113,13 +113,18 @@ beestat.component.card.three_d.rerender_delay_scene_setting_ms = 1000;
 beestat.component.card.three_d.rerender_loading_min_visible_ms = 350;
 
 /**
- * Debug-only weather override.
- * Set to `null` to use the scene-selected weather mode.
- * Set to a weather condition string (e.g. `fog`, `rain`) to force it.
+ * Fallback latitude used when the floor plan has no address.
  *
- * @type {?string}
+ * @type {number}
  */
-beestat.component.card.three_d.debug_weather_override = null;
+beestat.component.card.three_d.fallback_latitude = 39;
+
+/**
+ * Fallback longitude used when the floor plan has no address.
+ *
+ * @type {number}
+ */
+beestat.component.card.three_d.fallback_longitude = -97;
 
 /**
  * Scene setting keys that require a full rerender.
@@ -500,19 +505,9 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
 
   const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
 
-  // Set location for celestial light calculations if address is available
-  if (
-    floor_plan.address_id !== undefined &&
-    floor_plan.address_id !== null
-  ) {
-    const address = beestat.cache.address[floor_plan.address_id];
-    if (address !== undefined) {
-      this.scene_.set_location(
-        address.normalized.metadata.latitude,
-        address.normalized.metadata.longitude
-      );
-    }
-  }
+  // Set location for celestial light calculations.
+  const scene_location = this.get_scene_location_();
+  this.scene_.set_location(scene_location.latitude, scene_location.longitude);
 
   this.apply_layer_visibility_();
 
@@ -678,26 +673,6 @@ beestat.component.card.three_d.prototype.get_auto_weather_from_thermostat_ = fun
 };
 
 /**
- * Get a normalized debug weather override condition.
- *
- * @return {?string}
- */
-beestat.component.card.three_d.prototype.get_debug_weather_override_condition_ = function() {
-  const override = beestat.component.card.three_d.debug_weather_override;
-  if (typeof override !== 'string') {
-    return null;
-  }
-  const normalized_override = override.trim().toLowerCase();
-  if (normalized_override.length === 0) {
-    return null;
-  }
-  if (normalized_override === 'auto') {
-    return this.get_auto_weather_from_thermostat_();
-  }
-  return beestat.weather.get_settings_(normalized_override).condition;
-};
-
-/**
  * Resolve selected weather mode into a weather condition.
  *
  * @param {string} weather
@@ -705,10 +680,6 @@ beestat.component.card.three_d.prototype.get_debug_weather_override_condition_ =
  * @return {string}
  */
 beestat.component.card.three_d.prototype.get_weather_condition_from_mode_ = function(weather) {
-  const debug_override_condition = this.get_debug_weather_override_condition_();
-  if (debug_override_condition !== null) {
-    return debug_override_condition;
-  }
   if (weather === 'auto') {
     return this.get_auto_weather_from_thermostat_();
   }
@@ -1630,6 +1601,15 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   });
   this.controls_container_.appendChild(time_container);
 
+  this.approximate_sun_notice_container_ = document.createElement('div');
+  Object.assign(this.approximate_sun_notice_container_.style, {
+    'font-size': beestat.style.font_size.small,
+    'margin-top': '-16px',
+    'margin-left': `${(beestat.style.size.gutter * 2) + 4}px`,
+    // 'color': 'rgba(255,255,255,0.9)'
+  });
+  this.controls_container_.appendChild(this.approximate_sun_notice_container_);
+
   range.addEventListener('input', function() {
     play_tile.set_icon('play');
     window.clearInterval(self.interval_);
@@ -1643,6 +1623,61 @@ beestat.component.card.three_d.prototype.decorate_controls_ = function(parent) {
   });
 
   this.update_sunrise_sunset_markers_();
+  this.update_approximate_sun_notice_();
+};
+
+/**
+ * Get the location used for solar calculations.
+ *
+ * @return {{latitude: number, longitude: number, approximate: boolean}}
+ */
+beestat.component.card.three_d.prototype.get_scene_location_ = function() {
+  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
+  if (
+    floor_plan !== undefined &&
+    floor_plan.address_id !== undefined &&
+    floor_plan.address_id !== null
+  ) {
+    const address = beestat.cache.address[floor_plan.address_id];
+    if (
+      address !== undefined &&
+      address.normalized !== undefined &&
+      address.normalized !== null &&
+      address.normalized.metadata !== undefined &&
+      address.normalized.metadata !== null &&
+      Number.isFinite(Number(address.normalized.metadata.latitude)) === true &&
+      Number.isFinite(Number(address.normalized.metadata.longitude)) === true
+    ) {
+      return {
+        'latitude': Number(address.normalized.metadata.latitude),
+        'longitude': Number(address.normalized.metadata.longitude),
+        'approximate': false
+      };
+    }
+  }
+
+  return {
+    'latitude': beestat.component.card.three_d.fallback_latitude,
+    'longitude': beestat.component.card.three_d.fallback_longitude,
+    'approximate': true
+  };
+};
+
+/**
+ * Update fallback sun-position notice visibility/content.
+ */
+beestat.component.card.three_d.prototype.update_approximate_sun_notice_ = function() {
+  if (this.approximate_sun_notice_container_ === undefined) {
+    return;
+  }
+
+  if (this.get_scene_location_().approximate === true) {
+    this.approximate_sun_notice_container_.style.display = 'block';
+    this.approximate_sun_notice_container_.innerText = 'No address on floor plan; sun position approximated.';
+  } else {
+    this.approximate_sun_notice_container_.style.display = 'none';
+    this.approximate_sun_notice_container_.innerText = '';
+  }
 };
 
 /**
@@ -1657,36 +1692,30 @@ beestat.component.card.three_d.prototype.update_sunrise_sunset_markers_ = functi
     return;
   }
 
-  const floor_plan = beestat.cache.floor_plan[this.floor_plan_id_];
-  if (
-    floor_plan === undefined ||
-    floor_plan.address_id === undefined ||
-    floor_plan.address_id === null ||
-    beestat.cache.address[floor_plan.address_id] === undefined
-  ) {
-    this.sunrise_marker_container_.style.display = 'none';
-    this.sunset_marker_container_.style.display = 'none';
-    return;
-  }
-
-  const address = beestat.cache.address[floor_plan.address_id];
+  const scene_location = this.get_scene_location_();
   const times = SunCalc.getTimes(
     this.date_m_.toDate(),
-    address.normalized.metadata.latitude,
-    address.normalized.metadata.longitude
+    scene_location.latitude,
+    scene_location.longitude
   );
 
   const sunrise_m = moment(times.sunrise);
   const sunrise_percentage = ((sunrise_m.hours() * 60) + sunrise_m.minutes()) / 1440 * 100;
   this.sunrise_marker_container_.style.left = `${sunrise_percentage}%`;
   this.sunrise_marker_container_.style.display = 'block';
-  this.sunrise_marker_container_.setAttribute('title', 'Sunrise @ ' + sunrise_m.format('h:mm'));
+  this.sunrise_marker_container_.setAttribute(
+    'title',
+    (scene_location.approximate === true ? 'Approximate sunrise @ ' : 'Sunrise @ ') + sunrise_m.format('h:mm')
+  );
 
   const sunset_m = moment(times.sunset);
   const sunset_percentage = ((sunset_m.hours() * 60) + sunset_m.minutes()) / 1440 * 100;
   this.sunset_marker_container_.style.left = `${sunset_percentage}%`;
   this.sunset_marker_container_.style.display = 'block';
-  this.sunset_marker_container_.setAttribute('title', 'Sunset @ ' + sunset_m.format('h:mm'));
+  this.sunset_marker_container_.setAttribute(
+    'title',
+    (scene_location.approximate === true ? 'Approximate sunset @ ' : 'Sunset @ ') + sunset_m.format('h:mm')
+  );
 };
 
 /**
