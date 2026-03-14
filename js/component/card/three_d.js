@@ -96,7 +96,7 @@ beestat.extend(beestat.component.card.three_d, beestat.component.card);
  *
  * @type {number}
  */
-beestat.component.card.three_d.rerender_delay_floor_plan_ms = 5000;
+beestat.component.card.three_d.rerender_delay_floor_plan_ms = 2147483647;
 
 /**
  * Debounce delay in milliseconds for scene setting-triggered rerenders.
@@ -423,6 +423,7 @@ beestat.component.card.three_d.prototype.decorate_contents_ = function(parent) {
  */
 beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(parent) {
   const self = this;
+  const drawing_height = 770;
 
   // Create the scene
   if (this.scene_ !== undefined) {
@@ -456,6 +457,8 @@ beestat.component.card.three_d.prototype.decorate_drawing_pane_ = function(paren
   // Set the initial date.
   this.update_scene_();
   this.scene_.render($(parent));
+  this.scene_.height_ = drawing_height;
+  this.scene_.set_width(this.scene_.width_);
 
   // Use current local time of day for initial scene lighting.
   const now = moment();

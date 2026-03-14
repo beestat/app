@@ -331,6 +331,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_contents_ = function
  */
 beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = function(parent) {
   const self = this;
+  const drawing_height = 575;
 
   // Tear down prior drawing-pane components to avoid stale listeners.
   // Dispose existing SVG to remove any global listeners.
@@ -354,7 +355,7 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
     'position': 'relative',
     'width': '100%',
     'overflow': 'hidden',
-    'height': '500px'
+    'height': drawing_height + 'px'
   });
   parent.appendChild(drawing_canvas_container);
 
@@ -389,6 +390,11 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   );
 
   this.floor_plan_.render(drawing_canvas_container);
+  if (this.floor_plan_.height_ !== undefined && this.floor_plan_.height_ > 0) {
+    this.floor_plan_.height_ = drawing_height;
+    this.floor_plan_.svg_.setAttribute('height', drawing_height);
+    this.floor_plan_.update_view_box_();
+  }
 
   this.layers_sidebar_ = new beestat.component.floor_plan_layers_sidebar(
     beestat.setting('visualize.floor_plan_id'),
