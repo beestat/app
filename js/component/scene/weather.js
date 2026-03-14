@@ -71,6 +71,7 @@ beestat.component.scene.prototype.get_weather_count_from_density_ = function(den
 beestat.component.scene.prototype.get_weather_profile_ = function() {
   return {
     'cloud_count': this.get_weather_count_from_density_('cloud_density'),
+    'cloud_darkness': Math.max(0, Math.min(2, Number(this.get_scene_setting_('cloud_darkness') || 0))),
     // Fog uses fixed sprite population; density controls opacity.
     'fog_count': this.get_weather_design_capacity_count_('fog_density'),
     'fog_density': Math.max(0, Math.min(2, Number(this.get_scene_setting_('fog_density') || 0))),
@@ -110,8 +111,14 @@ beestat.component.scene.prototype.get_cloud_dimming_factor_ = function() {
  *
  * @return {THREE.Color}
  */
-beestat.component.scene.prototype.get_cloud_color_ = function() {
-  const darkness = Math.max(0, Math.min(2, Number(this.get_scene_setting_('cloud_darkness') || 0)));
+beestat.component.scene.prototype.get_cloud_color_ = function(opt_darkness) {
+  const darkness = Math.max(
+    0,
+    Math.min(
+      2,
+      Number(opt_darkness === undefined ? this.get_scene_setting_('cloud_darkness') : opt_darkness) || 0
+    )
+  );
   const blend = darkness / 2;
   const base_color = new THREE.Color(0xdce3ee);
   const dark_gray_color = new THREE.Color(0x67717b);
@@ -143,6 +150,9 @@ beestat.component.scene.prototype.update_weather_targets_ = function() {
 
   this.weather_transition_start_profile_ = {
     'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+    'cloud_darkness': this.current_cloud_darkness_ === undefined
+      ? Math.max(0, Math.min(2, Number(this.get_scene_setting_('cloud_darkness') || 0)))
+      : this.current_cloud_darkness_,
     'fog_count': this.current_fog_count_ === undefined ? 0 : this.current_fog_count_,
     'fog_density': this.current_fog_density_ === undefined ? 0 : this.current_fog_density_,
     'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
@@ -913,6 +923,7 @@ beestat.component.scene.prototype.add_weather_ = function(center_x, center_y, pl
   const initial_weather_profile = this.get_weather_profile_();
   this.weather_profile_target_ = initial_weather_profile;
   this.current_cloud_count_ = initial_weather_profile.cloud_count;
+  this.current_cloud_darkness_ = initial_weather_profile.cloud_darkness;
   this.current_fog_count_ = initial_weather_profile.fog_count;
   this.current_fog_density_ = initial_weather_profile.fog_density;
   this.current_rain_count_ = initial_weather_profile.rain_count;
@@ -951,6 +962,9 @@ beestat.component.scene.prototype.update_weather_ = function() {
   if (this.weather_transition_start_profile_ === undefined) {
     this.weather_transition_start_profile_ = {
       'cloud_count': this.current_cloud_count_ === undefined ? 0 : this.current_cloud_count_,
+      'cloud_darkness': this.current_cloud_darkness_ === undefined
+        ? Math.max(0, Math.min(2, Number(this.get_scene_setting_('cloud_darkness') || 0)))
+        : this.current_cloud_darkness_,
       'fog_count': this.current_fog_count_ === undefined ? 0 : this.current_fog_count_,
       'fog_density': this.current_fog_density_ === undefined ? 0 : this.current_fog_density_,
       'rain_count': this.current_rain_count_ === undefined ? 0 : this.current_rain_count_,
@@ -981,6 +995,10 @@ beestat.component.scene.prototype.update_weather_ = function() {
     this.weather_transition_start_profile_.cloud_count,
     this.weather_profile_target_.cloud_count
   );
+  this.current_cloud_darkness_ = transition(
+    this.weather_transition_start_profile_.cloud_darkness,
+    this.weather_profile_target_.cloud_darkness
+  );
   this.current_fog_count_ = transition(
     this.weather_transition_start_profile_.fog_count,
     this.weather_profile_target_.fog_count
@@ -1001,7 +1019,7 @@ beestat.component.scene.prototype.update_weather_ = function() {
   // Update cloud sprites (density, color, scale breathing, and positional wiggle).
   if (this.cloud_sprites_ !== undefined && this.cloud_motion_ !== undefined) {
     const now_seconds = now_ms / 1000;
-    const cloud_color = this.get_cloud_color_();
+    const cloud_color = this.get_cloud_color_(this.current_cloud_darkness_);
     const cloud_normalization_count = Math.max(
       1,
       this.get_weather_design_capacity_count_('cloud_density')

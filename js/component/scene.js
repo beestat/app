@@ -507,6 +507,7 @@ beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ =
   delete this.fog_sprites_;
   delete this.fog_motion_;
   delete this.fog_bounds_;
+  delete this.current_cloud_darkness_;
   delete this.current_fog_count_;
   delete this.current_fog_density_;
   delete this.weather_profile_target_;
