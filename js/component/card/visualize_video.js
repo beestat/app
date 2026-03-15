@@ -12,29 +12,40 @@ beestat.extend(beestat.component.card.visualize_video, beestat.component.card);
  * @param {rocket.Elements} parent
  */
 beestat.component.card.visualize_video.prototype.decorate_ = function(parent) {
-  const container = document.createElement('div');
-  /**
-   * The 16:9 aspect ratio corresponds to a height that is 56.25% of the width.
-   * https://www.ankursheel.com/blog/full-width-you-tube-video-embed
-   */
-  Object.assign(container.style, {
-    'position': 'relative',
-    'padding-bottom': '56.25%',
-    'height': '0'
-  });
-  parent.appendChild(container);
+  const videos = [
+    'https://player.vimeo.com/video/751478276',
+    'https://player.vimeo.com/video/1173706545'
+  ];
 
-  const iframe = document.createElement('iframe');
-  Object.assign(iframe.style, {
-    'position': 'absolute',
-    'top': '0',
-    'left': '0',
-    'width': '100%',
-    'height': '100%'
+  const videos_container = document.createElement('div');
+  Object.assign(videos_container.style, {
+    'display': 'flex',
+    'flex-wrap': 'wrap',
+    'gap': '12px'
   });
-  iframe.setAttribute('src', 'https://player.vimeo.com/video/751478276?h=584bebb57b');
-  iframe.setAttribute('frameborder', '0');
-  iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
-  iframe.setAttribute('allowfullscreen', 'allowfullscreen');
-  container.appendChild(iframe);
+  parent.appendChild(videos_container);
+
+  videos.forEach(function(video_src) {
+    const container = document.createElement('div');
+    Object.assign(container.style, {
+      'position': 'relative',
+      'flex': '1 1 calc(50% - 6px)',
+      'min-width': '320px',
+      'aspect-ratio': '16 / 9'
+    });
+    videos_container.appendChild(container);
+
+    const iframe = document.createElement('iframe');
+    Object.assign(iframe.style, {
+      'width': '100%',
+      'height': '100%',
+      'border': '0',
+      'display': 'block'
+    });
+    iframe.setAttribute('src', video_src);
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+    iframe.setAttribute('allowfullscreen', 'allowfullscreen');
+    container.appendChild(iframe);
+  });
 };
