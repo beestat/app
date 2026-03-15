@@ -465,23 +465,20 @@ beestat.component.card.floor_plan_editor.prototype.decorate_drawing_pane_ = func
   this.ensure_active_entity_visibility_();
 
   // Render orientation compass when available.
-  // Create and render the compass for setting orientation (early access only)
-  if (beestat.user.has_early_access() === true) {
-    this.compass_ = new beestat.component.compass(
-      beestat.setting('visualize.floor_plan_id')
-    );
-    this.compass_.render(drawing_canvas_container);
-    if (this.compass_.container_ !== undefined) {
-      this.compass_.container_.style.left = beestat.style.size.gutter + 'px';
-      this.compass_.container_.style.right = 'auto';
-      this.compass_.container_.style.bottom = beestat.style.size.gutter + 'px';
-    }
-
-    // Update floor plan when rotation changes
-    this.compass_.addEventListener('rotation_change', function() {
-      self.update_floor_plan_();
-    });
+  this.compass_ = new beestat.component.compass(
+    beestat.setting('visualize.floor_plan_id')
+  );
+  this.compass_.render(drawing_canvas_container);
+  if (this.compass_.container_ !== undefined) {
+    this.compass_.container_.style.left = beestat.style.size.gutter + 'px';
+    this.compass_.container_.style.right = 'auto';
+    this.compass_.container_.style.bottom = beestat.style.size.gutter + 'px';
   }
+
+  // Update floor plan when rotation changes
+  this.compass_.addEventListener('rotation_change', function() {
+    self.update_floor_plan_();
+  });
 
   // Keep canvas width synchronized with container resize events.
   setTimeout(function() {

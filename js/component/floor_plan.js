@@ -19,15 +19,6 @@ beestat.component.floor_plan = function(floor_plan_id, state) {
 beestat.extend(beestat.component.floor_plan, beestat.component);
 
 /**
- * Whether current user has early access.
- *
- * @return {boolean}
- */
-beestat.component.floor_plan.prototype.has_early_access_ = function() {
-  return beestat.user.has_early_access() === true;
-};
-
-/**
  * Render the SVG document to the parent.
  *
  * @param {rocket.Elements} parent
@@ -147,19 +138,19 @@ beestat.component.floor_plan.prototype.render = function(parent) {
           self.add_room_();
         }
       } else if (e.key.toLowerCase() === 'f') {
-        if (e.ctrlKey === false && self.has_early_access_() === true) {
+        if (e.ctrlKey === false) {
           self.add_surface_();
         }
       } else if (e.key.toLowerCase() === 't') {
-        if (e.ctrlKey === false && self.has_early_access_() === true) {
+        if (e.ctrlKey === false) {
           self.add_tree_();
         }
       } else if (e.key.toLowerCase() === 'o') {
-        if (e.ctrlKey === false && self.has_early_access_() === true) {
+        if (e.ctrlKey === false) {
           self.add_opening_();
         }
       } else if (e.key.toLowerCase() === 'l') {
-        if (e.ctrlKey === false && self.has_early_access_() === true) {
+        if (e.ctrlKey === false) {
           self.add_light_();
         }
       } else if (e.key.toLowerCase() === 's') {
@@ -167,7 +158,6 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true &&
-        self.has_early_access_() === true &&
         self.state_.active_surface_entity !== undefined
       ) {
         self.state_.copied_object = {
@@ -186,7 +176,6 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true &&
-        self.has_early_access_() === true &&
         self.state_.active_tree_entity !== undefined
       ) {
         self.state_.copied_object = {
@@ -214,7 +203,6 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true &&
-        self.has_early_access_() === true &&
         self.state_.copied_object !== undefined &&
         self.state_.copied_object.type === 'surface'
       ) {
@@ -222,7 +210,6 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true &&
-        self.has_early_access_() === true &&
         self.state_.copied_object !== undefined &&
         self.state_.copied_object.type === 'tree'
       ) {
@@ -563,69 +550,67 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     })
   );
 
-  if (this.has_early_access_() === true) {
-    // Add opening
-    this.tile_group_.add_tile(new beestat.component.tile()
-      .set_icon('window_closed_variant')
-      .set_title('Add Opening [O]')
-      .set_text_color(beestat.style.color.gray.light)
-      .set_background_color(beestat.style.color.bluegray.base)
+  // Add opening
+  this.tile_group_.add_tile(new beestat.component.tile()
+    .set_icon('window_closed_variant')
+    .set_title('Add Opening [O]')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      self.add_opening_();
+    })
+  );
+
+  // Add surface
+  this.tile_group_.add_tile(new beestat.component.tile()
+    .set_icon('texture_box')
+    .set_title('Add Surface [F]')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      self.add_surface_();
+    })
+  );
+
+  // Add window (placeholder - no action yet)
+  // this.tile_group_.add_tile(new beestat.component.tile()
+  //   .set_icon('window_closed_variant')
+  //   .set_title('Add Window')
+  //   .set_text_color(beestat.style.color.gray.light)
+  //   .set_background_color(beestat.style.color.bluegray.base)
+  //   .set_background_hover_color(beestat.style.color.bluegray.light)
+  // );
+
+  // Add tree (first floor only)
+  const add_tree_button = new beestat.component.tile()
+    .set_icon('tree')
+    .set_title('Add Tree [T]')
+    .set_background_color(beestat.style.color.bluegray.base);
+  this.tile_group_.add_tile(add_tree_button);
+
+  if (this.state_.active_group === tree_group) {
+    add_tree_button
       .set_background_hover_color(beestat.style.color.bluegray.light)
-      .addEventListener('click', function() {
-        self.add_opening_();
-      })
-    );
-
-    // Add surface
-    this.tile_group_.add_tile(new beestat.component.tile()
-      .set_icon('texture_box')
-      .set_title('Add Surface [F]')
       .set_text_color(beestat.style.color.gray.light)
-      .set_background_color(beestat.style.color.bluegray.base)
-      .set_background_hover_color(beestat.style.color.bluegray.light)
-      .addEventListener('click', function() {
-        self.add_surface_();
-      })
-    );
-
-    // Add window (placeholder - no action yet)
-    // this.tile_group_.add_tile(new beestat.component.tile()
-    //   .set_icon('window_closed_variant')
-    //   .set_title('Add Window')
-    //   .set_text_color(beestat.style.color.gray.light)
-    //   .set_background_color(beestat.style.color.bluegray.base)
-    //   .set_background_hover_color(beestat.style.color.bluegray.light)
-    // );
-
-    // Add tree (first floor only)
-    const add_tree_button = new beestat.component.tile()
-      .set_icon('tree')
-      .set_title('Add Tree [T]')
-      .set_background_color(beestat.style.color.bluegray.base);
-    this.tile_group_.add_tile(add_tree_button);
-
-    if (this.state_.active_group === tree_group) {
-      add_tree_button
-        .set_background_hover_color(beestat.style.color.bluegray.light)
-        .set_text_color(beestat.style.color.gray.light)
-        .addEventListener('click', this.add_tree_.bind(this));
-    } else {
-      add_tree_button
-        .set_text_color(beestat.style.color.bluegray.dark);
-    }
-
-    // Add Light
-    this.tile_group_.add_tile(new beestat.component.tile()
-      .set_icon('lightbulb_on')
-      .set_title('Add Light [L]')
-      .set_text_color(beestat.style.color.gray.light)
-      .set_background_color(beestat.style.color.bluegray.base)
-      .set_background_hover_color(beestat.style.color.bluegray.light)
-      .addEventListener('click', function() {
-        self.add_light_();
-      })
-    );
+      .addEventListener('click', this.add_tree_.bind(this));
+  } else {
+    add_tree_button
+      .set_text_color(beestat.style.color.bluegray.dark);
   }
+
+  // Add Light
+  this.tile_group_.add_tile(new beestat.component.tile()
+    .set_icon('lightbulb_on')
+    .set_title('Add Light [L]')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function() {
+      self.add_light_();
+    })
+  );
 
   // Remove selected room, opening, surface, or tree
   const remove_button = new beestat.component.tile()
@@ -921,10 +906,6 @@ beestat.component.floor_plan.prototype.toggle_snapping_ = function() {
  * @param {object} surface Optional surface to copy from.
  */
 beestat.component.floor_plan.prototype.add_surface_ = function(surface) {
-  if (this.has_early_access_() !== true) {
-    return;
-  }
-
   const default_surface_color = '#9a9a96';
   this.save_buffer();
 
@@ -1219,10 +1200,6 @@ beestat.component.floor_plan.prototype.remove_surface_ = function() {
  * @param {object} opening Optional opening to copy from.
  */
 beestat.component.floor_plan.prototype.add_opening_ = function(opening) {
-  if (this.has_early_access_() !== true) {
-    return;
-  }
-
   this.save_buffer();
 
   if (this.state_.active_group.openings === undefined) {
@@ -1341,10 +1318,6 @@ beestat.component.floor_plan.prototype.remove_opening_ = function() {
  * @param {object} light Optional Light to copy from.
  */
 beestat.component.floor_plan.prototype.add_light_ = function(light) {
-  if (this.has_early_access_() !== true) {
-    return;
-  }
-
   this.save_buffer();
 
   if (this.state_.active_group.lights === undefined) {
@@ -1409,10 +1382,6 @@ beestat.component.floor_plan.prototype.remove_light_ = function() {
  * @param {object} tree Optional tree to copy from.
  */
 beestat.component.floor_plan.prototype.add_tree_ = function(tree) {
-  if (this.has_early_access_() !== true) {
-    return;
-  }
-
   const tree_group = this.get_tree_group_();
   if (tree_group === undefined || this.state_.active_group !== tree_group) {
     return;

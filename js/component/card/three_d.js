@@ -602,9 +602,6 @@ beestat.component.card.three_d.prototype.save_scene_visualize_state_ = function(
  * @return {boolean}
  */
 beestat.component.card.three_d.prototype.get_show_environment_ = function() {
-  if (beestat.user.has_early_access() !== true) {
-    return false;
-  }
   const scene_visualize = this.get_scene_visualize_state_();
   if (scene_visualize === null) {
     return false;
@@ -1910,24 +1907,22 @@ beestat.component.card.three_d.prototype.decorate_toolbar_ = function(parent) {
 
   // View mode toggle (floor plan vs environment).
   // Toggle between environment view and floor plan view.
-  if (beestat.user.has_early_access() === true) {
-    const view_toggle_tile = new beestat.component.tile()
-      .set_icon(show_environment === false ? 'floor_plan' : 'home')
-      .set_title('Toggle View')
-      .set_text_color(beestat.style.color.gray.light)
-      .set_background_color(beestat.style.color.bluegray.base)
-      .set_background_hover_color(beestat.style.color.bluegray.light)
-      .addEventListener('click', function(e) {
-        e.stopPropagation();
-        const new_value = !self.get_show_environment_();
-        self.set_show_environment_(new_value);
+  const view_toggle_tile = new beestat.component.tile()
+    .set_icon(show_environment === false ? 'floor_plan' : 'home')
+    .set_title('Toggle View')
+    .set_text_color(beestat.style.color.gray.light)
+    .set_background_color(beestat.style.color.bluegray.base)
+    .set_background_hover_color(beestat.style.color.bluegray.light)
+    .addEventListener('click', function(e) {
+      e.stopPropagation();
+      const new_value = !self.get_show_environment_();
+      self.set_show_environment_(new_value);
 
-        this.set_icon(new_value ? 'home' : 'floor_plan');
-        self.apply_layer_visibility_();
-      });
+      this.set_icon(new_value ? 'home' : 'floor_plan');
+      self.apply_layer_visibility_();
+    });
 
-    tile_group.add_tile(view_toggle_tile);
-  }
+  tile_group.add_tile(view_toggle_tile);
 
   // Auto-rotate
   tile_group.add_tile(new beestat.component.tile()
