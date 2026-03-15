@@ -1,20 +1,20 @@
 /**
- * Floor plan light source.
+ * Floor plan Light.
  */
-beestat.component.floor_plan_entity.light_source = function() {
+beestat.component.floor_plan_entity.light = function() {
   this.enabled_ = true;
   this.snap_lines_ = {};
 
   beestat.component.floor_plan_entity.apply(this, arguments);
 };
-beestat.extend(beestat.component.floor_plan_entity.light_source, beestat.component.floor_plan_entity);
+beestat.extend(beestat.component.floor_plan_entity.light, beestat.component.floor_plan_entity);
 
 /**
  * Decorate.
  *
  * @param {SVGGElement} parent
  */
-beestat.component.floor_plan_entity.light_source.prototype.decorate_ = function(parent) {
+beestat.component.floor_plan_entity.light.prototype.decorate_ = function(parent) {
   this.decorate_circle_(parent);
 
   if (this.active_ === true && this.enabled_ === true) {
@@ -28,7 +28,7 @@ beestat.component.floor_plan_entity.light_source.prototype.decorate_ = function(
  *
  * @param {SVGGElement} parent
  */
-beestat.component.floor_plan_entity.light_source.prototype.decorate_circle_ = function(parent) {
+beestat.component.floor_plan_entity.light.prototype.decorate_circle_ = function(parent) {
   const self = this;
 
   this.circle_ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -75,35 +75,35 @@ beestat.component.floor_plan_entity.light_source.prototype.decorate_circle_ = fu
 /**
  * Update circle geometry.
  */
-beestat.component.floor_plan_entity.light_source.prototype.update_circle_ = function() {
+beestat.component.floor_plan_entity.light.prototype.update_circle_ = function() {
   this.circle_.setAttribute('cx', 0);
   this.circle_.setAttribute('cy', 0);
 };
 
 /**
- * Set light source.
+ * Set Light.
  *
- * @param {object} light_source
+ * @param {object} light
  *
- * @return {beestat.component.floor_plan_entity.light_source}
+ * @return {beestat.component.floor_plan_entity.light}
  */
-beestat.component.floor_plan_entity.light_source.prototype.set_light_source = function(light_source) {
-  this.light_source_ = light_source;
+beestat.component.floor_plan_entity.light.prototype.set_light = function(light) {
+  this.light_ = light;
 
-  this.light_source_.light_source_id = this.light_source_.light_source_id || window.crypto.randomUUID();
-  this.light_source_.x = Number(this.light_source_.x || 0);
-  this.light_source_.y = Number(this.light_source_.y || 0);
-  this.light_source_.elevation = Number(this.light_source_.elevation !== undefined ? this.light_source_.elevation : 72);
-  if (this.light_source_.name === undefined) {
-    this.light_source_.name = '';
+  this.light_.light_id = this.light_.light_id || window.crypto.randomUUID();
+  this.light_.x = Number(this.light_.x || 0);
+  this.light_.y = Number(this.light_.y || 0);
+  this.light_.elevation = Number(this.light_.elevation !== undefined ? this.light_.elevation : 72);
+  if (this.light_.name === undefined) {
+    this.light_.name = '';
   }
-  this.light_source_.intensity = ['dim', 'normal', 'bright'].includes(this.light_source_.intensity)
-    ? this.light_source_.intensity
+  this.light_.intensity = ['dim', 'normal', 'bright'].includes(this.light_.intensity)
+    ? this.light_.intensity
     : 'normal';
-  this.light_source_.temperature_k = Math.max(1000, Math.min(12000, Math.round(Number(this.light_source_.temperature_k || 4000))));
+  this.light_.temperature_k = Math.max(1000, Math.min(12000, Math.round(Number(this.light_.temperature_k || 4000))));
 
-  this.x_ = this.light_source_.x;
-  this.y_ = this.light_source_.y;
+  this.x_ = this.light_.x;
+  this.y_ = this.light_.y;
 
   return this;
 };
@@ -113,9 +113,9 @@ beestat.component.floor_plan_entity.light_source.prototype.set_light_source = fu
  *
  * @param {object} group
  *
- * @return {beestat.component.floor_plan_entity.light_source}
+ * @return {beestat.component.floor_plan_entity.light}
  */
-beestat.component.floor_plan_entity.light_source.prototype.set_group = function(group) {
+beestat.component.floor_plan_entity.light.prototype.set_group = function(group) {
   this.group_ = group;
   return this;
 };
@@ -125,20 +125,20 @@ beestat.component.floor_plan_entity.light_source.prototype.set_group = function(
  *
  * @param {boolean} enabled
  *
- * @return {beestat.component.floor_plan_entity.light_source}
+ * @return {beestat.component.floor_plan_entity.light}
  */
-beestat.component.floor_plan_entity.light_source.prototype.set_enabled = function(enabled) {
+beestat.component.floor_plan_entity.light.prototype.set_enabled = function(enabled) {
   this.enabled_ = enabled;
   return this;
 };
 
 /**
- * Get light source.
+ * Get Light.
  *
  * @return {object}
  */
-beestat.component.floor_plan_entity.light_source.prototype.get_light_source = function() {
-  return this.light_source_;
+beestat.component.floor_plan_entity.light.prototype.get_light = function() {
+  return this.light_;
 };
 
 /**
@@ -146,9 +146,9 @@ beestat.component.floor_plan_entity.light_source.prototype.get_light_source = fu
  *
  * @param {boolean} active
  *
- * @return {beestat.component.floor_plan_entity.light_source}
+ * @return {beestat.component.floor_plan_entity.light}
  */
-beestat.component.floor_plan_entity.light_source.prototype.set_active = function(active) {
+beestat.component.floor_plan_entity.light.prototype.set_active = function(active) {
   if (active === true && this.enabled_ !== true) {
     return this;
   }
@@ -158,10 +158,10 @@ beestat.component.floor_plan_entity.light_source.prototype.set_active = function
 
     if (this.active_ === true) {
       if (
-        this.state_.active_light_source_entity !== undefined &&
-        this.state_.active_light_source_entity.get_light_source().light_source_id !== this.light_source_.light_source_id
+        this.state_.active_light_entity !== undefined &&
+        this.state_.active_light_entity.get_light().light_id !== this.light_.light_id
       ) {
-        this.state_.active_light_source_entity.set_active(false);
+        this.state_.active_light_entity.set_active(false);
       }
 
       if (this.state_.active_point_entity !== undefined) {
@@ -183,12 +183,12 @@ beestat.component.floor_plan_entity.light_source.prototype.set_active = function
         this.state_.active_tree_entity.set_active(false);
       }
 
-      this.state_.active_light_source_entity = this;
+      this.state_.active_light_entity = this;
       this.dispatchEvent('activate');
       this.update_snap_points_();
       this.bring_to_front_();
     } else {
-      delete this.state_.active_light_source_entity;
+      delete this.state_.active_light_entity;
       this.clear_snap_lines_();
       this.dispatchEvent('inactivate');
     }
@@ -208,9 +208,9 @@ beestat.component.floor_plan_entity.light_source.prototype.set_active = function
  * @param {number} y
  * @param {string} event
  *
- * @return {beestat.component.floor_plan_entity.light_source}
+ * @return {beestat.component.floor_plan_entity.light}
  */
-beestat.component.floor_plan_entity.light_source.prototype.set_xy = function(x, y, event = 'lesser_update') {
+beestat.component.floor_plan_entity.light.prototype.set_xy = function(x, y, event = 'lesser_update') {
   if (event === 'update') {
     this.floor_plan_.save_buffer();
   }
@@ -223,8 +223,8 @@ beestat.component.floor_plan_entity.light_source.prototype.set_xy = function(x, 
   clamped_y = Math.min(clamped_y, half_grid);
   clamped_y = Math.max(clamped_y, -half_grid);
 
-  this.light_source_.x = clamped_x;
-  this.light_source_.y = clamped_y;
+  this.light_.x = clamped_x;
+  this.light_.y = clamped_y;
 
   this.dispatchEvent(event);
 
@@ -234,10 +234,10 @@ beestat.component.floor_plan_entity.light_source.prototype.set_xy = function(x, 
 /**
  * Drag start.
  */
-beestat.component.floor_plan_entity.light_source.prototype.after_mousedown_handler_ = function() {
+beestat.component.floor_plan_entity.light.prototype.after_mousedown_handler_ = function() {
   this.drag_start_entity_ = {
-    'x': this.light_source_.x,
-    'y': this.light_source_.y
+    'x': this.light_.x,
+    'y': this.light_.y
   };
 };
 
@@ -246,7 +246,7 @@ beestat.component.floor_plan_entity.light_source.prototype.after_mousedown_handl
  *
  * @param {Event} e
  */
-beestat.component.floor_plan_entity.light_source.prototype.after_mousemove_handler_ = function(e) {
+beestat.component.floor_plan_entity.light.prototype.after_mousemove_handler_ = function(e) {
   if (this.drag_start_entity_ === undefined) {
     return;
   }
@@ -296,7 +296,7 @@ beestat.component.floor_plan_entity.light_source.prototype.after_mousemove_handl
 /**
  * Drag stop.
  */
-beestat.component.floor_plan_entity.light_source.prototype.after_mouseup_handler_ = function() {
+beestat.component.floor_plan_entity.light.prototype.after_mouseup_handler_ = function() {
   if (this.dragged_ === true) {
     this.clear_snap_lines_();
     this.update_snap_points_();
@@ -306,7 +306,7 @@ beestat.component.floor_plan_entity.light_source.prototype.after_mouseup_handler
 /**
  * Pre-generate snap points.
  */
-beestat.component.floor_plan_entity.light_source.prototype.update_snap_points_ = function() {
+beestat.component.floor_plan_entity.light.prototype.update_snap_points_ = function() {
   const self = this;
   const group_below = this.floor_plan_.get_group_below(this.group_);
   const groups = [this.group_];
@@ -329,16 +329,16 @@ beestat.component.floor_plan_entity.light_source.prototype.update_snap_points_ =
         'point_mode': 'absolute'
       },
       {
-        'collection': 'light_sources',
+        'collection': 'lights',
         'point_mode': 'point'
       }
     ],
     'should_skip_shape': function(shape, shape_spec) {
       return (
-        shape_spec.collection === 'light_sources' &&
-        shape.light_source_id !== undefined &&
-        self.light_source_ !== undefined &&
-        self.light_source_.light_source_id === shape.light_source_id
+        shape_spec.collection === 'lights' &&
+        shape.light_id !== undefined &&
+        self.light_ !== undefined &&
+        self.light_.light_id === shape.light_id
       );
     }
   });
@@ -351,7 +351,7 @@ beestat.component.floor_plan_entity.light_source.prototype.update_snap_points_ =
  *
  * @return {number[]}
  */
-beestat.component.floor_plan_entity.light_source.prototype.get_snap_x = function() {
+beestat.component.floor_plan_entity.light.prototype.get_snap_x = function() {
   return this.snap_x_ || [];
 };
 
@@ -360,15 +360,15 @@ beestat.component.floor_plan_entity.light_source.prototype.get_snap_x = function
  *
  * @return {number[]}
  */
-beestat.component.floor_plan_entity.light_source.prototype.get_snap_y = function() {
+beestat.component.floor_plan_entity.light.prototype.get_snap_y = function() {
   return this.snap_y_ || [];
 };
 
 /**
  * Update snap lines.
  */
-beestat.component.floor_plan_entity.light_source.prototype.update_snap_lines_ = function() {
-  const point_x = this.light_source_.x;
+beestat.component.floor_plan_entity.light.prototype.update_snap_lines_ = function() {
+  const point_x = this.light_.x;
   if (this.get_snap_x().includes(point_x) === true) {
     if (this.snap_lines_.x === undefined) {
       this.snap_lines_.x = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -387,7 +387,7 @@ beestat.component.floor_plan_entity.light_source.prototype.update_snap_lines_ = 
     delete this.snap_lines_.x;
   }
 
-  const point_y = this.light_source_.y;
+  const point_y = this.light_.y;
   if (this.get_snap_y().includes(point_y) === true) {
     if (this.snap_lines_.y === undefined) {
       this.snap_lines_.y = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -410,7 +410,7 @@ beestat.component.floor_plan_entity.light_source.prototype.update_snap_lines_ = 
 /**
  * Clear snap lines.
  */
-beestat.component.floor_plan_entity.light_source.prototype.clear_snap_lines_ = function() {
+beestat.component.floor_plan_entity.light.prototype.clear_snap_lines_ = function() {
   if (this.snap_lines_.x !== undefined) {
     if (this.snap_lines_.x.parentNode !== undefined && this.snap_lines_.x.parentNode !== null) {
       this.snap_lines_.x.parentNode.removeChild(this.snap_lines_.x);

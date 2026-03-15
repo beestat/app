@@ -100,12 +100,12 @@ beestat.component.scene.prototype.add_floor_plan_ = function() {
     self.add_opening_fixtures_(openings_layer, group);
   });
 
-  this.light_sources_ = [];
-  const light_sources_layer = new THREE.Group();
-  this.floor_plan_group_.add(light_sources_layer);
-  this.layers_['light_sources'] = light_sources_layer;
+  this.lights_ = [];
+  const lights_layer = new THREE.Group();
+  this.floor_plan_group_.add(lights_layer);
+  this.layers_['lights'] = lights_layer;
   floor_plan.data.groups.forEach(function(group) {
-    self.add_light_sources_(light_sources_layer, group);
+    self.add_lights_(lights_layer, group);
   });
 
   // Add roofs using straight skeleton

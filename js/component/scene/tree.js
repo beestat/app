@@ -250,7 +250,7 @@ beestat.component.scene.prototype.add_tree_ground_contact_ = function(tree, trun
   collar.position.z = (collar_height / 2) - (Math.max(0.2, base_radius * 0.08));
   collar.rotation.z = Math.random() * Math.PI * 2;
   collar.castShadow = true;
-  collar.receiveShadow = false;
+  collar.receiveShadow = true;
   collar.userData.is_environment = true;
   tree.add(collar);
 

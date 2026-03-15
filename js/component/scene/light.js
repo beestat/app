@@ -484,7 +484,7 @@ beestat.component.scene.prototype.update_celestial_lights_ = function(date, lati
   } else if (normalized_sun_brightness <= user_light_on_brightness_threshold) {
     this.user_lights_on_ = true;
   }
-  this.target_light_source_intensity_multiplier_ = this.user_lights_on_ === true ? 1 : 0;
+  this.target_light_intensity_multiplier_ = this.user_lights_on_ === true ? 1 : 0;
 
   // Moon
   const moon_pos = SunCalc.getMoonPosition(js_date, latitude, longitude);
@@ -550,9 +550,9 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   if (this.target_moon_intensity_ === undefined) {
     this.target_moon_intensity_ = 0;
   }
-  if (this.target_light_source_intensity_multiplier_ === undefined) {
+  if (this.target_light_intensity_multiplier_ === undefined) {
     const hour = this.date_ !== undefined ? Number(this.date_.format('H')) : 12;
-    this.target_light_source_intensity_multiplier_ = (hour >= 19 || hour <= 5) ? 1 : 0;
+    this.target_light_intensity_multiplier_ = (hour >= 19 || hour <= 5) ? 1 : 0;
   }
   if (this.target_sun_light_color_ === undefined) {
     this.target_sun_light_color_ = new THREE.Color(0xffffdd);
@@ -575,10 +575,10 @@ beestat.component.scene.prototype.update_celestial_light_intensities_ = function
   const color_lerp_factor = 0.08;
   this.sun_light_.color.lerp(this.target_sun_light_color_, color_lerp_factor);
 
-  if (Array.isArray(this.light_sources_) === true) {
-    this.light_sources_.forEach((light) => {
+  if (Array.isArray(this.lights_) === true) {
+    this.lights_.forEach((light) => {
       const base_intensity = Number(light.userData.base_intensity || 0);
-      const target_intensity = base_intensity * this.target_light_source_intensity_multiplier_;
+      const target_intensity = base_intensity * this.target_light_intensity_multiplier_;
       light.intensity += (target_intensity - light.intensity) * lerp_factor;
     });
   }
@@ -702,44 +702,44 @@ beestat.component.scene.prototype.get_light_color_from_temperature_ = function(t
 
 
 /**
- * Add floor-plan light sources.
+ * Add floor-plan Lights.
  *
- * @param {THREE.Group} layer The layer to add light sources to.
+ * @param {THREE.Group} layer The layer to add Lights to.
  * @param {object} group The floor plan group.
  */
-beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
+beestat.component.scene.prototype.add_lights_ = function(layer, group) {
   if (this.get_scene_setting_('light_user_enabled') !== true) {
     return;
   }
 
-  if (Array.isArray(group.light_sources) !== true || group.light_sources.length === 0) {
+  if (Array.isArray(group.lights) !== true || group.lights.length === 0) {
     return;
   }
-  if (Array.isArray(this.light_sources_) !== true) {
-    this.light_sources_ = [];
+  if (Array.isArray(this.lights_) !== true) {
+    this.lights_ = [];
   }
 
   const group_elevation = Number(group.elevation || 0);
   const floor_thickness = Number(beestat.component.scene.room_floor_thickness || 0);
   const user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
 
-  group.light_sources.forEach(function(light_source) {
-    const x = Number(light_source.x || 0);
-    const y = Number(light_source.y || 0);
-    const elevation = Number(light_source.elevation !== undefined ? light_source.elevation : 72);
+  group.lights.forEach(function(light_data) {
+    const x = Number(light_data.x || 0);
+    const y = Number(light_data.y || 0);
+    const elevation = Number(light_data.elevation !== undefined ? light_data.elevation : 72);
     const z = -group_elevation - floor_thickness - elevation;
     let intensity_level = 2;
-    if (light_source.intensity === 'dim') {
+    if (light_data.intensity === 'dim') {
       intensity_level = 1;
-    } else if (light_source.intensity === 'bright') {
+    } else if (light_data.intensity === 'bright') {
       intensity_level = 3;
     }
     const light_intensity = 0.9 * intensity_level;
-    const light_color = this.get_light_color_from_temperature_(light_source.temperature_k);
+    const light_color = this.get_light_color_from_temperature_(light_data.temperature_k);
 
     const light = new THREE.PointLight(light_color, light_intensity, 240, 2);
     light.userData.base_intensity = light_intensity;
-    light.intensity = light_intensity * Number(this.target_light_source_intensity_multiplier_ || 0);
+    light.intensity = light_intensity * Number(this.target_light_intensity_multiplier_ || 0);
     light.position.set(x, y, z);
     light.castShadow = user_light_cast_shadows;
     if (user_light_cast_shadows === true) {
@@ -751,9 +751,9 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
       light.shadow.camera.near = 1;
       light.shadow.camera.far = 240;
     }
-    light.userData.is_light_source = true;
+    light.userData.is_light = true;
     layer.add(light);
-    this.light_sources_.push(light);
+    this.lights_.push(light);
   }, this);
 };
 
@@ -762,12 +762,12 @@ beestat.component.scene.prototype.add_light_sources_ = function(layer, group) {
  * Apply the current user-light shadow setting to existing user lights.
  */
 beestat.component.scene.prototype.update_user_light_shadow_settings_ = function() {
-  if (Array.isArray(this.light_sources_) !== true) {
+  if (Array.isArray(this.lights_) !== true) {
     return;
   }
 
   const user_light_cast_shadows = this.get_scene_setting_('light_user_cast_shadows') === true;
-  this.light_sources_.forEach(function(light) {
+  this.lights_.forEach(function(light) {
     if (light === undefined || light === null || light.isPointLight !== true) {
       return;
     }

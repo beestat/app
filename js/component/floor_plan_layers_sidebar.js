@@ -96,7 +96,7 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       sidebar_state.collapsed_types[group.group_id + '.trees'] = true;
       sidebar_state.collapsed_types[group.group_id + '.surfaces'] = true;
       sidebar_state.collapsed_types[group.group_id + '.openings'] = true;
-      sidebar_state.collapsed_types[group.group_id + '.light_sources'] = true;
+      sidebar_state.collapsed_types[group.group_id + '.lights'] = true;
       sidebar_state.collapsed_types[group.group_id + '.rooms'] = true;
     });
     sidebar_state.initialized_collapsed = true;
@@ -115,8 +115,8 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
     if (sidebar_state.collapsed_types[group.group_id + '.openings'] === undefined) {
       sidebar_state.collapsed_types[group.group_id + '.openings'] = true;
     }
-    if (sidebar_state.collapsed_types[group.group_id + '.light_sources'] === undefined) {
-      sidebar_state.collapsed_types[group.group_id + '.light_sources'] = true;
+    if (sidebar_state.collapsed_types[group.group_id + '.lights'] === undefined) {
+      sidebar_state.collapsed_types[group.group_id + '.lights'] = true;
     }
     if (sidebar_state.collapsed_types[group.group_id + '.rooms'] === undefined) {
       sidebar_state.collapsed_types[group.group_id + '.rooms'] = true;
@@ -128,11 +128,11 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       self.state_.active_group.group_id === group.group_id
     );
     const group_objects = []
-      .concat(group.trees || [])
       .concat(group.surfaces || [])
+      .concat(group.rooms || [])
+      .concat(group.trees || [])
       .concat(group.openings || [])
-      .concat(group.light_sources || [])
-      .concat(group.rooms || []);
+      .concat(group.lights || []);
     const has_group_objects = group_objects.length > 0;
     const group_all_hidden = has_group_objects === true && group_objects.every(function(object) {
       return object.editor_hidden === true;
@@ -216,20 +216,20 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       if (self.on_toggle_group_visibility_ !== undefined) {
         self.on_toggle_group_visibility_(group, group_all_hidden === true);
       } else if (self.on_toggle_layer_visibility_ !== undefined) {
-        if ((group.trees || []).length > 0) {
-          self.on_toggle_layer_visibility_(group, 'trees', group_all_hidden === true);
-        }
         if ((group.surfaces || []).length > 0) {
           self.on_toggle_layer_visibility_(group, 'surfaces', group_all_hidden === true);
+        }
+        if ((group.rooms || []).length > 0) {
+          self.on_toggle_layer_visibility_(group, 'rooms', group_all_hidden === true);
+        }
+        if ((group.trees || []).length > 0) {
+          self.on_toggle_layer_visibility_(group, 'trees', group_all_hidden === true);
         }
         if ((group.openings || []).length > 0) {
           self.on_toggle_layer_visibility_(group, 'openings', group_all_hidden === true);
         }
-        if ((group.light_sources || []).length > 0) {
-          self.on_toggle_layer_visibility_(group, 'light_sources', group_all_hidden === true);
-        }
-        if ((group.rooms || []).length > 0) {
-          self.on_toggle_layer_visibility_(group, 'rooms', group_all_hidden === true);
+        if ((group.lights || []).length > 0) {
+          self.on_toggle_layer_visibility_(group, 'lights', group_all_hidden === true);
         }
       }
     });
@@ -256,20 +256,20 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       if (self.on_toggle_group_lock_ !== undefined) {
         self.on_toggle_group_lock_(group, !group_all_locked);
       } else if (self.on_toggle_layer_lock_ !== undefined) {
-        if ((group.trees || []).length > 0) {
-          self.on_toggle_layer_lock_(group, 'trees', !group_all_locked);
-        }
         if ((group.surfaces || []).length > 0) {
           self.on_toggle_layer_lock_(group, 'surfaces', !group_all_locked);
+        }
+        if ((group.rooms || []).length > 0) {
+          self.on_toggle_layer_lock_(group, 'rooms', !group_all_locked);
+        }
+        if ((group.trees || []).length > 0) {
+          self.on_toggle_layer_lock_(group, 'trees', !group_all_locked);
         }
         if ((group.openings || []).length > 0) {
           self.on_toggle_layer_lock_(group, 'openings', !group_all_locked);
         }
-        if ((group.light_sources || []).length > 0) {
-          self.on_toggle_layer_lock_(group, 'light_sources', !group_all_locked);
-        }
-        if ((group.rooms || []).length > 0) {
-          self.on_toggle_layer_lock_(group, 'rooms', !group_all_locked);
+        if ((group.lights || []).length > 0) {
+          self.on_toggle_layer_lock_(group, 'lights', !group_all_locked);
         }
       }
     });
@@ -308,17 +308,8 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       scroll_to_row = self.decorate_group_type_(
         group_panel,
         group,
-        'trees',
-        'Tree',
-        font_size_small,
-        scroll_to,
-        scroll_to_row
-      );
-      scroll_to_row = self.decorate_group_type_(
-        group_panel,
-        group,
-        'surfaces',
-        'Surface',
+        'lights',
+        'Light',
         font_size_small,
         scroll_to,
         scroll_to_row
@@ -335,8 +326,8 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
       scroll_to_row = self.decorate_group_type_(
         group_panel,
         group,
-        'light_sources',
-        'Light Source',
+        'trees',
+        'Tree',
         font_size_small,
         scroll_to,
         scroll_to_row
@@ -346,6 +337,15 @@ beestat.component.floor_plan_layers_sidebar.prototype.decorate_ = function(paren
         group,
         'rooms',
         'Room',
+        font_size_small,
+        scroll_to,
+        scroll_to_row
+      );
+      scroll_to_row = self.decorate_group_type_(
+        group_panel,
+        group,
+        'surfaces',
+        'Surface',
         font_size_small,
         scroll_to,
         scroll_to_row
@@ -1011,7 +1011,7 @@ beestat.component.floor_plan_layers_sidebar.prototype.get_type_icon_ = function(
   if (type === 'openings') {
     return 'window_closed_variant';
   }
-  if (type === 'light_sources') {
+  if (type === 'lights') {
     return 'lightbulb_on';
   }
   return 'view_quilt';
@@ -1062,8 +1062,8 @@ beestat.component.floor_plan_layers_sidebar.prototype.get_object_id_ = function(
   if (type === 'openings') {
     return object.opening_id;
   }
-  if (type === 'light_sources') {
-    return object.light_source_id;
+  if (type === 'lights') {
+    return object.light_id;
   }
   return object.tree_id;
 };
@@ -1140,9 +1140,9 @@ beestat.component.floor_plan_layers_sidebar.prototype.is_active_row_ = function(
     return true;
   }
   if (
-    type === 'light_sources' &&
-    this.state_.active_light_source_entity !== undefined &&
-    this.state_.active_light_source_entity.get_light_source().light_source_id === object_id
+    type === 'lights' &&
+    this.state_.active_light_entity !== undefined &&
+    this.state_.active_light_entity.get_light().light_id === object_id
   ) {
     return true;
   }

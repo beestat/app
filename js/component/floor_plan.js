@@ -132,7 +132,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
           self.state_.active_surface_entity !== undefined ||
           self.state_.active_tree_entity !== undefined ||
           self.state_.active_opening_entity !== undefined ||
-          self.state_.active_light_source_entity !== undefined
+          self.state_.active_light_entity !== undefined
         ) {
           self.clear_room_();
         }
@@ -160,7 +160,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         }
       } else if (e.key.toLowerCase() === 'l') {
         if (e.ctrlKey === false && self.has_early_access_() === true) {
-          self.add_light_source_();
+          self.add_light_();
         }
       } else if (e.key.toLowerCase() === 's') {
         self.toggle_snapping_();
@@ -205,11 +205,11 @@ beestat.component.floor_plan.prototype.render = function(parent) {
       } else if (
         e.key.toLowerCase() === 'c' &&
         e.ctrlKey === true &&
-        self.state_.active_light_source_entity !== undefined
+        self.state_.active_light_entity !== undefined
       ) {
         self.state_.copied_object = {
-          'type': 'light_source',
-          'data': beestat.clone(self.state_.active_light_source_entity.get_light_source())
+          'type': 'light',
+          'data': beestat.clone(self.state_.active_light_entity.get_light())
         };
       } else if (
         e.key.toLowerCase() === 'v' &&
@@ -245,9 +245,9 @@ beestat.component.floor_plan.prototype.render = function(parent) {
         e.key.toLowerCase() === 'v' &&
         e.ctrlKey === true &&
         self.state_.copied_object !== undefined &&
-        self.state_.copied_object.type === 'light_source'
+        self.state_.copied_object.type === 'light'
       ) {
-        self.add_light_source_(self.state_.copied_object.data);
+        self.add_light_(self.state_.copied_object.data);
       } else if (
         e.key.toLowerCase() === 'z' &&
         e.ctrlKey === true
@@ -268,7 +268,7 @@ beestat.component.floor_plan.prototype.render = function(parent) {
           self.state_.active_point_entity ||
           self.state_.active_wall_entity ||
           self.state_.active_opening_entity ||
-          self.state_.active_light_source_entity ||
+          self.state_.active_light_entity ||
           self.state_.active_surface_entity ||
           self.state_.active_room_entity ||
           self.state_.active_tree_entity;
@@ -614,15 +614,15 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
         .set_text_color(beestat.style.color.bluegray.dark);
     }
 
-    // Add light source
+    // Add Light
     this.tile_group_.add_tile(new beestat.component.tile()
       .set_icon('lightbulb_on')
-      .set_title('Add Light Source [L]')
+      .set_title('Add Light [L]')
       .set_text_color(beestat.style.color.gray.light)
       .set_background_color(beestat.style.color.bluegray.base)
       .set_background_hover_color(beestat.style.color.bluegray.light)
       .addEventListener('click', function() {
-        self.add_light_source_();
+        self.add_light_();
       })
     );
   }
@@ -639,7 +639,7 @@ beestat.component.floor_plan.prototype.update_toolbar = function() {
     this.state_.active_opening_entity !== undefined ||
     this.state_.active_surface_entity !== undefined ||
     this.state_.active_tree_entity !== undefined ||
-    this.state_.active_light_source_entity !== undefined
+    this.state_.active_light_entity !== undefined
   ) {
     remove_button
       .set_background_hover_color(beestat.style.color.bluegray.light)
@@ -891,8 +891,8 @@ beestat.component.floor_plan.prototype.update_infobox = function() {
         'round': 0
       }) + ' w'
     );
-  } else if (this.state_.active_light_source_entity !== undefined) {
-    parts.push('Light Source');
+  } else if (this.state_.active_light_entity !== undefined) {
+    parts.push('Light');
   } else {
     parts.push(this.state_.active_group.name || 'Unnamed Floor');
     parts.push(
@@ -1112,8 +1112,8 @@ beestat.component.floor_plan.prototype.remove_room_ = function() {
  * Remove the currently active selectable entity (surface, room, opening, or tree).
  */
 beestat.component.floor_plan.prototype.remove_active_entity_ = function() {
-  if (this.state_.active_light_source_entity !== undefined) {
-    this.remove_light_source_();
+  if (this.state_.active_light_entity !== undefined) {
+    this.remove_light_();
     return;
   }
 
@@ -1167,8 +1167,8 @@ beestat.component.floor_plan.prototype.set_active_group = function(group) {
   if (this.state_.active_opening_entity !== undefined) {
     this.state_.active_opening_entity.set_active(false);
   }
-  if (this.state_.active_light_source_entity !== undefined) {
-    this.state_.active_light_source_entity.set_active(false);
+  if (this.state_.active_light_entity !== undefined) {
+    this.state_.active_light_entity.set_active(false);
   }
 
   this.state_.active_group = group;
@@ -1336,71 +1336,71 @@ beestat.component.floor_plan.prototype.remove_opening_ = function() {
 };
 
 /**
- * Add a new light source to the active floor.
+ * Add a new Light to the active floor.
  *
- * @param {object} light_source Optional light source to copy from.
+ * @param {object} light Optional Light to copy from.
  */
-beestat.component.floor_plan.prototype.add_light_source_ = function(light_source) {
+beestat.component.floor_plan.prototype.add_light_ = function(light) {
   if (this.has_early_access_() !== true) {
     return;
   }
 
   this.save_buffer();
 
-  if (this.state_.active_group.light_sources === undefined) {
-    this.state_.active_group.light_sources = [];
+  if (this.state_.active_group.lights === undefined) {
+    this.state_.active_group.lights = [];
   }
 
   const svg_view_box = this.view_box_;
-  const new_light_source = {
-    'light_source_id': window.crypto.randomUUID(),
-    'x': Number((light_source || {}).x || (svg_view_box.x + (svg_view_box.width / 2))),
-    'y': Number((light_source || {}).y || (svg_view_box.y + (svg_view_box.height / 2))),
-    'elevation': Number((light_source || {}).elevation !== undefined ? light_source.elevation : 72),
-    'intensity': ['dim', 'normal', 'bright'].includes((light_source || {}).intensity)
-      ? light_source.intensity
+  const new_light = {
+    'light_id': window.crypto.randomUUID(),
+    'x': Number((light || {}).x || (svg_view_box.x + (svg_view_box.width / 2))),
+    'y': Number((light || {}).y || (svg_view_box.y + (svg_view_box.height / 2))),
+    'elevation': Number((light || {}).elevation !== undefined ? light.elevation : 72),
+    'intensity': ['dim', 'normal', 'bright'].includes((light || {}).intensity)
+      ? light.intensity
       : 'normal',
-    'temperature_k': Math.max(1000, Math.min(12000, Math.round(Number((light_source || {}).temperature_k || 4000)))),
-    'name': (light_source || {}).name,
+    'temperature_k': Math.max(1000, Math.min(12000, Math.round(Number((light || {}).temperature_k || 4000)))),
+    'name': (light || {}).name,
     'editor_hidden': false,
     'editor_locked': false
   };
 
-  this.state_.active_group.light_sources.unshift(new_light_source);
-  new beestat.component.floor_plan_entity.light_source(this, this.state_)
-    .set_light_source(new_light_source)
+  this.state_.active_group.lights.unshift(new_light);
+  new beestat.component.floor_plan_entity.light(this, this.state_)
+    .set_light(new_light)
     .set_group(this.state_.active_group)
     .set_active(true);
 
-  this.dispatchEvent('add_light_source');
+  this.dispatchEvent('add_light');
 };
 
 /**
- * Remove the currently active light source.
+ * Remove the currently active Light.
  */
-beestat.component.floor_plan.prototype.remove_light_source_ = function() {
+beestat.component.floor_plan.prototype.remove_light_ = function() {
   this.save_buffer();
 
   if (
-    this.state_.active_light_source_entity === undefined ||
-    this.state_.active_group.light_sources === undefined
+    this.state_.active_light_entity === undefined ||
+    this.state_.active_group.lights === undefined
   ) {
     return;
   }
 
   const self = this;
-  const index = this.state_.active_group.light_sources.findIndex(function(light_source) {
-    return light_source === self.state_.active_light_source_entity.get_light_source();
+  const index = this.state_.active_group.lights.findIndex(function(light) {
+    return light === self.state_.active_light_entity.get_light();
   });
 
   if (index === -1) {
     return;
   }
 
-  this.state_.active_light_source_entity.set_active(false);
-  this.state_.active_group.light_sources.splice(index, 1);
+  this.state_.active_light_entity.set_active(false);
+  this.state_.active_group.lights.splice(index, 1);
 
-  this.dispatchEvent('remove_light_source');
+  this.dispatchEvent('remove_light');
 };
 
 /**
@@ -1514,8 +1514,8 @@ beestat.component.floor_plan.prototype.clear_room_ = function() {
   if (this.state_.active_opening_entity !== undefined) {
     this.state_.active_opening_entity.set_active(false);
   }
-  if (this.state_.active_light_source_entity !== undefined) {
-    this.state_.active_light_source_entity.set_active(false);
+  if (this.state_.active_light_entity !== undefined) {
+    this.state_.active_light_entity.set_active(false);
   }
 };
 
@@ -1780,7 +1780,7 @@ beestat.component.floor_plan.prototype.save_buffer = function(clear = true) {
     'active_surface_entity': this.state_.active_surface_entity,
     'active_tree_entity': this.state_.active_tree_entity,
     'active_opening_entity': this.state_.active_opening_entity,
-    'active_light_source_entity': this.state_.active_light_source_entity,
+    'active_light_entity': this.state_.active_light_entity,
     'active_group_id': this.state_.active_group.group_id
   });
 
@@ -1832,8 +1832,8 @@ beestat.component.floor_plan.prototype.undo_ = function() {
       this.state_.buffer[this.state_.buffer_pointer].active_tree_entity;
     this.state_.active_opening_entity =
       this.state_.buffer[this.state_.buffer_pointer].active_opening_entity;
-    this.state_.active_light_source_entity =
-      this.state_.buffer[this.state_.buffer_pointer].active_light_source_entity;
+    this.state_.active_light_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_light_entity;
 
     // Restore any active group.
     this.state_.active_group_id =
@@ -1885,8 +1885,8 @@ beestat.component.floor_plan.prototype.redo_ = function() {
       this.state_.buffer[this.state_.buffer_pointer].active_tree_entity;
     this.state_.active_opening_entity =
       this.state_.buffer[this.state_.buffer_pointer].active_opening_entity;
-    this.state_.active_light_source_entity =
-      this.state_.buffer[this.state_.buffer_pointer].active_light_source_entity;
+    this.state_.active_light_entity =
+      this.state_.buffer[this.state_.buffer_pointer].active_light_entity;
 
     // Restore any active group.
     this.state_.active_group_id =

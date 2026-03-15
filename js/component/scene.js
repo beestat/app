@@ -491,7 +491,7 @@ beestat.component.scene.prototype.dispose_object3d_resources_ = function(root) {
 beestat.component.scene.prototype.reset_runtime_scene_references_for_rerender_ = function() {
   this.meshes_ = {};
   this.layers_ = {};
-  this.light_sources_ = [];
+  this.lights_ = [];
   this.tree_foliage_meshes_ = [];
   this.tree_branch_groups_ = [];
   this.tree_wind_meshes_ = [];
@@ -1413,17 +1413,17 @@ beestat.component.scene.prototype.dispose = function() {
   if (this.window_pane_material_ !== undefined) {
     this.window_pane_material_.dispose();
   }
-  if (this.light_source_marker_material_ !== undefined) {
-    this.light_source_marker_material_.dispose();
+  if (this.light_marker_material_ !== undefined) {
+    this.light_marker_material_.dispose();
   }
-  if (this.light_source_glow_material_ !== undefined) {
-    this.light_source_glow_material_.dispose();
+  if (this.light_glow_material_ !== undefined) {
+    this.light_glow_material_.dispose();
   }
-  if (this.light_source_marker_geometry_ !== undefined) {
-    this.light_source_marker_geometry_.dispose();
+  if (this.light_marker_geometry_ !== undefined) {
+    this.light_marker_geometry_.dispose();
   }
-  if (this.light_source_glow_geometry_ !== undefined) {
-    this.light_source_glow_geometry_.dispose();
+  if (this.light_glow_geometry_ !== undefined) {
+    this.light_glow_geometry_.dispose();
   }
   if (this.raycaster_document_mousemove_handler_ !== undefined) {
     document.removeEventListener('mousemove', this.raycaster_document_mousemove_handler_);
