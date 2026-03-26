@@ -8,6 +8,7 @@ beestat.component.card.comparison_settings = function(thermostat_id) {
   var self = this;
 
   this.thermostat_id_ = thermostat_id;
+  this.get_data_in_flight_ = false;
 
   /*
    * If the thermostat changes that means the property_type could change and
@@ -91,28 +92,33 @@ beestat.component.card.comparison_settings.prototype.decorate_contents_ = functi
   } else {
     if (thermostat.profile === null) {
       this.show_loading_('Fetching');
-      new beestat.api()
-        .add_call(
-          'thermostat',
-          'generate_profile',
-          {
-            'thermostat_id': this.thermostat_id_
-          }
-        )
-        .add_call(
-          'thermostat',
-          'read_id',
-          {
-            'attributes': {
-              'inactive': 0
+      if (this.get_data_in_flight_ === false) {
+        this.get_data_in_flight_ = true;
+
+        new beestat.api()
+          .add_call(
+            'thermostat',
+            'generate_profile',
+            {
+              'thermostat_id': this.thermostat_id_
             }
-          },
-          'thermostat'
-        )
-        .set_callback(function(response) {
-          beestat.cache.set('thermostat', response.thermostat);
-        })
-        .send();
+          )
+          .add_call(
+            'thermostat',
+            'read_id',
+            {
+              'attributes': {
+                'inactive': 0
+              }
+            },
+            'thermostat'
+          )
+          .set_callback(function(response) {
+            this.get_data_in_flight_ = false;
+            beestat.cache.set('thermostat', response.thermostat);
+          }.bind(this))
+          .send();
+      }
     } else if (beestat.cache.data.metrics === undefined) {
       this.show_loading_('Fetching');
       new beestat.api()

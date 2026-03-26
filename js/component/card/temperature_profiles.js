@@ -6,6 +6,7 @@
  */
 beestat.component.card.temperature_profiles = function(thermostat_id) {
   this.thermostat_id_ = thermostat_id;
+  this.get_data_in_flight_ = false;
 
   var self = this;
 
@@ -190,28 +191,34 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
     )
   ) {
     this.show_loading_('Fetching');
-    new beestat.api()
-      .add_call(
-        'thermostat',
-        'generate_profile',
-        {
-          'thermostat_id': this.thermostat_id_
-        }
-      )
-      .add_call(
-        'thermostat',
-        'read_id',
-        {
-          'attributes': {
-            'inactive': 0
+
+    if (this.get_data_in_flight_ === false) {
+      this.get_data_in_flight_ = true;
+
+      new beestat.api()
+        .add_call(
+          'thermostat',
+          'generate_profile',
+          {
+            'thermostat_id': this.thermostat_id_
           }
-        },
-        'thermostat'
-      )
-      .set_callback(function(response) {
-        beestat.cache.set('thermostat', response.thermostat);
-      })
-      .send();
+        )
+        .add_call(
+          'thermostat',
+          'read_id',
+          {
+            'attributes': {
+              'inactive': 0
+            }
+          },
+          'thermostat'
+        )
+        .set_callback(function(response) {
+          this.get_data_in_flight_ = false;
+          beestat.cache.set('thermostat', response.thermostat);
+        }.bind(this))
+        .send();
+    }
   } else if (selected_profile !== null) {
     const profile_extremes = this.get_profile_extremes_(5);
 
