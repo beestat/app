@@ -84,7 +84,7 @@ class ecobee_token extends cora\crud {
   public function get_ecobee_account_id($ecobee_token) {
     $parts = explode('.', $ecobee_token['access_token']);
     if(count($parts) !== 3) {
-      return null;
+      throw new cora\exception('Could not get ecobee account id from token.', 10003);
     }
 
     $payload = $parts[1];
@@ -93,30 +93,30 @@ class ecobee_token extends cora\crud {
     $json = base64_decode($payload);
 
     if($json === false) {
-      return null;
+      throw new cora\exception('Could not get ecobee account id from token.', 10003);
     }
 
     $object = json_decode($json, true);
     if($object === null) {
-      return null;
+      throw new cora\exception('Could not get ecobee account id from token.', 10003);
     }
 
-    if(isset($object['sub']) === false) {
-      return null;
+    if(isset($object['sub']) === true) {
+      $sub_parts = explode('|', $object['sub']);
+      if(count($sub_parts) === 2 && strlen($sub_parts[1]) === 36) {
+        return $sub_parts[1];
+      }
     }
 
-    $sub_parts = explode('|', $object['sub']);
-    if(count($sub_parts) !== 2) {
-      return null;
+    $ecobee_account_id_claim = 'https://claims.ecobee.com/ecobee_account_id';
+    if(
+      isset($object[$ecobee_account_id_claim]) === true &&
+      strlen($object[$ecobee_account_id_claim]) === 36
+    ) {
+      return $object[$ecobee_account_id_claim];
     }
 
-    $ecobee_account_id = $sub_parts[1];
-
-    if(strlen($ecobee_account_id) !== 36) {
-      return null;
-    }
-
-    return $ecobee_account_id;
+    throw new cora\exception('Could not get ecobee account id from token.', 10003);
   }
 
   /**
