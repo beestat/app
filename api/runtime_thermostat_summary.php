@@ -65,10 +65,21 @@ class runtime_thermostat_summary extends cora\crud {
       // zones.
       if(isset($attributes['date']) === true) {
         if(is_array($attributes['date']) === true) {
-          $attributes['date']['value'] = date(
-            'Y-m-d',
-            strtotime($attributes['date']['value'], $base)
-          );
+          if(is_array($attributes['date']['value']) === true) {
+            $attributes['date']['value'][0] = date(
+              'Y-m-d',
+              strtotime($attributes['date']['value'][0], $base)
+            );
+            $attributes['date']['value'][1] = date(
+              'Y-m-d',
+              strtotime($attributes['date']['value'][1], $base)
+            );
+          } else {
+            $attributes['date']['value'] = date(
+              'Y-m-d',
+              strtotime($attributes['date']['value'], $base)
+            );
+          }
         } else {
           $attributes['date'] = date(
             'Y-m-d',
