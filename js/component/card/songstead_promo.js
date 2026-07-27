@@ -132,13 +132,42 @@ beestat.component.card.songstead_promo.prototype.decorate_top_right_ = function(
 };
 
 /**
- * Percent of users (0-100) this card is rolled out to. User membership is
- * deterministic based on user_id, so bump this over time to ramp up the
- * rollout without reshuffling who already has the card.
+ * Date the rollout began at 1%.
+ *
+ * @type {string}
+ */
+beestat.component.card.songstead_promo.rollout_start_date = '2026-07-24';
+
+/**
+ * Maximum percent of users (0-100) this card will ever be rolled out to.
  *
  * @type {number}
  */
-beestat.component.card.songstead_promo.rollout_percent = 1;
+beestat.component.card.songstead_promo.rollout_percent_max = 10;
+
+/**
+ * Get the current percent of users (0-100) this card is rolled out to.
+ * Starts at 1% on rollout_start_date and grows by 1% every two days,
+ * capping at rollout_percent_max. User membership is deterministic based
+ * on user_id, so this ramps up the rollout over time without reshuffling
+ * who already has the card.
+ *
+ * @return {number} The current rollout percent.
+ */
+beestat.component.card.songstead_promo.get_rollout_percent = function() {
+  var days_elapsed = moment().utc()
+    .diff(
+      moment.utc(beestat.component.card.songstead_promo.rollout_start_date),
+      'days'
+    );
+
+  var rollout_percent = 1 + Math.floor(Math.max(days_elapsed, 0) / 2);
+
+  return Math.min(
+    rollout_percent,
+    beestat.component.card.songstead_promo.rollout_percent_max
+  );
+};
 
 /**
  * Determine whether or not this card should be shown. Shows for a
@@ -156,5 +185,5 @@ beestat.component.card.songstead_promo.should_show = function() {
 
   var user_id = beestat.user.get().user_id;
 
-  return (user_id % 100) < beestat.component.card.songstead_promo.rollout_percent;
+  return (user_id % 100) < beestat.component.card.songstead_promo.get_rollout_percent();
 };
