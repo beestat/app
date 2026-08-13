@@ -47,6 +47,13 @@ class runtime_thermostat_summary extends cora\crud {
     $runtime_thermostat_summaries = [];
     foreach($thermostat_ids as $thermostat_id) {
       $thermostat = $thermostats[$thermostat_id];
+
+      // A thermostat that has never successfully synced has no time zone and
+      // therefore no summary data.
+      if($thermostat['time_zone'] === null) {
+        continue;
+      }
+
       $attributes['thermostat_id'] = $thermostat_id;
 
       // Get a base time for relative calculations

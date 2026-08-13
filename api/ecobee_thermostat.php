@@ -137,7 +137,8 @@ class ecobee_thermostat extends cora\crud {
       'read',
       [
         'attributes' => [
-          'model_number' => null
+          'model_number' => null,
+          'inactive' => 0
         ]
       ]
     );
