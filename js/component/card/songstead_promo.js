@@ -132,46 +132,87 @@ beestat.component.card.songstead_promo.prototype.decorate_top_right_ = function(
 };
 
 /**
- * Date the rollout began at 1%.
+ * Date the rollout begins at 0%.
  *
  * @type {string}
  */
-beestat.component.card.songstead_promo.rollout_start_date = '2026-07-24';
+beestat.component.card.songstead_promo.rollout_start_date = '2026-08-27';
 
 /**
- * Maximum percent of users (0-100) this card will ever be rolled out to.
+ * Date the rollout reaches 100% of eligible users.
+ *
+ * @type {string}
+ */
+beestat.component.card.songstead_promo.rollout_end_date = '2026-09-04';
+
+/**
+ * Minimum number of days a user must have been using beestat before they're
+ * eligible to see this card. Brand new users are still figuring beestat out;
+ * don't hit them with a promo for something else on day one.
  *
  * @type {number}
  */
-beestat.component.card.songstead_promo.rollout_percent_max = 10;
+beestat.component.card.songstead_promo.minimum_user_age_days = 7;
 
 /**
- * Get the current percent of users (0-100) this card is rolled out to.
- * Starts at 1% on rollout_start_date and grows by 1% every two days,
- * capping at rollout_percent_max. User membership is deterministic based
- * on user_id, so this ramps up the rollout over time without reshuffling
- * who already has the card.
+ * Get the current percent of eligible users (0-100) this card is rolled out
+ * to. Ramps linearly from 0% on rollout_start_date to 100% on
+ * rollout_end_date. User membership is deterministic based on user_id, so
+ * this ramps up the rollout over time without reshuffling who already has
+ * the card.
  *
  * @return {number} The current rollout percent.
  */
 beestat.component.card.songstead_promo.get_rollout_percent = function() {
+  var start = moment.utc(
+    beestat.component.card.songstead_promo.rollout_start_date
+  );
+  var end = moment.utc(
+    beestat.component.card.songstead_promo.rollout_end_date
+  );
+
+  var days_total = end.diff(start, 'days');
   var days_elapsed = moment().utc()
-    .diff(
-      moment.utc(beestat.component.card.songstead_promo.rollout_start_date),
-      'days'
-    );
+    .diff(start, 'days');
 
-  var rollout_percent = 1 + Math.floor(Math.max(days_elapsed, 0) / 2);
+  if (days_elapsed <= 0 || days_total <= 0) {
+    return 0;
+  }
 
-  return Math.min(
-    rollout_percent,
-    beestat.component.card.songstead_promo.rollout_percent_max
+  if (days_elapsed >= days_total) {
+    return 100;
+  }
+
+  return Math.round(100 * (days_elapsed / days_total));
+};
+
+/**
+ * Determine whether or not the current user has been using beestat long
+ * enough to be eligible for this card. Users created before the created_at
+ * column existed have no date; those accounts are ancient so they qualify.
+ *
+ * @return {boolean} Whether or not the user is old enough.
+ */
+beestat.component.card.songstead_promo.user_is_old_enough = function() {
+  var created_at = beestat.user.get().created_at;
+
+  if (created_at === null || created_at === undefined) {
+    return true;
+  }
+
+  return moment.utc(created_at).isSameOrBefore(
+    moment().utc()
+      .subtract(
+        beestat.component.card.songstead_promo.minimum_user_age_days,
+        'days'
+      )
   );
 };
 
 /**
  * Determine whether or not this card should be shown. Shows for a
- * deterministic rollout_percent of users and never again once dismissed.
+ * deterministic rollout_percent of users who have been using beestat for at
+ * least minimum_user_age_days, and never again once dismissed.
  *
  * @return {boolean} Whether or not to show the card.
  */
@@ -185,5 +226,6 @@ beestat.component.card.songstead_promo.should_show = function() {
 
   var user_id = beestat.user.get().user_id;
 
-  return (user_id % 100) < beestat.component.card.songstead_promo.get_rollout_percent();
+  return (user_id % 100) < beestat.component.card.songstead_promo.get_rollout_percent() &&
+    beestat.component.card.songstead_promo.user_is_old_enough() === true;
 };
