@@ -78,6 +78,8 @@ beestat.component.chart.runtime_thermostat_detail_temperature.prototype.get_opti
         'yAxis': 0,
         'type': 'line',
         'lineWidth': 1,
+        // Stepped lines overflow Highcharts' preallocated Boost buffer.
+        'boostThreshold': 0,
         'step': 'right',
         'className': 'crisp_edges'
       });
