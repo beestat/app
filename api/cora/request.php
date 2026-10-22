@@ -107,6 +107,14 @@ final class request {
   private $queued_database_actions = [];
 
   /**
+   * Total time spent processing the request, in seconds. Set in the shutdown
+   * handler.
+   *
+   * @var float
+   */
+  private $total_time;
+
+  /**
    * Save the request variables for use later on. If unset, they are defaulted
    * to null. Any of these values being null will throw an exception as soon
    * as you try to process the request. The reason that doesn't happen here is

@@ -35,6 +35,20 @@ class external_api extends cora\api {
   protected static $cache_for = null;
 
   /**
+   * The timestamp when the request was sent.
+   *
+   * @var int
+   */
+  protected $request_timestamp;
+
+  /**
+   * The result of curl_getinfo() for the last request.
+   *
+   * @var array
+   */
+  protected $curl_info;
+
+  /**
    * Fire off a cURL request to an external API.
    *
    * @param array $arguments
@@ -120,8 +134,6 @@ class external_api extends cora\api {
       ) {
         $this->create_update_cache_entry($cache_key, $curl_response);
       }
-
-      curl_close($curl_handle);
     }
     else {
       $curl_response = $cache_entry['response'];

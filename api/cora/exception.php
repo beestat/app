@@ -14,6 +14,27 @@ namespace cora;
  * @author Jon Ziebell
  */
 final class exception extends \Exception {
+  /**
+   * Whether or not this exception should be reported to a logging service.
+   *
+   * @var bool
+   */
+  private $reportable;
+
+  /**
+   * Extra information about the error for debugging.
+   *
+   * @var mixed
+   */
+  private $extra_info;
+
+  /**
+   * Whether or not to roll back the database transaction.
+   *
+   * @var bool
+   */
+  private $rollback;
+
   public function __construct($message, $code, $reportable = true, $extra_info = null, $rollback = true) {
     $this->reportable = $reportable;
     $this->extra_info = $extra_info;

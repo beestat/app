@@ -24,6 +24,13 @@ final class session {
   private static $instance;
 
   /**
+   * The setting object.
+   *
+   * @var setting
+   */
+  private $setting;
+
+  /**
    * Constructor
    */
   private function __construct() {}

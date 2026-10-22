@@ -45,6 +45,13 @@ abstract class api {
   protected $request;
 
   /**
+   * The database table (resource with the namespace stripped).
+   *
+   * @var string
+   */
+  protected $table;
+
+  /**
    * Construct and set the variables. The namespace is stripped from the
    * resource variable. Anything that extends crud or API will use this
    * constructor. This means that there should be no arguments or every time
