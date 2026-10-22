@@ -723,7 +723,11 @@ class runtime extends cora\api {
       // Get a list of sensors indexed by code
       $sensors_by_identifier = [];
       foreach($sensors as $sensor) {
-        $sensors_by_identifier[$sensor['identifier']] = $sensor;
+        // Sensors without an identifier can't match ecobee data; skip them
+        // (null array offsets are deprecated as of PHP 8.5).
+        if($sensor['identifier'] !== null) {
+          $sensors_by_identifier[$sensor['identifier']] = $sensor;
+        }
       }
 
       $existing_rows = $this->database->read(
