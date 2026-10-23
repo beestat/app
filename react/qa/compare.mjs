@@ -17,12 +17,19 @@ const errors = [];
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 page.on('pageerror', (error) => errors.push(error.message));
 
-await page.goto(loginUrl, { waitUntil: 'networkidle' });
-await page.goto('https://dev.app.beestat.io/', { waitUntil: 'networkidle', timeout: 90_000 });
+await page.goto(loginUrl.replace(/^http:/, 'https:'), { waitUntil: 'domcontentloaded', timeout: 90_000 });
+const loginCookies = await context.cookies('https://dev.app.beestat.io');
+if (!loginCookies.some((cookie) => cookie.name === 'session_key')) {
+  const body = (await page.locator('body').innerText().catch(() => '')).slice(0, 240);
+  throw new Error(`Force login did not create a session cookie. Final page: ${page.url().replace(/api_key=[^&]+/, 'api_key=[redacted]')}; body: ${body}`);
+}
+await context.storageState({ path: 'test-results/auth-state.json' });
+await page.goto('https://dev.app.beestat.io/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+await page.waitForTimeout(3_000);
 await page.screenshot({ path: 'test-results/legacy-desktop.png', fullPage: true });
 const legacy = { title: await page.title(), text: (await page.locator('body').innerText()).slice(0, 500) };
 
-await page.goto('https://dev.app.beestat.io/react/index.php', { waitUntil: 'networkidle', timeout: 90_000 });
+await page.goto('https://dev.app.beestat.io/react/index.php', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText(/System - /).waitFor({ timeout: 30_000 });
 await page.screenshot({ path: 'test-results/react-desktop.png', fullPage: true });
 const modern = { title: await page.title(), text: (await page.locator('body').innerText()).slice(0, 500) };
@@ -36,7 +43,7 @@ const routes = [
 ];
 const routeResults = {};
 for (const [route, expected] of routes) {
-  await page.goto(`https://dev.app.beestat.io/react/index.php#/${route}`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await page.goto(`https://dev.app.beestat.io/react/index.php#/${route}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await page.getByText(expected, { exact: false }).first().waitFor({ timeout: 45_000 });
   routeResults[route] = { url: page.url(), text: (await page.locator('main, body').first().innerText()).slice(0, 240) };
   await page.screenshot({ path: `test-results/react-${route}.png`, fullPage: route !== 'visualize' });
@@ -44,7 +51,7 @@ for (const [route, expected] of routes) {
 
 const mobile = await context.newPage();
 await mobile.setViewportSize({ width: 390, height: 844 });
-await mobile.goto('https://dev.app.beestat.io/react/index.php', { waitUntil: 'networkidle', timeout: 90_000 });
+await mobile.goto('https://dev.app.beestat.io/react/index.php', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await mobile.getByText(/System - /).waitFor({ timeout: 30_000 });
 await mobile.screenshot({ path: 'test-results/react-mobile.png', fullPage: true });
 

@@ -22,7 +22,7 @@ export function SettingsPage() {
     dock: Boolean(readNested(settings, 'ui.always_dock_tooltips', false)),
     gap: Boolean(settings.runtime_thermostat_summary_gap_fill ?? true),
     scale: Boolean(settings.runtime_thermostat_summary_smart_scale ?? true),
-    temperature: String(readNested(settings, 'units.temperature', thermostat?.temperature_unit ?? 'F')).replace('°', ''),
+    temperature: String(readNested(settings, 'units.temperature', thermostat?.temperature_unit ?? '°F')).includes('C') ? '°C' : '°F',
     distance: String(readNested(settings, 'units.distance', 'ft')),
     currency: String(readNested(settings, 'units.currency', 'usd')),
     ignoreSolar: Boolean(readNested(settings, `${profileKey}.ignore_solar_gain`, false)),
@@ -32,6 +32,15 @@ export function SettingsPage() {
   const [message, setMessage] = useState('');
   const apiSession = useMemo(() => Object.values(data?.session ?? {}).find((session: any) => session.api_user_id != null) as any, [data?.session]);
   const update = async (key: string, value: unknown) => { setMessage('Saving…'); await apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } }); setMessage('Saved'); window.setTimeout(() => setMessage(''), 1800); };
+  const updateDistance = async (value: string) => {
+    setMessage('Saving…');
+    await apiBatch([
+      { resource: 'user', method: 'update_setting', alias: 'distance', arguments: { key: 'units.distance', value } },
+      { resource: 'user', method: 'update_setting', alias: 'area', arguments: { key: 'units.area', value: `${value}²` } },
+    ]);
+    setMessage('Saved');
+    window.setTimeout(() => setMessage(''), 1800);
+  };
   const updateProfileSetting = async (key: string, value: unknown) => {
     await update(key, value);
     if (!thermostat?.thermostat_id) return;
@@ -51,8 +60,8 @@ export function SettingsPage() {
       <FormControlLabel control={<Switch checked={values.dock} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, dock: value })); void update('ui.always_dock_tooltips', value); }} />} label="Always dock tooltips" />
       <Typography fontWeight={600} mt={1.5}>Units</Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} mt={1}>
-        <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>Temperature</InputLabel><Select value={values.temperature} label="Temperature" onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, temperature: value })); void update('units.temperature', value); }}><MenuItem value="F">°F</MenuItem><MenuItem value="C">°C</MenuItem></Select></FormControl>
-        <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>Distance / Area</InputLabel><Select value={values.distance} label="Distance / Area" onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, distance: value })); void update('units.distance', value); }}><MenuItem value="ft">ft / ft²</MenuItem><MenuItem value="m">m / m²</MenuItem></Select></FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>Temperature</InputLabel><Select value={values.temperature} label="Temperature" onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, temperature: value })); void update('units.temperature', value); }}><MenuItem value="°F">°F</MenuItem><MenuItem value="°C">°C</MenuItem></Select></FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>Distance / Area</InputLabel><Select value={values.distance} label="Distance / Area" onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, distance: value })); void updateDistance(value); }}><MenuItem value="ft">ft / ft²</MenuItem><MenuItem value="m">m / m²</MenuItem></Select></FormControl>
         <FormControl size="small" sx={{ minWidth: 160 }}><InputLabel>Currency</InputLabel><Select value={values.currency} label="Currency" onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, currency: value })); void update('units.currency', value); }}>{['usd', 'cad', 'aud', 'gbp'].map((value) => <MenuItem key={value} value={value}>{value.toUpperCase()}</MenuItem>)}</Select></FormControl>
       </Stack>
       <Typography fontWeight={600} mt={2}>Thermostat Summary</Typography>

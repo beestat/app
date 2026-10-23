@@ -1,6 +1,10 @@
-import { Alert, Box, Button, ButtonGroup, Chip, CircularProgress, Grid, Stack, Typography } from '@mui/material';
+import {
+  Alert, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions,
+  DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
+  MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+} from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, Clock3, Flame, Home, Layers, MapPin, Ruler, Snowflake } from 'lucide-react';
+import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, MapPin, Ruler, Settings2, Snowflake } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
@@ -42,6 +46,89 @@ const groupColors: Record<string, string[]> = {
   runtime_per_degree_day: [colors.lightBlue.light, colors.lightBlue.main, colors.orange.light, colors.orange.dark, colors.red.main],
 };
 
+const systemTypeOptions = {
+  heat: ['gas', 'compressor', 'electric', 'boiler', 'geothermal', 'oil', 'none'],
+  auxiliary_heat: ['gas', 'electric', 'oil', 'none'],
+  cool: ['compressor', 'geothermal', 'none'],
+} as const;
+const systemTypeTitles = { heat: 'Heat', auxiliary_heat: 'Auxiliary Heat', cool: 'Cool' } as const;
+const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.lightBlue.main } as const;
+type SystemMode = keyof typeof systemTypeOptions;
+type SystemTypes = Record<SystemMode, string>;
+
+function selectedSystemTypes(thermostat: any): SystemTypes {
+  return Object.fromEntries((Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
+    const reported = thermostat?.system_type?.reported?.[mode];
+    const equipment = (typeof reported === 'string' ? reported : reported?.equipment)
+      ?? thermostat?.system_type?.detected?.[mode]?.equipment
+      ?? 'none';
+    return [mode, equipment];
+  })) as SystemTypes;
+}
+
+function effectiveSystemType(thermostat: any, mode: SystemMode) {
+  const reported = thermostat?.system_type?.reported?.[mode] ?? {};
+  const detected = thermostat?.system_type?.detected?.[mode] ?? {};
+  return {
+    equipment: reported.equipment ?? detected.equipment,
+    stages: reported.stages ?? detected.stages,
+  };
+}
+
+function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => Promise<unknown> }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<SystemTypes>(() => selectedSystemTypes(thermostat));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const showDialog = () => {
+    setDraft(selectedSystemTypes(thermostat));
+    setError('');
+    setAnchor(null);
+    setOpen(true);
+  };
+  const save = async () => {
+    if (!thermostat?.thermostat_id) return;
+    setSaving(true);
+    setError('');
+    try {
+      await apiCall({ resource: 'thermostat', method: 'set_reported_system_types', arguments: { thermostat_id: thermostat.thermostat_id, system_types: draft } });
+      await refresh();
+      setOpen(false);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to update system types.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return <>
+    <Tooltip title="My Home options"><IconButton aria-label="My Home options" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical size={20} /></IconButton></Tooltip>
+    <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+      <MenuItem onClick={showDialog}><ListItemIcon><Settings2 size={18} /></ListItemIcon><ListItemText>Change System Type</ListItemText></MenuItem>
+      <MenuItem component="a" href="https://doc.beestat.io/cc594772031e41a58ff38e04e66cf0ec" target="_blank" rel="noreferrer" onClick={() => setAnchor(null)}><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem>
+    </Menu>
+    <Dialog open={open} onClose={() => !saving && setOpen(false)} fullWidth maxWidth="sm" aria-labelledby="change-system-type-title">
+      <DialogTitle id="change-system-type-title">Change System Type</DialogTitle>
+      <DialogContent>
+        <Typography sx={{ mb: 2 }}>What type of HVAC system do you have? System types that beestat detected are indicated.</Typography>
+        {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => <Box key={mode} sx={{ mb: 2 }}>
+          <Typography variant="overline" display="block" sx={{ mb: .5 }}>{systemTypeTitles[mode]}</Typography>
+          <ToggleButtonGroup exclusive value={draft[mode]} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '4px !important' } }}>
+            {systemTypeOptions[mode].map((option) => {
+              const detected = thermostat?.system_type?.detected?.[mode]?.equipment === option;
+              return <ToggleButton key={option} value={option} sx={{ bgcolor: colors.slate.main, color: '#fff', px: 1, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: '#fff' } }}>{titleCase(option)}{detected ? ' [Detected]' : ''}</ToggleButton>;
+            })}
+          </ToggleButtonGroup>
+        </Box>)}
+        {error && <Alert severity="error">{error}</Alert>}
+      </DialogContent>
+      <DialogActions><Button color="inherit" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button><Button variant="contained" color="success" onClick={() => void save()} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button></DialogActions>
+    </Dialog>
+  </>;
+}
+
 function MetricRow({ group, name, metric, value, unit }: { group: string; name: string; metric: any; value: number; unit: string }) {
   const interval = Number(metric?.interval);
   if (!Number.isFinite(value) || !Number.isFinite(interval) || interval <= 0) return null;
@@ -76,7 +163,7 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
 }
 
 export function ComparePage() {
-  const { data, thermostat, thermostatId } = useDashboard();
+  const { data, thermostat, thermostatId, refresh } = useDashboard();
   const settings = data?.user?.settings ?? {};
   const [region, setRegion] = useState<'nearby' | 'global'>(settings.comparison_region === 'nearby' ? 'nearby' : 'global');
   const initialProperty = ['similar', 'same_structure', 'all'].includes(settings.comparison_property_type) ? settings.comparison_property_type : 'similar';
@@ -103,7 +190,29 @@ export function ComparePage() {
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}><DashboardCard title="Comparison Settings"><Typography variant="overline">Region</Typography><Box><ButtonGroup><Button variant={region === 'nearby' ? 'contained' : 'outlined'} color="success" onClick={() => { setRegion('nearby'); saveComparison('comparison_region', 'nearby'); }}>Nearby</Button><Button variant={region === 'global' ? 'contained' : 'outlined'} color="success" onClick={() => { setRegion('global'); saveComparison('comparison_region', 'global'); }}>Global</Button></ButtonGroup></Box><Typography variant="overline" display="block" mt={2}>Property</Typography><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant={propertyType === value ? 'contained' : 'outlined'} color="secondary" onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup><Box mt={2}><Typography fontWeight={600}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography>Property Type: {propertyType === 'all' ? 'Any' : titleCase(thermostat?.property?.structure_type ?? 'Unknown')}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar property age' : 'Any property age'}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar square footage' : 'Any square footage'}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar number of stories' : 'Any number of stories'}</Typography><Typography fontWeight={600}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Anywhere in the world'}</Typography></Box></DashboardCard></Grid>
-      <Grid size={{ xs: 12, md: 6 }}><DashboardCard title="My Home"><Typography variant="overline">System</Typography><Stack direction="row" gap={1} flexWrap="wrap">{(['heat', 'auxiliary_heat', 'cool'] as const).map((mode) => { const system = thermostat?.system_type?.detected?.[mode]; if (!system?.equipment) return null; const Icon = mode === 'cool' ? Snowflake : Flame; return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${system.stages ? ` (${system.stages} Stage)` : ''}`} />; })}</Stack><Typography variant="overline" display="block" mt={2}>Region</Typography><Chip icon={<MapPin />} color="success" label={regionLabel} /><Typography variant="overline" display="block" mt={2}>Property</Typography><Stack direction="row" gap={1} flexWrap="wrap">{thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main }} />}{thermostat?.property?.stories && <Chip icon={<Layers />} label={`${thermostat.property.stories} Stories`} sx={{ bgcolor: colors.purple.main }} />}{thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main }} />}{thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main }} />}</Stack></DashboardCard></Grid>
+      <Grid size={{ xs: 12, md: 6 }}>
+        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />}>
+          <Typography variant="overline">System</Typography>
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
+              const system = effectiveSystemType(thermostat, mode);
+              if (!system.equipment) return null;
+              const Icon = mode === 'cool' ? Snowflake : Flame;
+              const stages = mode !== 'auxiliary_heat' && Number(system.stages) > 1 ? ' (2 Stage)' : '';
+              return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${stages}`} />;
+            })}
+          </Stack>
+          <Typography variant="overline" display="block" mt={2}>Region</Typography>
+          <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} />
+          <Typography variant="overline" display="block" mt={2}>Property</Typography>
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main }} />}
+            {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={{ bgcolor: colors.purple.main }} />}
+            {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main }} />}
+            {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main }} />}
+          </Stack>
+        </DashboardCard>
+      </Grid>
     </Grid>
     <DashboardCard title="Metrics" subheader={generatedLabel}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, gridTemplateAreas: { xs: '"setback" "property" "setpoint" "balance_point" "runtime_per_degree_day"', md: '"setback property setpoint" "balance_point runtime_per_degree_day empty"' }, columnGap: 2, alignItems: 'start' }}>{Object.entries(metrics.data ?? {}).map(([group, values]) => <Box key={group} sx={{ gridArea: group, mb: 2, minWidth: 0 }}><Typography variant="overline">{titleCase(group.replaceAll('_', ' '))}</Typography>{Object.entries(values).map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>)}</Box>}</DashboardCard>
   </Box>;

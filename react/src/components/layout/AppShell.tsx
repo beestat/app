@@ -20,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const compact = useMediaQuery('(max-width:900px)');
   const phone = useMediaQuery('(max-width:600px)');
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   const unread = useMemo(() => {
     if (location.pathname === '/announcements') return 0;
     const lastRead = Number(data?.user?.settings?.last_read_announcement_id ?? 0);
@@ -39,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Avatar src="/favicon.png" alt="beestat" sx={{ width: 38, height: 38 }} />
               {!compact && <Box component="span" sx={{ color: '#fff', fontSize: 22, fontWeight: 500, ml: 1 }}>beestat</Box>}
             </Box>
-            {!phone && <Box component="nav" sx={{ display: 'flex', gap: .5, flex: 1 }}>
+            {!phone && hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: .5, flex: 1 }}>
               {navItems.map(({ path, label, icon: Icon }) => (
                 <Button key={path} component={NavLink} to={path} color="inherit" startIcon={<Icon size={18} />} sx={{
                   minWidth: compact ? 42 : undefined, px: compact ? 1 : 1.5,
@@ -72,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Container>
       </AppBar>
       <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2 } }}>{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
-      {phone && <Box component="nav" sx={{ position: 'fixed', zIndex: 1200, bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)', display: 'flex', bgcolor: 'background.paper', boxShadow: '0 -2px 10px rgba(0,0,0,.28)' }}>
+      {phone && hasThermostats && <Box component="nav" sx={{ position: 'fixed', zIndex: 1200, bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)', display: 'flex', bgcolor: 'background.paper', boxShadow: '0 -2px 10px rgba(0,0,0,.28)' }}>
         {navItems.map(({ path, label, icon: Icon }) => <Button key={path} component={NavLink} to={path} color="inherit" sx={{ flex: 1, minWidth: 0, flexDirection: 'column', gap: .25, fontSize: 9, color: location.pathname === path ? 'primary.light' : 'text.secondary' }}><Icon size={20} />{label}</Button>)}
       </Box>}
     </Box>
