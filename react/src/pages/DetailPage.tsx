@@ -4,7 +4,6 @@ import { useDashboard } from '../state/DashboardContext';
 import { SystemCard } from '../components/detail/SystemCard';
 import { SensorsCard } from '../components/detail/SensorsCard';
 import { AlertsCard } from '../components/detail/AlertsCard';
-import { LazyMount } from '../components/common/LazyMount';
 import { SongsteadPromo } from '../components/detail/SongsteadPromo';
 
 const RuntimeDetailCard = lazy(() => import('../components/detail/RuntimeDetailCard').then((module) => ({ default: module.RuntimeDetailCard })));
@@ -19,8 +18,8 @@ export function DetailPage() {
     <SensorsCard sensors={sensors} thermostat={thermostat} />
     <AlertsCard alerts={thermostat.alerts ?? []} thermostatId={thermostatId} />
     <SongsteadPromo />
-    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount><Suspense fallback={null}><RuntimeDetailCard thermostat={thermostat} /></Suspense></LazyMount></Box>
-    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount><Suspense fallback={null}><SensorDetailCard thermostat={thermostat} sensors={sensors} /></Suspense></LazyMount></Box>
+    <Box sx={{ gridColumn: '1 / -1', minWidth: 0, minHeight: 420 }}><Suspense fallback={null}><RuntimeDetailCard thermostat={thermostat} /></Suspense></Box>
+    <Box sx={{ gridColumn: '1 / -1', minWidth: 0, minHeight: 420 }}><Suspense fallback={null}><SensorDetailCard thermostat={thermostat} sensors={sensors} /></Suspense></Box>
     <Box component="footer" sx={{ gridColumn: '1 / -1', textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="mailto:contact@beestat.io">Contact</a></Box>
   </Box>;
 }

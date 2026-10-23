@@ -6,8 +6,8 @@ This is the working acceptance list for comparisons against authenticated legacy
 
 - [ ] Header/navigation and thermostat selector
 - [ ] System card: mode/schedule/override/as-of subtitle, indoor/weather circles, equipment, climate, time-to-temperature, menus/modals
-- [ ] Sensors card: internal sensor placement, two-column remote grid, temperature/occupancy/participation states, menu
-- [ ] Alerts card: alert-specific icons, compact rows, dismiss/restore, menus
+- [x] Sensors card: internal sensor placement, two-column remote grid, temperature/occupancy/participation states, menu
+- [x] Alerts card: alert-specific icons, compact rows, dismiss/restore, menus
 - [ ] Contribution/rating reminder eligibility
 - [x] Songstead promotion placement and desktop/mobile layout
 - [x] Thermostat runtime chips and mode-conditional setpoints
@@ -31,14 +31,14 @@ This is the working acceptance list for comparisons against authenticated legacy
 
 ## Compare
 
-- [ ] Comparison Settings controls and persistence
+- [x] Comparison Settings controls and persistence
 - [ ] My Home card and system-type diagram
 - [x] Every metric tile rendered as a histogram/percentile (no raw API payloads)
 
 ## Air Quality
 
 - [ ] Support-warning eligibility
-- [ ] Detail chart series/axes/tooltip/menu
+- [x] Detail chart series/axes/tooltip/menu
 - [x] Summary heatmap
 
 ## Settings and secondary pages

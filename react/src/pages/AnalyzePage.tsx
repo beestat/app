@@ -1,19 +1,47 @@
-import { Alert, Box } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import { useMemo } from 'react';
+import { CalendarDays, CircleHelp, Download, EllipsisVertical, Info, RotateCcw } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
 
+function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: string) {
+  const svg = ref.current?.container.current?.querySelector('svg');
+  if (!svg) return;
+  const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' }));
+  const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+}
+
+function SummaryMenu({ range, setRange, onDownload, onReset }: { range: string; setRange: (value: string) => void; onDownload: () => void; onReset: () => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null); const [customOpen, setCustomOpen] = useState(false);
+  const [begin, setBegin] = useState(new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10)); const [end, setEnd] = useState(new Date().toISOString().slice(0, 10));
+  const choose = (value: string) => { setRange(value); setAnchor(null); };
+  return <><IconButton aria-label="Thermostat summary menu" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem selected={range === '3'} onClick={() => choose('3')}><ListItemText>Past 3 Months</ListItemText></MenuItem><MenuItem selected={range === '12'} onClick={() => choose('12')}><ListItemText>Past 12 Months</ListItemText></MenuItem><MenuItem selected={range === 'all'} onClick={() => choose('all')}><ListItemText>All Time</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); setCustomOpen(true); }}><ListItemIcon><CalendarDays size={18} /></ListItemIcon><ListItemText>Custom</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem><MenuItem component="a" href="https://doc.beestat.io" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu><Dialog open={customOpen} onClose={() => setCustomOpen(false)} fullWidth maxWidth="xs"><DialogTitle>Thermostat Summary - Custom Range</DialogTitle><DialogContent><Stack gap={2} pt={1}><TextField type="date" label="Start" value={begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /><TextField type="date" label="End" value={end} onChange={(event) => setEnd(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /></Stack></DialogContent><DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" disabled={!begin || !end || begin > end} onClick={() => { choose(`${begin}|${end}`); setCustomOpen(false); }}>Apply</Button></DialogActions></Dialog></>;
+}
+
+function ProfileMenu({ profile, onDownload }: { profile: unknown; onDownload: () => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null); const [info, setInfo] = useState(false);
+  const downloadProfile = () => { const url = URL.createObjectURL(new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'beestat-temperature-profile.json'; link.click(); URL.revokeObjectURL(url); };
+  return <><IconButton aria-label="Temperature profiles menu" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setAnchor(null); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); downloadProfile(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Profile</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); setInfo(true); }}><ListItemIcon><Info size={18} /></ListItemIcon><ListItemText>More Info</ListItemText></MenuItem><MenuItem component="a" href="https://doc.beestat.io" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu><Dialog open={info} onClose={() => setInfo(false)}><DialogTitle>Temperature Profiles</DialogTitle><DialogContent><Typography>Temperature profiles show how quickly your home gains or loses heat at different outdoor temperatures. Solid data traces and dashed trendlines make equipment stages and balance points directly comparable.</Typography></DialogContent><DialogActions><Button onClick={() => setInfo(false)}>Close</Button></DialogActions></Dialog></>;
+}
+
 export function AnalyzePage() {
   const { data, thermostat, thermostatId } = useDashboard();
+  const [summaryRange, setSummaryRange] = useState('3');
+  const summaryRef = useRef<HighchartsReact.RefObject>(null);
+  const profileRef = useRef<HighchartsReact.RefObject>(null);
+  const settings = data?.user?.settings ?? {};
+  const allSummary = useMemo(() => Object.values(data?.runtime_thermostat_summary ?? {}).filter((row) => Number(row.thermostat_id) === thermostatId).sort((a, b) => String(a.date).localeCompare(String(b.date))), [data?.runtime_thermostat_summary, thermostatId]);
   const summary = useMemo(() => {
-    const begin = new Date(); begin.setMonth(begin.getMonth() - 3); begin.setHours(0, 0, 0, 0);
-    return Object.values(data?.runtime_thermostat_summary ?? {}).filter((row) => Number(row.thermostat_id) === thermostatId && Date.parse(String(row.date)) >= begin.getTime()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  }, [data?.runtime_thermostat_summary, thermostatId]);
+    if (summaryRange === 'all') return allSummary;
+    if (summaryRange.includes('|')) { const [begin, end] = summaryRange.split('|'); return allSummary.filter((row) => String(row.date) >= begin && String(row.date) <= end); }
+    const begin = new Date(); begin.setMonth(begin.getMonth() - Number(summaryRange)); begin.setHours(0, 0, 0, 0);
+    return allSummary.filter((row) => Date.parse(String(row.date)) >= begin.getTime());
+  }, [allSummary, summaryRange]);
   const unit = unitLabel(thermostat?.temperature_unit ?? '°F');
   const summaryOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
@@ -46,8 +74,10 @@ export function AnalyzePage() {
     return { chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'xy' }, animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { title: { text: `Outdoor temperature (${unit})` }, labels: { style: { color: colors.gray.main }, format: `{value}${unit}` }, plotLines }, yAxis: { title: { text: `Indoor change per hour (${unit})` }, labels: { format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' } }, tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 }, series };
   }, [thermostat, unit]);
   const generated = (thermostat?.profile as any)?.metadata?.generated_at;
+  const summaryLabel = summaryRange === 'all' ? 'All time' : summaryRange.includes('|') ? summaryRange.split('|').map((value) => new Date(`${value}T00:00:00`).toLocaleDateString()).join(' to ') : `Past ${summaryRange} months`;
+  const summarySubtitle = `${summaryLabel}, grouped by day (Gap Fill: ${settings.runtime_thermostat_summary_gap_fill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
-    <DashboardCard title="Thermostat Summary" subheader="Past 3 months, grouped by day (Gap Fill: Off, Smart Scale: On)"><RuntimeChips data={chipData} />{summary.length ? <HighchartsReact highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
-    <DashboardCard title="Temperature Profiles" subheader={generated ? `Generated ${new Date(generated).toLocaleString()} from the past year of data (updated weekly).` : undefined}>{profileOptions.series?.length ? <HighchartsReact highcharts={Highcharts} options={profileOptions} /> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu range={summaryRange} setRange={setSummaryRange} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Temperature Profiles" subheader={generated ? `Generated ${new Date(generated).toLocaleString()} from the past year of data (updated weekly).` : undefined} action={<ProfileMenu profile={thermostat?.profile} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />}>{profileOptions.series?.length ? <HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} /> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
   </Box>;
 }

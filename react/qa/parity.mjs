@@ -9,6 +9,19 @@ const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (message) => { if (message.type() === 'error' && !message.text().includes('certificate')) errors.push(message.text()); });
 
+async function revealLazyContent(target) {
+  await target.evaluate(async () => {
+    for (let y = 0; y < document.documentElement.scrollHeight; y += Math.max(300, innerHeight * .7)) {
+      scrollTo(0, y);
+      await new Promise((resolve) => setTimeout(resolve, 180));
+    }
+    scrollTo(0, 0);
+  });
+  await target.waitForLoadState('networkidle');
+  await target.locator('[role="progressbar"]').first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => {});
+  await target.waitForTimeout(1_500);
+}
+
 const routes = [
   ['detail', 'detail'], ['analyze', 'analyze'], ['compare', 'compare'], ['air_quality', 'air-quality'], ['settings', 'settings'],
 ];
@@ -17,7 +30,7 @@ for (const [legacy, react] of routes) {
   await page.waitForTimeout(1_000);
   await page.screenshot({ path: `test-results/parity/legacy-${legacy}.png`, fullPage: true });
   await page.goto(`https://dev.app.beestat.io/react/index.php#/${react}`, { waitUntil: 'networkidle', timeout: 90_000 });
-  await page.waitForTimeout(1_000);
+  await revealLazyContent(page);
   await page.screenshot({ path: `test-results/parity/react-${react}.png`, fullPage: true });
 }
 
@@ -27,6 +40,7 @@ for (const [legacy, react] of routes) {
   await mobile.goto(`https://dev.app.beestat.io/?layer=${legacy}`, { waitUntil: 'networkidle', timeout: 90_000 });
   await mobile.screenshot({ path: `test-results/parity/legacy-${legacy}-mobile.png`, fullPage: true });
   await mobile.goto(`https://dev.app.beestat.io/react/index.php#/${react}`, { waitUntil: 'networkidle', timeout: 90_000 });
+  await revealLazyContent(mobile);
   await mobile.screenshot({ path: `test-results/parity/react-${react}-mobile.png`, fullPage: true });
 }
 console.log(JSON.stringify({ authenticatedThermostat: await mobile.getByText(/Ziebee II/).first().textContent(), errors }, null, 2));

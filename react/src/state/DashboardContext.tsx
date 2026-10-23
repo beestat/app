@@ -39,6 +39,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     queryFn: ({ signal }) => apiBatch<DashboardData>(initialCalls.map(([resource, method, alias, args]) => ({
       resource, method, alias, arguments: args,
     })), signal),
+    select: (response) => ({
+      ...response,
+      user: response.user?.settings ? response.user : (Object.values(response.user ?? {})[0] ?? {}),
+    }),
     refetchInterval: 5 * 60_000,
     refetchIntervalInBackground: false,
   });

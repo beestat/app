@@ -32,11 +32,15 @@ await page.screenshot({ path: 'test-results/react-air-quality-settled.png', full
 const airQualityText = (await page.locator('body').innerText()).slice(0, 500);
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'networkidle', timeout: 90_000 });
-const frame = page.frameLocator('iframe[title="Beestat visualizer"]');
-await frame.locator('body').waitFor({ timeout: 90_000 });
+await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 90_000 });
 await page.waitForTimeout(15_000);
 await page.screenshot({ path: 'test-results/react-visualize-settled.png', fullPage: false });
-const visualizeText = (await frame.locator('body').innerText()).slice(0, 500);
+const visualizer = await page.evaluate(() => ({
+  iframeCount: document.querySelectorAll('iframe').length,
+  canvasCount: document.querySelectorAll('canvas').length,
+  text: document.body.innerText.slice(0, 500),
+}));
+if (visualizer.iframeCount !== 0 || visualizer.canvasCount < 1) throw new Error(`Visualizer host regression: ${JSON.stringify(visualizer)}`);
 
-console.log(JSON.stringify({ performanceMetrics, airQualityText, visualizeText, errors }, null, 2));
+console.log(JSON.stringify({ performanceMetrics, airQualityText, visualizer, errors }, null, 2));
 await browser.close();

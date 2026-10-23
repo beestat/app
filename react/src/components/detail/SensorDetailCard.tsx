@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
@@ -25,12 +25,17 @@ function swimlane(count: number, index: number) {
 
 export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sensors }: { thermostat: Thermostat; sensors: Sensor[] }) {
   const [days, setDays] = useState(3);
+  const [custom, setCustom] = useState<{ begin: string; end: string }>();
+  const [extremes, setExtremes] = useState<[number, number]>();
+  const chartRef = useRef<HighchartsReact.RefObject>(null);
+  const occupancyRef = useRef<HighchartsReact.RefObject>(null);
+  const range = custom ? { value: [`${custom.begin}T00:00:00`, `${custom.end}T23:59:59`], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
   const ordered = useMemo(() => sortSensors(sensors), [sensors]);
   const query = useQuery({
-    queryKey: ['runtime-sensors', thermostat.thermostat_id, ordered.map((sensor) => sensor.sensor_id), days], enabled: ordered.length > 0,
+    queryKey: ['runtime-sensors', thermostat.thermostat_id, ordered.map((sensor) => sensor.sensor_id), custom ?? days], enabled: ordered.length > 0,
     queryFn: ({ signal }) => apiBatch<Record<string, RuntimeRow[]>>([
-      ...ordered.map((sensor) => ({ resource: 'runtime_sensor', method: 'read', alias: `sensor_${sensor.sensor_id}`, arguments: { attributes: { sensor_id: sensor.sensor_id, timestamp: { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' } } } })),
-      { resource: 'runtime_thermostat', method: 'read', alias: 'runtime_thermostat', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' } } } },
+      ...ordered.map((sensor) => ({ resource: 'runtime_sensor', method: 'read', alias: `sensor_${sensor.sensor_id}`, arguments: { attributes: { sensor_id: sensor.sensor_id, timestamp: range } } })),
+      { resource: 'runtime_thermostat', method: 'read', alias: 'runtime_thermostat', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } },
     ], signal), staleTime: 5 * 60_000,
   });
   const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? []), [query.data]);
@@ -41,21 +46,36 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   }), [ordered, query.data]);
   const occupancyOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: colors.slate.dark, height: 50, marginLeft: 45, marginRight: 45, marginTop: 0, marginBottom: 0, animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false },
-    xAxis: { type: 'datetime', min: runtime.min, max: runtime.max, visible: false }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { enabled: false },
-    plotOptions: { series: { animation: false, marker: { enabled: false }, enableMouseTracking: false, connectNulls: false } },
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, visible: false, crosshair: { color: colors.gray.main, width: 1 } }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', headerFormat: '<b>{point.key}</b><br/>', pointFormat: '<span style="color:{point.color}">●</span> {series.name}: Occupied<br/>', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
+    plotOptions: { series: { animation: false, marker: { enabled: false }, connectNulls: false } },
     series: sensorSeries.filter((item) => item.occupancy.some((point) => point[1] !== null)).map((item) => ({ type: 'line', name: item.sensor.name, data: item.occupancy, color: item.color, lineWidth: item.lane.width, linecap: 'square', step: 'left', turboThreshold: 0 })),
-  }), [runtime.max, runtime.min, sensorSeries]);
+  }), [extremes, runtime.max, runtime.min, sensorSeries]);
   const temperatureOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, marginRight: 45, animation: false, zooming: { type: 'x' } }, title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
-    xAxis: { type: 'datetime', min: runtime.min, max: runtime.max, lineColor: colors.slate.light, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value:%a %l%P}' } },
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineColor: colors.slate.light, crosshair: { color: colors.gray.main, width: 1 }, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value:%a %l%P}' }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: { title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } },
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: '#fff' } },
     tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, valueSuffix: unitLabel(thermostat.temperature_unit), valueDecimals: 1 },
     plotOptions: { series: { animation: false, marker: { enabled: false }, turboThreshold: 0, states: { inactive: { opacity: .35 } } } },
     series: [...sensorSeries.map((item) => ({ type: 'spline' as const, name: item.sensor.name, data: item.temperature, color: item.color, lineWidth: 1 })), { type: 'spline' as const, name: 'Indoor Temp', data: runtime.temperature.indoor_temperature, color: colors.gray.light, lineWidth: 2, visible: false }, { type: 'spline' as const, name: 'Outdoor Temp', data: runtime.temperature.outdoor_temperature, color: colors.gray.light, dashStyle: 'ShortDash' as const, lineWidth: 1, visible: false }],
-  }), [runtime, sensorSeries, thermostat.temperature_unit]);
+  }), [extremes, runtime, sensorSeries, thermostat.temperature_unit]);
 
-  return <DashboardCard title="Sensor Detail" subheader={`Past ${days} day${days > 1 ? 's' : ''}`} action={<ChartRangeMenu days={days} setDays={setDays} />}>
-    {query.isLoading ? <Box sx={{ height: 394, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} /><HighchartsReact highcharts={Highcharts} options={occupancyOptions} /><HighchartsReact highcharts={Highcharts} options={temperatureOptions} /></>}
+  useEffect(() => {
+    const charts = [occupancyRef.current?.chart, chartRef.current?.chart].filter(Boolean) as Highcharts.Chart[];
+    const containers = charts.map((chart) => chart.container);
+    const move = (event: MouseEvent) => charts.forEach((chart) => {
+      const normalized = chart.pointer.normalize(event);
+      const point = chart.series.filter((series) => series.visible).map((series) => series.searchPoint(normalized, true)).find(Boolean);
+      if (point) chart.xAxis[0].drawCrosshair(normalized, point);
+    });
+    const leave = () => charts.forEach((chart) => chart.xAxis[0].hideCrosshair());
+    containers.forEach((container) => { container.addEventListener('mousemove', move); container.addEventListener('mouseleave', leave); });
+    return () => containers.forEach((container) => { container.removeEventListener('mousemove', move); container.removeEventListener('mouseleave', leave); });
+  }, [query.data, extremes]);
+
+  const download = () => { const svg = chartRef.current?.container.current?.querySelector('svg'); if (!svg) return; const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' })); const link = document.createElement('a'); link.href = url; link.download = 'beestat-sensor-detail.svg'; link.click(); URL.revokeObjectURL(url); };
+  const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
+  return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={(value) => { setCustom(undefined); setDays(value); setExtremes(undefined); }} onCustom={(begin, end) => { setCustom({ begin, end }); setExtremes(undefined); }} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" />}>
+    {query.isLoading ? <Box sx={{ height: 394, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} /></>}
   </DashboardCard>;
 });

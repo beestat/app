@@ -1,6 +1,7 @@
-export function formatTemperature(value: number | null | undefined, unit = 'F', digits = 1) {
+export function formatTemperature(value: number | null | undefined, unit = '°F', digits = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${value.toFixed(digits)}°${unit.replace('°', '')}`;
+  const suffix = unit.startsWith('°') ? unit : `°${unit}`;
+  return `${value.toFixed(digits)}${suffix}`;
 }
 
 export function formatDuration(seconds: number) {

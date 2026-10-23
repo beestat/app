@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import { Alert, Box, CircularProgress } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
@@ -14,9 +14,13 @@ import { buildRuntimeData, unitLabel, type RuntimeRow } from './runtimeData';
 
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
   const [days, setDays] = useState(3);
+  const [custom, setCustom] = useState<{ begin: string; end: string }>();
+  const [extremes, setExtremes] = useState<[number, number]>();
+  const chartRef = useRef<HighchartsReact.RefObject>(null);
+  const range = custom ? { value: [`${custom.begin}T00:00:00`, `${custom.end}T23:59:59`], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
   const query = useQuery({
-    queryKey: ['runtime-thermostat', thermostat.thermostat_id, days],
-    queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' } } } }, signal),
+    queryKey: ['runtime-thermostat', thermostat.thermostat_id, custom ?? days],
+    queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),
     staleTime: 5 * 60_000,
   });
   const data = useMemo(() => buildRuntimeData(query.data ?? []), [query.data]);
@@ -38,18 +42,20 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const options = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, marginRight: 45, animation: false, zooming: { type: 'x' } },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
-    xAxis: { type: 'datetime', min: data.min, max: data.max, lineColor: colors.slate.light, tickColor: colors.slate.light, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value:%a %l%P}' } },
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, lineColor: colors.slate.light, tickColor: colors.slate.light, crosshair: { color: colors.gray.main, width: 1 }, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value:%a %l%P}' }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: [{ title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value}%' } }],
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: '#fff' } },
     tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, valueDecimals: 1 },
     plotOptions: { series: { animation: false, marker: { enabled: false }, states: { inactive: { opacity: .35 } } } }, series,
-  }), [data, series, thermostat.temperature_unit]);
+  }), [data, extremes, series, thermostat.temperature_unit]);
 
-  return <DashboardCard title="Thermostat Detail" subheader={`Past ${days} day${days > 1 ? 's' : ''}`} action={<ChartRangeMenu days={days} setDays={setDays} />}>
+  const download = () => { const svg = chartRef.current?.container.current?.querySelector('svg'); if (!svg) return; const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' })); const link = document.createElement('a'); link.href = url; link.download = 'beestat-thermostat-detail.svg'; link.click(); URL.revokeObjectURL(url); };
+  const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
+  return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={(value) => { setCustom(undefined); setDays(value); setExtremes(undefined); }} onCustom={(begin, end) => { setCustom({ begin, end }); setExtremes(undefined); }} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" />}>
     {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
-      <RuntimeRaceway data={data} />
-      <HighchartsReact highcharts={Highcharts} options={options} />
+      <RuntimeRaceway data={data} extremes={extremes} />
+      <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} />
     </>}
   </DashboardCard>;
 });
