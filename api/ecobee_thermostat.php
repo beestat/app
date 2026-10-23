@@ -215,65 +215,13 @@ class ecobee_thermostat extends cora\crud {
     $identifiers = array_unique(array_merge($registered_identifiers, $manual_identifiers));
 
     // Get all of the thermostats from ecobee.
-    try {
-      $response = $this->api(
-        'ecobee',
-        'ecobee_api',
-        [
-          'method' => 'GET',
-          'endpoint' => 'thermostat',
-          'arguments' => [
-            'body' => json_encode([
-              'selection' => array_merge(
-                [
-                  'selectionType' => 'thermostats',
-                  'selectionMatch' => implode(',', $identifiers)
-                ],
-                $include
-              )
-            ])
-          ]
-        ]
-      );
-    } catch(cora\exception $e) {
-      if($e->getCode() === 10508) {
-        // If there was an authorization failure, remove those identifiers.
-        // These are likely thermostats that have been removed from the account
-        // and are no longer accessible.
-
-        // Use regex to extract numbers
-        preg_match_all('/\d+/', $e->getExtraInfo(), $matches);
-
-        $exclude_identifiers = $matches[0];
-
-        $identifiers = array_diff($identifiers, $exclude_identifiers);
-
-        $response = $this->api(
-          'ecobee',
-          'ecobee_api',
-          [
-            'method' => 'GET',
-            'endpoint' => 'thermostat',
-            'arguments' => [
-              'body' => json_encode([
-                'selection' => array_merge(
-                  [
-                    'selectionType' => 'thermostats',
-                    'selectionMatch' => implode(',', $identifiers)
-                  ],
-                  $include
-                )
-              ])
-            ]
-          ]
-        );
-      }
-    }
+    $api_thermostats = $this->get_api_thermostats($identifiers, $include);
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];
+    $ecobee_thermostat_ids_to_keep = [];
     $email_addresses = [];
-    foreach($response['thermostatList'] as $api_thermostat) {
+    foreach($api_thermostats as $api_thermostat) {
       $ecobee_thermostat = $this->get(
         [
           'identifier' => $api_thermostat['identifier']
@@ -325,6 +273,7 @@ class ecobee_thermostat extends cora\crud {
       }
 
       $thermostat_ids_to_keep[] = $thermostat['thermostat_id'];
+      $ecobee_thermostat_ids_to_keep[] = $ecobee_thermostat['ecobee_thermostat_id'];
 
       $ecobee_thermostat = $this->update(
         [
@@ -514,10 +463,114 @@ class ecobee_thermostat extends cora\crud {
       }
     }
 
+    // Also inactivate any ecobee_thermostats that were no longer returned but
+    // whose thermostat is already inactive. Otherwise they stay active and get
+    // included in the selection on every sync.
+    $ecobee_thermostats = $this->api(
+      'ecobee_thermostat',
+      'read',
+      [
+        'attributes' => [
+          'inactive' => 0
+        ]
+      ]
+    );
+    foreach($ecobee_thermostats as $ecobee_thermostat) {
+      if(in_array($ecobee_thermostat['ecobee_thermostat_id'], $ecobee_thermostat_ids_to_keep) === false) {
+        $this->update(
+          [
+            'ecobee_thermostat_id' => $ecobee_thermostat['ecobee_thermostat_id'],
+            'inactive' => true
+          ]
+        );
+      }
+    }
+
     if (count($ecobee_thermostat_ids_to_return) === 0) {
       return [];
     } else {
       return $this->read_id(['ecobee_thermostat_id' => $ecobee_thermostat_ids_to_return]);
+    }
+  }
+
+  /**
+   * Get thermostats from ecobee by identifier. If ecobee rejects the
+   * selection, drop the identifiers it can't return and try again so one bad
+   * thermostat doesn't prevent the rest from syncing.
+   *
+   * @param array $identifiers
+   * @param array $include
+   *
+   * @return array The thermostatList from ecobee.
+   */
+  private function get_api_thermostats($identifiers, $include) {
+    if(count($identifiers) === 0) {
+      throw new cora\exception('No thermostats found.', 10511, false, null, false);
+    }
+
+    try {
+      $response = $this->api(
+        'ecobee',
+        'ecobee_api',
+        [
+          'method' => 'GET',
+          'endpoint' => 'thermostat',
+          'arguments' => [
+            'body' => json_encode([
+              'selection' => array_merge(
+                [
+                  'selectionType' => 'thermostats',
+                  'selectionMatch' => implode(',', $identifiers)
+                ],
+                $include
+              )
+            ])
+          ]
+        ]
+      );
+
+      return $response['thermostatList'];
+    } catch(cora\exception $e) {
+      if($e->getCode() === 10508) {
+        // If there was an authorization failure, remove those identifiers.
+        // These are likely thermostats that have been removed from the account
+        // and are no longer accessible.
+
+        // Use regex to extract numbers
+        preg_match_all('/\d+/', $e->getExtraInfo(), $matches);
+
+        $exclude_identifiers = $matches[0];
+
+        return $this->get_api_thermostats(
+          array_values(array_diff($identifiers, $exclude_identifiers)),
+          $include
+        );
+      } else if($e->getCode() === 10511 && count($identifiers) > 1) {
+        // A single thermostat can cause ecobee to fail the entire selection
+        // (ex: one that was removed from the account but can still be selected
+        // directly). Get each one individually and skip the ones that fail.
+        $api_thermostats = [];
+        foreach($identifiers as $identifier) {
+          try {
+            $api_thermostats = array_merge(
+              $api_thermostats,
+              $this->get_api_thermostats([$identifier], $include)
+            );
+          } catch(cora\exception $e2) {
+            if($e2->getCode() !== 10511) {
+              throw $e2;
+            }
+          }
+        }
+
+        if(count($api_thermostats) === 0) {
+          throw $e;
+        }
+
+        return $api_thermostats;
+      } else {
+        throw $e;
+      }
     }
   }
 
