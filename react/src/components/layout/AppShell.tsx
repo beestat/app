@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ minHeight: '100dvh', pb: phone ? 10 : 3 }}>
-      <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
+      <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters={phone}>
           <Toolbar sx={{ gap: 1, minHeight: { xs: 58, sm: 70 } }}>
             <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mr: 1 }}>

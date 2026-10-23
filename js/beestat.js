@@ -62,7 +62,7 @@ window.addEventListener('resize', rocket.throttle(100, function() {
 
 // First run
 var $ = rocket.extend(rocket.$, rocket);
-$.ready(function() {
+if (window.__BEESTAT_REACT_HOST__ !== true) $.ready(function() {
   moment.suppressDeprecationWarnings = true;
   if (window.environment === 'live') {
     Sentry.init({

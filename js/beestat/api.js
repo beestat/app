@@ -32,7 +32,7 @@ beestat.api.prototype.send = function(opt_api_call) {
       self.load_(this.responseText);
     });
 
-    this.xhr_.open('POST', 'api/');
+    this.xhr_.open('POST', '/api/');
     this.xhr_.send(JSON.stringify(opt_api_call));
   } else {
     if (this.api_calls_.length === 0) {
