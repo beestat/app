@@ -22,9 +22,11 @@ async function revealLazyContent(target) {
   await target.waitForTimeout(1_500);
 }
 
-const routes = [
+const allRoutes = [
   ['detail', 'detail'], ['analyze', 'analyze'], ['compare', 'compare'], ['air_quality', 'air-quality'], ['settings', 'settings'], ['contribute', 'contribute'],
 ];
+const requested = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
+const routes = requested.length ? allRoutes.filter(([legacy, react]) => requested.includes(legacy) || requested.includes(react)) : allRoutes;
 for (const [legacy, react] of routes) {
   await page.goto(`https://dev.app.beestat.io/?layer=${legacy}`, { waitUntil: 'networkidle', timeout: 90_000 });
   await page.waitForTimeout(1_000);
@@ -36,12 +38,14 @@ for (const [legacy, react] of routes) {
 
 const mobile = await context.newPage();
 await mobile.setViewportSize({ width: 390, height: 844 });
-for (const [legacy, react] of routes) {
+let authenticatedThermostat = '';
+for (const [legacy, react] of process.argv.includes('--desktop-only') ? [] : routes) {
   await mobile.goto(`https://dev.app.beestat.io/?layer=${legacy}`, { waitUntil: 'networkidle', timeout: 90_000 });
   await mobile.screenshot({ path: `test-results/parity/legacy-${legacy}-mobile.png`, fullPage: true });
   await mobile.goto(`https://dev.app.beestat.io/react/index.php#/${react}`, { waitUntil: 'networkidle', timeout: 90_000 });
   await revealLazyContent(mobile);
+  if (react === 'detail') authenticatedThermostat = await mobile.getByText(/System - Ziebee II/).first().textContent() ?? '';
   await mobile.screenshot({ path: `test-results/parity/react-${react}-mobile.png`, fullPage: true });
 }
-console.log(JSON.stringify({ authenticatedThermostat: await mobile.getByText(/Ziebee II/).first().textContent(), errors }, null, 2));
+console.log(JSON.stringify({ authenticatedThermostat, errors }, null, 2));
 await browser.close();

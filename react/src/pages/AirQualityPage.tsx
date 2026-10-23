@@ -14,8 +14,10 @@ import { colors } from '../theme';
 function heatColor(value?: number) {
   if (value == null) return colors.slate.light;
   const t = Math.max(0, Math.min(1, value / 100));
-  if (t < .5) return `rgb(${Math.round(32 + 446 * t)},${Math.round(191 + 80 * t)},${Math.round(107 - 78 * t)})`;
-  return `rgb(${Math.round(255 - 20 * (t - .5))},${Math.round(215 - 312 * (t - .5))},${Math.round(48 + 36 * (t - .5))})`;
+  const from = t < .5 ? [32, 191, 107] : [247, 183, 49];
+  const to = t < .5 ? [247, 183, 49] : [235, 59, 90];
+  const progress = t < .5 ? t * 2 : (t - .5) * 2;
+  return `rgb(${from.map((channel, index) => Math.round(channel + (to[index] - channel) * progress)).join(',')})`;
 }
 
 export function AirQualityPage() {
@@ -63,9 +65,9 @@ export function AirQualityPage() {
     chart: { backgroundColor: 'transparent', height: 450, zooming: { type: 'x' }, animation: false, marginLeft: 60, marginRight: 20 }, title: { text: undefined }, credits: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, labels: { style: { color: colors.gray.main }, format: '{value:%a %l%P}' }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: [
-      { top: '0%', height: '27%', offset: 0, title: { text: undefined }, min: 0, softMax: 100, gridLineColor: colors.slate.light },
-      { top: '35%', height: '27%', offset: 0, title: { text: undefined }, gridLineColor: colors.slate.light },
-      { top: '70%', height: '27%', offset: 0, title: { text: undefined }, gridLineColor: colors.slate.light },
+      { top: '8%', height: '20%', offset: 0, title: { text: undefined }, min: 0, softMax: 100, tickAmount: 2, labels: { style: { color: colors.gray.main, textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' },
+      { top: '43%', height: '20%', offset: 0, title: { text: undefined }, min: 0, tickAmount: 2, labels: { style: { color: colors.gray.main, textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' },
+      { top: '78%', height: '18%', offset: 0, title: { text: undefined }, min: 0, tickAmount: 2, labels: { style: { color: colors.gray.main, textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' },
     ],
     legend: { enabled: false }, tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
     plotOptions: { series: { animation: false, marker: { enabled: false }, turboThreshold: 0 } },

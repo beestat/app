@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, Typography } from '@mui/material';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { CalendarDays, CircleHelp, Download, EllipsisVertical, Info, RotateCcw } from 'lucide-react';
@@ -14,6 +14,11 @@ function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: s
   if (!svg) return;
   const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' }));
   const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+}
+
+function ordinal(day: number) {
+  const remainder = day % 100;
+  return `${day}${remainder >= 11 && remainder <= 13 ? 'th' : day % 10 === 1 ? 'st' : day % 10 === 2 ? 'nd' : day % 10 === 3 ? 'rd' : 'th'}`;
 }
 
 function SummaryMenu({ range, setRange, onDownload, onReset }: { range: string; setRange: (value: string) => void; onDownload: () => void; onReset: () => void }) {
@@ -32,6 +37,7 @@ function ProfileMenu({ profile, onDownload }: { profile: unknown; onDownload: ()
 export function AnalyzePage() {
   const { data, thermostat, thermostatId } = useDashboard();
   const [summaryRange, setSummaryRange] = useState('3');
+  const [profileIndex, setProfileIndex] = useState<number>();
   const summaryRef = useRef<HighchartsReact.RefObject>(null);
   const profileRef = useRef<HighchartsReact.RefObject>(null);
   const settings = data?.user?.settings ?? {};
@@ -58,26 +64,43 @@ export function AnalyzePage() {
     for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0);
     return result;
   }, [summary]);
+  const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);
+  const selectedProfile = profileIndex === undefined ? thermostat?.profile : profiles[Math.min(profileIndex, Math.max(0, profiles.length - 1))]?.profile ?? thermostat?.profile;
   const profileOptions = useMemo<Highcharts.Options>(() => {
-    const temperature = thermostat?.profile?.temperature ?? {};
+    const temperature = selectedProfile?.temperature ?? {};
     const palette: Record<string, string> = { cool_1: colors.lightBlue.light, cool_2: colors.lightBlue.main, heat_1: colors.orange.light, heat_2: colors.orange.dark, resist: colors.gray.main, auxiliary_heat_1: colors.red.main, auxiliary_heat_2: colors.red.dark };
     const names: Record<string, string> = { cool_1: 'Cool 1 Δ', cool_2: 'Cool 2 Δ', heat_1: 'Heat 1 Δ', heat_2: 'Heat 2 Δ', resist: 'Resist Δ', auxiliary_heat_1: 'Aux Heat 1 Δ', auxiliary_heat_2: 'Aux Heat 2 Δ' };
     const entries = Object.entries(temperature).filter(([, value]) => value && typeof value === 'object') as [string, any][];
+    const weather = Math.round(Number(thermostat?.weather?.temperature));
+    const parentExtremes = (parent: 'heat' | 'cool' | 'resist') => {
+      const values = entries.filter(([key]) => key.includes(parent)).flatMap(([, profile]) => Object.keys(profile.deltas ?? {}).map(Number));
+      if (Number.isFinite(weather) && (parent === 'resist' || parent === 'heat')) values.push(weather);
+      if (Number.isFinite(weather) && (parent === 'resist' || parent === 'cool')) values.push(weather);
+      return values.length ? [Math.min(...values) - 5, Math.max(...values) + 5] : [0, 0];
+    };
     const series = entries.flatMap(([key, profile]) => {
       const raw = Object.entries(profile.deltas ?? {}).map(([x, y]) => [Number(x), Number(y)] as [number, number]).sort((a, b) => a[0] - b[0]);
       const trend = profile.linear_trendline;
-      const line = trend && raw.length ? [[raw[0][0], trend.slope * raw[0][0] + trend.intercept], [raw.at(-1)![0], trend.slope * raw.at(-1)![0] + trend.intercept]] : [];
-      return [{ type: 'spline' as const, name: `${names[key] ?? key} raw`, color: palette[key] ?? colors.gray.main, data: raw, lineWidth: 1, showInLegend: false }, { type: 'line' as const, name: names[key] ?? key, color: palette[key] ?? colors.gray.main, data: line, dashStyle: 'ShortDash' as const, lineWidth: 2, marker: { enabled: false } }];
+      const parent = key.includes('cool') ? 'cool' : key.includes('resist') ? 'resist' : 'heat';
+      const [xMin, xMax] = parentExtremes(parent);
+      const line = trend && raw.length ? [[xMin, trend.slope * xMin + trend.intercept], [xMax, trend.slope * xMax + trend.intercept]] : [];
+      const zones = raw.length ? [{ value: raw[0][0], dashStyle: 'ShortDash' as const }, { value: raw.at(-1)![0], dashStyle: 'Solid' as const }, { dashStyle: 'ShortDash' as const }] : undefined;
+      return [{ type: 'spline' as const, name: `${names[key] ?? key} raw`, color: palette[key] ?? colors.gray.main, data: raw, dashStyle: 'ShortDot' as const, lineWidth: 1, marker: { enabled: false }, showInLegend: false }, { type: 'line' as const, name: names[key] ?? key, color: palette[key] ?? colors.gray.main, data: line, lineWidth: 2, marker: { enabled: false }, zoneAxis: 'x' as const, zones }];
     });
-    const balance = thermostat?.profile?.balance_point ?? {};
-    const plotLines = Object.entries(balance).filter(([, value]) => typeof value === 'number').map(([key, value]) => ({ value: Number(value), color: palette[key] ?? colors.gray.light, dashStyle: 'ShortDot' as const, width: 1, label: { text: `${names[key] ?? key}: ${value}${unit}`, style: { color: colors.gray.light } } }));
-    return { chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'xy' }, animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { title: { text: `Outdoor temperature (${unit})` }, labels: { style: { color: colors.gray.main }, format: `{value}${unit}` }, plotLines }, yAxis: { title: { text: `Indoor change per hour (${unit})` }, labels: { format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' } }, tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 }, series };
-  }, [thermostat, unit]);
-  const generated = (thermostat?.profile as any)?.metadata?.generated_at;
+    const yValues = series.flatMap((item) => (item.data as [number, number][]).map((point) => point[1])).filter(Number.isFinite);
+    const absoluteY = Math.max(1, ...yValues.map((value) => Math.abs(value) + .25));
+    const plotLines = Number.isFinite(weather) ? [{ value: weather, color: colors.gray.light, dashStyle: 'ShortDash' as const, width: 1, zIndex: 2, label: { text: `Now: ${weather}${unit}`, style: { color: colors.gray.light } } }] : [];
+    return { chart: { backgroundColor: 'transparent', height: 300, animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 }, plotOptions: { series: { animation: false, connectNulls: true, states: { hover: { lineWidthPlus: 0 } } } }, series };
+  }, [selectedProfile, thermostat?.weather?.temperature, unit]);
+  const generated = selectedProfile?.metadata?.generated_at;
+  const durationWeeks = Math.round(Number(selectedProfile?.metadata?.duration ?? 365) / 7);
+  const duration = durationWeeks === 0 ? 'few days' : durationWeeks === 1 ? 'week' : durationWeeks >= 52 ? 'year' : `${durationWeeks} weeks`;
+  const generatedDate = generated ? new Date(generated) : undefined;
+  const profileSubtitle = generatedDate ? `Generated ${generatedDate.toLocaleDateString('en-US', { month: 'short' })} ${ordinal(generatedDate.getDate())}, ${generatedDate.getFullYear()} @ ${generatedDate.toLocaleTimeString('en-US', { hour: 'numeric' }).toLowerCase()} from the past ${duration} of data (updated weekly).` : undefined;
   const summaryLabel = summaryRange === 'all' ? 'All time' : summaryRange.includes('|') ? summaryRange.split('|').map((value) => new Date(`${value}T00:00:00`).toLocaleDateString()).join(' to ') : `Past ${summaryRange} months`;
   const summarySubtitle = `${summaryLabel}, grouped by day (Gap Fill: ${settings.runtime_thermostat_summary_gap_fill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
-    <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu range={summaryRange} setRange={setSummaryRange} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
-    <DashboardCard title="Temperature Profiles" subheader={generated ? `Generated ${new Date(generated).toLocaleString()} from the past year of data (updated weekly).` : undefined} action={<ProfileMenu profile={thermostat?.profile} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />}>{profileOptions.series?.length ? <HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} /> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu range={summaryRange} setRange={setSummaryRange} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} summary />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profiles.length >= 2 && <Stack direction="row" gap={1.5} alignItems="center" px={.5}><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" /><Typography sx={{ minWidth: 100, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
   </Box>;
 }
