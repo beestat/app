@@ -20,6 +20,5 @@ export function DetailPage() {
     <SongsteadPromo />
     <Box sx={{ gridColumn: '1 / -1', minWidth: 0, minHeight: 420 }}><Suspense fallback={null}><RuntimeDetailCard thermostat={thermostat} /></Suspense></Box>
     <Box sx={{ gridColumn: '1 / -1', minWidth: 0, minHeight: 420 }}><Suspense fallback={null}><SensorDetailCard thermostat={thermostat} sensors={sensors} /></Suspense></Box>
-    <Box component="footer" sx={{ gridColumn: '1 / -1', textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="mailto:contact@beestat.io">Contact</a></Box>
   </Box>;
 }

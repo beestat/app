@@ -20,7 +20,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const compact = useMediaQuery('(max-width:900px)');
   const phone = useMediaQuery('(max-width:600px)');
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const unread = useMemo(() => Object.keys(data?.announcement ?? {}).length, [data?.announcement]);
+  const unread = useMemo(() => {
+    if (location.pathname === '/announcements') return 0;
+    const lastRead = Number(data?.user?.settings?.last_read_announcement_id ?? 0);
+    return Object.values(data?.announcement ?? {}).filter((item: any) => Number(item.announcement_id) > lastRead).length;
+  }, [data?.announcement, data?.user?.settings?.last_read_announcement_id, location.pathname]);
 
   const logout = async () => {
     try { await apiCall({ resource: 'user', method: 'log_out' }); } finally { window.location.assign('/'); }
@@ -67,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </Container>
       </AppBar>
-      <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2 } }}>{children}</Container>
+      <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2 } }}>{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
       {phone && <Box component="nav" sx={{ position: 'fixed', zIndex: 1200, bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)', display: 'flex', bgcolor: 'background.paper', boxShadow: '0 -2px 10px rgba(0,0,0,.28)' }}>
         {navItems.map(({ path, label, icon: Icon }) => <Button key={path} component={NavLink} to={path} color="inherit" sx={{ flex: 1, minWidth: 0, flexDirection: 'column', gap: .25, fontSize: 9, color: location.pathname === path ? 'primary.light' : 'text.secondary' }}><Icon size={20} />{label}</Button>)}
       </Box>}

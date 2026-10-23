@@ -8,11 +8,14 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const errors = [];
+const failedResponses = [];
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+page.on('response', (response) => { if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() }); });
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUntil: 'networkidle', timeout: 90_000 });
 await page.getByText(/System - /).waitFor({ timeout: 30_000 });
+const authenticatedThermostat = await page.getByText(/System - /).first().textContent();
 await page.getByText('Sensor Detail').scrollIntoViewIfNeeded();
 await page.getByText('Sensor Detail').waitFor({ timeout: 45_000 });
 const performanceMetrics = await page.evaluate(() => {
@@ -42,5 +45,5 @@ const visualizer = await page.evaluate(() => ({
 }));
 if (visualizer.iframeCount !== 0 || visualizer.canvasCount < 1) throw new Error(`Visualizer host regression: ${JSON.stringify(visualizer)}`);
 
-console.log(JSON.stringify({ performanceMetrics, airQualityText, visualizer, errors }, null, 2));
+console.log(JSON.stringify({ authenticatedThermostat, performanceMetrics, airQualityText, visualizer, failedResponses, errors }, null, 2));
 await browser.close();
