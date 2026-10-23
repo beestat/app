@@ -291,6 +291,20 @@ class ecobee_thermostat extends cora\crud {
             ]
           ]
         );
+
+        // The ecobee_thermostat exists but the thermostat is missing; recreate it.
+        if ($thermostat === null) {
+          $thermostat = $this->api(
+            'thermostat',
+            'create',
+            [
+              'attributes' => [
+                'ecobee_thermostat_id' => $ecobee_thermostat['ecobee_thermostat_id'],
+                'alerts' => []
+              ]
+            ]
+          );
+        }
       }
       else {
         // Thermostat does not exist.
