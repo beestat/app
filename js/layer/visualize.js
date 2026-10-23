@@ -24,7 +24,9 @@ beestat.layer.visualize.prototype.decorate_ = function(parent) {
     (new beestat.layer.visualize()).render();
   });
 
-  (new beestat.component.header('visualize')).render(parent);
+  if (new URLSearchParams(window.location.search).get('embedded') !== '1') {
+    (new beestat.component.header('visualize')).render(parent);
+  }
 
   // All the cards
   var cards = [];

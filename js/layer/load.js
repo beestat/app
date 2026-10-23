@@ -313,8 +313,12 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.enable_poll();
     beestat.enable_poll_watcher();
 
+    const requested_layer = new URLSearchParams(window.location.search).get('layer');
+    const allowed_layers = ['detail', 'analyze', 'visualize', 'compare', 'air_quality', 'settings', 'contribute', 'glenwood_enroll', 'glenwood_report'];
     if (window.location.href.indexOf('glenwood') !== -1) {
       (new beestat.layer.glenwood_enroll()).render();
+    } else if (allowed_layers.includes(requested_layer)) {
+      (new beestat.layer[requested_layer]()).render();
     } else {
       (new beestat.layer.detail()).render();
     }

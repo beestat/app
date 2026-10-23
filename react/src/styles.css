@@ -1,0 +1,21 @@
+:root {
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body, #root { min-height: 100%; }
+body { margin: 0; overflow-y: scroll; }
+button, input, select { font: inherit; }
+.highcharts-container, .highcharts-root { font-family: inherit !important; }
+.legacy-visualizer-host { position: relative; min-height: 540px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
