@@ -107,7 +107,7 @@ export function VisualizePage() {
     {state === 'error' && <Alert severity="error">{message}</Alert>}
     <Box sx={{ display: state === 'ready' ? 'block' : 'none', minWidth: 0 }}>
       <Box ref={editorRoot} />
-      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} onSaved={setSavedPlan} /></Box>}
+      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} sensors={data?.sensor ?? {}} onSaved={setSavedPlan} /></Box>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
       {nativeScene && activePlan && <Box mb={2}><NativeThreeScene plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} /></Box>}
       <Box ref={sceneRoot} />

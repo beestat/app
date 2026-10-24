@@ -13,11 +13,12 @@ function kelvinColor(kelvin = 4000) {
   return '#d8eeff';
 }
 
-export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove, onAdd }: {
+export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove, onMoveStart, onAdd }: {
   group: FloorGroup;
   selection?: Selection;
   onSelect: (selection?: Selection) => void;
   onMove: (type: EntityType, id: string, x: number, y: number) => void;
+  onMoveStart: () => void;
   onAdd: (type: EntityType) => void;
 }) {
   const frame = useMemo(() => entityBounds(group), [group]);
@@ -37,7 +38,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
     event.stopPropagation();
     const id = entityId(type, entity);
     onSelect({ type, id });
-    if (!entity.editor_locked) drag.current = { mode: 'entity', x: event.clientX, y: event.clientY, entityX: entity.x, entityY: entity.y, type, id };
+    if (!entity.editor_locked) { onMoveStart(); drag.current = { mode: 'entity', x: event.clientX, y: event.clientY, entityX: entity.x, entityY: entity.y, type, id }; }
   };
   const zoom = (factor: number) => setView((current) => ({ x: current.x + current.width * (1 - factor) / 2, y: current.y + current.height * (1 - factor) / 2, width: current.width * factor, height: current.height * factor }));
 

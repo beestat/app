@@ -69,7 +69,7 @@ const mutationsBeforeDraft = blockedMutations.length;
 await page.getByRole('button', { name: 'Rooms (13)' }).click();
 await page.locator('button[aria-label="Hide"]:visible').first().click();
 if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
-await page.getByRole('button', { name: 'Undo unsaved floor-plan changes' }).click();
+await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
 if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import {
   Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent,
-  CardHeader, Chip, Divider, IconButton, Stack, TextField, Tooltip, Typography,
+  CardHeader, Chip, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Save, Trash2, Undo2 } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
 import { apiCall } from '../../api/client';
 import { colors } from '../../theme';
+import type { Sensor } from '../../types';
 import { FloorPlanCanvas } from './FloorPlanCanvas';
 import { entityId, floorPlanArea, type EntityType, type FloorEntity, type FloorGroup, type FloorPlan } from './floorPlanModel';
 
@@ -25,7 +26,7 @@ function closestGroundFloor(groups: FloorGroup[]) {
   return [...groups].sort((a, b) => Math.abs(Number(a.elevation ?? 0)) - Math.abs(Number(b.elevation ?? 0)))[0];
 }
 
-export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan; onSaved?: (plan: FloorPlan) => void }) {
+export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: FloorPlan; sensors: Record<string, Sensor>; onSaved?: (plan: FloorPlan) => void }) {
   const initialPlan = useMemo(() => clonePlan(source), [source]);
   const [expanded, setExpanded] = useState(false);
   const [plan, setPlan] = useState(initialPlan);
@@ -33,6 +34,8 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
   const [groupId, setGroupId] = useState(() => closestGroundFloor(source.data.groups)?.group_id);
   const [selection, setSelection] = useState<Selection>();
   const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState<FloorPlan[]>([]);
+  const [future, setFuture] = useState<FloorPlan[]>([]);
   const group = plan.data.groups.find((item) => item.group_id === groupId) ?? plan.data.groups[0];
   const dirty = JSON.stringify(plan.data) !== saved;
   const selectedEntity = useMemo(() => {
@@ -40,7 +43,9 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
     return group[selection.type].find((entity) => entityId(selection.type, entity) === selection.id);
   }, [group, selection]);
 
-  const mutateGroup = (change: (draft: FloorGroup) => void) => setPlan((current) => {
+  const checkpoint = () => { setHistory((items) => [...items.slice(-49), clonePlan(plan)]); setFuture([]); };
+  const mutateGroup = (change: (draft: FloorGroup) => void, record = true) => setPlan((current) => {
+    if (record) { setHistory((items) => [...items.slice(-49), clonePlan(current)]); setFuture([]); }
     const next = clonePlan(current); const draft = next.data.groups.find((item) => item.group_id === group.group_id)!; change(draft); return next;
   });
   const mutateEntity = (change: (draft: FloorEntity) => void) => {
@@ -69,13 +74,16 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
     try {
       await apiCall({ resource: 'floor_plan', method: 'update', arguments: { attributes: { floor_plan_id: plan.floor_plan_id, data: plan.data } } });
       setSaved(JSON.stringify(plan.data));
+      setHistory([]); setFuture([]);
       onSaved?.(structuredClone(plan));
       if (window.beestat?.cache?.floor_plan?.[plan.floor_plan_id]) window.beestat.cache.floor_plan[plan.floor_plan_id].data = structuredClone(plan.data);
     } finally { setSaving(false); }
   };
+  const undo = () => { const previous = history.at(-1); if (!previous) return; setFuture((items) => [clonePlan(plan), ...items].slice(0, 50)); setHistory((items) => items.slice(0, -1)); setPlan(previous); setSelection(undefined); };
+  const redo = () => { const next = future[0]; if (!next) return; setHistory((items) => [...items.slice(-49), clonePlan(plan)]); setFuture((items) => items.slice(1)); setPlan(next); setSelection(undefined); };
 
   return <Card>
-    <CardHeader title="Floor Plan" action={<Stack direction="row" gap={.5}>{dirty && <Chip size="small" color="warning" label="Unsaved" />}<Tooltip title="Undo unsaved changes"><span><IconButton aria-label="Undo unsaved floor-plan changes" disabled={!dirty} onClick={() => { setPlan(clonePlan({ ...plan, data: JSON.parse(saved) })); setSelection(undefined); }}><Undo2 /></IconButton></span></Tooltip><Tooltip title="Save floor plan"><span><IconButton aria-label="Save floor plan" disabled={!dirty || saving} onClick={() => void save()}><Save /></IconButton></span></Tooltip></Stack>} />
+    <CardHeader title="Floor Plan" action={<Stack direction="row" gap={.5}>{dirty && <Chip size="small" color="warning" label="Unsaved" />}<Tooltip title="Undo"><span><IconButton aria-label="Undo floor-plan change" disabled={!history.length} onClick={undo}><Undo2 /></IconButton></span></Tooltip><Tooltip title="Redo"><span><IconButton aria-label="Redo floor-plan change" disabled={!future.length} onClick={redo}><Redo2 /></IconButton></span></Tooltip><Tooltip title="Save floor plan"><span><IconButton aria-label="Save floor plan" disabled={!dirty || saving} onClick={() => void save()}><Save /></IconButton></span></Tooltip></Stack>} />
     <CardContent sx={{ pt: 0 }}>
       <Button fullWidth onClick={() => setExpanded((value) => !value)} sx={{ minHeight: 49, px: 1.5, bgcolor: colors.lightBlue.main, color: '#fff', justifyContent: 'space-between', '&:hover': { bgcolor: colors.lightBlue.main } }}>
         <Stack direction="row" gap={1.5} alignItems="center"><Layers3 /><Box textAlign="left"><Typography fontWeight={600}>{plan.name}</Typography><Typography variant="caption">{plan.data.groups.length} Floors · {floorPlanArea(plan).toLocaleString()} ft²</Typography></Box></Stack>
@@ -83,7 +91,7 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
       </Button>
       {expanded && group && <>
         <Box mt={1} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 250px' }, bgcolor: colors.slate.dark }}>
-          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onAdd={addEntity} onMove={(type, id, x, y) => mutateGroup((draft) => {
+          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onAdd={addEntity} onMoveStart={checkpoint} onMove={(type, id, x, y) => mutateGroup((draft) => {
             const entity = draft[type].find((item) => entityId(type, item) === id);
             if (!entity) return;
             if (type === 'openings') {
@@ -92,7 +100,7 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
               opening.points = opening.points.map((point) => ({ x: point.x + dx, y: point.y + dy }));
             }
             entity.x = Math.round(x); entity.y = Math.round(y);
-          })} />
+          }, false)} />
           <Box sx={{ p: 1, maxHeight: { xs: 360, lg: 500 }, overflow: 'auto', borderLeft: { lg: `1px solid ${colors.slate.light}` } }}>
             {plan.data.groups.map((item) => <Accordion key={item.group_id} expanded={item.group_id === group.group_id} onChange={() => { setGroupId(item.group_id); setSelection(undefined); }} disableGutters elevation={0} sx={{ bgcolor: 'transparent', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ChevronDown size={18} />}><Typography color={item.group_id === group.group_id ? colors.lightBlue.light : 'inherit'} fontWeight={600}>{item.name || 'Floor'}</Typography></AccordionSummary>
@@ -120,6 +128,11 @@ export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan
             <TextField fullWidth size="small" label="Name" value={String(selectedEntity.name ?? '')} onChange={(event) => mutateEntity((entity) => { entity.name = event.target.value; })} />
             <TextField fullWidth size="small" label="X (in)" type="number" value={selectedEntity.x} onChange={(event) => mutateEntity((entity) => { entity.x = Number(event.target.value); })} />
             <TextField fullWidth size="small" label="Y (in)" type="number" value={selectedEntity.y} onChange={(event) => mutateEntity((entity) => { entity.y = Number(event.target.value); })} />
+            {selection?.type === 'rooms' && <TextField fullWidth size="small" select label="Sensor" value={String(selectedEntity.sensor_id ?? '')} onChange={(event) => mutateEntity((entity) => { if (event.target.value) entity.sensor_id = Number(event.target.value); else delete entity.sensor_id; })}><MenuItem value="">No sensor</MenuItem>{Object.values(sensors).map((sensor) => <MenuItem key={sensor.sensor_id} value={String(sensor.sensor_id)}>{sensor.name}</MenuItem>)}</TextField>}
+            {selection?.type === 'surfaces' && <><TextField size="small" label="Color" type="color" value={String(selectedEntity.color ?? '#9a9a96')} onChange={(event) => mutateEntity((entity) => { entity.color = event.target.value; })} sx={{ minWidth: 100 }} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /></>}
+            {selection?.type === 'openings' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'empty')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['empty', 'door', 'window', 'glass'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 60)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /></>}
+            {selection?.type === 'trees' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'round')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['round', 'oval', 'pine'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Diameter (in)" type="number" value={Number(selectedEntity.diameter ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.diameter = Number(event.target.value); })} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 120)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /></>}
+            {selection?.type === 'lights' && <><TextField size="small" select label="Intensity" value={String(selectedEntity.intensity ?? 'normal')} onChange={(event) => mutateEntity((entity) => { entity.intensity = event.target.value; })}>{['dim', 'normal', 'bright'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /><TextField size="small" label="Temperature (K)" type="number" value={Number(selectedEntity.temperature_k ?? 4000)} onChange={(event) => mutateEntity((entity) => { entity.temperature_k = Number(event.target.value); })} /></>}
             <Tooltip title="Delete selected object"><IconButton aria-label="Delete selected object" color="error" onClick={removeSelected}><Trash2 /></IconButton></Tooltip>
           </> : <>
             <TextField fullWidth size="small" label="Floor Name" value={group.name ?? ''} onChange={(event) => mutateGroup((draft) => { draft.name = event.target.value; })} />
