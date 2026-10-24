@@ -7,7 +7,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 ## Detail
 
 - [ ] Header/navigation and thermostat selector
-- [ ] System card: mode/schedule/override/as-of subtitle, indoor/weather circles, equipment, climate, time-to-temperature, menus/modals
+- [x] System card: mode/schedule/override/as-of subtitle, indoor/weather circles, equipment, climate, time-to-temperature, menus/modals
 - [x] Sensors card: internal sensor placement, two-column remote grid, temperature/occupancy/participation states, menu
 - [x] Alerts card: alert-specific icons, compact rows, dismiss/restore, menus
 - [ ] Contribution/rating reminder eligibility

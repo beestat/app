@@ -16,7 +16,7 @@ export function DetailPage() {
   const sensors = useMemo(() => Object.values(data?.sensor ?? {}).filter((sensor) => sensor.thermostat_id === thermostatId), [data?.sensor, thermostatId]);
   if (!thermostat || !thermostatId) return null;
   return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, gap: 2, py: 2 }}>
-    <SystemCard thermostat={thermostat} ecobee={data?.ecobee_thermostat[String(thermostat.ecobee_thermostat_id)]} />
+    <SystemCard thermostat={thermostat} ecobee={data?.ecobee_thermostat[String(thermostat.ecobee_thermostat_id)]} lastSync={data?.user?.sync_status?.thermostat} />
     <SensorsCard sensors={sensors} thermostat={thermostat} />
     <AlertsCard alerts={thermostat.alerts ?? []} thermostatId={thermostatId} />
     {data && <ReminderCard data={data} />}
