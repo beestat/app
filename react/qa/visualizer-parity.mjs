@@ -24,7 +24,7 @@ await context.route('**/api/', async (route) => {
 });
 
 const page = await context.newPage();
-page.on('pageerror', (error) => errors.push(error.message));
+page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
 async function inspect(name, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await page.getByText('Floor Plan', { exact: true }).first().waitFor({ timeout: 90_000 });
@@ -45,7 +45,7 @@ async function inspect(name, url) {
 
 const legacy = await inspect('legacy', 'https://dev.app.beestat.io/?layer=visualize');
 const react = await inspect('react', 'https://dev.app.beestat.io/react/index.php#/visualize');
-if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8) throw new Error(`Visualizer parity regression: ${JSON.stringify(react)}`);
+if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8) throw new Error(`Visualizer parity regression: ${JSON.stringify({ react, url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), errors })}`);
 await page.getByText('Home', { exact: true }).first().click();
 await page.waitForTimeout(2_000);
 const editor = await page.evaluate(() => ({
@@ -71,6 +71,10 @@ await page.locator('button[aria-label="Hide"]:visible').first().click();
 if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
 await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
 if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
+await page.getByRole('button', { name: 'Add Floor' }).click();
+if (!await page.getByText('4 Floors', { exact: false }).isVisible()) throw new Error('Native editor did not add a draft floor.');
+await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
+if (!await page.getByText('3 Floors', { exact: false }).isVisible() || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor floor undo leaked a write or failed to restore the plan.');
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 await page.getByText('Fetching…').waitFor({ state: 'hidden', timeout: 90_000 });

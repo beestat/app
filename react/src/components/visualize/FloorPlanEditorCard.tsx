@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent,
   CardHeader, Chip, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography,
@@ -44,10 +44,11 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
   }, [group, selection]);
 
   const checkpoint = () => { setHistory((items) => [...items.slice(-49), clonePlan(plan)]); setFuture([]); };
-  const mutateGroup = (change: (draft: FloorGroup) => void, record = true) => setPlan((current) => {
+  const mutatePlan = (change: (draft: FloorPlan) => void, record = true) => setPlan((current) => {
     if (record) { setHistory((items) => [...items.slice(-49), clonePlan(current)]); setFuture([]); }
-    const next = clonePlan(current); const draft = next.data.groups.find((item) => item.group_id === group.group_id)!; change(draft); return next;
+    const next = clonePlan(current); change(next); return next;
   });
+  const mutateGroup = (change: (draft: FloorGroup) => void, record = true) => mutatePlan((draft) => { const floor = draft.data.groups.find((item) => item.group_id === group.group_id); if (floor) change(floor); }, record);
   const mutateEntity = (change: (draft: FloorEntity) => void) => {
     if (!selection) return;
     mutateGroup((draft) => { const entity = draft[selection.type].find((item) => entityId(selection.type, item) === selection.id); if (entity) change(entity); });
@@ -76,6 +77,15 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
     const next = polygon.points[(edge + 1) % polygon.points.length]; const point = polygon.points[edge]; polygon.points.splice(edge + 1, 0, { x: Math.round((point.x + next.x) / 2), y: Math.round((point.y + next.y) / 2) });
   });
   const removePoint = () => mutateEntity((entity) => { const polygon = entity as FloorEntity & { points?: Array<{ x: number; y: number }> }; if (polygon.points && polygon.points.length > 3) polygon.points.pop(); });
+  const addFloor = () => {
+    const id = crypto.randomUUID(); const top = Math.max(...plan.data.groups.map((item) => Number(item.elevation ?? 0) + Number(item.height ?? 96)), 0);
+    mutatePlan((draft) => { draft.data.groups.push({ group_id: id, name: `Floor ${draft.data.groups.length + 1}`, elevation: top, height: 96, rooms: [], surfaces: [], openings: [], trees: [], lights: [] }); });
+    setGroupId(id); setSelection(undefined);
+  };
+  const removeFloor = () => {
+    if (plan.data.groups.length <= 1) return; const index = plan.data.groups.findIndex((item) => item.group_id === group.group_id); const replacement = plan.data.groups[index > 0 ? index - 1 : 1];
+    mutatePlan((draft) => { draft.data.groups = draft.data.groups.filter((item) => item.group_id !== group.group_id); }); setGroupId(replacement.group_id); setSelection(undefined);
+  };
   const save = async () => {
     setSaving(true);
     try {
@@ -88,6 +98,18 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
   };
   const undo = () => { const previous = history.at(-1); if (!previous) return; setFuture((items) => [clonePlan(plan), ...items].slice(0, 50)); setHistory((items) => items.slice(0, -1)); setPlan(previous); setSelection(undefined); };
   const redo = () => { const next = future[0]; if (!next) return; setHistory((items) => [...items.slice(-49), clonePlan(plan)]); setFuture((items) => items.slice(1)); setPlan(next); setSelection(undefined); };
+  useEffect(() => {
+    if (!expanded) return;
+    const keys = (event: KeyboardEvent) => {
+      const editing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+      else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+      else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); if (dirty && !saving) void save(); }
+      else if (!editing && (event.key === 'Delete' || event.key === 'Backspace')) removeSelected();
+      else if (event.key === 'Escape') setSelection(undefined);
+    };
+    window.addEventListener('keydown', keys); return () => window.removeEventListener('keydown', keys);
+  });
 
   return <Card>
     <CardHeader title="Floor Plan" action={<Stack direction="row" gap={.5}>{dirty && <Chip size="small" color="warning" label="Unsaved" />}<Tooltip title="Undo"><span><IconButton aria-label="Undo floor-plan change" disabled={!history.length} onClick={undo}><Undo2 /></IconButton></span></Tooltip><Tooltip title="Redo"><span><IconButton aria-label="Redo floor-plan change" disabled={!future.length} onClick={redo}><Redo2 /></IconButton></span></Tooltip><Tooltip title="Save floor plan"><span><IconButton aria-label="Save floor plan" disabled={!dirty || saving} onClick={() => void save()}><Save /></IconButton></span></Tooltip></Stack>} />
@@ -150,6 +172,8 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
             <TextField fullWidth size="small" label="Floor Name" value={group.name ?? ''} onChange={(event) => mutateGroup((draft) => { draft.name = event.target.value; })} />
             <TextField fullWidth size="small" label="Elevation (ft)" type="number" value={Number(group.elevation ?? 0) / 12} onChange={(event) => mutateGroup((draft) => { draft.elevation = Number(event.target.value) * 12; })} />
             <TextField fullWidth size="small" label="Ceiling Height (ft)" type="number" value={Number(group.height ?? 96) / 12} onChange={(event) => mutateGroup((draft) => { draft.height = Number(event.target.value) * 12; })} />
+            <Button startIcon={<Plus />} onClick={addFloor}>Add Floor</Button>
+            <Button color="error" startIcon={<Trash2 />} disabled={plan.data.groups.length <= 1} onClick={removeFloor}>Delete Floor</Button>
           </>}
         </Stack>
       </>}

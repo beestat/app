@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, IconButton, Slider, Stack, Tooltip, Typography } from '@mui/material';
 import { Eye, EyeOff, Home, Layers3, Pause, Play, Rotate3D, Tags } from 'lucide-react';
 import * as THREE from 'three';
+import * as ClipperLib from 'clipper-lib';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { colors } from '../../theme';
 import { entityBounds, type FloorGroup, type FloorPlan, type FloorPoint } from './floorPlanModel';
@@ -9,6 +10,18 @@ import type { Sensor } from '../../types';
 import { useVisualizeRuntime } from './useVisualizeRuntime';
 
 type SceneResources = { renderer: THREE.WebGLRenderer; controls: OrbitControls; scene: THREE.Scene; frame: number; resize: ResizeObserver; render: () => void; animate: () => void; rooms: Map<string, THREE.MeshStandardMaterial>; groups: Map<string, THREE.Group>; sun: THREE.DirectionalLight; hemisphere: THREE.HemisphereLight };
+type SkeletonBuilder = { buildFromPolygon: (coordinates: number[][][]) => { vertices: number[][]; polygons: number[][] } | null };
+let skeletonPromise: Promise<SkeletonBuilder> | undefined;
+
+function loadSkeletonBuilder() {
+  skeletonPromise ??= new Promise<void>((resolve, reject) => {
+    if ((globalThis as any).SkeletonBuilderReady) { resolve(); return; }
+    const existing = document.querySelector<HTMLScriptElement>('script[data-native-roof-engine]');
+    if (existing) { existing.addEventListener('load', () => resolve(), { once: true }); existing.addEventListener('error', () => reject(new Error('Unable to load straight-skeleton wrapper.')), { once: true }); return; }
+    const script = document.createElement('script'); script.type = 'module'; script.src = '/js/lib/straight-skeleton/wrapper.js'; script.dataset.nativeRoofEngine = 'true'; script.onload = () => resolve(); script.onerror = () => reject(new Error('Unable to load straight-skeleton wrapper.')); document.head.appendChild(script);
+  }).then(async () => { const builder = await (globalThis as any).SkeletonBuilderReady as SkeletonBuilder | undefined; if (!builder) throw new Error('Straight-skeleton module did not export SkeletonBuilder.'); return builder; });
+  return skeletonPromise;
+}
 
 function polygonShape(points: FloorPoint[], offsetX = 0, offsetY = 0) {
   const shape = new THREE.Shape();
@@ -69,27 +82,42 @@ function addWall(parent: THREE.Group, a: FloorPoint, b: FloorPoint, elevation: n
   parent.add(mesh);
 }
 
-function addHipRoof(parent: THREE.Group, group: FloorGroup, color: THREE.ColorRepresentation) {
-  const roomPoints = group.rooms.flatMap((room) => room.points.map((point) => ({ x: room.x + point.x, y: room.y + point.y })));
-  if (!roomPoints.length) return;
-  const left = Math.min(...roomPoints.map((point) => point.x)); const right = Math.max(...roomPoints.map((point) => point.x));
-  const top = Math.min(...roomPoints.map((point) => point.y)); const bottom = Math.max(...roomPoints.map((point) => point.y));
-  const width = right - left; const depth = bottom - top; const base = Math.max(...group.rooms.map((room) => Number(group.elevation ?? 0) + Number(room.elevation ?? 0) + Number(room.height ?? room.ceiling_height ?? group.height ?? 96)));
-  const rise = Math.max(18, Math.min(42, Math.min(width, depth) * .22)); const centerX = (left + right) / 2; const centerZ = (top + bottom) / 2;
-  const vertices: number[] = []; const triangle = (...values: number[]) => vertices.push(...values);
-  if (width >= depth) {
-    const inset = Math.min(depth / 2, width / 2); const ridgeLeft = left + inset; const ridgeRight = right - inset;
-    triangle(left, base, top, right, base, top, ridgeRight, base + rise, centerZ, ridgeRight, base + rise, centerZ, ridgeLeft, base + rise, centerZ, left, base, top);
-    triangle(left, base, bottom, ridgeLeft, base + rise, centerZ, ridgeRight, base + rise, centerZ, ridgeRight, base + rise, centerZ, right, base, bottom, left, base, bottom);
-    triangle(left, base, top, ridgeLeft, base + rise, centerZ, left, base, bottom, right, base, top, right, base, bottom, ridgeRight, base + rise, centerZ);
-  } else {
-    const inset = Math.min(width / 2, depth / 2); const ridgeTop = top + inset; const ridgeBottom = bottom - inset;
-    triangle(left, base, top, centerX, base + rise, ridgeTop, centerX, base + rise, ridgeBottom, centerX, base + rise, ridgeBottom, left, base, bottom, left, base, top);
-    triangle(right, base, top, right, base, bottom, centerX, base + rise, ridgeBottom, centerX, base + rise, ridgeBottom, centerX, base + rise, ridgeTop, right, base, top);
-    triangle(left, base, top, right, base, top, centerX, base + rise, ridgeTop, left, base, bottom, centerX, base + rise, ridgeBottom, right, base, bottom);
-  }
-  const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.computeVertexNormals();
-  const roof = new THREE.Mesh(geometry, material(color, .82)); roof.castShadow = true; roof.receiveShadow = true; roof.userData.visualizeKind = 'roof'; parent.add(roof);
+function union(paths: ClipperLib.Paths) {
+  const clipper = new ClipperLib.Clipper(); clipper.AddPaths(paths, ClipperLib.PolyType.ptSubject, true); const result: ClipperLib.Paths = [];
+  clipper.Execute(ClipperLib.ClipType.ctUnion, result, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero); return result;
+}
+
+function exposedRoofs(plan: FloorPlan) {
+  const byLevel = new Map<number, ClipperLib.Paths>();
+  plan.data.groups.forEach((group) => group.rooms.filter((room) => !room.editor_hidden && room.points.length >= 3).forEach((room) => {
+    const level = Number(group.elevation ?? 0) + Number(room.elevation ?? 0) + Number(room.height ?? room.ceiling_height ?? group.height ?? 96);
+    const paths = byLevel.get(level) ?? []; paths.push(room.points.map((point) => ({ X: Math.round(room.x + point.x), Y: Math.round(room.y + point.y) }))); byLevel.set(level, paths);
+  }));
+  const areas: Array<{ level: number; paths: ClipperLib.Paths }> = []; let higher: ClipperLib.Paths = [];
+  [...byLevel.entries()].sort(([a], [b]) => b - a).forEach(([level, raw]) => {
+    const ceiling = union(raw); let exposed = ceiling;
+    if (higher.length) { const clipper = new ClipperLib.Clipper(); clipper.AddPaths(ceiling, ClipperLib.PolyType.ptSubject, true); clipper.AddPaths(higher, ClipperLib.PolyType.ptClip, true); exposed = []; clipper.Execute(ClipperLib.ClipType.ctDifference, exposed, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero); }
+    if (exposed.length) areas.push({ level, paths: exposed }); higher = union([...higher, ...ceiling]);
+  });
+  return areas;
+}
+
+function addSkeletonRoofs(parent: THREE.Group, plan: FloorPlan, color: THREE.ColorRepresentation, builder?: SkeletonBuilder) {
+  if (!builder) return;
+  const layer = new THREE.Group(); layer.userData.visualizeKind = 'structure'; parent.add(layer);
+  exposedRoofs(plan).forEach(({ level, paths }) => paths.forEach((path) => {
+    if (path.length < 3) return;
+    try {
+      const offset = new ClipperLib.ClipperOffset(); offset.AddPath(path, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon); const expanded: ClipperLib.Paths = []; offset.Execute(expanded, 12);
+      const roof = expanded[0] ?? path; if (!ClipperLib.Clipper.Orientation(roof)) roof.reverse(); const ring = roof.map((point) => [point.X, point.Y]); ring.push([...ring[0]]); const result = builder.buildFromPolygon([ring]); if (!result) return;
+      const distanceToEdge = (x: number, y: number) => roof.reduce((best, point, index) => { const next = roof[(index + 1) % roof.length]; const dx = next.X - point.X; const dy = next.Y - point.Y; const length = dx * dx + dy * dy; const t = length ? Math.max(0, Math.min(1, ((x - point.X) * dx + (y - point.Y) * dy) / length)) : 0; return Math.min(best, Math.hypot(x - (point.X + t * dx), y - (point.Y + t * dy))); }, Infinity);
+      const vertices = result.vertices.map((vertex, index) => new THREE.Vector3(vertex[0], level + (index < roof.length ? 0 : distanceToEdge(vertex[0], vertex[1]) * .5), vertex[1]));
+      result.polygons.forEach((face) => {
+        if (face.length < 3) return; const triangles: THREE.Vector3[] = []; for (let index = 1; index < face.length - 1; index += 1) triangles.push(vertices[face[0]], vertices[face[index]], vertices[face[index + 1]]);
+        const geometry = new THREE.BufferGeometry().setFromPoints(triangles); geometry.computeVertexNormals(); const mesh = new THREE.Mesh(geometry, material(color, .84)); mesh.castShadow = true; mesh.receiveShadow = true; mesh.userData.visualizeKind = 'roof'; layer.add(mesh);
+      });
+    } catch (error) { console.warn('Unable to generate a roof section.', error); }
+  }));
 }
 
 function addGroup(root: THREE.Group, group: FloorGroup, appearance: Record<string, unknown>, visible: boolean, rooms: Map<string, THREE.MeshStandardMaterial>, roomObjects: THREE.Mesh[], showLabels: boolean) {
@@ -135,7 +163,6 @@ function addGroup(root: THREE.Group, group: FloorGroup, appearance: Record<strin
     fixture.position.set(light.x, elevation + Number(light.elevation ?? 72), light.y); fixture.userData.visualizeKind = 'environment'; layer.add(fixture);
     const point = new THREE.PointLight('#ffe2a1', light.intensity === 'bright' ? .8 : light.intensity === 'dim' ? .25 : .5, 220, 2); point.position.copy(fixture.position); point.userData.visualizeKind = 'environment'; layer.add(point);
   });
-  if (String(appearance.roof_style ?? 'hip') !== 'flat') addHipRoof(layer, group, String(appearance.roof_color ?? '#3a3a3a'));
   return layer;
 }
 
@@ -157,11 +184,14 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
   const [minute, setMinute] = useState(() => { const now = new Date(); return now.getHours() * 60 + Math.floor(now.getMinutes() / 5) * 5; });
   const [playing, setPlaying] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string>();
+  const [skeleton, setSkeleton] = useState<SkeletonBuilder>();
   const runtime = useVisualizeRuntime(plan, sensors, settings);
   const dataType = settings.data_type === 'occupancy' ? 'occupancy' : 'temperature';
   const limits = useMemo(() => settings.heat_map_values === 'static'
     ? { min: Number(settings.heat_map_static?.[dataType]?.min ?? (dataType === 'temperature' ? 70 : 0)), max: Number(settings.heat_map_static?.[dataType]?.max ?? (dataType === 'temperature' ? 80 : 100)) }
     : { min: runtime.data.min[dataType], max: runtime.data.max[dataType] }, [dataType, runtime.data, settings.heat_map_static, settings.heat_map_values]);
+
+  useEffect(() => { if (String(plan.data.appearance?.roof_style ?? 'hip') === 'flat') return; let active = true; void loadSkeletonBuilder().then((value) => { if (active) setSkeleton(() => value); }).catch((error) => console.warn('Unable to load the roof geometry engine.', error)); return () => { active = false; }; }, [plan.data.appearance?.roof_style]);
 
   useEffect(() => {
     if (!host.current) return;
@@ -174,6 +204,7 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
     const center = new THREE.Vector3((focusLeft + focusRight) / 2, 0, (focusTop + focusBottom) / 2); const extent = Math.max(focusRight - focusLeft, focusBottom - focusTop, 400); controls.target.copy(center); camera.position.set(center.x + extent * .95, extent * .75, center.z + extent * .95); controls.update(); controls.saveState();
     const hemisphere = new THREE.HemisphereLight('#dce9ff', '#263d27', 1.35); scene.add(hemisphere); const sun = new THREE.DirectionalLight('#fff1d5', 1.35); sun.position.set(-500, 900, 400); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); scene.add(sun);
     const rooms = new Map<string, THREE.MeshStandardMaterial>(); const groups = new Map<string, THREE.Group>(); const roomObjects: THREE.Mesh[] = []; const root = new THREE.Group(); root.position.copy(center); root.rotation.y = -THREE.MathUtils.degToRad(Number(plan.data.appearance?.rotation ?? 0)); scene.add(root); const model = new THREE.Group(); model.position.set(-center.x, 0, -center.z); root.add(model); const appearance = plan.data.appearance ?? {}; plan.data.groups.forEach((group) => groups.set(group.group_id, addGroup(model, group, appearance, visibleGroups.has(group.group_id), rooms, roomObjects, plan.data.scene?.show_labels !== false)));
+    if (String(appearance.roof_style ?? 'hip') !== 'flat') addSkeletonRoofs(model, plan, String(appearance.roof_color ?? '#3a3a3a'), skeleton);
     const groundColor = new THREE.Color(String(appearance.ground_color ?? '#294f28')).multiplyScalar(.4); const ground = new THREE.Mesh(new THREE.PlaneGeometry(extent * 3.4, extent * 3.4), material(groundColor)); ground.rotation.x = -Math.PI / 2; ground.position.set(center.x, -1, center.z); ground.receiveShadow = true; ground.userData.visualizeKind = 'environment'; scene.add(ground);
     addWeather(scene, center, extent, (plan.data.scene?.settings as Record<string, unknown> | undefined) ?? {});
     let active = true; const render = () => { if (active) renderer.render(scene, camera); }; const animate = () => { if (!active || !controls.autoRotate) return; controls.update(); render(); resources.current!.frame = requestAnimationFrame(animate); };
@@ -183,17 +214,17 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
     const resize = new ResizeObserver(([entry]) => { const width = Math.max(1, entry.contentRect.width); const height = 500; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix(); render(); }); resize.observe(container);
     resources.current = { renderer, controls, scene, frame: 0, resize, render, animate, rooms, groups, sun, hemisphere }; render();
     return () => { active = false; cancelAnimationFrame(resources.current?.frame ?? 0); resize.disconnect(); controls.removeEventListener('change', render); renderer.domElement.removeEventListener('click', selectRoom); controls.dispose(); scene.traverse((object) => { const mesh = object as THREE.Mesh; mesh.geometry?.dispose(); const materials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []; materials.forEach((item) => item.dispose()); }); renderer.dispose(); renderer.domElement.remove(); resources.current = undefined; };
-  }, [plan]);
+  }, [plan, skeleton]);
 
-  useEffect(() => { if (!resources.current) return; resources.current.groups.forEach((object, id) => { object.visible = visibleGroups.has(id); }); resources.current.render(); }, [visibleGroups, plan]);
+  useEffect(() => { if (!resources.current) return; resources.current.groups.forEach((object, id) => { object.visible = visibleGroups.has(id); }); resources.current.render(); }, [visibleGroups, plan, skeleton]);
 
   useEffect(() => { if (!resources.current) return; resources.current.controls.autoRotate = autoRotate; cancelAnimationFrame(resources.current.frame); if (autoRotate) resources.current.frame = requestAnimationFrame(resources.current.animate); else resources.current.render(); }, [autoRotate]);
   useEffect(() => {
     if (!resources.current) return;
     resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'environment' || object.userData.visualizeKind === 'stars') object.visible = showEnvironment; });
     resources.current.render();
-  }, [showEnvironment, plan]);
-  useEffect(() => { if (!resources.current) return; resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'label') object.visible = showLabels; }); resources.current.render(); }, [showLabels, plan]);
+  }, [showEnvironment, plan, skeleton]);
+  useEffect(() => { if (!resources.current) return; resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'label') object.visible = showLabels; }); resources.current.render(); }, [showLabels, plan, skeleton]);
   useEffect(() => {
     if (!resources.current) return;
     const daylight = Math.max(0, Math.sin(((minute - 360) / 720) * Math.PI)); const twilight = Math.max(0, Math.sin(((minute - 300) / 840) * Math.PI));
@@ -210,7 +241,7 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
       roomMaterial.color.set(value == null ? '#38464d' : heatColor(value, limits.min, limits.max)); roomMaterial.needsUpdate = true;
     }));
     resources.current.render();
-  }, [dataType, limits.max, limits.min, minute, plan, runtime.data, showEnvironment]);
+  }, [dataType, limits.max, limits.min, minute, plan, runtime.data, showEnvironment, skeleton]);
   useEffect(() => {
     if (!playing) return;
     const timer = window.setInterval(() => setMinute((value) => (value + 5) % 1440), 120);
