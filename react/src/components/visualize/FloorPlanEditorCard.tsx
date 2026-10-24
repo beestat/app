@@ -65,7 +65,16 @@ export function FloorPlanEditorCard({ plan: source }: { plan: FloorPlan }) {
       </Button>
       {expanded && group && <>
         <Box mt={1} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 250px' }, bgcolor: colors.slate.dark }}>
-          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} />
+          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onMove={(type, id, x, y) => mutateGroup((draft) => {
+            const entity = draft[type].find((item) => entityId(type, item) === id);
+            if (!entity) return;
+            if (type === 'openings') {
+              const dx = x - entity.x; const dy = y - entity.y;
+              const opening = entity as FloorEntity & { points: Array<{ x: number; y: number }> };
+              opening.points = opening.points.map((point) => ({ x: point.x + dx, y: point.y + dy }));
+            }
+            entity.x = Math.round(x); entity.y = Math.round(y);
+          })} />
           <Box sx={{ p: 1, maxHeight: { xs: 360, lg: 500 }, overflow: 'auto', borderLeft: { lg: `1px solid ${colors.slate.light}` } }}>
             {plan.data.groups.map((item) => <Accordion key={item.group_id} expanded={item.group_id === group.group_id} onChange={() => { setGroupId(item.group_id); setSelection(undefined); }} disableGutters elevation={0} sx={{ bgcolor: 'transparent', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ChevronDown size={18} />}><Typography color={item.group_id === group.group_id ? colors.lightBlue.light : 'inherit'} fontWeight={600}>{item.name || 'Floor'}</Typography></AccordionSummary>

@@ -54,10 +54,7 @@ const editor = await page.evaluate(() => ({
   canvasCount: document.querySelectorAll('canvas').length,
 }));
 await page.screenshot({ path: 'test-results/parity/react-visualize-editor.png', fullPage: false });
-if (editor.svgCount === 0 || editor.canvasCount === 0) throw new Error(`Floor-plan editor regression: ${JSON.stringify(editor)}`);
-await page.goto('https://dev.app.beestat.io/react/index.php?native_editor=1#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-await page.getByText('Home', { exact: true }).first().waitFor({ timeout: 90_000 });
-await page.getByText('Home', { exact: true }).first().click();
+if (editor.svgCount === 0 || editor.canvasCount === 0 || editor.labels.length !== 5) throw new Error(`Floor-plan editor regression: ${JSON.stringify(editor)}`);
 await page.getByLabel('First Floor editor').waitFor({ timeout: 30_000 });
 const nativeEditor = await page.evaluate(() => ({
   svgCount: document.querySelectorAll('svg').length,

@@ -13,10 +13,11 @@ function kelvinColor(kelvin = 4000) {
   return '#d8eeff';
 }
 
-export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect }: {
+export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove }: {
   group: FloorGroup;
   selection?: Selection;
   onSelect: (selection?: Selection) => void;
+  onMove: (type: EntityType, id: string, x: number, y: number) => void;
 }) {
   const frame = useMemo(() => entityBounds(group), [group]);
   const fitted = useMemo(() => {
@@ -25,18 +26,31 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
   }, [frame]);
   const [view, setView] = useState(fitted);
   const [grid, setGrid] = useState(true);
-  const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | undefined>(undefined);
+  const drag = useRef<
+    | { mode: 'view'; x: number; y: number; viewX: number; viewY: number }
+    | { mode: 'entity'; x: number; y: number; entityX: number; entityY: number; type: EntityType; id: string }
+    | undefined
+  >(undefined);
   const selected = (type: EntityType, entity: FloorEntity) => selection?.type === type && selection.id === entityId(type, entity);
   const choose = (event: React.PointerEvent, type: EntityType, entity: FloorEntity) => {
-    event.stopPropagation(); onSelect({ type, id: entityId(type, entity) });
+    event.stopPropagation();
+    const id = entityId(type, entity);
+    onSelect({ type, id });
+    if (!entity.editor_locked) drag.current = { mode: 'entity', x: event.clientX, y: event.clientY, entityX: entity.x, entityY: entity.y, type, id };
   };
   const zoom = (factor: number) => setView((current) => ({ x: current.x + current.width * (1 - factor) / 2, y: current.y + current.height * (1 - factor) / 2, width: current.width * factor, height: current.height * factor }));
 
   return <Box sx={{ position: 'relative', height: { xs: 420, md: 500 }, bgcolor: colors.slate.dark, overflow: 'hidden', touchAction: 'none' }}>
     <svg
       width="100%" height="100%" viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet"
-      onPointerDown={(event) => { if (event.button !== 0) return; drag.current = { x: event.clientX, y: event.clientY, viewX: view.x, viewY: view.y }; event.currentTarget.setPointerCapture(event.pointerId); onSelect(undefined); }}
-      onPointerMove={(event) => { if (!drag.current) return; const rect = event.currentTarget.getBoundingClientRect(); setView((current) => ({ ...current, x: drag.current!.viewX - (event.clientX - drag.current!.x) * current.width / rect.width, y: drag.current!.viewY - (event.clientY - drag.current!.y) * current.height / rect.height })); }}
+      onPointerDown={(event) => { if (event.button !== 0) return; drag.current = { mode: 'view', x: event.clientX, y: event.clientY, viewX: view.x, viewY: view.y }; event.currentTarget.setPointerCapture(event.pointerId); onSelect(undefined); }}
+      onPointerMove={(event) => {
+        if (!drag.current) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        const scaleX = view.width / rect.width; const scaleY = view.height / rect.height;
+        if (drag.current.mode === 'entity') onMove(drag.current.type, drag.current.id, drag.current.entityX + (event.clientX - drag.current.x) * scaleX, drag.current.entityY + (event.clientY - drag.current.y) * scaleY);
+        else setView((current) => ({ ...current, x: drag.current!.mode === 'view' ? drag.current!.viewX - (event.clientX - drag.current!.x) * scaleX : current.x, y: drag.current!.mode === 'view' ? drag.current!.viewY - (event.clientY - drag.current!.y) * scaleY : current.y }));
+      }}
       onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
       aria-label={`${group.name ?? 'Floor'} editor`}
     >

@@ -42,7 +42,6 @@ export function VisualizePage() {
   const sceneRoot = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [message, setMessage] = useState('Loading the visualizer engine…');
-  const nativeEditor = new URLSearchParams(window.location.search).has('native_editor');
   useEffect(() => {
     if (!data || !thermostatId || !editorRoot.current || !sceneRoot.current) return;
     let stylesheet = document.querySelector<HTMLLinkElement>('link[data-visualizer-style]');
@@ -70,7 +69,6 @@ export function VisualizePage() {
       };
       restoreSetAttribute = () => { Element.prototype.setAttribute = originalSetAttribute; };
       if (user.settings.visualize.floor_plan_id != null) {
-        if (!nativeEditor) add(editorRoot.current, new engine.component.card.floor_plan_editor(thermostatId));
         if (user.settings.visualize.hide_affiliate === false && !config.isDemo) add(sceneRoot.current, new engine.component.card.visualize_affiliate(thermostatId));
         add(sceneRoot.current, new engine.component.card.three_d().set_floor_plan_id(user.settings.visualize.floor_plan_id));
       } else {
@@ -80,7 +78,7 @@ export function VisualizePage() {
       setState('ready');
     }).catch((error) => { if (!cancelled) { setMessage(error instanceof Error ? error.message : 'Unable to load the visualizer.'); setState('error'); } });
     return () => { cancelled = true; restoreSetAttribute?.(); instances.reverse().forEach((instance) => { try { instance.dispose(); } catch { /* legacy cleanup is best effort */ } }); editorRoot.current?.replaceChildren(); sceneRoot.current?.replaceChildren(); stylesheet?.remove(); };
-  }, [data, nativeEditor, thermostatId]);
+  }, [data, thermostatId]);
   const floorPlans = Object.values(data?.floor_plan ?? {}) as any[];
   const visualize = data?.user?.settings?.visualize ?? {};
   const hasFloorPlan = visualize.floor_plan_id != null || floorPlans[0]?.floor_plan_id != null;
@@ -92,8 +90,8 @@ export function VisualizePage() {
     {state === 'loading' && <Box sx={{ minHeight: 500, display: 'grid', placeItems: 'center' }}><Box textAlign="center"><CircularProgress /><Box mt={2}>{message}</Box></Box></Box>}
     {state === 'error' && <Alert severity="error">{message}</Alert>}
     <Box sx={{ display: state === 'ready' ? 'block' : 'none', minWidth: 0 }}>
-      <Box ref={editorRoot} sx={{ display: nativeEditor ? 'none' : 'block' }} />
-      {nativeEditor && activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} /></Box>}
+      <Box ref={editorRoot} />
+      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} /></Box>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
       <Box ref={sceneRoot} />
     </Box>
