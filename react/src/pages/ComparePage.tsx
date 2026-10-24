@@ -9,6 +9,7 @@ import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, Ma
 import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
+import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
 import { titleCase } from '../utils/format';
@@ -56,16 +57,6 @@ const systemTypeTitles = { heat: 'Heat', auxiliary_heat: 'Auxiliary Heat', cool:
 const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.lightBlue.main } as const;
 type SystemMode = keyof typeof systemTypeOptions;
 type SystemTypes = Record<SystemMode, string>;
-
-function CardHelpMenu({ label, href }: { label: string; href: string }) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  return <>
-    <Tooltip title={`${label} options`}><IconButton aria-label={`${label} options`} onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical size={20} /></IconButton></Tooltip>
-    <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
-      <MenuItem component="a" href={href} target="_blank" rel="noreferrer" onClick={() => setAnchor(null)}><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem>
-    </Menu>
-  </>;
-}
 
 function selectedSystemTypes(thermostat: any): SystemTypes {
   return Object.fromEntries((Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
