@@ -9,7 +9,7 @@ import type { Sensor, Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
-import { buildRuntimeData, unitLabel, type Point, type RuntimeRow } from './runtimeData';
+import { buildRuntimeData, runtimeAxisLabel, unitLabel, type Point, type RuntimeRow } from './runtimeData';
 
 const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light];
 
@@ -52,7 +52,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   }), [extremes, runtime.max, runtime.min, sensorSeries]);
   const temperatureOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, marginRight: 45, animation: false, zooming: { type: 'x' } }, title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
-    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineColor: colors.slate.light, crosshair: { color: colors.gray.main, width: 1 }, labels: { style: { color: colors.gray.main, fontSize: '11px' }, format: '{value:%a %l%P}' }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, tickInterval: 3 * 3_600_000, lineColor: colors.slate.light, crosshair: { color: colors.gray.main, width: 1 }, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: { title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } },
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: '#fff' } },
     tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, valueSuffix: unitLabel(thermostat.temperature_unit), valueDecimals: 1 },

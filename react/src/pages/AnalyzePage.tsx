@@ -1,5 +1,6 @@
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, Typography } from '@mui/material';
 import Highcharts from 'highcharts';
+import 'highcharts/highcharts-more';
 import HighchartsReact from 'highcharts-react-official';
 import { CalendarDays, CircleHelp, Download, EllipsisVertical, Info, RotateCcw } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
@@ -19,6 +20,13 @@ function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: s
 function ordinal(day: number) {
   const remainder = day % 100;
   return `${day}${remainder >= 11 && remainder <= 13 ? 'th' : day % 10 === 1 ? 'st' : day % 10 === 2 ? 'nd' : day % 10 === 3 ? 'rd' : 'th'}`;
+}
+
+function localDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function SummaryMenu({ range, setRange, onDownload, onReset }: { range: string; setRange: (value: string) => void; onDownload: () => void; onReset: () => void }) {
@@ -46,22 +54,34 @@ export function AnalyzePage() {
     if (summaryRange === 'all') return allSummary;
     if (summaryRange.includes('|')) { const [begin, end] = summaryRange.split('|'); return allSummary.filter((row) => String(row.date) >= begin && String(row.date) <= end); }
     const begin = new Date(); begin.setMonth(begin.getMonth() - Number(summaryRange)); begin.setHours(0, 0, 0, 0);
-    return allSummary.filter((row) => Date.parse(String(row.date)) >= begin.getTime());
+    const beginKey = localDateKey(begin);
+    return allSummary.filter((row) => String(row.date) >= beginKey);
   }, [allSummary, summaryRange]);
   const unit = unitLabel(thermostat?.temperature_unit ?? '°F');
-  const summaryOptions = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
-    xAxis: { type: 'datetime', labels: { style: { color: colors.gray.main }, format: '{value:%b %e}' } },
-    yAxis: [{ min: 0, softMax: 24, tickInterval: 6, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { title: { text: undefined }, opposite: true, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main } } }],
-    legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, xDateFormat: '%b %e, %Y', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
-    plotOptions: { column: { stacking: 'normal', borderWidth: 0, groupPadding: 0 }, series: { animation: false, marker: { enabled: false } } },
-    series: ([
+  const summaryOptions = useMemo<Highcharts.Options>(() => {
+    const runtimeSeries = [
       ['sum_compressor_cool_1', 'Cool 1', colors.lightBlue.light], ['sum_compressor_cool_2', 'Cool 2', colors.lightBlue.main], ['sum_compressor_heat_1', 'Heat 1', colors.orange.light], ['sum_compressor_heat_2', 'Heat 2', colors.orange.dark], ['sum_auxiliary_heat_1', 'Aux 1', colors.red.main], ['sum_auxiliary_heat_2', 'Aux 2', colors.red.dark],
-    ].map(([key, name, color]) => ({ type: 'column', name, color, data: summary.map((row) => [Date.parse(`${row.date}T12:00:00Z`), Number(row[key]) / 3600]) })) as Highcharts.SeriesOptionsType[]).concat([{ type: 'spline', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => [Date.parse(`${row.date}T12:00:00Z`), row.avg_outdoor_temperature]) }] as Highcharts.SeriesOptionsType[]),
-  }), [summary, unit]);
+    ].filter(([key]) => summary.some((row) => Number(row[key]) !== 0)).map(([key, name, color]) => ({ type: 'column' as const, name, color, yAxis: 0, data: summary.map((row) => Number(row[key]) / 3600) }));
+    const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => Number(row.avg_outdoor_temperature)) }];
+    if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [Number(row.min_outdoor_temperature), Number(row.max_outdoor_temperature)]) });
+    const hasDegreeDays = summary.some((row) => Number(row.sum_heating_degree_days) !== 0 || Number(row.sum_cooling_degree_days) !== 0);
+    const degreeDaySeries: Highcharts.SeriesOptionsType[] = hasDegreeDays ? [
+      { type: 'spline', id: 'degree-days', name: 'Degree Days', color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
+      { type: 'spline', name: 'Cooling Degree Days', linkedTo: 'degree-days', color: colors.lightBlue.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_cooling_degree_days)) },
+    ] : [];
+    const smartScale = settings.runtime_thermostat_summary_smart_scale !== false;
+    return {
+      chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
+      xAxis: { categories: summary.map((row) => String(row.date)), tickLength: 0, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const day = date.getDate(); const month = date.toLocaleDateString('en-US', { month: 'short' }); return `${this.isFirst || day <= 2 ? `${month} ` : ''}${day}${this.isFirst ? ` ${date.getFullYear()}` : ''}`; } } },
+      yAxis: [{ alignTicks: false, min: 0, softMax: smartScale ? 24 : undefined, tickInterval: smartScale ? 6 : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, tickInterval: unit.includes('C') ? 10 : 20, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
+      legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, xDateFormat: '%b %e, %Y', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
+      plotOptions: { column: { stacking: 'normal', borderWidth: 0, groupPadding: 0 }, series: { animation: false, marker: { enabled: false } } },
+      series: [...runtimeSeries, ...weatherSeries, ...degreeDaySeries],
+    };
+  }, [settings.runtime_thermostat_summary_smart_scale, summary, unit]);
   const chipData = useMemo(() => {
     const result = buildRuntimeData([]);
-    for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0);
+    for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0) / 3600, 0) * 3600;
     return result;
   }, [summary]);
   const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);

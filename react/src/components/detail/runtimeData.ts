@@ -122,6 +122,17 @@ export function formatRuntime(seconds: number) {
   return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
+export function runtimeAxisLabel(value: number, tickPositions?: readonly number[]) {
+  const date = new Date(value);
+  const positions = tickPositions ?? [];
+  const index = positions.indexOf(value);
+  const previous = index > 0 ? new Date(positions[index - 1]) : undefined;
+  const dayChanged = !previous || previous.getFullYear() !== date.getFullYear() || previous.getMonth() !== date.getMonth() || previous.getDate() !== date.getDate();
+  const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+  const hour = date.toLocaleTimeString('en-US', { hour: 'numeric' }).replace(' ', '').toLowerCase();
+  return `${dayChanged ? `${day} ` : ''}${hour}`;
+}
+
 export function unitLabel(unit: string) {
   return unit.startsWith('°') ? unit : `°${unit}`;
 }

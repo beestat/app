@@ -1,5 +1,5 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
-import { AlarmClock, CircleDollarSign, CircleHelp, DropletOff, Droplets, Fan, Filter, Flame, History, Home, Info, MoreVertical, Snowflake, Wind, XCircle } from 'lucide-react';
+import { AlarmClock, Ban as XCircle, CircleDollarSign, CircleHelp, DropletOff, Droplets, Fan, Filter, Flame, History, Home, Info, MoreVertical, Snowflake, Wind } from 'lucide-react';
 import { memo, useState } from 'react';
 import type { EcobeeThermostat, Thermostat } from '../../types';
 import { colors } from '../../theme';

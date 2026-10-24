@@ -86,7 +86,7 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
     setDraft(selectedSystemTypes(thermostat));
     setError('');
     setAnchor(null);
-    setOpen(true);
+    window.setTimeout(() => setOpen(true), 225);
   };
   const save = async () => {
     if (!thermostat?.thermostat_id) return;
@@ -134,7 +134,9 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   if (!Number.isFinite(value) || !Number.isFinite(interval) || interval <= 0) return null;
   const precision = Number.isInteger(interval) ? 0 : String(interval).split('.')[1]?.length ?? 0;
   const roundedValue = Math.round(value / interval) * interval;
-  const min = Math.min(Math.floor((Number(metric.median) - Number(metric.standard_deviation) * 2) / interval) * interval, roundedValue);
+  const cutoffMin = group === 'setback' || group === 'runtime_per_degree_day' || (group === 'property' && name === 'age') ? 0 : group === 'property' && name === 'square_feet' ? 500 : null;
+  const statisticalMin = Math.floor((Number(metric.median) - Number(metric.standard_deviation) * 2) / interval) * interval;
+  const min = Math.min(cutoffMin == null ? statisticalMin : Math.max(statisticalMin, cutoffMin), roundedValue);
   const max = Math.max(Math.ceil((Number(metric.median) + Number(metric.standard_deviation) * 2) / interval) * interval, roundedValue);
   const histogram: Array<readonly [number, number]> = [];
   for (let bucket = min; bucket <= max + interval / 2; bucket += interval) {
@@ -152,14 +154,20 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   const colorIndex = Math.max(0, groupNames[group]?.indexOf(name) ?? 0);
   const Icon = group === 'property' ? (name === 'age' ? Clock3 : Ruler) : name === 'resist' ? Activity : name.startsWith('cool') ? Snowflake : Flame;
   const label = name === 'auxiliary_heat_1' ? 'Aux' : group === 'property' && name === 'square_feet' ? 'Area' : titleCase(name.replaceAll('_', ' '));
-  return <Box sx={{ display: 'grid', gridTemplateColumns: '136px 1fr', height: 70, mb: .5, overflow: 'hidden' }}>
+  const ownHeight = Math.max(2, 40 * (histogram[ownIndex]?.[1] ?? 0) / high);
+  return <Box sx={{ display: 'grid', gridTemplateColumns: '136px 1fr', height: 60, mb: .5, overflow: 'hidden' }}>
     <Box sx={{ bgcolor: groupColors[group]?.[colorIndex] ?? colors.lightBlue.main, display: 'grid', gridTemplateColumns: '36px 1fr', alignItems: 'center', pr: .5 }}><Icon size={20} style={{ justifySelf: 'center' }} /><Box><Typography>{label}</Typography><Typography variant="caption" display="block">{others.toLocaleString()} others</Typography><Typography variant="caption">{symbol} {percentile}% homes</Typography></Box></Box>
-    <Box sx={{ bgcolor: colors.slate.dark, position: 'relative', display: 'flex', alignItems: 'flex-end', gap: '1px', px: 1, pt: 1.5, overflow: 'hidden' }}>
-      {histogram.map(([bucket, count]) => <Box key={bucket} sx={{ flex: 1, minWidth: 1, height: `${Math.max(2, 80 * count / high)}%`, bgcolor: colors.slate.light }} />)}
-      <Box sx={{ position: 'absolute', left, top: 3, bottom: 3, width: 2, bgcolor: '#fff' }}><Typography sx={{ position: 'absolute', right: 5, top: 0, whiteSpace: 'nowrap', fontWeight: 600 }}>{metricLabel(group, name, roundedValue, unit)}</Typography></Box>
+    <Box sx={{ bgcolor: colors.slate.dark, position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '20px', overflow: 'hidden' }}>
+      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: 1, minWidth: 1, height: `${Math.max(2, 100 * count / high)}%`, bgcolor: index === ownIndex ? '#516169' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? '#516169' : colors.slate.light}` }} />)}
+      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight)}px`, width: 60, ml: '-30px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '1px 1px 1px rgba(0,0,0,.5)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       <Typography variant="caption" sx={{ position: 'absolute', left: 4, bottom: 0 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" sx={{ position: 'absolute', right: 4, bottom: 0 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
   </Box>;
+}
+
+function MetricGroup({ group, values, thermostat }: { group: string; values: Record<string, any> | undefined; thermostat: any }) {
+  if (!values) return null;
+  return <Box sx={{ mb: 2, minWidth: 0 }}><Typography variant="overline">{titleCase(group.replaceAll('_', ' '))}</Typography>{Object.entries(values).map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
 }
 
 export function ComparePage() {
@@ -187,9 +195,20 @@ export function ComparePage() {
   const regionLabel = [addressParts.state_abbreviation, addressParts.country_iso_3].filter(Boolean).join(', ') || 'No data';
   const generatedAt = (thermostat?.profile as any)?.metadata?.generated_at ? new Date((thermostat?.profile as any).metadata.generated_at) : undefined;
   const generatedLabel = generatedAt ? `Generated ${generatedAt.toLocaleDateString('en-US', { month: 'short' })} ${ordinal(generatedAt.getDate())} @ ${generatedAt.toLocaleTimeString('en-US', { hour: 'numeric' }).toLowerCase()} from the past year of data (updated weekly).` : 'Compared with matching beestat homes';
+  const ageRange = (attributes.property_age as { value?: number[] } | undefined)?.value;
+  const areaRange = (attributes.property_square_feet as { value?: number[] } | undefined)?.value;
+  const storiesFilter = attributes.property_stories as { operator?: string; value?: number } | number | undefined;
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
     <Grid container spacing={2}>
-      <Grid size={{ xs: 12, md: 6 }}><DashboardCard title="Comparison Settings"><Typography variant="overline">Region</Typography><Box><ButtonGroup><Button variant={region === 'nearby' ? 'contained' : 'outlined'} color="success" onClick={() => { setRegion('nearby'); saveComparison('comparison_region', 'nearby'); }}>Nearby</Button><Button variant={region === 'global' ? 'contained' : 'outlined'} color="success" onClick={() => { setRegion('global'); saveComparison('comparison_region', 'global'); }}>Global</Button></ButtonGroup></Box><Typography variant="overline" display="block" mt={2}>Property</Typography><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant={propertyType === value ? 'contained' : 'outlined'} color="secondary" onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup><Box mt={2}><Typography fontWeight={600}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography>Property Type: {propertyType === 'all' ? 'Any' : titleCase(thermostat?.property?.structure_type ?? 'Unknown')}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar property age' : 'Any property age'}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar square footage' : 'Any square footage'}</Typography><Typography color="text.secondary">{propertyType === 'similar' ? 'Similar number of stories' : 'Any number of stories'}</Typography><Typography fontWeight={600}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Anywhere in the world'}</Typography></Box></DashboardCard></Grid>
+      <Grid size={{ xs: 12, md: 6 }}>
+        <DashboardCard title="Comparison Settings">
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '210px 1fr' }, gap: { xs: 2, sm: 1.5 } }}>
+            <Box><Typography variant="overline">Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
+            <Box><Typography variant="overline">Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
+          </Box>
+          <Box mt={2}><Typography fontWeight={600}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${titleCase(String(attributes.property_structure_type))}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
+        </DashboardCard>
+      </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
         <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />}>
           <Typography variant="overline">System</Typography>
@@ -214,6 +233,6 @@ export function ComparePage() {
         </DashboardCard>
       </Grid>
     </Grid>
-    <DashboardCard title="Metrics" subheader={generatedLabel}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' }, gridTemplateAreas: { xs: '"setback" "property" "setpoint" "balance_point" "runtime_per_degree_day"', md: '"setback property setpoint" "balance_point runtime_per_degree_day empty"' }, columnGap: 2, alignItems: 'start' }}>{Object.entries(metrics.data ?? {}).map(([group, values]) => <Box key={group} sx={{ gridArea: group, mb: 2, minWidth: 0 }}><Typography variant="overline">{titleCase(group.replaceAll('_', ' '))}</Typography>{Object.entries(values).map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>)}</Box>}</DashboardCard>
+    <DashboardCard title="Metrics" subheader={generatedLabel}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }, gap: { xs: 0, lg: 2 } }}><Box><MetricGroup group="setback" values={metrics.data?.setback} thermostat={thermostat} /><MetricGroup group="balance_point" values={metrics.data?.balance_point} thermostat={thermostat} /></Box><Box><MetricGroup group="property" values={metrics.data?.property} thermostat={thermostat} /><MetricGroup group="runtime_per_degree_day" values={metrics.data?.runtime_per_degree_day} thermostat={thermostat} /></Box><Box><MetricGroup group="setpoint" values={metrics.data?.setpoint} thermostat={thermostat} /></Box></Box>}</DashboardCard>
   </Box>;
 }

@@ -68,6 +68,7 @@ export function VisualizePage() {
       if (user.settings.visualize.floor_plan_id != null) {
         add(new engine.component.card.floor_plan_editor(thermostatId));
         add(new engine.component.card.visualize_settings());
+        if (user.settings.visualize.hide_affiliate === false && !config.isDemo) add(new engine.component.card.visualize_affiliate(thermostatId));
         add(new engine.component.card.three_d().set_floor_plan_id(user.settings.visualize.floor_plan_id));
       } else {
         add(new engine.component.card.visualize_intro(thermostatId));

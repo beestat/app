@@ -2,7 +2,7 @@
 
 This is the working acceptance list for comparisons against authenticated legacy Beestat using Ziebee II. A page is not complete until its desktop and mobile structure, data rules, controls, loading/empty/error states, and interactions have been compared in Playwright.
 
-Latest QA note (2026-10-23): authenticated comparison is temporarily paused because the dev API returns MySQL error 1205 (`Lock wait timeout exceeded`) while creating the force-login session. `qa/login.mjs` now retries login separately, and `qa/parity.mjs` preflights `System - Ziebee II` before replacing any known-good screenshots.
+Latest QA note (2026-10-23): force-login and authenticated comparison are working again. The latest full desktop/mobile pass preflighted `System - Ziebee II` and completed with no page errors or failed HTTP responses. Targeted passes subsequently verified the corrected Analyze totals/series, Compare metric layout, and Air Quality detail structure.
 
 ## Detail
 

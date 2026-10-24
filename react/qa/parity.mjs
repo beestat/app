@@ -35,24 +35,38 @@ async function gotoReady(target, url) {
   await target.waitForTimeout(1_500);
 }
 
+async function waitForRoute(target, expected) {
+  await target.getByText(expected, { exact: typeof expected === 'string' }).first().waitFor({ timeout: 90_000 });
+  await target.getByText('Fetching', { exact: true }).first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
+  await target.locator('[role="progressbar"]').first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
+}
+
 const allRoutes = [
-  ['detail', 'detail'], ['analyze', 'analyze'], ['compare', 'compare'], ['air_quality', 'air-quality'], ['settings', 'settings'], ['contribute', 'contribute'],
+  ['detail', 'detail', /System - Ziebee II/],
+  ['analyze', 'analyze', 'Thermostat Summary'],
+  ['compare', 'compare', 'Comparison Settings'],
+  ['air_quality', 'air-quality', 'Air Quality Detail'],
+  ['settings', 'settings', 'Settings'],
+  ['contribute', 'contribute', 'Contribute'],
 ];
 const requested = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
 const routes = requested.length ? allRoutes.filter(([legacy, react]) => requested.includes(legacy) || requested.includes(react)) : allRoutes;
 await gotoReady(page, 'https://dev.app.beestat.io/react/index.php#/detail');
 await page.getByText(/System - Ziebee II/).first().waitFor({ timeout: 30_000 });
 let authenticatedThermostat = await page.getByText(/System - Ziebee II/).first().textContent() ?? '';
-for (const [legacy, react] of routes) {
+for (const [legacy, react, expected] of routes) {
   await gotoReady(page, `https://dev.app.beestat.io/?layer=${legacy}`);
+  await waitForRoute(page, expected);
   await page.screenshot({ path: `test-results/parity/legacy-${legacy}.png`, fullPage: true });
   await gotoReady(page, `https://dev.app.beestat.io/react/index.php#/${react}`);
+  await waitForRoute(page, expected);
   await revealLazyContent(page);
   await page.screenshot({ path: `test-results/parity/react-${react}.png`, fullPage: true });
   if (react === 'compare') {
     await page.getByRole('button', { name: 'My Home options' }).click();
     await page.getByRole('menuitem', { name: 'Change System Type' }).click();
     await page.getByRole('dialog', { name: 'Change System Type' }).getByText('[Detected]', { exact: false }).first().waitFor();
+    await page.waitForTimeout(300);
     await page.screenshot({ path: 'test-results/parity/react-compare-system-type.png', fullPage: true });
     await page.getByRole('dialog', { name: 'Change System Type' }).getByRole('button', { name: 'Cancel' }).click();
   }
@@ -60,10 +74,12 @@ for (const [legacy, react] of routes) {
 
 const mobile = await context.newPage();
 await mobile.setViewportSize({ width: 390, height: 844 });
-for (const [legacy, react] of process.argv.includes('--desktop-only') ? [] : routes) {
+for (const [legacy, react, expected] of process.argv.includes('--desktop-only') ? [] : routes) {
   await gotoReady(mobile, `https://dev.app.beestat.io/?layer=${legacy}`);
+  await waitForRoute(mobile, expected);
   await mobile.screenshot({ path: `test-results/parity/legacy-${legacy}-mobile.png`, fullPage: true });
   await gotoReady(mobile, `https://dev.app.beestat.io/react/index.php#/${react}`);
+  await waitForRoute(mobile, expected);
   await revealLazyContent(mobile);
   if (react === 'detail') authenticatedThermostat = await mobile.getByText(/System - Ziebee II/).first().textContent() ?? '';
   await mobile.screenshot({ path: `test-results/parity/react-${react}-mobile.png`, fullPage: true });
