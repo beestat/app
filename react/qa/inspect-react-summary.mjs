@@ -17,6 +17,7 @@ const result = await page.evaluate(() => {
     chips: [...document.querySelectorAll('span')].map((node) => node.textContent).filter((text) => /Cool\d+h/.test(text ?? '')),
     xLabels: [...document.querySelectorAll('.highcharts-container')[0]?.querySelectorAll('.highcharts-xaxis-labels text') ?? []].map((node) => node.textContent),
     categories: chart?.xAxis[0].categories,
+    temperatureAxis: chart ? { min: chart.yAxis[1].min, max: chart.yAxis[1].max, tickInterval: chart.yAxis[1].tickInterval } : undefined,
     series: chart?.series.map((series) => ({ name: series.name, points: series.points.length, total: series.yData?.reduce((sum, value) => sum + (Number(value) || 0), 0) })),
   };
 });
