@@ -1,3 +1,27 @@
+@font-face {
+  font-family: Montserrat;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/font/montserrat/montserrat_300.woff') format('woff');
+}
+
+@font-face {
+  font-family: Montserrat;
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/font/montserrat/montserrat_400.woff') format('woff');
+}
+
+@font-face {
+  font-family: Montserrat;
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+  src: url('/font/montserrat/montserrat_600.woff') format('woff');
+}
+
 :root {
   color-scheme: dark;
   font-synthesis: none;

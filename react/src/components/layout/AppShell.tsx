@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, AppBar, Avatar, Badge, Box, Button, Container, Dialog, DialogTitle, Divider, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Select, Toolbar, Tooltip, useMediaQuery } from '@mui/material';
+import { Alert, AppBar, Avatar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Select, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { Activity, ArrowLeftRight, Bell, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, PanelsTopLeft, RefreshCw, Settings, Wind } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
@@ -70,16 +70,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
-              <MenuItem onClick={() => { setAnchor(null); navigate('/announcements'); }}><Bell size={18} /> Announcements</MenuItem>
+              <MenuItem onClick={() => { setAnchor(null); navigate('/announcements'); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Bell size={18} /></Badge> Announcements</MenuItem>
               {hasThermostats && <MenuItem onClick={() => { setAnchor(null); navigate('/download'); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}
               {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => window.location.assign('/?layer=glenwood_enroll')}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
               {[1, 39285, 50885, 51345].includes(Number(data?.user?.user_id)) && <MenuItem onClick={() => window.location.assign('/?layer=glenwood_report')}><FileChartColumn size={18} /> Glenwood Report</MenuItem>}
-              <Divider />
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
-            <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="xs"><DialogTitle>Switch Thermostat</DialogTitle><List>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { setThermostatId(item.thermostat_id); setSwitcherOpen(false); }}><ListItemText primary={item.name} /></ListItemButton>)}</List></Dialog>
+            <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
           </Toolbar>
         </Container>
       </AppBar>

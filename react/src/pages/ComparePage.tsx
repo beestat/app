@@ -4,6 +4,7 @@ import {
   MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, MapPin, Ruler, Settings2, Snowflake } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
@@ -55,6 +56,16 @@ const systemTypeTitles = { heat: 'Heat', auxiliary_heat: 'Auxiliary Heat', cool:
 const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.lightBlue.main } as const;
 type SystemMode = keyof typeof systemTypeOptions;
 type SystemTypes = Record<SystemMode, string>;
+
+function CardHelpMenu({ label, href }: { label: string; href: string }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  return <>
+    <Tooltip title={`${label} options`}><IconButton aria-label={`${label} options`} onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical size={20} /></IconButton></Tooltip>
+    <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+      <MenuItem component="a" href={href} target="_blank" rel="noreferrer" onClick={() => setAnchor(null)}><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem>
+    </Menu>
+  </>;
+}
 
 function selectedSystemTypes(thermostat: any): SystemTypes {
   return Object.fromEntries((Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
@@ -158,7 +169,7 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   return <Box sx={{ display: 'grid', gridTemplateColumns: '136px 1fr', height: 60, mb: .5, overflow: 'hidden' }}>
     <Box sx={{ bgcolor: groupColors[group]?.[colorIndex] ?? colors.lightBlue.main, display: 'grid', gridTemplateColumns: '36px 1fr', alignItems: 'center', pr: .5 }}><Icon size={20} style={{ justifySelf: 'center' }} /><Box><Typography>{label}</Typography><Typography variant="caption" display="block">{others.toLocaleString()} others</Typography><Typography variant="caption">{symbol} {percentile}% homes</Typography></Box></Box>
     <Box sx={{ bgcolor: colors.slate.dark, position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '20px', overflow: 'hidden' }}>
-      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: 1, minWidth: 1, height: `${Math.max(2, 100 * count / high)}%`, bgcolor: index === ownIndex ? '#516169' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? '#516169' : colors.slate.light}` }} />)}
+      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: index === ownIndex ? '#516169' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? '#516169' : colors.slate.light}` }} />)}
       <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight)}px`, width: 60, ml: '-30px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '1px 1px 1px rgba(0,0,0,.5)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       <Typography variant="caption" sx={{ position: 'absolute', left: 4, bottom: 0 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" sx={{ position: 'absolute', right: 4, bottom: 0 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
@@ -167,7 +178,31 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
 
 function MetricGroup({ group, values, thermostat }: { group: string; values: Record<string, any> | undefined; thermostat: any }) {
   if (!values) return null;
-  return <Box sx={{ mb: 2, minWidth: 0 }}><Typography variant="overline">{titleCase(group.replaceAll('_', ' '))}</Typography>{Object.entries(values).map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
+  const metrics = Object.entries(values).filter(([, metric]) => metric != null);
+  if (!metrics.length) return null;
+  return <Box sx={{ mb: 2, minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
+}
+
+function MetricColumns({ values, thermostat }: { values: Record<string, Record<string, any>> | undefined; thermostat: any }) {
+  const threeColumns = useMediaQuery('(min-width:1001px)');
+  const twoColumns = useMediaQuery('(min-width:801px)');
+  if (!values) return null;
+  const columnCount = threeColumns ? 3 : twoColumns ? 2 : 1;
+  const columns = Array.from({ length: columnCount }, () => ({ size: 0, groups: [] as Array<[string, Record<string, any>]> }));
+  Object.entries(values).forEach(([group, groupValues]) => {
+    const populated = Object.fromEntries(Object.entries(groupValues ?? {}).filter(([, metric]) => metric != null));
+    const size = Object.keys(populated).length;
+    if (!size) return;
+    const column = columns.reduce((smallest, candidate) => candidate.size < smallest.size ? candidate : smallest, columns[0]);
+    column.groups.push([group, populated]);
+    column.size += size;
+  });
+  if (columns.every((column) => column.size === 0)) {
+    return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
+  }
+  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 2 }}>
+    {columns.map((column, index) => <Box key={index}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} />)}</Box>)}
+  </Box>;
 }
 
 export function ComparePage() {
@@ -201,10 +236,10 @@ export function ComparePage() {
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="Comparison Settings">
+        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '210px 1fr' }, gap: { xs: 2, sm: 1.5 } }}>
-            <Box><Typography variant="overline">Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
-            <Box><Typography variant="overline">Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
+            <Box><Typography variant="overline">Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: 1, textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
+            <Box><Typography variant="overline">Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: 1, textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
           </Box>
           <Box mt={2}><Typography fontWeight={600}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${titleCase(String(attributes.property_structure_type))}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
         </DashboardCard>
@@ -218,21 +253,21 @@ export function ComparePage() {
               if (!system.equipment) return null;
               const Icon = mode === 'cool' ? Snowflake : Flame;
               const stages = mode !== 'auxiliary_heat' && Number(system.stages) > 1 ? ' (2 Stage)' : '';
-              return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${stages}`} />;
+              return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${stages}`} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />;
             })}
           </Stack>
           <Typography variant="overline" display="block" mt={2}>Region</Typography>
-          <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} />
+          <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />
           <Typography variant="overline" display="block" mt={2}>Property</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
-            {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main }} />}
-            {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={{ bgcolor: colors.purple.main }} />}
-            {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main }} />}
-            {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main }} />}
+            {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
+            {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
+            {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
+            {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
           </Stack>
         </DashboardCard>
       </Grid>
     </Grid>
-    <DashboardCard title="Metrics" subheader={generatedLabel}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }, gap: { xs: 0, lg: 2 } }}><Box><MetricGroup group="setback" values={metrics.data?.setback} thermostat={thermostat} /><MetricGroup group="balance_point" values={metrics.data?.balance_point} thermostat={thermostat} /></Box><Box><MetricGroup group="property" values={metrics.data?.property} thermostat={thermostat} /><MetricGroup group="runtime_per_degree_day" values={metrics.data?.runtime_per_degree_day} thermostat={thermostat} /></Box><Box><MetricGroup group="setpoint" values={metrics.data?.setpoint} thermostat={thermostat} /></Box></Box>}</DashboardCard>
+    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} />}</DashboardCard>
   </Box>;
 }

@@ -19,9 +19,9 @@ export function DashboardCard({ title, subheader, action, children, loading, sx 
         action={action}
         titleTypographyProps={{ variant: 'h6' }}
         subheaderTypographyProps={{ variant: 'caption' }}
-        sx={{ pb: 1, minHeight: 64 }}
+        sx={{ pb: 2 }}
       />
-      <CardContent sx={{ pt: 1 }}>
+      <CardContent sx={{ pt: 0 }}>
         {loading ? <><Skeleton height={34} /><Skeleton height={120} /><Skeleton height={34} /></> : children}
       </CardContent>
     </Card>

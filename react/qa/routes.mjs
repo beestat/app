@@ -9,6 +9,19 @@ const context = await browser.newContext({
 const page = await context.newPage();
 const errors = [];
 const failedResponses = [];
+const blockedVisualizerMutations = [];
+await context.route('**/api/', async (route) => {
+  const body = route.request().postData();
+  let calls = [];
+  try {
+    const payload = JSON.parse(body ?? '{}');
+    calls = payload.batch ? JSON.parse(payload.batch) : [payload];
+  } catch { /* Continue non-JSON API traffic. */ }
+  const mutation = calls.find((call) => call?.resource === 'floor_plan' && !['read', 'read_id'].includes(call?.method));
+  if (!mutation) return route.continue();
+  blockedVisualizerMutations.push(`${mutation.resource}.${mutation.method}`);
+  return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {} }) });
+});
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 page.on('response', (response) => { if (response.status() >= 400) failedResponses.push({ status: response.status(), url: response.url() }); });
@@ -45,5 +58,5 @@ const visualizer = await page.evaluate(() => ({
 }));
 if (visualizer.iframeCount !== 0 || visualizer.canvasCount < 1) throw new Error(`Visualizer host regression: ${JSON.stringify(visualizer)}`);
 
-console.log(JSON.stringify({ authenticatedThermostat, performanceMetrics, airQualityText, visualizer, failedResponses, errors }, null, 2));
+console.log(JSON.stringify({ authenticatedThermostat, performanceMetrics, airQualityText, visualizer, blockedVisualizerMutations, failedResponses, errors }, null, 2));
 await browser.close();

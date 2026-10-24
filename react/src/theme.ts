@@ -26,14 +26,19 @@ export const theme = createTheme({
   },
   shape: { borderRadius: 6 },
   typography: {
-    fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontFamily: 'Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     fontSize: 13,
     fontWeightLight: 300,
     fontWeightRegular: 400,
     fontWeightMedium: 500,
     fontWeightBold: 600,
-    h5: { fontWeight: 500, fontSize: '1.1rem' },
-    h6: { fontWeight: 500, fontSize: '1rem' },
+    body1: { fontSize: '13px', lineHeight: 'normal', fontWeight: 300 },
+    body2: { fontSize: '13px', lineHeight: 'normal', fontWeight: 300 },
+    button: { fontSize: '13px', lineHeight: 'normal', fontWeight: 400 },
+    caption: { fontSize: '11px', lineHeight: 'normal', fontWeight: 300 },
+    overline: { fontSize: '13px', lineHeight: 'normal', fontWeight: 600, letterSpacing: 0, textTransform: 'none' },
+    h5: { fontWeight: 500, fontSize: '15px', lineHeight: '24px' },
+    h6: { fontWeight: 600, fontSize: '14px', lineHeight: '24px' },
   },
   components: {
     MuiCssBaseline: {
@@ -51,7 +56,11 @@ export const theme = createTheme({
         },
       },
     },
-    MuiButton: { defaultProps: { disableElevation: true } },
+    MuiButton: {
+      defaultProps: { disableElevation: true },
+      styleOverrides: { root: { minHeight: 32 } },
+    },
+    MuiChip: { styleOverrides: { label: { fontSize: '13px' } } },
     MuiIconButton: { defaultProps: { size: 'small' } },
   },
 });
