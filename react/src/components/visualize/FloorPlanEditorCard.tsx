@@ -3,7 +3,7 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent,
   CardHeader, Chip, Divider, IconButton, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Save, Undo2 } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Save, Trash2, Undo2 } from 'lucide-react';
 import { apiCall } from '../../api/client';
 import { colors } from '../../theme';
 import { FloorPlanCanvas } from './FloorPlanCanvas';
@@ -25,7 +25,7 @@ function closestGroundFloor(groups: FloorGroup[]) {
   return [...groups].sort((a, b) => Math.abs(Number(a.elevation ?? 0)) - Math.abs(Number(b.elevation ?? 0)))[0];
 }
 
-export function FloorPlanEditorCard({ plan: source }: { plan: FloorPlan }) {
+export function FloorPlanEditorCard({ plan: source, onSaved }: { plan: FloorPlan; onSaved?: (plan: FloorPlan) => void }) {
   const initialPlan = useMemo(() => clonePlan(source), [source]);
   const [expanded, setExpanded] = useState(false);
   const [plan, setPlan] = useState(initialPlan);
@@ -47,11 +47,29 @@ export function FloorPlanEditorCard({ plan: source }: { plan: FloorPlan }) {
     if (!selection) return;
     mutateGroup((draft) => { const entity = draft[selection.type].find((item) => entityId(selection.type, item) === selection.id); if (entity) change(entity); });
   };
+  const addEntity = (type: EntityType) => {
+    const id = crypto.randomUUID();
+    mutateGroup((draft) => {
+      const common = { x: 400, y: 250, name: '', editor_hidden: false, editor_locked: false };
+      if (type === 'rooms') draft.rooms.push({ ...common, room_id: id, ceiling_height: Number(draft.height ?? 96), points: [{ x: -60, y: -45 }, { x: 60, y: -45 }, { x: 60, y: 45 }, { x: -60, y: 45 }] });
+      else if (type === 'surfaces') draft.surfaces.push({ ...common, surface_id: id, color: '#9a9a96', points: [{ x: -60, y: -45 }, { x: 60, y: -45 }, { x: 60, y: 45 }, { x: -60, y: 45 }] });
+      else if (type === 'openings') draft.openings.push({ ...common, opening_id: id, type: 'window', width: 36, points: [{ x: 382, y: 250 }, { x: 418, y: 250 }] });
+      else if (type === 'trees') draft.trees.push({ ...common, tree_id: id, type: 'round', diameter: 72, height: 120 });
+      else draft.lights.push({ ...common, light_id: id, elevation: 72, intensity: 'normal', temperature_k: 4000 });
+    });
+    setSelection({ type, id });
+  };
+  const removeSelected = () => {
+    if (!selection) return;
+    mutateGroup((draft) => { const index = draft[selection.type].findIndex((item) => entityId(selection.type, item) === selection.id); if (index >= 0) draft[selection.type].splice(index, 1); });
+    setSelection(undefined);
+  };
   const save = async () => {
     setSaving(true);
     try {
       await apiCall({ resource: 'floor_plan', method: 'update', arguments: { attributes: { floor_plan_id: plan.floor_plan_id, data: plan.data } } });
       setSaved(JSON.stringify(plan.data));
+      onSaved?.(structuredClone(plan));
       if (window.beestat?.cache?.floor_plan?.[plan.floor_plan_id]) window.beestat.cache.floor_plan[plan.floor_plan_id].data = structuredClone(plan.data);
     } finally { setSaving(false); }
   };
@@ -65,7 +83,7 @@ export function FloorPlanEditorCard({ plan: source }: { plan: FloorPlan }) {
       </Button>
       {expanded && group && <>
         <Box mt={1} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 250px' }, bgcolor: colors.slate.dark }}>
-          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onMove={(type, id, x, y) => mutateGroup((draft) => {
+          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onAdd={addEntity} onMove={(type, id, x, y) => mutateGroup((draft) => {
             const entity = draft[type].find((item) => entityId(type, item) === id);
             if (!entity) return;
             if (type === 'openings') {
@@ -102,6 +120,7 @@ export function FloorPlanEditorCard({ plan: source }: { plan: FloorPlan }) {
             <TextField fullWidth size="small" label="Name" value={String(selectedEntity.name ?? '')} onChange={(event) => mutateEntity((entity) => { entity.name = event.target.value; })} />
             <TextField fullWidth size="small" label="X (in)" type="number" value={selectedEntity.x} onChange={(event) => mutateEntity((entity) => { entity.x = Number(event.target.value); })} />
             <TextField fullWidth size="small" label="Y (in)" type="number" value={selectedEntity.y} onChange={(event) => mutateEntity((entity) => { entity.y = Number(event.target.value); })} />
+            <Tooltip title="Delete selected object"><IconButton aria-label="Delete selected object" color="error" onClick={removeSelected}><Trash2 /></IconButton></Tooltip>
           </> : <>
             <TextField fullWidth size="small" label="Floor Name" value={group.name ?? ''} onChange={(event) => mutateGroup((draft) => { draft.name = event.target.value; })} />
             <TextField fullWidth size="small" label="Elevation (ft)" type="number" value={Number(group.elevation ?? 0) / 12} onChange={(event) => mutateGroup((draft) => { draft.elevation = Number(event.target.value) * 12; })} />

@@ -42,9 +42,10 @@ export function VisualizePage() {
   const editorRoot = useRef<HTMLDivElement>(null);
   const sceneRoot = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [message, setMessage] = useState('Loading the visualizer engine…');
-  const nativeScene = new URLSearchParams(window.location.search).has('native_scene');
+  const [message, setMessage] = useState('Loading the visualizer…');
+  const nativeScene = !new URLSearchParams(window.location.search).has('legacy_visualizer');
   const [visualizeState, setVisualizeState] = useState<Record<string, any>>({});
+  const [savedPlan, setSavedPlan] = useState<FloorPlan>();
   useEffect(() => { setVisualizeState(structuredClone(data?.user?.settings?.visualize ?? {})); }, [data?.user?.settings?.visualize]);
   useEffect(() => {
     if (!data || !thermostatId || !editorRoot.current || !sceneRoot.current) return;
@@ -90,7 +91,8 @@ export function VisualizePage() {
   const floorPlans = Object.values(data?.floor_plan ?? {}) as any[];
   const visualize = nativeScene ? visualizeState : (data?.user?.settings?.visualize ?? {});
   const hasFloorPlan = visualize.floor_plan_id != null || floorPlans[0]?.floor_plan_id != null;
-  const activePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
+  const sourcePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
+  const activePlan = savedPlan?.floor_plan_id === sourcePlan?.floor_plan_id ? savedPlan : sourcePlan;
   const updateSetting = (key: string, value: unknown) => {
     if (nativeScene) {
       setVisualizeState((current) => {
@@ -105,7 +107,7 @@ export function VisualizePage() {
     {state === 'error' && <Alert severity="error">{message}</Alert>}
     <Box sx={{ display: state === 'ready' ? 'block' : 'none', minWidth: 0 }}>
       <Box ref={editorRoot} />
-      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} /></Box>}
+      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} onSaved={setSavedPlan} /></Box>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
       {nativeScene && activePlan && <Box mb={2}><NativeThreeScene plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} /></Box>}
       <Box ref={sceneRoot} />

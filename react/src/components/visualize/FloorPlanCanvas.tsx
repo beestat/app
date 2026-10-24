@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useState } from 'react';
 import { Box, IconButton, Stack, Tooltip } from '@mui/material';
-import { Grid3X3, Lightbulb, RotateCcw, TreePine, ZoomIn, ZoomOut } from 'lucide-react';
+import { DoorOpen, Grid3X3, Lightbulb, RotateCcw, Shapes, Square, TreePine, ZoomIn, ZoomOut } from 'lucide-react';
 import { colors } from '../../theme';
 import { entityBounds, entityId, type EntityType, type FloorEntity, type FloorGroup, type FloorPoint } from './floorPlanModel';
 
@@ -13,11 +13,12 @@ function kelvinColor(kelvin = 4000) {
   return '#d8eeff';
 }
 
-export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove }: {
+export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove, onAdd }: {
   group: FloorGroup;
   selection?: Selection;
   onSelect: (selection?: Selection) => void;
   onMove: (type: EntityType, id: string, x: number, y: number) => void;
+  onAdd: (type: EntityType) => void;
 }) {
   const frame = useMemo(() => entityBounds(group), [group]);
   const fitted = useMemo(() => {
@@ -72,8 +73,11 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
       <Tooltip title="Toggle grid"><IconButton onClick={() => setGrid((value) => !value)} color={grid ? 'primary' : 'default'} sx={{ bgcolor: colors.slate.light }}><Grid3X3 size={19} /></IconButton></Tooltip>
     </Stack>
     <Stack direction="row" sx={{ position: 'absolute', left: 70, top: 16 }} gap={.5}>
-      <Tooltip title="Trees"><IconButton sx={{ bgcolor: colors.slate.light }}><TreePine size={19} /></IconButton></Tooltip>
-      <Tooltip title="Lights"><IconButton sx={{ bgcolor: colors.slate.light }}><Lightbulb size={19} /></IconButton></Tooltip>
+      <Tooltip title="Add room"><IconButton aria-label="Add room" onClick={() => onAdd('rooms')} sx={{ bgcolor: colors.slate.light }}><Square size={19} /></IconButton></Tooltip>
+      <Tooltip title="Add surface"><IconButton aria-label="Add surface" onClick={() => onAdd('surfaces')} sx={{ bgcolor: colors.slate.light }}><Shapes size={19} /></IconButton></Tooltip>
+      <Tooltip title="Add opening"><IconButton aria-label="Add opening" onClick={() => onAdd('openings')} sx={{ bgcolor: colors.slate.light }}><DoorOpen size={19} /></IconButton></Tooltip>
+      <Tooltip title="Add tree"><IconButton aria-label="Add tree" onClick={() => onAdd('trees')} sx={{ bgcolor: colors.slate.light }}><TreePine size={19} /></IconButton></Tooltip>
+      <Tooltip title="Add light"><IconButton aria-label="Add light" onClick={() => onAdd('lights')} sx={{ bgcolor: colors.slate.light }}><Lightbulb size={19} /></IconButton></Tooltip>
     </Stack>
   </Box>;
 });
