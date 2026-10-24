@@ -3,7 +3,7 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent,
   CardHeader, Chip, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Minus, Plus, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
 import { apiCall } from '../../api/client';
 import { colors } from '../../theme';
 import type { Sensor } from '../../types';
@@ -69,6 +69,13 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
     mutateGroup((draft) => { const index = draft[selection.type].findIndex((item) => entityId(selection.type, item) === selection.id); if (index >= 0) draft[selection.type].splice(index, 1); });
     setSelection(undefined);
   };
+  const addPoint = () => mutateEntity((entity) => {
+    const polygon = entity as FloorEntity & { points?: Array<{ x: number; y: number }> }; if (!polygon.points || polygon.points.length < 2) return;
+    let edge = 0; let longest = -1;
+    polygon.points.forEach((point, index) => { const next = polygon.points![(index + 1) % polygon.points!.length]; const length = Math.hypot(next.x - point.x, next.y - point.y); if (length > longest) { longest = length; edge = index; } });
+    const next = polygon.points[(edge + 1) % polygon.points.length]; const point = polygon.points[edge]; polygon.points.splice(edge + 1, 0, { x: Math.round((point.x + next.x) / 2), y: Math.round((point.y + next.y) / 2) });
+  });
+  const removePoint = () => mutateEntity((entity) => { const polygon = entity as FloorEntity & { points?: Array<{ x: number; y: number }> }; if (polygon.points && polygon.points.length > 3) polygon.points.pop(); });
   const save = async () => {
     setSaving(true);
     try {
@@ -91,7 +98,11 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
       </Button>
       {expanded && group && <>
         <Box mt={1} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 250px' }, bgcolor: colors.slate.dark }}>
-          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onAdd={addEntity} onMoveStart={checkpoint} onMove={(type, id, x, y) => mutateGroup((draft) => {
+          <FloorPlanCanvas group={group} selection={selection} onSelect={setSelection} onAdd={addEntity} onMoveStart={checkpoint} onMovePoint={(type, id, pointIndex, x, y) => mutateGroup((draft) => {
+            const entity = draft[type].find((item) => entityId(type, item) === id) as (FloorEntity & { points?: Array<{ x: number; y: number }> }) | undefined;
+            const point = entity?.points?.[pointIndex]; if (!point) return;
+            point.x = Math.round(x); point.y = Math.round(y);
+          }, false)} onMove={(type, id, x, y) => mutateGroup((draft) => {
             const entity = draft[type].find((item) => entityId(type, item) === id);
             if (!entity) return;
             if (type === 'openings') {
@@ -133,6 +144,7 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
             {selection?.type === 'openings' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'empty')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['empty', 'door', 'window', 'glass'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 60)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /></>}
             {selection?.type === 'trees' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'round')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['round', 'oval', 'pine'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Diameter (in)" type="number" value={Number(selectedEntity.diameter ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.diameter = Number(event.target.value); })} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 120)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /></>}
             {selection?.type === 'lights' && <><TextField size="small" select label="Intensity" value={String(selectedEntity.intensity ?? 'normal')} onChange={(event) => mutateEntity((entity) => { entity.intensity = event.target.value; })}>{['dim', 'normal', 'bright'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /><TextField size="small" label="Temperature (K)" type="number" value={Number(selectedEntity.temperature_k ?? 4000)} onChange={(event) => mutateEntity((entity) => { entity.temperature_k = Number(event.target.value); })} /></>}
+            {(selection?.type === 'rooms' || selection?.type === 'surfaces') && <Stack direction="row"><Tooltip title="Add point to longest edge"><IconButton aria-label="Add shape point" onClick={addPoint}><Plus /></IconButton></Tooltip><Tooltip title="Remove last point"><span><IconButton aria-label="Remove shape point" disabled={!(selectedEntity.points as unknown[] | undefined)?.length || (selectedEntity.points as unknown[]).length <= 3} onClick={removePoint}><Minus /></IconButton></span></Tooltip></Stack>}
             <Tooltip title="Delete selected object"><IconButton aria-label="Delete selected object" color="error" onClick={removeSelected}><Trash2 /></IconButton></Tooltip>
           </> : <>
             <TextField fullWidth size="small" label="Floor Name" value={group.name ?? ''} onChange={(event) => mutateGroup((draft) => { draft.name = event.target.value; })} />

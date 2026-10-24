@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useState } from 'react';
 import { Box, IconButton, Stack, Tooltip } from '@mui/material';
-import { DoorOpen, Grid3X3, Lightbulb, RotateCcw, Shapes, Square, TreePine, ZoomIn, ZoomOut } from 'lucide-react';
+import { DoorOpen, Grid3X3, Lightbulb, Magnet, RotateCcw, Shapes, Square, TreePine, ZoomIn, ZoomOut } from 'lucide-react';
 import { colors } from '../../theme';
 import { entityBounds, entityId, type EntityType, type FloorEntity, type FloorGroup, type FloorPoint } from './floorPlanModel';
 
@@ -13,11 +13,12 @@ function kelvinColor(kelvin = 4000) {
   return '#d8eeff';
 }
 
-export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove, onMoveStart, onAdd }: {
+export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection, onSelect, onMove, onMovePoint, onMoveStart, onAdd }: {
   group: FloorGroup;
   selection?: Selection;
   onSelect: (selection?: Selection) => void;
   onMove: (type: EntityType, id: string, x: number, y: number) => void;
+  onMovePoint: (type: EntityType, id: string, pointIndex: number, x: number, y: number) => void;
   onMoveStart: () => void;
   onAdd: (type: EntityType) => void;
 }) {
@@ -28,9 +29,11 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
   }, [frame]);
   const [view, setView] = useState(fitted);
   const [grid, setGrid] = useState(true);
+  const [snap, setSnap] = useState(true);
   const drag = useRef<
     | { mode: 'view'; x: number; y: number; viewX: number; viewY: number }
     | { mode: 'entity'; x: number; y: number; entityX: number; entityY: number; type: EntityType; id: string }
+    | { mode: 'point'; x: number; y: number; pointX: number; pointY: number; type: EntityType; id: string; pointIndex: number }
     | undefined
   >(undefined);
   const selected = (type: EntityType, entity: FloorEntity) => selection?.type === type && selection.id === entityId(type, entity);
@@ -41,6 +44,12 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
     if (!entity.editor_locked) { onMoveStart(); drag.current = { mode: 'entity', x: event.clientX, y: event.clientY, entityX: entity.x, entityY: entity.y, type, id }; }
   };
   const zoom = (factor: number) => setView((current) => ({ x: current.x + current.width * (1 - factor) / 2, y: current.y + current.height * (1 - factor) / 2, width: current.width * factor, height: current.height * factor }));
+  const snapped = (value: number) => snap ? Math.round(value / 6) * 6 : value;
+  const editPoint = (event: React.PointerEvent, type: EntityType, entity: FloorEntity, pointIndex: number, point: FloorPoint) => {
+    event.stopPropagation();
+    const id = entityId(type, entity); onSelect({ type, id }); onMoveStart();
+    drag.current = { mode: 'point', x: event.clientX, y: event.clientY, pointX: point.x, pointY: point.y, type, id, pointIndex };
+  };
 
   return <Box sx={{ position: 'relative', height: { xs: 420, md: 500 }, bgcolor: colors.slate.dark, overflow: 'hidden', touchAction: 'none' }}>
     <svg
@@ -50,7 +59,8 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
         if (!drag.current) return;
         const rect = event.currentTarget.getBoundingClientRect();
         const scaleX = view.width / rect.width; const scaleY = view.height / rect.height;
-        if (drag.current.mode === 'entity') onMove(drag.current.type, drag.current.id, drag.current.entityX + (event.clientX - drag.current.x) * scaleX, drag.current.entityY + (event.clientY - drag.current.y) * scaleY);
+        if (drag.current.mode === 'entity') onMove(drag.current.type, drag.current.id, snapped(drag.current.entityX + (event.clientX - drag.current.x) * scaleX), snapped(drag.current.entityY + (event.clientY - drag.current.y) * scaleY));
+        else if (drag.current.mode === 'point') onMovePoint(drag.current.type, drag.current.id, drag.current.pointIndex, snapped(drag.current.pointX + (event.clientX - drag.current.x) * scaleX), snapped(drag.current.pointY + (event.clientY - drag.current.y) * scaleY));
         else setView((current) => ({ ...current, x: drag.current!.mode === 'view' ? drag.current!.viewX - (event.clientX - drag.current!.x) * scaleX : current.x, y: drag.current!.mode === 'view' ? drag.current!.viewY - (event.clientY - drag.current!.y) * scaleY : current.y }));
       }}
       onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }}
@@ -66,12 +76,22 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({ group, selection,
       {group.openings.filter((entity) => !entity.editor_hidden && entity.points.length > 1).map((entity) => <line key={entity.opening_id} x1={entity.points[0].x} y1={entity.points[0].y} x2={entity.points[1].x} y2={entity.points[1].y} stroke={entity.type === 'door' ? colors.orange.light : entity.type === 'window' ? colors.lightBlue.light : colors.gray.light} strokeWidth={selected('openings', entity) ? 7 : 4} strokeLinecap="round" onPointerDown={(event) => choose(event, 'openings', entity)} />)}
       {group.trees.filter((entity) => !entity.editor_hidden).map((entity) => <circle key={entity.tree_id} cx={entity.x} cy={entity.y} r={Number(entity.diameter ?? 72) / 2} fill={colors.green.main} fillOpacity={selected('trees', entity) ? .7 : .5} stroke={selected('trees', entity) ? '#fff' : colors.gray.main} strokeWidth={2} onPointerDown={(event) => choose(event, 'trees', entity)} />)}
       {group.lights.filter((entity) => !entity.editor_hidden).map((entity) => <circle key={entity.light_id} cx={entity.x} cy={entity.y} r={8} fill={kelvinColor(Number(entity.temperature_k))} fillOpacity={selected('lights', entity) ? .85 : .65} stroke={selected('lights', entity) ? '#fff' : colors.gray.main} strokeWidth={2} onPointerDown={(event) => choose(event, 'lights', entity)} />)}
+      {selection && (selection.type === 'rooms' || selection.type === 'surfaces' || selection.type === 'openings') && (() => {
+        const entity = group[selection.type].find((item) => entityId(selection.type, item) === selection.id);
+        if (!entity || entity.editor_locked) return null;
+        const polygon = entity as FloorEntity & { points: FloorPoint[] };
+        return <g aria-label="Shape points">{polygon.points.map((point, index) => {
+          const absolute = selection.type === 'openings' ? point : { x: entity.x + point.x, y: entity.y + point.y };
+          return <circle key={index} cx={absolute.x} cy={absolute.y} r={7} fill="#fff" stroke={colors.lightBlue.main} strokeWidth={3} onPointerDown={(event) => editPoint(event, selection.type, entity, index, point)} />;
+        })}</g>;
+      })()}
     </svg>
     <Stack sx={{ position: 'absolute', left: 16, top: 16 }} gap={.5}>
       <Tooltip title="Fit floor plan"><IconButton onClick={() => setView(fitted)} sx={{ bgcolor: colors.slate.light }}><RotateCcw size={19} /></IconButton></Tooltip>
       <Tooltip title="Zoom in"><IconButton onClick={() => zoom(.8)} sx={{ bgcolor: colors.slate.light }}><ZoomIn size={19} /></IconButton></Tooltip>
       <Tooltip title="Zoom out"><IconButton onClick={() => zoom(1.25)} sx={{ bgcolor: colors.slate.light }}><ZoomOut size={19} /></IconButton></Tooltip>
       <Tooltip title="Toggle grid"><IconButton onClick={() => setGrid((value) => !value)} color={grid ? 'primary' : 'default'} sx={{ bgcolor: colors.slate.light }}><Grid3X3 size={19} /></IconButton></Tooltip>
+      <Tooltip title="Snap to 6-inch grid"><IconButton aria-label="Toggle snapping" onClick={() => setSnap((value) => !value)} color={snap ? 'primary' : 'default'} sx={{ bgcolor: colors.slate.light }}><Magnet size={19} /></IconButton></Tooltip>
     </Stack>
     <Stack direction="row" sx={{ position: 'absolute', left: 70, top: 16 }} gap={.5}>
       <Tooltip title="Add room"><IconButton aria-label="Add room" onClick={() => onAdd('rooms')} sx={{ bgcolor: colors.slate.light }}><Square size={19} /></IconButton></Tooltip>
