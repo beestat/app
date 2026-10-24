@@ -2,7 +2,7 @@
 
 This is the working acceptance list for comparisons against authenticated legacy Beestat using Ziebee II. A page is not complete until its desktop and mobile structure, data rules, controls, loading/empty/error states, and interactions have been compared in Playwright.
 
-Latest QA note (2026-10-23): force-login and authenticated comparison are working again. The latest full desktop/mobile pass preflighted `System - Ziebee II` and completed with no page errors or failed HTTP responses. Targeted passes subsequently verified the corrected Analyze totals/series, Compare metric layout, and Air Quality detail structure.
+Latest QA note (2026-10-23): force-login and authenticated comparison are working again. The latest full desktop/mobile pass preflighted `System - Ziebee II` and completed with no page errors or failed HTTP responses. Targeted passes subsequently verified the corrected Analyze totals/date boundaries, preset grouping and custom controls, Compare metric layout, and Air Quality support/detail structure.
 
 ## Detail
 
@@ -39,7 +39,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Air Quality
 
-- [ ] Support-warning eligibility
+- [x] Support-warning eligibility
 - [x] Detail chart series/axes/tooltip/menu
 - [x] Summary heatmap
 

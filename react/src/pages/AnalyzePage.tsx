@@ -1,14 +1,16 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import Highcharts from 'highcharts';
 import 'highcharts/highcharts-more';
 import HighchartsReact from 'highcharts-react-official';
 import { CalendarDays, CircleHelp, Download, EllipsisVertical, Info, RotateCcw } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
+import { aggregateSummary, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
 
 function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: string) {
   const svg = ref.current?.container.current?.querySelector('svg');
@@ -22,18 +24,15 @@ function ordinal(day: number) {
   return `${day}${remainder >= 11 && remainder <= 13 ? 'th' : day % 10 === 1 ? 'st' : day % 10 === 2 ? 'nd' : day % 10 === 3 ? 'rd' : 'th'}`;
 }
 
-function localDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function SummaryMenu({ range, setRange, onDownload, onReset }: { range: string; setRange: (value: string) => void; onDownload: () => void; onReset: () => void }) {
+function SummaryMenu({ config, setConfig, onDownload, onReset }: { config: SummaryConfig; setConfig: (value: SummaryConfig) => void; onDownload: () => void; onReset: () => void }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null); const [customOpen, setCustomOpen] = useState(false);
-  const [begin, setBegin] = useState(new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10)); const [end, setEnd] = useState(new Date().toISOString().slice(0, 10));
-  const choose = (value: string) => { setRange(value); setAnchor(null); };
-  return <><IconButton aria-label="Thermostat summary menu" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem selected={range === '3'} onClick={() => choose('3')}><ListItemText>Past 3 Months</ListItemText></MenuItem><MenuItem selected={range === '12'} onClick={() => choose('12')}><ListItemText>Past 12 Months</ListItemText></MenuItem><MenuItem selected={range === 'all'} onClick={() => choose('all')}><ListItemText>All Time</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); setCustomOpen(true); }}><ListItemIcon><CalendarDays size={18} /></ListItemIcon><ListItemText>Custom</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem><MenuItem component="a" href="https://doc.beestat.io" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu><Dialog open={customOpen} onClose={() => setCustomOpen(false)} fullWidth maxWidth="xs"><DialogTitle>Thermostat Summary - Custom Range</DialogTitle><DialogContent><Stack gap={2} pt={1}><TextField type="date" label="Start" value={begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /><TextField type="date" label="End" value={end} onChange={(event) => setEnd(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /></Stack></DialogContent><DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" disabled={!begin || !end || begin > end} onClick={() => { choose(`${begin}|${end}`); setCustomOpen(false); }}>Apply</Button></DialogActions></Dialog></>;
+  const [draft, setDraft] = useState(config);
+  const preset = matchingPreset(config);
+  const choose = (value: '3' | '12' | 'all') => { setConfig(presetConfig(value)); setAnchor(null); };
+  const openCustom = () => { setDraft(config); setAnchor(null); setCustomOpen(true); };
+  const setPeriod = (_: React.MouseEvent<HTMLElement>, value: SummaryPeriod | null) => value && setDraft((old) => ({ ...old, period: value, count: value === 'all' ? 0 : Math.max(1, old.count) }));
+  const setGroup = (_: React.MouseEvent<HTMLElement>, value: SummaryGroup | null) => value && setDraft((old) => ({ ...old, group: value }));
+  return <><IconButton aria-label="Thermostat summary menu" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem selected={preset === '3'} onClick={() => choose('3')}><ListItemText>Past 3 Months</ListItemText></MenuItem><MenuItem selected={preset === '12'} onClick={() => choose('12')}><ListItemText>Past 12 Months</ListItemText></MenuItem><MenuItem selected={preset === 'all'} onClick={() => choose('all')}><ListItemText>All Time</ListItemText></MenuItem><MenuItem selected={preset === 'custom'} onClick={openCustom}><ListItemIcon><CalendarDays size={18} /></ListItemIcon><ListItemText>Custom</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem><MenuItem component="a" href="https://doc.beestat.io/3225b739ebbc42d68a18260565fda4f1" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu><Dialog open={customOpen} onClose={() => setCustomOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Thermostat Summary - Custom Range</DialogTitle><DialogContent><Typography color="text.secondary" mb={2}>Choose a custom range to display on the Thermostat Summary chart.</Typography><Typography fontWeight={600} mb={1}>Time Period</Typography><Stack direction={{ xs: 'column', sm: 'row' }} gap={1} alignItems={{ sm: 'center' }}><TextField size="small" label="Count" disabled={draft.period === 'all'} value={draft.period === 'all' ? '∞' : draft.count} slotProps={{ htmlInput: { inputMode: 'numeric' } }} onChange={(event) => setDraft((old) => ({ ...old, count: Math.max(1, Number.parseInt(event.target.value.replace(/\D/g, ''), 10) || 1) }))} sx={{ width: 100 }} /><ToggleButtonGroup exclusive value={draft.period} onChange={setPeriod} size="small" sx={{ flexWrap: 'wrap' }}>{(['day', 'week', 'month', 'year', 'all'] as SummaryPeriod[]).map((value) => <ToggleButton key={value} value={value}>{value === 'all' ? 'All' : `${value}s`}</ToggleButton>)}</ToggleButtonGroup></Stack><Typography fontWeight={600} mt={2} mb={1}>Group By</Typography><ToggleButtonGroup exclusive value={draft.group} onChange={setGroup} size="small" sx={{ flexWrap: 'wrap' }}>{(['day', 'week', 'month', 'year'] as SummaryGroup[]).map((value) => <ToggleButton key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</ToggleButton>)}</ToggleButtonGroup></DialogContent><DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" onClick={() => { setConfig(draft); setCustomOpen(false); }}>Save</Button></DialogActions></Dialog></>;
 }
 
 function ProfileMenu({ profile, onDownload }: { profile: unknown; onDownload: () => void }) {
@@ -44,24 +43,33 @@ function ProfileMenu({ profile, onDownload }: { profile: unknown; onDownload: ()
 
 export function AnalyzePage() {
   const { data, thermostat, thermostatId } = useDashboard();
-  const [summaryRange, setSummaryRange] = useState('3');
+  const [summaryConfig, setSummaryConfig] = useState<SummaryConfig>();
   const [profileIndex, setProfileIndex] = useState<number>();
   const summaryRef = useRef<HighchartsReact.RefObject>(null);
   const profileRef = useRef<HighchartsReact.RefObject>(null);
   const settings = data?.user?.settings ?? {};
-  const allSummary = useMemo(() => Object.values(data?.runtime_thermostat_summary ?? {}).filter((row) => Number(row.thermostat_id) === thermostatId).sort((a, b) => String(a.date).localeCompare(String(b.date))), [data?.runtime_thermostat_summary, thermostatId]);
-  const summary = useMemo(() => {
-    if (summaryRange === 'all') return allSummary;
-    if (summaryRange.includes('|')) { const [begin, end] = summaryRange.split('|'); return allSummary.filter((row) => String(row.date) >= begin && String(row.date) <= end); }
-    const begin = new Date(); begin.setMonth(begin.getMonth() - Number(summaryRange)); begin.setHours(0, 0, 0, 0);
-    const beginKey = localDateKey(begin);
-    return allSummary.filter((row) => String(row.date) >= beginKey);
-  }, [allSummary, summaryRange]);
+  const storedSummaryConfig = useMemo<SummaryConfig>(() => ({
+    count: Number(settings.runtime_thermostat_summary_time_count ?? 0),
+    period: (settings.runtime_thermostat_summary_time_period ?? 'all') as SummaryPeriod,
+    group: (settings.runtime_thermostat_summary_group_by ?? 'month') as SummaryGroup,
+  }), [settings.runtime_thermostat_summary_group_by, settings.runtime_thermostat_summary_time_count, settings.runtime_thermostat_summary_time_period]);
+  const config = summaryConfig ?? storedSummaryConfig;
+  const allSummary = useMemo(() => Object.values(data?.runtime_thermostat_summary ?? {}).filter((row) => Number(row.thermostat_id) === thermostatId).sort((a, b) => String(a.date).localeCompare(String(b.date))) as SummarySourceRow[], [data?.runtime_thermostat_summary, thermostatId]);
+  const gapFill = settings.runtime_thermostat_summary_gap_fill !== false;
+  const summary = useMemo(() => aggregateSummary(allSummary, config, gapFill), [allSummary, config, gapFill]);
+  const updateSummaryConfig = (value: SummaryConfig) => {
+    setSummaryConfig(value);
+    void apiBatch([
+      { resource: 'user', method: 'update_setting', alias: 'count', arguments: { key: 'runtime_thermostat_summary_time_count', value: value.count } },
+      { resource: 'user', method: 'update_setting', alias: 'period', arguments: { key: 'runtime_thermostat_summary_time_period', value: value.period } },
+      { resource: 'user', method: 'update_setting', alias: 'group', arguments: { key: 'runtime_thermostat_summary_group_by', value: value.group } },
+    ]);
+  };
   const unit = unitLabel(thermostat?.temperature_unit ?? '°F');
   const summaryOptions = useMemo<Highcharts.Options>(() => {
     const runtimeSeries = [
       ['sum_compressor_cool_1', 'Cool 1', colors.lightBlue.light], ['sum_compressor_cool_2', 'Cool 2', colors.lightBlue.main], ['sum_compressor_heat_1', 'Heat 1', colors.orange.light], ['sum_compressor_heat_2', 'Heat 2', colors.orange.dark], ['sum_auxiliary_heat_1', 'Aux 1', colors.red.main], ['sum_auxiliary_heat_2', 'Aux 2', colors.red.dark],
-    ].filter(([key]) => summary.some((row) => Number(row[key]) !== 0)).map(([key, name, color]) => ({ type: 'column' as const, name, color, yAxis: 0, data: summary.map((row) => Number(row[key]) / 3600) }));
+    ].filter(([key]) => summary.some((row) => Number(row[key]) !== 0)).map(([key, name, color]) => ({ type: 'column' as const, name, color, yAxis: 0, data: summary.map((row) => Number(row[key])) }));
     const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => Number(row.avg_outdoor_temperature)) }];
     if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [Number(row.min_outdoor_temperature), Number(row.max_outdoor_temperature)]) });
     const hasDegreeDays = summary.some((row) => Number(row.sum_heating_degree_days) !== 0 || Number(row.sum_cooling_degree_days) !== 0);
@@ -69,19 +77,20 @@ export function AnalyzePage() {
       { type: 'spline', id: 'degree-days', name: 'Degree Days', color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
       { type: 'spline', name: 'Cooling Degree Days', linkedTo: 'degree-days', color: colors.lightBlue.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_cooling_degree_days)) },
     ] : [];
-    const smartScale = settings.runtime_thermostat_summary_smart_scale !== false;
+    const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
+    const scale = smartScale(config.group);
     return {
       chart: { backgroundColor: 'transparent', height: 350, zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
-      xAxis: { categories: summary.map((row) => String(row.date)), tickLength: 0, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const day = date.getDate(); const month = date.toLocaleDateString('en-US', { month: 'short' }); return `${this.isFirst || day <= 2 ? `${month} ` : ''}${day}${this.isFirst ? ` ${date.getFullYear()}` : ''}`; } } },
-      yAxis: [{ alignTicks: false, min: 0, softMax: smartScale ? 24 : undefined, tickInterval: smartScale ? 6 : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, tickInterval: unit.includes('C') ? 10 : 20, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
+      xAxis: { categories: summary.map((row) => String(row.date)), tickLength: 0, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
+      yAxis: [{ alignTicks: false, min: 0, softMax: useSmartScale ? scale.max : undefined, tickInterval: useSmartScale ? scale.interval : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, tickInterval: unit.includes('C') ? 10 : 20, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
       legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, xDateFormat: '%b %e, %Y', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
       plotOptions: { column: { stacking: 'normal', borderWidth: 0, groupPadding: 0 }, series: { animation: false, marker: { enabled: false } } },
       series: [...runtimeSeries, ...weatherSeries, ...degreeDaySeries],
     };
-  }, [settings.runtime_thermostat_summary_smart_scale, summary, unit]);
+  }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, unit]);
   const chipData = useMemo(() => {
     const result = buildRuntimeData([]);
-    for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0) / 3600, 0) * 3600;
+    for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0) * 3600;
     return result;
   }, [summary]);
   const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);
@@ -117,10 +126,10 @@ export function AnalyzePage() {
   const duration = durationWeeks === 0 ? 'few days' : durationWeeks === 1 ? 'week' : durationWeeks >= 52 ? 'year' : `${durationWeeks} weeks`;
   const generatedDate = generated ? new Date(generated) : undefined;
   const profileSubtitle = generatedDate ? `Generated ${generatedDate.toLocaleDateString('en-US', { month: 'short' })} ${ordinal(generatedDate.getDate())}, ${generatedDate.getFullYear()} @ ${generatedDate.toLocaleTimeString('en-US', { hour: 'numeric' }).toLowerCase()} from the past ${duration} of data (updated weekly).` : undefined;
-  const summaryLabel = summaryRange === 'all' ? 'All time' : summaryRange.includes('|') ? summaryRange.split('|').map((value) => new Date(`${value}T00:00:00`).toLocaleDateString()).join(' to ') : `Past ${summaryRange} months`;
-  const summarySubtitle = `${summaryLabel}, grouped by day (Gap Fill: ${settings.runtime_thermostat_summary_gap_fill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
+  const summaryLabel = config.period === 'all' ? 'All time' : `Past ${config.count} ${config.period}${config.count === 1 ? '' : 's'}`;
+  const summarySubtitle = `${summaryLabel}, grouped by ${config.group} (Gap Fill: ${gapFill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
-    <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu range={summaryRange} setRange={setSummaryRange} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} summary />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} summary />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
     <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profiles.length >= 2 && <Stack direction="row" gap={1.5} alignItems="center" px={.5}><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" /><Typography sx={{ minWidth: 100, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
   </Box>;
 }
