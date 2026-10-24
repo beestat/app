@@ -29,6 +29,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 - [x] Temporary React lifecycle bridge with shared state (no iframe), retained as the migration reference
 - [x] React-owned Visualize Settings card and persistence bridge
 - [x] Native editor on the default route: typed model, SVG renderer, pan/zoom, layers, draft editing, explicit save and undo
+- [x] Native 3D preview with independent Three.js lifecycle, geometry, runtime heatmap, playback and event-driven rendering
 - [ ] React-owned floor-plan editor feature parity
 - [ ] React-owned 3D scene, playback, heat-map and occupancy parity
 - [x] Read-only Playwright validation against the saved floor plan

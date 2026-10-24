@@ -71,5 +71,17 @@ await page.locator('button[aria-label="Hide"]:visible').first().click();
 if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
 await page.getByRole('button', { name: 'Undo unsaved floor-plan changes' }).click();
 if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
-console.log(JSON.stringify({ legacy, react, editor, nativeEditor, blockedMutations, errors }, null, 2));
+await page.goto('https://dev.app.beestat.io/react/index.php?native_scene=1#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
+await page.getByText('Fetching…').waitFor({ state: 'hidden', timeout: 90_000 });
+const nativeScene = await page.evaluate(() => ({
+  nativeCanvas: document.querySelectorAll('canvas[data-native-three="true"]').length,
+  legacyScripts: document.querySelectorAll('script[data-visualizer-src]').length,
+  legacyCanvas: document.querySelectorAll('canvas:not([data-native-three="true"])').length,
+  controls: ['Reset camera', 'Auto rotate', 'Play visualization', 'Visualization time'].filter((label) => document.querySelector(`[aria-label="${label}"]`)),
+}));
+await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded();
+await page.screenshot({ path: 'test-results/parity/react-native-three.png', fullPage: false });
+if (nativeScene.nativeCanvas !== 1 || nativeScene.legacyScripts !== 0 || nativeScene.legacyCanvas !== 0 || nativeScene.controls.length !== 4) throw new Error(`Native 3D regression: ${JSON.stringify(nativeScene)}`);
+console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, blockedMutations, errors }, null, 2));
 await browser.close();

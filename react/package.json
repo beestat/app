@@ -16,12 +16,14 @@
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^7.3.4",
     "@tanstack/react-query": "^5.90.5",
+    "@types/three": "^0.142.0",
     "highcharts": "^12.4.0",
     "highcharts-react-official": "^3.2.3",
     "lucide-react": "^0.548.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.4"
+    "react-router-dom": "^7.9.4",
+    "three": "^0.142.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
