@@ -16,11 +16,11 @@ export const colors = {
 export const theme = createTheme({
   palette: {
     mode: 'dark',
-    primary: colors.lightBlue,
-    secondary: colors.teal,
-    error: colors.red,
-    warning: colors.orange,
-    success: colors.green,
+    primary: { ...colors.lightBlue, contrastText: '#fff' },
+    secondary: { ...colors.teal, contrastText: '#fff' },
+    error: { ...colors.red, contrastText: '#fff' },
+    warning: { ...colors.orange, contrastText: '#fff' },
+    success: { ...colors.green, contrastText: '#fff' },
     background: { default: colors.slate.light, paper: colors.slate.main },
     text: { primary: '#fff', secondary: colors.gray.light },
   },
@@ -58,7 +58,7 @@ export const theme = createTheme({
     },
     MuiButton: {
       defaultProps: { disableElevation: true },
-      styleOverrides: { root: { minHeight: 32 } },
+      styleOverrides: { root: { minHeight: 32, textTransform: 'none' } },
     },
     MuiChip: { styleOverrides: { label: { fontSize: '13px' } } },
     MuiIconButton: { defaultProps: { size: 'small' } },

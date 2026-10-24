@@ -10,7 +10,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 - [x] System card: mode/schedule/override/as-of subtitle, indoor/weather circles, equipment, climate, time-to-temperature, menus/modals
 - [x] Sensors card: internal sensor placement, two-column remote grid, temperature/occupancy/participation states, menu
 - [x] Alerts card: alert-specific icons, compact rows, dismiss/restore, menus
-- [ ] Contribution/rating reminder eligibility
+- [x] Contribution/rating reminder eligibility
 - [x] Songstead promotion placement and desktop/mobile layout
 - [x] Thermostat runtime chips and mode-conditional setpoints
 - [x] Thermostat comfort/equipment raceway
@@ -26,15 +26,16 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Visualize
 
-- [x] React lifecycle host with shared state (no iframe/passthrough)
-- [ ] Floor-plan editor feature parity
-- [ ] 3D scene, playback, heat-map and occupancy parity
+- [x] Temporary React lifecycle bridge with shared state (no iframe), retained as the migration reference
+- [x] React-owned Visualize Settings card and persistence bridge
+- [ ] React-owned floor-plan editor feature parity
+- [ ] React-owned 3D scene, playback, heat-map and occupancy parity
 - [x] Read-only Playwright validation against the saved floor plan
 
 ## Compare
 
 - [x] Comparison Settings controls and persistence
-- [ ] My Home card and system-type diagram
+- [x] My Home card and system-type diagram
 - [x] Every metric tile rendered as a histogram/percentile (no raw API payloads)
 
 ## Air Quality

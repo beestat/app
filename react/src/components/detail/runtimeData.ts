@@ -78,6 +78,9 @@ export interface RuntimeChartData {
   equipment: Record<string, { name: string; color: string; width: number; points: Point[] }>;
   totals: Record<EquipmentCode, number>;
   climateAt: Record<number, string>;
+  systemModeAt: Record<number, string>;
+  equipmentAt: Record<number, Partial<Record<EquipmentCode, number>>>;
+  offAt: Record<number, number>;
 }
 
 export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
@@ -89,6 +92,9 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
     equipment: {},
     totals: Object.fromEntries(Object.keys(equipment).map((key) => [key, 0])) as Record<EquipmentCode, number>,
     climateAt: {},
+    systemModeAt: {},
+    equipmentAt: {},
+    offAt: {},
   };
   Object.entries(equipment).forEach(([code, meta]) => { result.equipment[code] = { ...meta, points: [] }; });
   Object.values(calendar).forEach((meta) => { result.equipment[meta.code] = { name: meta.name, color: meta.color, width: 6, points: [] }; });
@@ -100,6 +106,9 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
     result.temperature.indoor_humidity.push([x, number(row, 'indoor_humidity')]);
     result.temperature.outdoor_humidity.push([x, number(row, 'outdoor_humidity')]);
     const mode = String(row.system_mode ?? '');
+    result.systemModeAt[x] = mode;
+    result.equipmentAt[x] = {};
+    result.offAt[x] = number(row, 'off_heat_cool') ?? 0;
     result.temperature.setpoint_heat.push([x, ['auto', 'heat', 'auxiliary_heat'].includes(mode) ? number(row, 'setpoint_heat') : null]);
     result.temperature.setpoint_cool.push([x, ['auto', 'cool'].includes(mode) ? number(row, 'setpoint_cool') : null]);
 
@@ -110,6 +119,7 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
     });
     (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
       const seconds = equipmentSeconds(row, code);
+      result.equipmentAt[x][code] = seconds;
       result.totals[code] += seconds;
       result.equipment[code].points.push([x, seconds > 0 ? equipment[code].y : null]);
     });
@@ -120,6 +130,13 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
 export function formatRuntime(seconds: number) {
   const hours = Math.floor(seconds / 3600).toLocaleString();
   return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+export function formatRuntimeShort(seconds: number) {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${Math.floor(seconds / 3600)}h${minutes ? ` ${minutes}m` : ''}`;
 }
 
 export function runtimeAxisLabel(value: number, tickPositions?: readonly number[]) {
