@@ -55,5 +55,24 @@ const editor = await page.evaluate(() => ({
 }));
 await page.screenshot({ path: 'test-results/parity/react-visualize-editor.png', fullPage: false });
 if (editor.svgCount === 0 || editor.canvasCount === 0) throw new Error(`Floor-plan editor regression: ${JSON.stringify(editor)}`);
-console.log(JSON.stringify({ legacy, react, editor, blockedMutations, errors }, null, 2));
+await page.goto('https://dev.app.beestat.io/react/index.php?native_editor=1#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+await page.getByText('Home', { exact: true }).first().waitFor({ timeout: 90_000 });
+await page.getByText('Home', { exact: true }).first().click();
+await page.getByLabel('First Floor editor').waitFor({ timeout: 30_000 });
+const nativeEditor = await page.evaluate(() => ({
+  svgCount: document.querySelectorAll('svg').length,
+  polygons: document.querySelectorAll('svg polygon').length,
+  circles: document.querySelectorAll('svg circle').length,
+  labels: ['Rooms', 'Surfaces', 'Trees', 'Openings', 'Lights'].filter((text) => document.body.innerText.includes(text)),
+  saveDisabled: document.querySelector('button[aria-label="Save floor plan"]')?.hasAttribute('disabled'),
+}));
+await page.screenshot({ path: 'test-results/parity/react-native-floor-plan-editor.png', fullPage: false });
+if (nativeEditor.polygons === 0 || nativeEditor.circles === 0 || nativeEditor.labels.length !== 5 || nativeEditor.saveDisabled !== true) throw new Error(`Native floor-plan editor regression: ${JSON.stringify(nativeEditor)}`);
+const mutationsBeforeDraft = blockedMutations.length;
+await page.getByRole('button', { name: 'Rooms (13)' }).click();
+await page.locator('button[aria-label="Hide"]:visible').first().click();
+if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
+await page.getByRole('button', { name: 'Undo unsaved floor-plan changes' }).click();
+if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
+console.log(JSON.stringify({ legacy, react, editor, nativeEditor, blockedMutations, errors }, null, 2));
 await browser.close();
