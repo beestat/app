@@ -58,8 +58,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </Box>}
             <Box sx={{ flex: phone ? 1 : 0 }} />
-            {Object.keys(data?.thermostat ?? {}).length > 1 && (
-              <Select size="small" value={thermostatId ?? ''} onChange={(event) => setThermostatId(Number(event.target.value))} sx={{ minWidth: phone ? 115 : 170 }}>
+            {hasThermostats && (
+              <Select aria-label="Active thermostat" size="small" value={thermostatId ?? ''} onChange={(event) => setThermostatId(Number(event.target.value))} sx={{ minWidth: phone ? 115 : 170 }}>
                 {Object.values(data?.thermostat ?? {}).map((item) => <MenuItem key={item.thermostat_id} value={item.thermostat_id}>{item.name}</MenuItem>)}
               </Select>
             )}
