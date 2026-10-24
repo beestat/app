@@ -21,8 +21,8 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Analyze
 
-- [ ] Thermostat Summary series, totals, grouping, gap-fill/smart-scale and full menu
-- [ ] Temperature Profiles series, trendlines, raw-data toggles, tooltip and menu
+- [x] Thermostat Summary series, totals, grouping, gap-fill/smart-scale and full menu
+- [x] Temperature Profiles series, trendlines, raw traces, tooltip, history, info and menu
 
 ## Visualize
 

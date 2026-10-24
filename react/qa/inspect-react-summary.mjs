@@ -3,6 +3,8 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ ignoreHTTPSErrors: true, storageState: 'test-results/auth-state.json' });
 const page = await context.newPage();
+const errors = [];
+page.on('pageerror', (error) => errors.push(error.message));
 await page.goto('https://dev.app.beestat.io/react/index.php#/analyze', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('Thermostat Summary', { exact: true }).waitFor({ timeout: 90_000 });
 await page.locator('[role="progressbar"]').first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
@@ -45,6 +47,29 @@ await page.waitForTimeout(350);
 const customDialog = await page.getByRole('dialog', { name: 'Thermostat Summary - Custom Range' }).innerText();
 await page.screenshot({ path: 'test-results/parity/react-analyze-custom.png', fullPage: true });
 await page.getByRole('button', { name: 'Cancel' }).click();
+await page.waitForTimeout(350);
+const profileChart = page.locator('.highcharts-container').nth(1);
+await profileChart.scrollIntoViewIfNeeded();
+const profileBox = await profileChart.locator('.highcharts-plot-background').boundingBox();
+const tracker = profileChart.locator('.highcharts-tracker-line').nth(1);
+if (await tracker.count()) {
+  const point = await tracker.evaluate((path) => {
+    const svgPath = path;
+    const local = svgPath.getPointAtLength(svgPath.getTotalLength() * .55);
+    const screen = new DOMPoint(local.x, local.y).matrixTransform(svgPath.getScreenCTM());
+    return { x: screen.x, y: screen.y };
+  });
+  await page.mouse.move(point.x, point.y, { steps: 12 });
+} else if (profileBox) await page.mouse.move(profileBox.x + profileBox.width * .55, profileBox.y + profileBox.height * .5);
+await page.waitForTimeout(150);
+const profileTooltip = await page.evaluate(() => [...document.querySelectorAll('[class*="tooltip"]')].map((node) => node.textContent ?? '').find((text) => text.includes('Outdoor Temp:')) ?? '');
+await page.getByRole('button', { name: 'Temperature profiles menu' }).click();
+const profileMenuItems = await page.getByRole('menuitem').allTextContents();
+await page.getByRole('menuitem', { name: 'More Info' }).click();
+await page.waitForTimeout(350);
+const profileInfo = await page.getByRole('dialog', { name: 'Temperature Profiles Info' }).innerText();
+await page.screenshot({ path: 'test-results/parity/react-analyze-profile-info.png', fullPage: true });
+await page.getByRole('button', { name: 'Close' }).click();
 console.log(JSON.stringify({
   ...result,
   thermostatId,
@@ -58,5 +83,9 @@ console.log(JSON.stringify({
   expectedTotalsFromJuly23: totalsFrom('2026-07-23'),
   menuItems,
   customDialog,
+  profileTooltip,
+  profileMenuItems,
+  profileInfo,
+  errors,
 }, null, 2));
 await browser.close();
