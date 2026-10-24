@@ -20,7 +20,7 @@ export function SongsteadPromo() {
   const [visible, setVisible] = useState(() => shouldShow(data?.user ?? {}));
   const updateSetting = (key: string, value: unknown) => void apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } });
   if (!visible) return null;
-  return <Card sx={{ gridColumn: '1 / -1', bgcolor: '#fff', color: '#263238', position: 'relative' }}>
+  return <Card sx={{ gridColumn: '1 / -1', minHeight: { md: 207 }, bgcolor: '#fff', color: '#263238', position: 'relative' }}>
     <IconButton aria-label="Dismiss Songstead promotion" onClick={() => { setVisible(false); updateSetting('songstead.promo_dismissed', true); }} sx={{ position: 'absolute', right: 10, top: 10, color: '#8c9bb1' }}><X /></IconButton>
     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
       <Typography sx={{ color: '#8c9bb1', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', mb: .5 }}>A note from the developer</Typography>

@@ -53,7 +53,7 @@ export function SettingsPage() {
   const addThermostat = async () => { if (serial.length !== 12) return; await apiBatch([{ resource: 'ecobee_thermostat', method: 'create', alias: 'create', arguments: { attributes: { identifier: serial } } }, { resource: 'ecobee_thermostat', method: 'read_id', alias: 'read_id', arguments: { attributes: { inactive: 0 } } }]); setSerial(''); await refresh(); };
   const removeThermostat = async (id: number) => { if (!confirm('Remove this thermostat from beestat?')) return; await apiCall({ resource: 'ecobee_thermostat', method: 'update', arguments: { attributes: { ecobee_thermostat_id: id, inactive: 1 } } }); await refresh(); };
   const apiKeyAction = async (method: 'create_api_key' | 'recycle_api_key' | 'delete_api_key') => { if (method !== 'create_api_key' && !confirm(`${method === 'delete_api_key' ? 'Delete' : 'Regenerate'} your API key? Existing integrations will stop working.`)) return; await apiCall({ resource: 'user', method }); await refresh(); };
-  return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
+  return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     {message && <Alert severity="success">{message}</Alert>}
     <DashboardCard title="Settings">
       <Typography fontWeight={600}>User Interface</Typography>

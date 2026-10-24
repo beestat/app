@@ -11,7 +11,7 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat }: { 
   const sorted = [...sensors].sort((a, b) => a.type === 'thermostat' ? -1 : b.type === 'thermostat' ? 1 : a.name.localeCompare(b.name));
   const temperature = (value: number | null) => value == null ? '???' : formatTemperature(value, thermostat.temperature_unit).replace(/°[FC]$/, '');
   return (
-    <DashboardCard title="Sensors" action={<><IconButton aria-label="Sensors menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem component="a" href="https://doc.beestat.io/d279d6fb4afc4f199409be2eb323140b" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu></>}>
+    <DashboardCard title="Sensors" action={<><IconButton aria-label="Sensors menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem component="a" href="https://doc.beestat.io/d279d6fb4afc4f199409be2eb323140b" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu></>} sx={{ minHeight: { md: 398 } }}>
       <Grid container spacing={1}>
         {sorted.map((sensor) => {
           const delta = sensor.temperature === null ? 0 : sensor.temperature - thermostat.temperature;

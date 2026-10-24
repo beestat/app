@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <Box sx={{ minHeight: '100dvh', pb: phone ? 10 : 3 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters={phone}>
-          <Toolbar sx={{ gap: 1, minHeight: { xs: 58, sm: 70 } }}>
+          <Toolbar sx={{ gap: 1, minHeight: 58 }}>
             <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mr: 1 }}>
               <Avatar src="/favicon.png" alt="beestat" sx={{ width: 38, height: 38 }} />
               {!compact && <Box component="span" sx={{ color: '#fff', fontSize: 22, fontWeight: 500, ml: 1 }}>beestat</Box>}

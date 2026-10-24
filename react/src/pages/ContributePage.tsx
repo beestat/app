@@ -97,7 +97,7 @@ export function ContributePage() {
     </Menu>
   </>;
 
-  return <Box sx={{ py: 2 }}><Grid container spacing={2} alignItems="stretch">
+  return <Box sx={{ pb: 2 }}><Grid container spacing={2} alignItems="stretch">
     <Grid size={{ xs: 12, md: 8 }}><DashboardCard title="Contribute" action={contributeAction}>
       {contributionActive ? <>
         <Typography paragraph>Thank you so much for your support! Your contribution goes a long way towards keeping beestat running and enabling me to create a rich and useful application. My hope is that you are able to use beestat to save money and improve the efficiency of your home.</Typography>

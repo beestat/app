@@ -233,7 +233,7 @@ export function ComparePage() {
   const ageRange = (attributes.property_age as { value?: number[] } | undefined)?.value;
   const areaRange = (attributes.property_square_feet as { value?: number[] } | undefined)?.value;
   const storiesFilter = attributes.property_stories as { operator?: string; value?: number } | number | undefined;
-  return <Box sx={{ display: 'grid', gap: 2, py: 2 }}>
+  return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
         <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />}>
