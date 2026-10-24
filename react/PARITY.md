@@ -6,7 +6,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Detail
 
-- [ ] Header/navigation and thermostat selector
+- [x] Header/navigation and thermostat selector
 - [x] System card: mode/schedule/override/as-of subtitle, indoor/weather circles, equipment, climate, time-to-temperature, menus/modals
 - [x] Sensors card: internal sensor placement, two-column remote grid, temperature/occupancy/participation states, menu
 - [x] Alerts card: alert-specific icons, compact rows, dismiss/restore, menus
@@ -14,9 +14,9 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 - [x] Songstead promotion placement and desktop/mobile layout
 - [x] Thermostat runtime chips and mode-conditional setpoints
 - [x] Thermostat comfort/equipment raceway
-- [ ] Thermostat synchronized zoom/crosshair, legacy tooltip detail, custom dates/download/reset/help menu
+- [x] Thermostat synchronized zoom/crosshair, legacy tooltip detail, custom dates/download/reset/help menu
 - [x] Sensor equipment and occupancy raceways
-- [ ] Sensor synchronized zoom/crosshair, occupancy tooltip state, custom dates/download/reset/help menu
+- [x] Sensor synchronized zoom/crosshair, occupancy tooltip state, custom dates/download/reset/help menu
 - [x] Footer parity
 
 ## Analyze
@@ -48,7 +48,7 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Settings and secondary pages
 
-- [ ] General settings and persistence
-- [ ] Manage thermostats behavior
-- [ ] API key management
-- [ ] Announcements, download, contribute, no-thermostat and demo states
+- [x] General settings and persistence
+- [x] Manage thermostats behavior
+- [x] API key management
+- [x] Announcements, download, contribute, no-thermostat and demo states

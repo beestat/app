@@ -20,6 +20,10 @@ function nearestPoint(series: Highcharts.Series, x: number) {
 
 export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefined>) {
   const activeCharts = charts.filter(Boolean) as Highcharts.Chart[];
+  // Highcharts clears chart.container during its own React cleanup. Retain the
+  // exact DOM nodes we registered so route transitions can always detach the
+  // listeners regardless of effect-cleanup ordering.
+  const registrations = activeCharts.map((chart) => ({ chart, container: chart.container }));
   const move = (event: MouseEvent | TouchEvent) => {
     activeCharts.forEach((chart) => {
       const normalized = chart.pointer.normalize(event as any);
@@ -45,16 +49,16 @@ export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefi
     chart.tooltip.hide(0);
     (chart as Highcharts.Chart & { beestatCrosshair?: Highcharts.SVGElement }).beestatCrosshair?.hide();
   });
-  activeCharts.forEach((chart) => {
-    chart.container.addEventListener('mousemove', move);
-    chart.container.addEventListener('touchmove', move, { passive: true });
-    chart.container.addEventListener('touchstart', move, { passive: true });
-    chart.container.addEventListener('mouseleave', leave);
+  registrations.forEach(({ container }) => {
+    container.addEventListener('mousemove', move);
+    container.addEventListener('touchmove', move, { passive: true });
+    container.addEventListener('touchstart', move, { passive: true });
+    container.addEventListener('mouseleave', leave);
   });
-  return () => activeCharts.forEach((chart) => {
-    chart.container.removeEventListener('mousemove', move);
-    chart.container.removeEventListener('touchmove', move);
-    chart.container.removeEventListener('touchstart', move);
-    chart.container.removeEventListener('mouseleave', leave);
+  return () => registrations.forEach(({ container }) => {
+    container.removeEventListener('mousemove', move);
+    container.removeEventListener('touchmove', move);
+    container.removeEventListener('touchstart', move);
+    container.removeEventListener('mouseleave', leave);
   });
 }

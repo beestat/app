@@ -48,7 +48,12 @@ await page.screenshot({ path: 'test-results/react-air-quality-settled.png', full
 const airQualityText = (await page.locator('body').innerText()).slice(0, 500);
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'networkidle', timeout: 90_000 });
-await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 90_000 });
+try {
+  await page.locator('canvas[data-native-three="true"]').waitFor({ state: 'visible', timeout: 90_000 });
+} catch (error) {
+  console.error(JSON.stringify({ url: page.url(), body: (await page.locator('body').innerText()).slice(0, 2_000), errors, failedResponses }, null, 2));
+  throw error;
+}
 await page.waitForTimeout(15_000);
 await page.screenshot({ path: 'test-results/react-visualize-settled.png', fullPage: false });
 const visualizer = await page.evaluate(() => ({
