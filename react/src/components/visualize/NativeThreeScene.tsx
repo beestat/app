@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, IconButton, Slider, Stack, Tooltip, Typography } from '@mui/material';
-import { Eye, EyeOff, Home, Layers3, Pause, Play, Rotate3D, Tags } from 'lucide-react';
+import { Box, IconButton, Menu, MenuItem, Slider, Stack, Tooltip, Typography } from '@mui/material';
+import { Cloud, CloudLightning, CloudRain, CloudSun, Eye, EyeOff, Home, Layers3, Pause, Play, Rotate3D, Save, Snowflake, Sun, Tags } from 'lucide-react';
 import * as THREE from 'three';
 import * as ClipperLib from 'clipper-lib';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -11,6 +11,18 @@ import { useVisualizeRuntime } from './useVisualizeRuntime';
 
 type SceneResources = { renderer: THREE.WebGLRenderer; controls: OrbitControls; scene: THREE.Scene; frame: number; resize: ResizeObserver; render: () => void; animate: () => void; rooms: Map<string, THREE.MeshStandardMaterial>; groups: Map<string, THREE.Group>; sun: THREE.DirectionalLight; hemisphere: THREE.HemisphereLight };
 type SkeletonBuilder = { buildFromPolygon: (coordinates: number[][][]) => { vertices: number[][]; polygons: number[][] } | null };
+type WeatherMode = 'auto' | 'sunny' | 'overcast' | 'rain' | 'thunderstorm' | 'snow';
+const weatherProfiles: Record<Exclude<WeatherMode, 'auto'>, Record<string, number>> = {
+  sunny: { cloud_density: .03, cloud_darkness: 0, rain_density: 0, snow_density: 0 },
+  overcast: { cloud_density: .5, cloud_darkness: .4, rain_density: 0, snow_density: 0 },
+  rain: { cloud_density: 1, cloud_darkness: 1, rain_density: 1, snow_density: 0 },
+  thunderstorm: { cloud_density: 1.5, cloud_darkness: 2, rain_density: 2, snow_density: 0 },
+  snow: { cloud_density: 1, cloud_darkness: 1, rain_density: 0, snow_density: 1 },
+};
+const weatherOptions: Array<{ value: WeatherMode; label: string; Icon: typeof Sun }> = [
+  { value: 'auto', label: 'Automatic', Icon: CloudSun }, { value: 'sunny', label: 'Sunny', Icon: Sun }, { value: 'overcast', label: 'Overcast', Icon: Cloud },
+  { value: 'rain', label: 'Rain', Icon: CloudRain }, { value: 'thunderstorm', label: 'Thunderstorm', Icon: CloudLightning }, { value: 'snow', label: 'Snow', Icon: Snowflake },
+];
 let skeletonPromise: Promise<SkeletonBuilder> | undefined;
 
 function loadSkeletonBuilder() {
@@ -173,19 +185,28 @@ function heatColor(value: number, min: number, max: number) {
 }
 
 function formatTime(minutes: number) { const hour = Math.floor(minutes / 60); const minute = minutes % 60; return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`; }
+function dayOfYear(date: Date) { return Math.floor((new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / 86_400_000); }
+function dateForDay(day: number) { return new Date(new Date().getFullYear(), 0, day + 1); }
 
-export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan; settings: Record<string, any>; sensors: Record<string, Sensor> }) {
+export function NativeThreeScene({ plan, settings, sensors, onSavePreferences }: { plan: FloorPlan; settings: Record<string, any>; sensors: Record<string, Sensor>; onSavePreferences?: (preferences: Record<string, unknown>) => Promise<void> }) {
   const host = useRef<HTMLDivElement>(null);
   const resources = useRef<SceneResources | undefined>(undefined);
   const [visibleGroups, setVisibleGroups] = useState(() => new Set(plan.data.groups.map((group) => group.group_id)));
   const [autoRotate, setAutoRotate] = useState(false);
   const [showEnvironment, setShowEnvironment] = useState(() => String(plan.data.scene?.mode ?? 'environment') === 'environment');
-  const [showLabels, setShowLabels] = useState(false);
+  const [showLabels, setShowLabels] = useState(() => plan.data.scene?.show_labels !== false);
+  const [weather, setWeather] = useState<WeatherMode>(() => (weatherOptions.some((item) => item.value === plan.data.scene?.weather) ? plan.data.scene?.weather : 'auto') as WeatherMode);
+  const [weatherMenu, setWeatherMenu] = useState<HTMLElement | null>(null);
+  const [preferencesDirty, setPreferencesDirty] = useState(false);
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const [minute, setMinute] = useState(() => { const now = new Date(); return now.getHours() * 60 + Math.floor(now.getMinutes() / 5) * 5; });
   const [playing, setPlaying] = useState(false);
+  const [environmentDay, setEnvironmentDay] = useState(() => dayOfYear(new Date()));
+  const [datePlaying, setDatePlaying] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string>();
   const [skeleton, setSkeleton] = useState<SkeletonBuilder>();
   const runtime = useVisualizeRuntime(plan, sensors, settings);
+  const weatherSettings = useMemo(() => ({ ...((plan.data.scene?.settings as Record<string, unknown> | undefined) ?? {}), ...(weather === 'auto' ? {} : weatherProfiles[weather]) }), [plan.data.scene?.settings, weather]);
   const dataType = settings.data_type === 'occupancy' ? 'occupancy' : 'temperature';
   const limits = useMemo(() => settings.heat_map_values === 'static'
     ? { min: Number(settings.heat_map_static?.[dataType]?.min ?? (dataType === 'temperature' ? 70 : 0)), max: Number(settings.heat_map_static?.[dataType]?.max ?? (dataType === 'temperature' ? 80 : 100)) }
@@ -206,7 +227,7 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
     const rooms = new Map<string, THREE.MeshStandardMaterial>(); const groups = new Map<string, THREE.Group>(); const roomObjects: THREE.Mesh[] = []; const root = new THREE.Group(); root.position.copy(center); root.rotation.y = -THREE.MathUtils.degToRad(Number(plan.data.appearance?.rotation ?? 0)); scene.add(root); const model = new THREE.Group(); model.position.set(-center.x, 0, -center.z); root.add(model); const appearance = plan.data.appearance ?? {}; plan.data.groups.forEach((group) => groups.set(group.group_id, addGroup(model, group, appearance, visibleGroups.has(group.group_id), rooms, roomObjects, plan.data.scene?.show_labels !== false)));
     if (String(appearance.roof_style ?? 'hip') !== 'flat') addSkeletonRoofs(model, plan, String(appearance.roof_color ?? '#3a3a3a'), skeleton);
     const groundColor = new THREE.Color(String(appearance.ground_color ?? '#294f28')).multiplyScalar(.4); const ground = new THREE.Mesh(new THREE.PlaneGeometry(extent * 3.4, extent * 3.4), material(groundColor)); ground.rotation.x = -Math.PI / 2; ground.position.set(center.x, -1, center.z); ground.receiveShadow = true; ground.userData.visualizeKind = 'environment'; scene.add(ground);
-    addWeather(scene, center, extent, (plan.data.scene?.settings as Record<string, unknown> | undefined) ?? {});
+    addWeather(scene, center, extent, weatherSettings);
     let active = true; const render = () => { if (active) renderer.render(scene, camera); }; const animate = () => { if (!active || !controls.autoRotate) return; controls.update(); render(); resources.current!.frame = requestAnimationFrame(animate); };
     controls.addEventListener('change', render);
     const raycaster = new THREE.Raycaster(); const pointer = new THREE.Vector2(); const selectRoom = (event: MouseEvent) => { const rect = renderer.domElement.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1); raycaster.setFromCamera(pointer, camera); const hit = raycaster.intersectObjects(roomObjects, false)[0]; setSelectedRoomId(hit?.object.userData.roomId); };
@@ -214,25 +235,25 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
     const resize = new ResizeObserver(([entry]) => { const width = Math.max(1, entry.contentRect.width); const height = 500; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix(); render(); }); resize.observe(container);
     resources.current = { renderer, controls, scene, frame: 0, resize, render, animate, rooms, groups, sun, hemisphere }; render();
     return () => { active = false; cancelAnimationFrame(resources.current?.frame ?? 0); resize.disconnect(); controls.removeEventListener('change', render); renderer.domElement.removeEventListener('click', selectRoom); controls.dispose(); scene.traverse((object) => { const mesh = object as THREE.Mesh; mesh.geometry?.dispose(); const materials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []; materials.forEach((item) => item.dispose()); }); renderer.dispose(); renderer.domElement.remove(); resources.current = undefined; };
-  }, [plan, skeleton]);
+  }, [plan, skeleton, weatherSettings]);
 
-  useEffect(() => { if (!resources.current) return; resources.current.groups.forEach((object, id) => { object.visible = visibleGroups.has(id); }); resources.current.render(); }, [visibleGroups, plan, skeleton]);
+  useEffect(() => { if (!resources.current) return; resources.current.groups.forEach((object, id) => { object.visible = visibleGroups.has(id); }); resources.current.render(); }, [visibleGroups, plan, skeleton, weatherSettings]);
 
   useEffect(() => { if (!resources.current) return; resources.current.controls.autoRotate = autoRotate; cancelAnimationFrame(resources.current.frame); if (autoRotate) resources.current.frame = requestAnimationFrame(resources.current.animate); else resources.current.render(); }, [autoRotate]);
   useEffect(() => {
     if (!resources.current) return;
     resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'environment' || object.userData.visualizeKind === 'stars') object.visible = showEnvironment; });
     resources.current.render();
-  }, [showEnvironment, plan, skeleton]);
-  useEffect(() => { if (!resources.current) return; resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'label') object.visible = showLabels; }); resources.current.render(); }, [showLabels, plan, skeleton]);
+  }, [showEnvironment, plan, skeleton, weatherSettings]);
+  useEffect(() => { if (!resources.current) return; resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'label') object.visible = showLabels && !showEnvironment; }); resources.current.render(); }, [showLabels, showEnvironment, plan, skeleton, weatherSettings]);
   useEffect(() => {
     if (!resources.current) return;
     const daylight = Math.max(0, Math.sin(((minute - 360) / 720) * Math.PI)); const twilight = Math.max(0, Math.sin(((minute - 300) / 840) * Math.PI));
-    const settings = (plan.data.scene?.settings as Record<string, unknown> | undefined) ?? {}; const darkness = Math.max(0, Math.min(2, Number(settings.cloud_darkness ?? 0)));
+    const darkness = Math.max(0, Math.min(2, Number(weatherSettings.cloud_darkness ?? 0)));
     const daySky = new THREE.Color('#263b46').multiplyScalar(1 - darkness * .16); const nightSky = new THREE.Color('#07111d'); const sky = nightSky.clone().lerp(daySky, twilight);
-    resources.current.scene.background = sky; if (resources.current.scene.fog instanceof THREE.Fog) { resources.current.scene.fog.color.copy(sky); resources.current.scene.fog.near = Number(settings.fog_density ?? 0) > 0 ? 350 : 1200; }
-    resources.current.sun.intensity = daylight * .9 * Math.max(.28, 1 - darkness * .32); resources.current.sun.color.set(daylight < .25 ? '#ff9b66' : '#fff1d5');
-    const angle = ((minute - 360) / 720) * Math.PI; resources.current.sun.position.set(Math.cos(angle) * 900, Math.max(20, Math.sin(angle) * 1000), Math.sin(angle) * 550);
+    resources.current.scene.background = sky; if (resources.current.scene.fog instanceof THREE.Fog) { resources.current.scene.fog.color.copy(sky); resources.current.scene.fog.near = Number(weatherSettings.fog_density ?? 0) > 0 ? 350 : 1200; }
+    const seasonalSun = .72 + .28 * Math.cos(((environmentDay - 172) / 365) * Math.PI * 2); resources.current.sun.intensity = daylight * .9 * seasonalSun * Math.max(.28, 1 - darkness * .32); resources.current.sun.color.set(daylight < .25 ? '#ff9b66' : '#fff1d5');
+    const angle = ((minute - 360) / 720) * Math.PI; resources.current.sun.position.set(Math.cos(angle) * 900, Math.max(20, Math.sin(angle) * 1000 * seasonalSun), Math.sin(angle) * 550);
     resources.current.hemisphere.intensity = .18 + twilight * .48; resources.current.hemisphere.color.set(twilight < .3 ? '#6684aa' : '#dce9ff');
     resources.current.scene.traverse((object) => { if (object.userData.visualizeKind === 'stars') object.visible = showEnvironment && twilight < .5; });
     plan.data.groups.forEach((group) => group.rooms.forEach((room) => {
@@ -241,15 +262,17 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
       roomMaterial.color.set(value == null ? '#38464d' : heatColor(value, limits.min, limits.max)); roomMaterial.needsUpdate = true;
     }));
     resources.current.render();
-  }, [dataType, limits.max, limits.min, minute, plan, runtime.data, showEnvironment, skeleton]);
+  }, [dataType, environmentDay, limits.max, limits.min, minute, plan, runtime.data, showEnvironment, skeleton, weatherSettings]);
   useEffect(() => {
     if (!playing) return;
     const timer = window.setInterval(() => setMinute((value) => (value + 5) % 1440), 120);
     return () => window.clearInterval(timer);
   }, [playing]);
+  useEffect(() => { if (!datePlaying) return; const timer = window.setInterval(() => setEnvironmentDay((value) => (value + 1) % 365), 80); return () => window.clearInterval(timer); }, [datePlaying]);
   const reset = () => resources.current?.controls.reset();
   const selectedRoom = plan.data.groups.flatMap((group) => group.rooms).find((room) => room.room_id === selectedRoomId);
   const selectedValue = selectedRoom?.sensor_id == null ? undefined : runtime.data.series[dataType][selectedRoom.sensor_id]?.[minute];
+  const savePreferences = async () => { if (!onSavePreferences) return; setSavingPreferences(true); try { await onSavePreferences({ mode: showEnvironment ? 'environment' : 'home', weather, show_labels: showLabels, auto_rotate: autoRotate, settings: weatherSettings }); setPreferencesDirty(false); } finally { setSavingPreferences(false); } };
   return <Box ref={host} sx={{ position: 'relative', height: 500, bgcolor: colors.slate.dark, overflow: 'hidden', '& canvas': { display: 'block', width: '100%', height: '500px' } }}>
     <Stack direction="row" alignItems="center" gap={.5} sx={{ position: 'absolute', zIndex: 2, top: 8, left: 12, right: 12, minWidth: 0 }}>
       <Tooltip title="Floor visibility"><IconButton sx={{ bgcolor: colors.slate.light }}><Layers3 size={19} /></IconButton></Tooltip>
@@ -260,11 +283,15 @@ export function NativeThreeScene({ plan, settings, sensors }: { plan: FloorPlan;
     </Stack>
     <Stack gap={.5} sx={{ position: 'absolute', zIndex: 2, top: 56, left: 12 }}>
       <Tooltip title="Reset camera"><IconButton onClick={reset} sx={{ bgcolor: colors.slate.light }}><Home size={19} /></IconButton></Tooltip>
-      <Tooltip title="Toggle environment"><IconButton aria-label="Toggle environment" color={showEnvironment ? 'primary' : 'default'} onClick={() => setShowEnvironment((value) => !value)} sx={{ bgcolor: colors.slate.light }}>{showEnvironment ? <Eye size={19} /> : <EyeOff size={19} />}</IconButton></Tooltip>
-      <Tooltip title="Auto rotate"><IconButton color={autoRotate ? 'primary' : 'default'} onClick={() => setAutoRotate((value) => !value)} sx={{ bgcolor: colors.slate.light }}><Rotate3D size={19} /></IconButton></Tooltip>
-      <Tooltip title="Room labels"><IconButton aria-label="Toggle room labels" color={showLabels ? 'primary' : 'default'} onClick={() => setShowLabels((value) => !value)} sx={{ bgcolor: colors.slate.light }}><Tags size={19} /></IconButton></Tooltip>
+      <Tooltip title="Toggle environment"><IconButton aria-label="Toggle environment" color={showEnvironment ? 'primary' : 'default'} onClick={() => { setShowEnvironment((value) => !value); setPreferencesDirty(true); }} sx={{ bgcolor: colors.slate.light }}>{showEnvironment ? <Eye size={19} /> : <EyeOff size={19} />}</IconButton></Tooltip>
+      <Tooltip title="Auto rotate"><IconButton aria-label="Auto rotate" color={autoRotate ? 'primary' : 'default'} onClick={() => { setAutoRotate((value) => !value); setPreferencesDirty(true); }} sx={{ bgcolor: colors.slate.light }}><Rotate3D size={19} /></IconButton></Tooltip>
+      <Tooltip title="Room labels"><IconButton aria-label="Toggle room labels" color={showLabels ? 'primary' : 'default'} onClick={() => { setShowLabels((value) => !value); setPreferencesDirty(true); }} sx={{ bgcolor: colors.slate.light }}><Tags size={19} /></IconButton></Tooltip>
+      <Tooltip title={`Weather: ${weatherOptions.find((item) => item.value === weather)?.label}`}><IconButton aria-label="Select weather" onClick={(event) => setWeatherMenu(event.currentTarget)} sx={{ bgcolor: colors.slate.light }}><CloudSun size={19} /></IconButton></Tooltip>
+      <Menu anchorEl={weatherMenu} open={Boolean(weatherMenu)} onClose={() => setWeatherMenu(null)}>{weatherOptions.map(({ value, label, Icon }) => <MenuItem key={value} selected={weather === value} onClick={() => { setWeather(value); setPreferencesDirty(true); setWeatherMenu(null); }}><Icon size={18} />{label}</MenuItem>)}</Menu>
+      <Tooltip title="Save scene preferences"><span><IconButton aria-label="Save scene preferences" disabled={!preferencesDirty || savingPreferences} onClick={() => void savePreferences()} sx={{ bgcolor: colors.slate.light }}><Save size={19} /></IconButton></span></Tooltip>
     </Stack>
     <Stack direction="row" gap={1} sx={{ position: 'absolute', zIndex: 2, right: 14, bottom: 10, bgcolor: 'rgba(38,50,56,.8)', px: 1, borderRadius: 1 }}><Typography variant="caption">{dataType === 'temperature' ? `${limits.min.toFixed(1)}° – ${limits.max.toFixed(1)}°` : `${Math.round(limits.min)}% – ${Math.round(limits.max)}%`}</Typography>{runtime.isFetching && <Typography variant="caption">Fetching…</Typography>}</Stack>
+    {showEnvironment && <Box sx={{ position: 'absolute', zIndex: 2, left: 12, bottom: 8, width: { xs: 190, sm: 230 }, bgcolor: 'rgba(38,50,56,.76)', px: 1, borderRadius: 1 }}><Typography variant="caption">{dateForDay(environmentDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</Typography><Stack direction="row" alignItems="center"><IconButton size="small" aria-label={datePlaying ? 'Pause environment date' : 'Play environment date'} onClick={() => setDatePlaying((value) => !value)}>{datePlaying ? <Pause size={16} /> : <Play size={16} />}</IconButton><Slider size="small" aria-label="Environment date" min={0} max={364} value={environmentDay} onChange={(_, value) => { setDatePlaying(false); setEnvironmentDay(value as number); }} /></Stack></Box>}
     {selectedRoom && <Box sx={{ position: 'absolute', zIndex: 2, right: 18, top: 58, bgcolor: 'rgba(38,50,56,.9)', p: 1.5, borderRadius: 1, minWidth: 170 }}><Typography fontWeight={600}>{selectedRoom.name || 'Room'}</Typography><Typography variant="caption">{selectedRoom.sensor_id ? sensors[String(selectedRoom.sensor_id)]?.name ?? `Sensor ${selectedRoom.sensor_id}` : 'No sensor'}</Typography>{selectedValue != null && <Typography mt={.5}>{dataType === 'temperature' ? `${selectedValue.toFixed(1)}°` : `${Math.round(selectedValue)}% occupied`}</Typography>}</Box>}
   </Box>;
 }

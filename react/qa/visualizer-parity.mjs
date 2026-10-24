@@ -67,10 +67,16 @@ await page.screenshot({ path: 'test-results/parity/react-native-floor-plan-edito
 if (nativeEditor.polygons === 0 || nativeEditor.circles === 0 || nativeEditor.labels.length !== 5 || nativeEditor.saveDisabled !== true) throw new Error(`Native floor-plan editor regression: ${JSON.stringify(nativeEditor)}`);
 const mutationsBeforeDraft = blockedMutations.length;
 await page.getByRole('button', { name: 'Rooms (13)' }).click();
+await page.locator('svg[aria-label$=" editor"] polygon').first().click({ force: true });
+if (await page.locator('[aria-label="Shape points"] circle').count() < 3) throw new Error('Native editor did not expose draggable polygon vertices.');
+await page.keyboard.press('Escape');
 await page.locator('button[aria-label="Hide"]:visible').first().click();
 if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
 await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
 if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
+await page.getByLabel('North Orientation (°)').fill('45');
+if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not retain a draft orientation change.');
+await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
 await page.getByRole('button', { name: 'Add Floor' }).click();
 if (!await page.getByText('4 Floors', { exact: false }).isVisible()) throw new Error('Native editor did not add a draft floor.');
 await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
@@ -82,10 +88,17 @@ const nativeScene = await page.evaluate(() => ({
   nativeCanvas: document.querySelectorAll('canvas[data-native-three="true"]').length,
   legacyScripts: document.querySelectorAll('script[data-visualizer-src]').length,
   legacyCanvas: document.querySelectorAll('canvas:not([data-native-three="true"])').length,
-  controls: ['Reset camera', 'Auto rotate', 'Play visualization', 'Visualization time'].filter((label) => document.querySelector(`[aria-label="${label}"]`)),
+  controls: ['Reset camera', 'Auto rotate', 'Play visualization', 'Visualization time', 'Play environment date', 'Environment date', 'Select weather', 'Save scene preferences'].filter((label) => document.querySelector(`[aria-label="${label}"]`)),
 }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded();
 await page.screenshot({ path: 'test-results/parity/react-native-three.png', fullPage: false });
-if (nativeScene.nativeCanvas !== 1 || nativeScene.legacyScripts !== 0 || nativeScene.legacyCanvas !== 0 || nativeScene.controls.length !== 4) throw new Error(`Native 3D regression: ${JSON.stringify(nativeScene)}`);
-console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, blockedMutations, errors }, null, 2));
+if (nativeScene.nativeCanvas !== 1 || nativeScene.legacyScripts !== 0 || nativeScene.legacyCanvas !== 0 || nativeScene.controls.length !== 8) throw new Error(`Native 3D regression: ${JSON.stringify(nativeScene)}`);
+const mutationsBeforeWeather = blockedMutations.length;
+await page.getByLabel('Select weather').click(); await page.getByRole('menuitem', { name: 'Snow' }).click(); await page.waitForTimeout(500);
+if (await page.getByRole('button', { name: 'Save scene preferences' }).isDisabled() || blockedMutations.length !== mutationsBeforeWeather) throw new Error('Scene preference draft did not remain local until explicit save.');
+await page.setViewportSize({ width: 390, height: 844 }); await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
+const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
+await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
+if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 16) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
+console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, blockedMutations, errors }, null, 2));
 await browser.close();

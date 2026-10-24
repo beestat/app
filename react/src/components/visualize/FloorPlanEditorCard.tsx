@@ -3,7 +3,7 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Box, Button, Card, CardContent,
   CardHeader, Chip, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography,
 } from '@mui/material';
-import { ChevronDown, Eye, EyeOff, Layers3, Lock, LockOpen, Minus, Plus, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronDown, Compass, Eye, EyeOff, Layers3, Lock, LockOpen, Minus, Plus, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
 import { apiCall } from '../../api/client';
 import { colors } from '../../theme';
 import type { Sensor } from '../../types';
@@ -49,6 +49,7 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
     const next = clonePlan(current); change(next); return next;
   });
   const mutateGroup = (change: (draft: FloorGroup) => void, record = true) => mutatePlan((draft) => { const floor = draft.data.groups.find((item) => item.group_id === group.group_id); if (floor) change(floor); }, record);
+  const mutateFloor = (id: string, change: (draft: FloorGroup) => void) => mutatePlan((draft) => { const floor = draft.data.groups.find((item) => item.group_id === id); if (floor) change(floor); });
   const mutateEntity = (change: (draft: FloorEntity) => void) => {
     if (!selection) return;
     mutateGroup((draft) => { const entity = draft[selection.type].find((item) => entityId(selection.type, item) === selection.id); if (entity) change(entity); });
@@ -77,6 +78,23 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
     const next = polygon.points[(edge + 1) % polygon.points.length]; const point = polygon.points[edge]; polygon.points.splice(edge + 1, 0, { x: Math.round((point.x + next.x) / 2), y: Math.round((point.y + next.y) / 2) });
   });
   const removePoint = () => mutateEntity((entity) => { const polygon = entity as FloorEntity & { points?: Array<{ x: number; y: number }> }; if (polygon.points && polygon.points.length > 3) polygon.points.pop(); });
+  const resizeOpening = (width: number) => mutateEntity((entity) => {
+    const opening = entity as FloorEntity & { points?: Array<{ x: number; y: number }>; width?: number };
+    if (!opening.points || opening.points.length < 2) return;
+    const safeWidth = Math.max(12, width || 12); const [start, end] = opening.points;
+    const centerX = (start.x + end.x) / 2; const centerY = (start.y + end.y) / 2;
+    const currentWidth = Math.hypot(end.x - start.x, end.y - start.y) || 1;
+    const dx = (end.x - start.x) / currentWidth * safeWidth / 2; const dy = (end.y - start.y) / currentWidth * safeWidth / 2;
+    opening.points = [{ x: Math.round(centerX - dx), y: Math.round(centerY - dy) }, { x: Math.round(centerX + dx), y: Math.round(centerY + dy) }];
+    opening.x = Math.round(centerX); opening.y = Math.round(centerY); opening.width = Math.round(safeWidth);
+  });
+  const moveSelectedCoordinate = (axis: 'x' | 'y', value: number) => mutateEntity((entity) => {
+    if (selection?.type === 'openings') {
+      const opening = entity as FloorEntity & { points?: Array<{ x: number; y: number }> }; const delta = value - entity[axis];
+      if (opening.points) opening.points.forEach((point) => { point[axis] += delta; });
+    }
+    entity[axis] = value;
+  });
   const addFloor = () => {
     const id = crypto.randomUUID(); const top = Math.max(...plan.data.groups.map((item) => Number(item.elevation ?? 0) + Number(item.height ?? 96)), 0);
     mutatePlan((draft) => { draft.data.groups.push({ group_id: id, name: `Floor ${draft.data.groups.length + 1}`, elevation: top, height: 96, rooms: [], surfaces: [], openings: [], trees: [], lights: [] }); });
@@ -124,6 +142,10 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
             const entity = draft[type].find((item) => entityId(type, item) === id) as (FloorEntity & { points?: Array<{ x: number; y: number }> }) | undefined;
             const point = entity?.points?.[pointIndex]; if (!point) return;
             point.x = Math.round(x); point.y = Math.round(y);
+            const openingPoints = entity.points;
+            if (type === 'openings' && openingPoints && openingPoints.length > 1) {
+              const [start, end] = openingPoints; entity.x = Math.round((start.x + end.x) / 2); entity.y = Math.round((start.y + end.y) / 2); entity.width = Math.round(Math.hypot(end.x - start.x, end.y - start.y));
+            }
           }, false)} onMove={(type, id, x, y) => mutateGroup((draft) => {
             const entity = draft[type].find((item) => entityId(type, item) === id);
             if (!entity) return;
@@ -141,10 +163,13 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
                 {(Object.keys(entityLabels) as EntityType[]).map((type) => <Accordion key={type} disableGutters elevation={0} sx={{ bgcolor: 'transparent', '&:before': { display: 'none' } }}>
                   <AccordionSummary expandIcon={<ChevronDown size={16} />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: .5 } }}><Typography variant="caption" fontWeight={600}>{entityLabels[type]} ({item[type].length})</Typography></AccordionSummary>
                   <AccordionDetails sx={{ p: 0 }}>
+                    {!!item[type].length && <Stack direction="row" justifyContent="flex-end" px={.5}><Tooltip title={item[type].every((entity) => entity.editor_hidden) ? 'Show layer' : 'Hide layer'}><IconButton aria-label={`${item[type].every((entity) => entity.editor_hidden) ? 'Show' : 'Hide'} ${entityLabels[type]} layer`} onClick={() => { const hidden = !item[type].every((entity) => entity.editor_hidden); mutateFloor(item.group_id, (draft) => draft[type].forEach((entity) => { entity.editor_hidden = hidden; })); }}>{item[type].every((entity) => entity.editor_hidden) ? <EyeOff size={15} /> : <Eye size={15} />}</IconButton></Tooltip><Tooltip title={item[type].every((entity) => entity.editor_locked) ? 'Unlock layer' : 'Lock layer'}><IconButton aria-label={`${item[type].every((entity) => entity.editor_locked) ? 'Unlock' : 'Lock'} ${entityLabels[type]} layer`} onClick={() => { const locked = !item[type].every((entity) => entity.editor_locked); mutateFloor(item.group_id, (draft) => draft[type].forEach((entity) => { entity.editor_locked = locked; })); }}>{item[type].every((entity) => entity.editor_locked) ? <Lock size={15} /> : <LockOpen size={15} />}</IconButton></Tooltip></Stack>}
                     {item[type].map((entity, index) => {
                       const id = entityId(type, entity); const active = selection?.type === type && selection.id === id;
                       return <Stack key={id} direction="row" alignItems="center" onClick={() => setSelection({ type, id })} sx={{ pl: 2, minHeight: 32, bgcolor: active ? 'rgba(69,170,242,.16)' : undefined, cursor: 'pointer' }}>
                         <Typography variant="caption" noWrap sx={{ flex: 1 }}>{entity.name || `${entityLabels[type].slice(0, -1)} ${index + 1}`}</Typography>
+                        <IconButton aria-label={`Move ${entity.name || entityLabels[type].slice(0, -1)} up`} disabled={index === 0} onClick={(event) => { event.stopPropagation(); mutateFloor(item.group_id, (draft) => { const [value] = draft[type].splice(index, 1); draft[type].splice(index - 1, 0, value as never); }); }}><ArrowUp size={14} /></IconButton>
+                        <IconButton aria-label={`Move ${entity.name || entityLabels[type].slice(0, -1)} down`} disabled={index === item[type].length - 1} onClick={(event) => { event.stopPropagation(); mutateFloor(item.group_id, (draft) => { const [value] = draft[type].splice(index, 1); draft[type].splice(index + 1, 0, value as never); }); }}><ArrowDown size={14} /></IconButton>
                         <IconButton aria-label={entity.editor_hidden ? 'Show' : 'Hide'} onClick={(event) => { event.stopPropagation(); setSelection({ type, id }); mutateGroup((draft) => { const target = draft[type].find((value) => entityId(type, value) === id); if (target) target.editor_hidden = !target.editor_hidden; }); }}>{entity.editor_hidden ? <EyeOff size={15} /> : <Eye size={15} />}</IconButton>
                         <IconButton aria-label={entity.editor_locked ? 'Unlock' : 'Lock'} onClick={(event) => { event.stopPropagation(); setSelection({ type, id }); mutateGroup((draft) => { const target = draft[type].find((value) => entityId(type, value) === id); if (target) target.editor_locked = !target.editor_locked; }); }}>{entity.editor_locked ? <Lock size={15} /> : <LockOpen size={15} />}</IconButton>
                       </Stack>;
@@ -159,11 +184,11 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} mt={1}>
           {selectedEntity ? <>
             <TextField fullWidth size="small" label="Name" value={String(selectedEntity.name ?? '')} onChange={(event) => mutateEntity((entity) => { entity.name = event.target.value; })} />
-            <TextField fullWidth size="small" label="X (in)" type="number" value={selectedEntity.x} onChange={(event) => mutateEntity((entity) => { entity.x = Number(event.target.value); })} />
-            <TextField fullWidth size="small" label="Y (in)" type="number" value={selectedEntity.y} onChange={(event) => mutateEntity((entity) => { entity.y = Number(event.target.value); })} />
-            {selection?.type === 'rooms' && <TextField fullWidth size="small" select label="Sensor" value={String(selectedEntity.sensor_id ?? '')} onChange={(event) => mutateEntity((entity) => { if (event.target.value) entity.sensor_id = Number(event.target.value); else delete entity.sensor_id; })}><MenuItem value="">No sensor</MenuItem>{Object.values(sensors).map((sensor) => <MenuItem key={sensor.sensor_id} value={String(sensor.sensor_id)}>{sensor.name}</MenuItem>)}</TextField>}
+            <TextField fullWidth size="small" label="X (in)" type="number" value={selectedEntity.x} onChange={(event) => moveSelectedCoordinate('x', Number(event.target.value))} />
+            <TextField fullWidth size="small" label="Y (in)" type="number" value={selectedEntity.y} onChange={(event) => moveSelectedCoordinate('y', Number(event.target.value))} />
+            {selection?.type === 'rooms' && <><TextField fullWidth size="small" select label="Sensor" value={String(selectedEntity.sensor_id ?? '')} onChange={(event) => mutateEntity((entity) => { if (event.target.value) entity.sensor_id = Number(event.target.value); else delete entity.sensor_id; })}><MenuItem value="">No sensor</MenuItem>{Object.values(sensors).map((sensor) => <MenuItem key={sensor.sensor_id} value={String(sensor.sensor_id)}>{sensor.name}</MenuItem>)}</TextField><TextField size="small" label="Ceiling Height (in)" type="number" value={Number(selectedEntity.ceiling_height ?? group.height ?? 96)} onChange={(event) => mutateEntity((entity) => { entity.ceiling_height = Math.max(12, Number(event.target.value)); })} /></>}
             {selection?.type === 'surfaces' && <><TextField size="small" label="Color" type="color" value={String(selectedEntity.color ?? '#9a9a96')} onChange={(event) => mutateEntity((entity) => { entity.color = event.target.value; })} sx={{ minWidth: 100 }} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /></>}
-            {selection?.type === 'openings' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'empty')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['empty', 'door', 'window', 'glass'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 60)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /></>}
+            {selection?.type === 'openings' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'empty')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['empty', 'door', 'window', 'glass'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Width (in)" type="number" inputProps={{ min: 12 }} value={Number(selectedEntity.width ?? 36)} onChange={(event) => resizeOpening(Number(event.target.value))} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 60)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 0)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /></>}
             {selection?.type === 'trees' && <><TextField size="small" select label="Type" value={String(selectedEntity.type ?? 'round')} onChange={(event) => mutateEntity((entity) => { entity.type = event.target.value; })}>{['round', 'oval', 'pine'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Diameter (in)" type="number" value={Number(selectedEntity.diameter ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.diameter = Number(event.target.value); })} /><TextField size="small" label="Height (in)" type="number" value={Number(selectedEntity.height ?? 120)} onChange={(event) => mutateEntity((entity) => { entity.height = Number(event.target.value); })} /></>}
             {selection?.type === 'lights' && <><TextField size="small" select label="Intensity" value={String(selectedEntity.intensity ?? 'normal')} onChange={(event) => mutateEntity((entity) => { entity.intensity = event.target.value; })}>{['dim', 'normal', 'bright'].map((value) => <MenuItem key={value} value={value}>{value[0].toUpperCase() + value.slice(1)}</MenuItem>)}</TextField><TextField size="small" label="Elevation (in)" type="number" value={Number(selectedEntity.elevation ?? 72)} onChange={(event) => mutateEntity((entity) => { entity.elevation = Number(event.target.value); })} /><TextField size="small" label="Temperature (K)" type="number" value={Number(selectedEntity.temperature_k ?? 4000)} onChange={(event) => mutateEntity((entity) => { entity.temperature_k = Number(event.target.value); })} /></>}
             {(selection?.type === 'rooms' || selection?.type === 'surfaces') && <Stack direction="row"><Tooltip title="Add point to longest edge"><IconButton aria-label="Add shape point" onClick={addPoint}><Plus /></IconButton></Tooltip><Tooltip title="Remove last point"><span><IconButton aria-label="Remove shape point" disabled={!(selectedEntity.points as unknown[] | undefined)?.length || (selectedEntity.points as unknown[]).length <= 3} onClick={removePoint}><Minus /></IconButton></span></Tooltip></Stack>}
@@ -172,6 +197,7 @@ export function FloorPlanEditorCard({ plan: source, sensors, onSaved }: { plan: 
             <TextField fullWidth size="small" label="Floor Name" value={group.name ?? ''} onChange={(event) => mutateGroup((draft) => { draft.name = event.target.value; })} />
             <TextField fullWidth size="small" label="Elevation (ft)" type="number" value={Number(group.elevation ?? 0) / 12} onChange={(event) => mutateGroup((draft) => { draft.elevation = Number(event.target.value) * 12; })} />
             <TextField fullWidth size="small" label="Ceiling Height (ft)" type="number" value={Number(group.height ?? 96) / 12} onChange={(event) => mutateGroup((draft) => { draft.height = Number(event.target.value) * 12; })} />
+            <TextField fullWidth size="small" label="North Orientation (°)" type="number" inputProps={{ min: 0, max: 359 }} value={Number(plan.data.appearance?.rotation ?? 0)} onChange={(event) => mutatePlan((draft) => { draft.data.appearance ??= {}; draft.data.appearance.rotation = ((Number(event.target.value) % 360) + 360) % 360; })} InputProps={{ startAdornment: <Compass size={18} style={{ marginRight: 8 }} /> }} />
             <Button startIcon={<Plus />} onClick={addFloor}>Add Floor</Button>
             <Button color="error" startIcon={<Trash2 />} disabled={plan.data.groups.length <= 1} onClick={removeFloor}>Delete Floor</Button>
           </>}

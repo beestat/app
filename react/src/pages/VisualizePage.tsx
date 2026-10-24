@@ -93,6 +93,11 @@ export function VisualizePage() {
   const hasFloorPlan = visualize.floor_plan_id != null || floorPlans[0]?.floor_plan_id != null;
   const sourcePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
   const activePlan = savedPlan?.floor_plan_id === sourcePlan?.floor_plan_id ? savedPlan : sourcePlan;
+  const saveScenePreferences = async (preferences: Record<string, unknown>) => {
+    if (!activePlan) return; const next = structuredClone(activePlan) as FloorPlan; next.data.scene = { ...(next.data.scene ?? {}), ...preferences };
+    await apiCall({ resource: 'floor_plan', method: 'update', arguments: { attributes: { floor_plan_id: next.floor_plan_id, data: next.data } } }); setSavedPlan(next);
+    if (window.beestat?.cache?.floor_plan?.[next.floor_plan_id]) window.beestat.cache.floor_plan[next.floor_plan_id].data = structuredClone(next.data);
+  };
   const updateSetting = (key: string, value: unknown) => {
     if (nativeScene) {
       setVisualizeState((current) => {
@@ -109,7 +114,7 @@ export function VisualizePage() {
       <Box ref={editorRoot} />
       {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} sensors={data?.sensor ?? {}} onSaved={setSavedPlan} /></Box>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
-      {nativeScene && activePlan && <Box mb={2}><NativeThreeScene plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} /></Box>}
+      {nativeScene && activePlan && <Box mb={2}><NativeThreeScene plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} onSavePreferences={saveScenePreferences} /></Box>}
       <Box ref={sceneRoot} />
     </Box>
   </Box>;

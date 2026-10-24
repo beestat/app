@@ -30,8 +30,8 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 - [x] React-owned Visualize Settings card and persistence bridge
 - [x] Native editor on the default route: typed model, SVG renderer, pan/zoom, layers, draft editing, explicit save and undo
 - [x] Native 3D scene on the default route with independent Three.js lifecycle, geometry, runtime heatmap, playback and event-driven rendering
-- [ ] React-owned floor-plan editor feature parity
-- [ ] React-owned 3D scene, playback, heat-map and occupancy parity
+- [x] React-owned floor-plan editor feature parity, including layers, geometry, orientation, object properties and draft-safe undo/save
+- [x] React-owned 3D scene, playback, date/weather controls, heat-map and occupancy parity
 - [x] Read-only Playwright validation against the saved floor plan
 
 ## Compare
