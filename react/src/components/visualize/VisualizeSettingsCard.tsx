@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
   Menu, MenuItem, Stack, TextField, Typography,
@@ -29,6 +29,17 @@ function toLegacyDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
+function normalizeSettings(initial: VisualizeSettings) {
+  return {
+    data_type: nested(initial, 'data_type', 'temperature'),
+    heat_map_values: nested(initial, 'heat_map_values', 'dynamic'),
+    heat_map_static: nested(initial, 'heat_map_static', { temperature: { min: 70, max: 80 }, occupancy: { min: 0, max: 100 } }),
+    range_type: nested(initial, 'range_type', 'dynamic'),
+    range_dynamic: Number(nested(initial, 'range_dynamic', 7)),
+    range_static: nested(initial, 'range_static', { begin: '', end: '' }),
+  };
+}
+
 function SettingTile({ active, color, icon, label, onClick }: {
   active: boolean; color: string; icon: React.ReactNode; label: string; onClick: () => void;
 }) {
@@ -48,18 +59,17 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
   temperatureUnit: string;
   onChange: (key: string, value: unknown) => void;
 }) {
-  const [settings, setSettings] = useState(() => ({
-    data_type: nested(initial, 'data_type', 'temperature'),
-    heat_map_values: nested(initial, 'heat_map_values', 'dynamic'),
-    heat_map_static: nested(initial, 'heat_map_static', { temperature: { min: 70, max: 80 }, occupancy: { min: 0, max: 100 } }),
-    range_type: nested(initial, 'range_type', 'dynamic'),
-    range_dynamic: Number(nested(initial, 'range_dynamic', 7)),
-    range_static: nested(initial, 'range_static', { begin: '', end: '' }),
-  }));
+  const [settings, setSettings] = useState(() => normalizeSettings(initial));
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customBegin, setCustomBegin] = useState(() => toInputDate(String(settings.range_static.begin ?? '')));
   const [customEnd, setCustomEnd] = useState(() => toInputDate(String(settings.range_static.end ?? '')));
+  useEffect(() => {
+    const next = normalizeSettings(initial);
+    setSettings(next);
+    setCustomBegin(toInputDate(String(next.range_static.begin ?? '')));
+    setCustomEnd(toInputDate(String(next.range_static.end ?? '')));
+  }, [initial]);
   const dataType = String(settings.data_type) as 'temperature' | 'occupancy';
   const unit = temperatureUnit.includes('C') ? '°C' : '°F';
   const convertFromF = (value: number) => unit === '°C' ? Math.round(((value - 32) * 5 / 9) * 10) / 10 : value;

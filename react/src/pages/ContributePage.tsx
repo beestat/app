@@ -102,8 +102,8 @@ export function ContributePage() {
       {contributionActive ? <>
         <Typography paragraph>Thank you so much for your support! Your contribution goes a long way towards keeping beestat running and enabling me to create a rich and useful application. My hope is that you are able to use beestat to save money and improve the efficiency of your home.</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} mb={2}>
-          <Button variant="contained" color="secondary" startIcon={<MessageCircle />} href="https://discord.gg/GzWbhD6tSB" target="_blank">Join the Private Discord</Button>
-          <Button variant="contained" color="secondary" startIcon={<MessageCircle />} href="https://community.beestat.io" target="_blank">Join the beestat Community</Button>
+          <Button variant="contained" startIcon={<MessageCircle />} href="https://discord.gg/GzWbhD6tSB" target="_blank" sx={{ bgcolor: colors.purple.main, '&:hover': { bgcolor: colors.purple.dark } }}>Join the Private Discord</Button>
+          <Button variant="contained" startIcon={<MessageCircle />} href="https://community.beestat.io" target="_blank" sx={{ bgcolor: colors.purple.main, '&:hover': { bgcolor: colors.purple.dark } }}>Join the beestat Community</Button>
         </Stack>
         <Typography paragraph>Looking for a way to contribute more but don&apos;t want to change your recurring support amount?</Typography>
         <Button variant="contained" color="success" startIcon={<Gift />} onClick={() => openWithIdentity(oneTimeLinks[safeCurrency][environment], user)}>Make a One-Time Gift</Button>
@@ -126,8 +126,8 @@ export function ContributePage() {
     <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits">
       <Typography paragraph>In addition to satisfaction of supporting a great project, you&apos;ll get:</Typography>
       <List dense sx={{ bgcolor: colors.slate.dark, borderRadius: 1, py: 1 }}>
-        {['Early access to new features', 'Private Discord membership', 'More frequent data syncing', 'Removed contribute banner'].map((benefit) => <ListItem key={benefit}><ListItemIcon sx={{ minWidth: 34, color: 'warning.main' }}><Sparkles size={19} /></ListItemIcon><ListItemText primary={benefit} /></ListItem>)}
-        <ListItem><ListItemIcon sx={{ minWidth: 34, color: 'error.main' }}><Heart size={19} /></ListItemIcon><ListItemText primary="My unending gratitude" /></ListItem>
+        {['Early access to new features', 'Private Discord membership', 'More frequent data syncing', 'Removed contribute banner'].map((benefit) => <ListItem key={benefit} sx={{ color: colors.yellow.main }}><ListItemIcon sx={{ minWidth: 34, color: colors.yellow.main }}><Sparkles size={19} /></ListItemIcon><ListItemText primary={benefit} /></ListItem>)}
+        <ListItem sx={{ color: 'error.main' }}><ListItemIcon sx={{ minWidth: 34, color: 'error.main' }}><Heart size={19} /></ListItemIcon><ListItemText primary="My unending gratitude" /></ListItem>
       </List>
     </DashboardCard></Grid>
 

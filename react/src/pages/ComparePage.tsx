@@ -191,7 +191,7 @@ function MetricColumns({ values, thermostat }: { values: Record<string, Record<s
   if (columns.every((column) => column.size === 0)) {
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
-  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 2 }}>
+  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 2, pt: '5px' }}>
     {columns.map((column, index) => <Box key={index}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} />)}</Box>)}
   </Box>;
 }
@@ -227,17 +227,18 @@ export function ComparePage() {
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />}>
+        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />} sx={{ '& .MuiCardContent-root': { pb: 4 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '210px 1fr' }, gap: { xs: 2, sm: 1.5 } }}>
-            <Box><Typography variant="overline">Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: 1, textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
-            <Box><Typography variant="overline">Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: 1, textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
+            <Box><Typography variant="overline" display="block" mb={1}>Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
+            <Box><Typography variant="overline" display="block" mb={1}>Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
           </Box>
-          <Box mt={2}><Typography fontWeight={600}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${titleCase(String(attributes.property_structure_type))}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
+          <Box mt={2}><Typography fontWeight={600} mb={1}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${titleCase(String(attributes.property_structure_type))}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
+          <Box aria-hidden height={8} />
         </DashboardCard>
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />}>
-          <Typography variant="overline">System</Typography>
+        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />} sx={{ '& .MuiCardContent-root': { pb: 4 } }}>
+          <Typography variant="overline" display="block" mb={1}>System</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
             {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
               const system = effectiveSystemType(thermostat, mode);
@@ -247,15 +248,16 @@ export function ComparePage() {
               return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${stages}`} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />;
             })}
           </Stack>
-          <Typography variant="overline" display="block" mt={2}>Region</Typography>
+          <Typography variant="overline" display="block" mt={2} mb={1}>Region</Typography>
           <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />
-          <Typography variant="overline" display="block" mt={2}>Property</Typography>
+          <Typography variant="overline" display="block" mt={2} mb={1}>Property</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
             {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
             {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
             {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
             {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
           </Stack>
+          <Box aria-hidden height={8} />
         </DashboardCard>
       </Grid>
     </Grid>

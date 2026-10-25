@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, AppBar, Avatar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Select, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
-import { Activity, ArrowLeftRight, Bell, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, PanelsTopLeft, RefreshCw, Settings, Wind } from 'lucide-react';
+import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { Activity, ArrowLeftRight, Bell, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
+import { colors } from '../../theme';
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -14,7 +15,7 @@ const navItems = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { data, thermostatId, setThermostatId, refresh } = useDashboard();
+  const { data, thermostatId, setThermostatId } = useDashboard();
   const navigate = useNavigate();
   const location = useLocation();
   const compact = useMediaQuery('(max-width:900px)');
@@ -42,29 +43,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <Box sx={{ minHeight: '100dvh', pb: phone ? 10 : 3 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
-        <Container maxWidth="xl" disableGutters={phone}>
-          <Toolbar sx={{ gap: 1, minHeight: 58 }}>
-            <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mr: 1 }}>
-              <Avatar src="/favicon.png" alt="beestat" sx={{ width: 38, height: 38 }} />
-              {!compact && <Box component="span" sx={{ color: '#fff', fontSize: 22, fontWeight: 500, ml: 1 }}>beestat</Box>}
+        <Container maxWidth="xl" disableGutters>
+          <Toolbar sx={{ gap: 2, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
+            <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: compact ? 39 : 144, flex: `0 0 ${compact ? 39 : 144}px`, textDecoration: 'none' }}>
+              <Box component="img" src={compact ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
             </Box>
-            {!phone && hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: .5, flex: 1 }}>
+            {!phone && hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: .5, flex: `0 0 ${compact ? 225 : 565}px` }}>
               {navItems.map(({ path, label, icon: Icon }) => (
-                <Button key={path} component={NavLink} to={path} color="inherit" startIcon={<Icon size={18} />} sx={{
+                <Button key={path} component={NavLink} to={path} startIcon={<Icon size={18} />} sx={{
                   minWidth: compact ? 42 : undefined, px: compact ? 1 : 1.5,
-                  bgcolor: location.pathname === path ? 'background.paper' : 'transparent',
-                  '&:hover': { bgcolor: 'background.paper' },
+                  mt: { sm: '2px' },
+                  color: `${location.pathname === path ? colors.slate.dark : '#fff'} !important`,
+                  bgcolor: location.pathname === path ? '#fff' : 'transparent',
+                  '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' },
                 }}>{compact ? null : label}</Button>
               ))}
             </Box>}
-            <Box sx={{ flex: phone ? 1 : 0 }} />
-            {hasThermostats && (
-              <Select aria-label="Active thermostat" size="small" value={thermostatId ?? ''} onChange={(event) => setThermostatId(Number(event.target.value))} sx={{ minWidth: phone ? 115 : 170 }}>
-                {Object.values(data?.thermostat ?? {}).map((item) => <MenuItem key={item.thermostat_id} value={item.thermostat_id}>{item.name}</MenuItem>)}
-              </Select>
-            )}
-            <Tooltip title="Refresh"><IconButton color="inherit" onClick={() => void refresh()}><RefreshCw size={20} /></IconButton></Tooltip>
-            <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu">
+            <Box sx={{ flex: 1 }} />
+            <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge>
             </IconButton>
             <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
