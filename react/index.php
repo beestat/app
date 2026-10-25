@@ -85,6 +85,7 @@
     <script src="/js/component/tile.js"></script>
     <script src="/js/component/tile/floor_plan.js"></script>
     <script src="/js/component/tile/floor_plan_group.js"></script>
+    <script src="/js/component/title.js"></script>
     <script src="/js/component/floor_plan_entity.js"></script>
     <script src="/js/component/floor_plan_entity/room.js"></script>
     <script src="/js/component/floor_plan_entity/surface.js"></script>

@@ -78,6 +78,12 @@ const nativeEditor = await page.evaluate(() => ({
 }));
 await page.screenshot({ path: 'test-results/parity/react-native-floor-plan-editor.png', fullPage: false });
 if (nativeEditor.polygons === 0 || nativeEditor.circles === 0 || nativeEditor.addTools.length !== 5 || nativeEditor.historyTools.length !== 4 || nativeEditor.floors.length !== 3 || blockedMutations.length !== legacyMutationBaseline) throw new Error(`Exact floor-plan editor regression: ${JSON.stringify({ nativeEditor, blockedMutations, legacyMutationBaseline })}`);
+await page.locator('[data-editor-engine="beestat-exact"] .icon.dots_vertical').click();
+await page.getByText('Add New', { exact: true }).click();
+await page.getByText('Create Floor Plan', { exact: true }).last().waitFor({ timeout: 30_000 });
+for (const label of ['Give your floor plan a name', 'How many floors does your home have?', 'How tall are your ceilings (ft)?']) if (!await page.getByText(label, { exact: true }).isVisible()) throw new Error(`Exact floor-plan creation modal is missing ${label}.`);
+await page.keyboard.press('Escape');
+if (blockedMutations.length !== legacyMutationBaseline) throw new Error('Opening exact floor-plan management attempted a write.');
 console.log('checked exact editor without modifying the plan');
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });

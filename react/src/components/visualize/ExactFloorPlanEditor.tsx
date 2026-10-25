@@ -14,6 +14,7 @@ export function ExactFloorPlanEditor({
   thermostatId,
   data,
   onChanged,
+  onPlansChanged,
   onSwitch,
 }: {
   plan: FloorPlan;
@@ -22,6 +23,7 @@ export function ExactFloorPlanEditor({
   thermostatId?: number;
   data?: DashboardData;
   onChanged?: (plan: FloorPlan) => void;
+  onPlansChanged?: (plans: FloorPlan[]) => void;
   onSwitch?: (floorPlanId: number) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -47,6 +49,8 @@ export function ExactFloorPlanEditor({
     const handleChange = () => {
       window.clearTimeout(changeTimer);
       changeTimer = window.setTimeout(() => {
+        const livePlans = Object.values(legacy.cache.floor_plan ?? {}) as FloorPlan[];
+        onPlansChanged?.(livePlans.map((item) => ({ ...item })));
         const live = legacy.cache.floor_plan[plan.floor_plan_id];
         if (live) onChanged?.({ ...live });
       }, 180);
