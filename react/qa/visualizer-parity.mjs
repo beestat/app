@@ -44,59 +44,67 @@ async function inspect(name, url) {
 }
 
 const legacy = await inspect('legacy', 'https://dev.app.beestat.io/?layer=visualize');
+console.log('checked legacy visualize');
+const legacyMutationBaseline = blockedMutations.length;
 const react = await inspect('react', 'https://dev.app.beestat.io/react/index.php#/visualize');
+console.log('checked React visualize shell');
 if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8) throw new Error(`Visualizer parity regression: ${JSON.stringify({ react, url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), errors })}`);
 await page.getByText('Home', { exact: true }).first().click();
-await page.waitForTimeout(2_000);
-const editor = await page.evaluate(() => ({
-  svgCount: document.querySelectorAll('svg').length,
-  labels: ['Floor', 'Rooms', 'Surfaces', 'Trees', 'Openings', 'Lights'].filter((text) => document.body.innerText.includes(text)),
-  canvasCount: document.querySelectorAll('canvas').length,
-}));
+await page.locator('[data-editor-engine="beestat-exact"] svg').first().waitFor({ timeout: 30_000 });
+const editor = await page.evaluate(() => {
+  const host = document.querySelector('[data-editor-engine="beestat-exact"]');
+  const map = host?.querySelector('svg')?.getBoundingClientRect();
+  const addRoom = host?.querySelector('[title="Add Room [R]"]')?.getBoundingClientRect();
+  const undo = host?.querySelector('[title="Undo [Ctrl+Z]"]')?.getBoundingClientRect();
+  const sidebar = [...(host?.querySelectorAll('div') ?? [])].map((item) => item.getBoundingClientRect()).find((rect) => Math.round(rect.width) === 250 && Math.round(rect.height) >= 450);
+  return {
+    map: map && { x: Math.round(map.x), width: Math.round(map.width), height: Math.round(map.height) },
+    sidebar: sidebar && { x: Math.round(sidebar.x), width: Math.round(sidebar.width), height: Math.round(sidebar.height) },
+    addRoom: addRoom && { x: Math.round(addRoom.x), y: Math.round(addRoom.y) },
+    undo: undo && { x: Math.round(undo.x), y: Math.round(undo.y) },
+    fields: ['Floor Name', 'Elevation (ft)', 'Ceiling Height (ft)'].filter((label) => document.body.innerText.includes(label)),
+    exactEngine: host?.getAttribute('data-editor-engine'),
+    canvasCount: document.querySelectorAll('canvas').length,
+  };
+});
 await page.screenshot({ path: 'test-results/parity/react-visualize-editor.png', fullPage: false });
-if (editor.svgCount === 0 || editor.canvasCount === 0 || editor.labels.length !== 6) throw new Error(`Floor-plan editor regression: ${JSON.stringify(editor)}`);
-await page.getByLabel('First Floor editor').waitFor({ timeout: 30_000 });
+if (editor.exactEngine !== 'beestat-exact' || !editor.map || editor.map.width < 1200 || editor.map.height !== 500 || !editor.sidebar || editor.sidebar.width !== 250 || editor.sidebar.x < editor.map.x + editor.map.width - 270 || !editor.addRoom || !editor.undo || editor.undo.x <= editor.addRoom.x || editor.fields.length !== 3 || editor.canvasCount === 0) throw new Error(`Floor-plan editor layout regression: ${JSON.stringify(editor)}`);
 const nativeEditor = await page.evaluate(() => ({
-  svgCount: document.querySelectorAll('svg').length,
-  polygons: document.querySelectorAll('svg polygon').length,
-  circles: document.querySelectorAll('svg circle').length,
-  labels: ['Rooms', 'Surfaces', 'Trees', 'Openings', 'Lights'].filter((text) => document.body.innerText.includes(text)),
-  saveDisabled: document.querySelector('button[aria-label="Save floor plan"]')?.hasAttribute('disabled'),
+  polygons: document.querySelectorAll('[data-editor-engine="beestat-exact"] svg polygon').length,
+  circles: document.querySelectorAll('[data-editor-engine="beestat-exact"] svg circle').length,
+  addTools: ['Add Room [R]', 'Add Opening [O]', 'Add Surface [F]', 'Add Tree [T]', 'Add Light [L]'].filter((title) => document.querySelector(`[data-editor-engine="beestat-exact"] [title="${title}"]`)),
+  historyTools: ['Undo [Ctrl+Z]', 'Redo [Ctrl+Y]', 'Zoom In', 'Zoom out'].filter((title) => document.querySelector(`[data-editor-engine="beestat-exact"] [title="${title}"]`)),
+  floors: ['Basement', 'First Floor', 'Second Floor'].filter((label) => document.querySelector('[data-editor-engine="beestat-exact"]')?.textContent?.includes(label)),
 }));
 await page.screenshot({ path: 'test-results/parity/react-native-floor-plan-editor.png', fullPage: false });
-if (nativeEditor.polygons === 0 || nativeEditor.circles === 0 || nativeEditor.labels.length !== 5 || nativeEditor.saveDisabled !== true) throw new Error(`Native floor-plan editor regression: ${JSON.stringify(nativeEditor)}`);
-const mutationsBeforeDraft = blockedMutations.length;
-await page.getByRole('button', { name: 'Rooms (13)' }).click();
-await page.locator('svg[aria-label$=" editor"] polygon').first().click({ force: true });
-if (await page.locator('[aria-label="Shape points"] circle').count() < 3) throw new Error('Native editor did not expose draggable polygon vertices.');
-await page.keyboard.press('Escape');
-await page.locator('button[aria-label="Hide"]:visible').first().click();
-if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not mark an in-memory edit as dirty.');
-await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
-if (!(await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor draft leaked a floor-plan write.');
-await page.getByLabel('North Orientation (°)').fill('45');
-if (await page.getByRole('button', { name: 'Save floor plan' }).isDisabled()) throw new Error('Native editor did not retain a draft orientation change.');
-await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
-await page.getByRole('button', { name: 'Add Floor' }).click();
-if (!await page.getByText('4 Floors', { exact: false }).isVisible()) throw new Error('Native editor did not add a draft floor.');
-await page.getByRole('button', { name: 'Undo floor-plan change' }).click();
-if (!await page.getByText('3 Floors', { exact: false }).isVisible() || blockedMutations.length !== mutationsBeforeDraft) throw new Error('Native editor floor undo leaked a write or failed to restore the plan.');
+if (nativeEditor.polygons === 0 || nativeEditor.circles === 0 || nativeEditor.addTools.length !== 5 || nativeEditor.historyTools.length !== 4 || nativeEditor.floors.length !== 3 || blockedMutations.length !== legacyMutationBaseline) throw new Error(`Exact floor-plan editor regression: ${JSON.stringify({ nativeEditor, blockedMutations, legacyMutationBaseline })}`);
+console.log('checked exact editor without modifying the plan');
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
-await page.getByText('Fetching…').waitFor({ state: 'hidden', timeout: 90_000 });
-const nativeScene = await page.evaluate(() => ({
-  nativeCanvas: document.querySelectorAll('canvas[data-native-three="true"]').length,
-  legacyScripts: document.querySelectorAll('script[data-visualizer-src]').length,
-  legacyCanvas: document.querySelectorAll('canvas:not([data-native-three="true"])').length,
-  controls: ['Reset camera', 'Auto rotate', 'Play visualization', 'Visualization time', 'Play environment date', 'Environment date', 'Select weather', 'Save scene preferences'].filter((label) => document.querySelector(`[aria-label="${label}"]`)),
-}));
+await page.waitForTimeout(5_000);
+console.log('checked exact 3D card readiness');
+const nativeScene = await page.evaluate(() => {
+  const host = document.querySelector('[data-scene-card-engine="beestat-exact"]');
+  const titles = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'];
+  const layout = Object.fromEntries(titles.map((title) => { const rect = host?.querySelector(`[title="${title}"]`)?.getBoundingClientRect(); return [title, rect && { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) }]; }));
+  return {
+    nativeCanvas: host?.querySelectorAll('canvas[data-native-three="true"]').length ?? 0,
+    exactEngine: host?.getAttribute('data-scene-card-engine') === 'beestat-exact' && document.querySelector('canvas[data-scene-engine="beestat-exact"]') !== null && Boolean(window.beestat?.component?.card?.three_d),
+    iframeCount: host?.querySelectorAll('iframe').length ?? 0,
+    controls: titles.filter((title) => host?.querySelector(`[title="${title}"]`)),
+    floors: ['Basement', 'First Floor', 'Second Floor'].filter((title) => host?.querySelector(`[title="${title}"]`)),
+    ranges: host?.querySelectorAll('input[type="range"]').length ?? 0,
+    currentDate: [...(host?.querySelectorAll('div') ?? [])].some((item) => /^October \d{1,2}$/.test(item.textContent?.trim() ?? '')),
+    layout,
+  };
+});
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded();
 await page.screenshot({ path: 'test-results/parity/react-native-three.png', fullPage: false });
-if (nativeScene.nativeCanvas !== 1 || nativeScene.legacyScripts !== 0 || nativeScene.legacyCanvas !== 0 || nativeScene.controls.length !== 8) throw new Error(`Native 3D regression: ${JSON.stringify(nativeScene)}`);
-const mutationsBeforeWeather = blockedMutations.length;
-await page.getByLabel('Select weather').click(); await page.getByRole('menuitem', { name: 'Snow' }).click(); await page.waitForTimeout(500);
-if (await page.getByRole('button', { name: 'Save scene preferences' }).isDisabled() || blockedMutations.length !== mutationsBeforeWeather) throw new Error('Scene preference draft did not remain local until explicit save.');
-await page.setViewportSize({ width: 390, height: 844 }); await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
+if (nativeScene.nativeCanvas !== 1 || nativeScene.exactEngine !== true || nativeScene.iframeCount !== 0 || nativeScene.controls.length !== 4 || nativeScene.floors.length !== 3 || nativeScene.ranges !== 2 || nativeScene.currentDate !== true) throw new Error(`Exact 3D card regression: ${JSON.stringify(nativeScene)}`);
+const vertical = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'].map((label) => nativeScene.layout[label]);
+if (vertical.some((rect) => !rect) || vertical.some((rect) => Math.abs(rect.x - vertical[0].x) > 1) || vertical.some((rect, index) => index > 0 && rect.y <= vertical[index - 1].y)) throw new Error(`Exact 3D toolbar no longer follows the legacy left-column layout: ${JSON.stringify(nativeScene.layout)}`);
+if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only React visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
+await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
 if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 16) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);

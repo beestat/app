@@ -26,12 +26,11 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 
 ## Visualize
 
-- [x] Temporary React lifecycle bridge with shared state (no iframe), retained as the migration reference
+- [x] React owns routing, data coordination, and lifecycle; no iframe or legacy page passthrough is used
 - [x] React-owned Visualize Settings card and persistence bridge
-- [x] Native editor on the default route: typed model, SVG renderer, pan/zoom, layers, draft editing, explicit save and undo
-- [x] Native 3D scene on the default route with independent Three.js lifecycle, geometry, runtime heatmap, playback and event-driven rendering
-- [x] React-owned floor-plan editor feature parity, including layers, geometry, orientation, object properties and draft-safe undo/save
-- [x] React-owned 3D scene, playback, date/weather controls, heat-map and occupancy parity
+- [x] React lifecycle host mounts Beestat's exact floor-plan editor modules, preserving viewport, snapping, layers, geometry, object properties, keyboard controls, undo/redo, and plan management
+- [x] React lifecycle host mounts Beestat's complete exact 3D card, preserving geometry, trees, roofs, openings, weather, lighting, camera, and every original toolbar control
+- [x] Exact 3D runtime pipeline includes sensor temperature/occupancy, thermostat equipment state, address-based sun position, playback, date/weather, and heat-map scaling
 - [x] Read-only Playwright validation against the saved floor plan
 
 ## Compare

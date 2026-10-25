@@ -1,121 +1,59 @@
-import { Alert, Box, CircularProgress } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
-import { apiCall, config } from '../api/client';
+import { Box, Button, Card, CardContent, CardHeader, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { ExternalLink, Plus, X } from 'lucide-react';
+import { apiBatch, apiCall, config } from '../api/client';
 import { useDashboard } from '../state/DashboardContext';
 import { VisualizeSettingsCard } from '../components/visualize/VisualizeSettingsCard';
-import { FloorPlanEditorCard } from '../components/visualize/FloorPlanEditorCard';
+import { ExactFloorPlanEditor } from '../components/visualize/ExactFloorPlanEditor';
 import type { FloorPlan } from '../components/visualize/floorPlanModel';
-import { NativeThreeScene } from '../components/visualize/NativeThreeScene';
-
-declare global { interface Window { __BEESTAT_REACT_HOST__?: boolean; beestat?: any; $?: any; THREE?: any; beestat_api_key_local?: string; environment?: string; is_demo?: boolean; commit?: string; } }
-
-let enginePromise: Promise<void> | undefined;
-
-function loadScript(src: string, type?: string) {
-  return new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[data-visualizer-src="${CSS.escape(src)}"]`)) return resolve();
-    const script = document.createElement('script');
-    script.src = src; script.dataset.visualizerSrc = src;
-    if (type === 'module') script.type = 'module';
-    script.onload = () => resolve(); script.onerror = () => reject(new Error(`Unable to load ${src}`));
-    document.head.appendChild(script);
-  });
-}
-
-function loadEngine() {
-  if (enginePromise) return enginePromise;
-  enginePromise = (async () => {
-    window.__BEESTAT_REACT_HOST__ = true;
-    window.beestat_api_key_local = config.apiKey; window.environment = config.environment; window.is_demo = config.isDemo; window.commit = config.commit;
-    const response = await fetch('/react/legacy-assets.php', { credentials: 'include' });
-    if (!response.ok) throw new Error(`Unable to load visualizer assets (${response.status}).`);
-    const html = await response.text();
-    const documentFragment = new DOMParser().parseFromString(`<html><head>${html}</head></html>`, 'text/html');
-    const scripts = [...documentFragment.querySelectorAll('script[src]')];
-    for (const script of scripts) await loadScript(script.getAttribute('src')!, script.getAttribute('type') ?? undefined);
-  })();
-  return enginePromise;
-}
+import { ExactThreeCard } from '../components/visualize/ExactThreeCard';
+import { FloorPlanCreateDialog, type FloorPlanDraft } from '../components/visualize/FloorPlanCreateDialog';
 
 export function VisualizePage() {
   const { data, thermostatId } = useDashboard();
-  const editorRoot = useRef<HTMLDivElement>(null);
-  const sceneRoot = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [message, setMessage] = useState('Loading the visualizer…');
-  const nativeScene = !new URLSearchParams(window.location.search).has('legacy_visualizer');
   const [visualizeState, setVisualizeState] = useState<Record<string, any>>({});
   const [savedPlan, setSavedPlan] = useState<FloorPlan>();
+  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
+  const [createOpen, setCreateOpen] = useState(false); const [creating, setCreating] = useState(false); const [createError, setCreateError] = useState<string>(); const [deleteOpen, setDeleteOpen] = useState(false); const [deleting, setDeleting] = useState(false);
   useEffect(() => { setVisualizeState(structuredClone(data?.user?.settings?.visualize ?? {})); }, [data?.user?.settings?.visualize]);
-  useEffect(() => {
-    if (!data || !thermostatId || !editorRoot.current || !sceneRoot.current) return;
-    if (nativeScene) {
-      editorRoot.current.replaceChildren(); sceneRoot.current.replaceChildren(); setState('ready');
-      return;
-    }
-    let stylesheet = document.querySelector<HTMLLinkElement>('link[data-visualizer-style]');
-    if (!stylesheet) { stylesheet = document.createElement('link'); stylesheet.rel = 'stylesheet'; stylesheet.href = '/css/dashboard.css'; stylesheet.dataset.visualizerStyle = 'true'; document.head.appendChild(stylesheet); }
-    let cancelled = false; const instances: any[] = []; let restoreSetAttribute: (() => void) | undefined;
-    void loadEngine().then(() => {
-      if (cancelled || !editorRoot.current || !sceneRoot.current) return;
-      const engine = window.beestat;
-      // Legacy 3D assets use document-relative img/... paths. The React entry
-      // lives under /react/, so resolve only Three.js-managed assets at root.
-      window.THREE?.DefaultLoadingManager?.setURLModifier((url: string) => url.startsWith('img/') ? `/${url}` : url);
-      for (const [key, value] of Object.entries(data)) {
-        // The React context normalizes user.read_id to a single user, while the
-        // legacy visualizer cache still expects the original id-keyed map.
-        const cacheValue = key === 'user' && value?.user_id ? { [value.user_id]: value } : value;
-        engine.cache.set(key, cacheValue, false);
-      }
-      const user = engine.user.get(); user.settings ??= {}; user.settings.thermostat_id = thermostatId; user.settings.visualize ??= {};
-      const floorPlans = Object.values(data.floor_plan ?? {}) as any[];
-      user.settings.visualize.floor_plan_id ??= floorPlans[0]?.floor_plan_id;
-      const add = (parentElement: HTMLDivElement, component: any) => { const wrapper = window.$.createElement('div').style('margin-bottom', '16px'); window.$(parentElement).appendChild(wrapper); component.render(wrapper); instances.push(component); };
-      const originalSetAttribute = Element.prototype.setAttribute;
-      Element.prototype.setAttribute = function(name: string, value: string) {
-        return originalSetAttribute.call(this, name, name === 'src' && value.startsWith('img/') ? `/${value}` : value);
-      };
-      restoreSetAttribute = () => { Element.prototype.setAttribute = originalSetAttribute; };
-      if (user.settings.visualize.floor_plan_id != null) {
-        if (user.settings.visualize.hide_affiliate === false && !config.isDemo) add(sceneRoot.current, new engine.component.card.visualize_affiliate(thermostatId));
-        if (!nativeScene) add(sceneRoot.current, new engine.component.card.three_d().set_floor_plan_id(user.settings.visualize.floor_plan_id));
-      } else {
-        add(editorRoot.current, new engine.component.card.visualize_intro(thermostatId));
-        add(sceneRoot.current, new engine.component.card.visualize_video());
-      }
-      setState('ready');
-    }).catch((error) => { if (!cancelled) { setMessage(error instanceof Error ? error.message : 'Unable to load the visualizer.'); setState('error'); } });
-    return () => { cancelled = true; restoreSetAttribute?.(); instances.reverse().forEach((instance) => { try { instance.dispose(); } catch { /* legacy cleanup is best effort */ } }); editorRoot.current?.replaceChildren(); sceneRoot.current?.replaceChildren(); stylesheet?.remove(); };
-  }, [data, nativeScene, thermostatId]);
-  const floorPlans = Object.values(data?.floor_plan ?? {}) as any[];
-  const visualize = nativeScene ? visualizeState : (data?.user?.settings?.visualize ?? {});
+  useEffect(() => { setFloorPlans(Object.values(data?.floor_plan ?? {}) as FloorPlan[]); }, [data?.floor_plan]);
+  const visualize = visualizeState;
   const hasFloorPlan = visualize.floor_plan_id != null || floorPlans[0]?.floor_plan_id != null;
   const sourcePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
   const activePlan = savedPlan?.floor_plan_id === sourcePlan?.floor_plan_id ? savedPlan : sourcePlan;
-  const saveScenePreferences = async (preferences: Record<string, unknown>) => {
-    if (!activePlan) return; const next = structuredClone(activePlan) as FloorPlan; next.data.scene = { ...(next.data.scene ?? {}), ...preferences };
-    await apiCall({ resource: 'floor_plan', method: 'update', arguments: { attributes: { floor_plan_id: next.floor_plan_id, data: next.data } } }); setSavedPlan(next);
-    if (window.beestat?.cache?.floor_plan?.[next.floor_plan_id]) window.beestat.cache.floor_plan[next.floor_plan_id].data = structuredClone(next.data);
-  };
+  const storePlan = (next: FloorPlan) => { setSavedPlan(next); setFloorPlans((items) => [...items.filter((item) => item.floor_plan_id !== next.floor_plan_id), next]); };
   const updateSetting = (key: string, value: unknown) => {
-    if (nativeScene) {
-      setVisualizeState((current) => {
-        const next = structuredClone(current); const parts = key.replace(/^visualize\./, '').split('.'); let target = next;
-        parts.slice(0, -1).forEach((part) => { target[part] ??= {}; target = target[part]; }); target[parts.at(-1)!] = value; return next;
-      });
-      void apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } });
-    } else if (window.beestat?.setting) window.beestat.setting(key, value);
+    setVisualizeState((current) => {
+      const next = structuredClone(current); const parts = key.replace(/^visualize\./, '').split('.'); let target = next;
+      parts.slice(0, -1).forEach((part) => { target[part] ??= {}; target = target[part]; }); target[parts.at(-1)!] = value; return next;
+    });
+    void apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } });
   };
-  return <Box py={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
-    {state === 'loading' && <Box sx={{ minHeight: 500, display: 'grid', placeItems: 'center' }}><Box textAlign="center"><CircularProgress /><Box mt={2}>{message}</Box></Box></Box>}
-    {state === 'error' && <Alert severity="error">{message}</Alert>}
-    <Box sx={{ display: state === 'ready' ? 'block' : 'none', minWidth: 0 }}>
-      <Box ref={editorRoot} />
-      {activePlan && <Box mb={2}><FloorPlanEditorCard plan={activePlan as FloorPlan} sensors={data?.sensor ?? {}} onSaved={setSavedPlan} /></Box>}
+  const switchPlan = (floorPlanId: number | null) => { setSavedPlan(undefined); updateSetting('visualize.floor_plan_id', floorPlanId); };
+  const createPlan = async (draft: FloorPlanDraft) => {
+    setCreating(true); setCreateError(undefined);
+    try {
+      const distanceUnit = String(data?.user?.settings?.units?.distance ?? 'ft'); const ceilingHeight = draft.ceilingHeight * (distanceUnit === 'm' ? 39.37007874 : 12); const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth']; let elevation = draft.basement ? -ceilingHeight : 0; let floor = draft.basement ? 0 : 1;
+      const groups = Array.from({ length: draft.floorCount }, () => { const group = { group_id: crypto.randomUUID(), name: floor === 0 ? 'Basement' : `${ordinals[floor - 1]} Floor`, elevation, height: ceilingHeight, rooms: [], surfaces: [], openings: [], trees: [], lights: [] }; floor += 1; elevation += ceilingHeight; return group; });
+      const attributes = { name: draft.name, ...(draft.addressId == null ? {} : { address_id: draft.addressId }), data: { groups, appearance: { rotation: 0, roof_style: 'hip', roof_color: '#3a3a3a', siding_color: '#889aaa', ground_color: '#4a7c3f' } } };
+      const response = await apiBatch<{ new_floor_plan: { floor_plan_id: number }; floor_plan: Record<string, FloorPlan> }>([{ resource: 'floor_plan', method: 'create', alias: 'new_floor_plan', arguments: { attributes } }, { resource: 'floor_plan', method: 'read_id', alias: 'floor_plan', arguments: {} }]);
+      const id = Number(response.new_floor_plan.floor_plan_id); const nextPlans = Object.values(response.floor_plan ?? {}); setFloorPlans(nextPlans); setSavedPlan(nextPlans.find((item) => item.floor_plan_id === id)); switchPlan(id); setCreateOpen(false);
+    } catch (error) { setCreateError(error instanceof Error ? error.message : 'Unable to create the floor plan.'); } finally { setCreating(false); }
+  };
+  const deletePlan = async () => {
+    if (!activePlan) return; setDeleting(true);
+    try { const response = await apiBatch<{ floor_plan: Record<string, FloorPlan> }>([{ resource: 'floor_plan', method: 'delete', alias: 'deleted', arguments: { id: activePlan.floor_plan_id } }, { resource: 'floor_plan', method: 'read_id', alias: 'floor_plan', arguments: {} }]); const nextPlans = Object.values(response.floor_plan ?? {}); setFloorPlans(nextPlans); switchPlan(nextPlans[0]?.floor_plan_id ?? null); setDeleteOpen(false); } finally { setDeleting(false); }
+  };
+  const showAffiliate = hasFloorPlan && visualize.hide_affiliate === false && !config.isDemo;
+  return <Box pb={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
+    <Box sx={{ minWidth: 0 }}>
+      {!activePlan && <><Card sx={{ mb: 2 }}><CardHeader title="Visualize" /><CardContent sx={{ textAlign: 'center' }}><Button variant="contained" color="success" size="large" startIcon={<Plus />} onClick={() => setCreateOpen(true)}><Stack><span>Get started now!</span><Typography variant="caption">Create my first floor plan</Typography></Stack></Button></CardContent></Card><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>{['https://player.vimeo.com/video/751478276', 'https://player.vimeo.com/video/1173706545'].map((src) => <Box key={src} component="iframe" src={src} title="Visualize walkthrough" allow="autoplay; fullscreen; picture-in-picture" sx={{ width: '100%', border: 0, aspectRatio: '16 / 9' }} />)}</Box></>}
+      {activePlan && <Box mb={2}><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onSwitch={switchPlan} /></Box>}
+      {showAffiliate && <Card sx={{ mb: 2 }}><CardHeader title="Need more sensors?" action={<IconButton aria-label="Dismiss sensor offer" onClick={() => updateSetting('visualize.hide_affiliate', true)}><X /></IconButton>} /><CardContent><Button component="a" href="https://amzn.to/3SprUVB" target="_blank" rel="noreferrer" variant="contained" color="success" startIcon={<ExternalLink />}><Stack alignItems="flex-start"><span>SmartSensor 2 Pack</span><Typography variant="caption">Amazon Affiliate</Typography></Stack></Button></CardContent></Card>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
-      {nativeScene && activePlan && <Box mb={2}><NativeThreeScene plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} onSavePreferences={saveScenePreferences} /></Box>}
-      <Box ref={sceneRoot} />
+      {activePlan && <Box mb={2}><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></Box>}
     </Box>
+    <FloorPlanCreateDialog open={createOpen} defaultFloors={Math.max(1, Math.min(8, Number(data?.thermostat?.[String(thermostatId)]?.property?.stories ?? 1)))} distanceUnit={String(data?.user?.settings?.units?.distance ?? 'ft')} addresses={data?.address ?? {}} busy={creating} error={createError} onClose={() => setCreateOpen(false)} onCreate={(draft) => void createPlan(draft)} />
+    <Dialog open={deleteOpen} onClose={deleting ? undefined : () => setDeleteOpen(false)}><DialogTitle>Delete Floor Plan</DialogTitle><DialogContent><Typography>Are you sure you want to delete “{activePlan?.name}”? This cannot be undone.</Typography></DialogContent><DialogActions><Button color="inherit" disabled={deleting} onClick={() => setDeleteOpen(false)}>Cancel</Button><Button color="error" variant="contained" disabled={deleting} onClick={() => void deletePlan()}>{deleting ? 'Deleting…' : 'Delete Floor Plan'}</Button></DialogActions></Dialog>
   </Box>;
 }
