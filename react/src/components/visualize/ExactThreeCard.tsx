@@ -33,11 +33,21 @@ export function ExactThreeCard({
       user.settings ??= {};
       user.settings.visualize = structuredClone(settings);
     }
-    delete legacy.cache.data.three_d__runtime_sensor;
-    delete legacy.cache.data.three_d__runtime_thermostat;
+    const refreshRuntimeKey = () => {
+      const livePlan = legacy.cache.floor_plan[plan.floor_plan_id] as FloorPlan;
+      const sensorIds = livePlan.data.groups.flatMap((group) => group.rooms.map((room) => room.sensor_id)).filter(Boolean).sort();
+      const runtimeKey = JSON.stringify([plan.floor_plan_id, rangeKey, sensorIds]);
+      if (legacy.cache.data.three_d__runtime_key !== runtimeKey) {
+        delete legacy.cache.data.three_d__runtime_sensor;
+        delete legacy.cache.data.three_d__runtime_thermostat;
+        legacy.cache.data.three_d__runtime_key = runtimeKey;
+      }
+    };
+    refreshRuntimeKey();
 
     const instance = new legacy.component.card.three_d().set_floor_plan_id(plan.floor_plan_id);
     card.current = instance;
+    legacy.dispatcher.addEventListener('cache.floor_plan', refreshRuntimeKey);
     instance.render(dollar(host.current));
     host.current.dataset.sceneCardEngine = 'beestat-exact';
     const markCanvas = () => {
@@ -53,6 +63,7 @@ export function ExactThreeCard({
     return () => {
       window.clearTimeout(markTimer);
       canvasObserver.disconnect();
+      legacy.dispatcher.removeEventListener('cache.floor_plan', refreshRuntimeKey);
       instance.dispose?.();
       if (card.current === instance) card.current = undefined;
     };
