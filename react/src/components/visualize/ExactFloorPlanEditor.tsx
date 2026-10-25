@@ -64,13 +64,23 @@ export function ExactFloorPlanEditor({
     const queueDataSave = legacy.floor_plan.queue_data_save_;
     legacy.floor_plan.queue_data_save_ = () => undefined;
     const editor = new legacy.component.card.floor_plan_editor(thermostatId);
+    editor.state_.layers_sidebar.mobile_mode = window.innerWidth < 600 || editor.state_.layers_sidebar.mobile_mode === true;
     editor.render(dollar(host.current));
     const restoreQueue = window.setTimeout(() => { legacy.floor_plan.queue_data_save_ = queueDataSave; }, 0);
     host.current.dataset.editorEngine = 'beestat-exact';
+    const responsiveEditor = new ResizeObserver(([entry]) => {
+      const mobile = entry.contentRect.width < 600;
+      if (editor.state_.layers_sidebar.mobile_mode !== mobile) {
+        editor.state_.layers_sidebar.mobile_mode = mobile;
+        editor.rerender();
+      }
+    });
+    responsiveEditor.observe(host.current);
 
     return () => {
       window.clearTimeout(changeTimer);
       window.clearTimeout(restoreQueue);
+      responsiveEditor.disconnect();
       legacy.floor_plan.queue_data_save_ = queueDataSave;
       legacy.dispatcher.removeEventListener('cache.floor_plan', handleChange);
       legacy.dispatcher.removeEventListener('setting.visualize.floor_plan_id', handleSwitch);

@@ -108,5 +108,16 @@ await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ wai
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
 if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 16) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
-console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, blockedMutations, errors }, null, 2));
+await page.getByText('Home', { exact: true }).first().click();
+await page.getByText('Floor Name', { exact: true }).waitFor({ timeout: 30_000 });
+const mobileEditor = await page.evaluate(() => {
+  const host = document.querySelector('[data-editor-engine="beestat-exact"]');
+  const map = host?.querySelector('svg')?.getBoundingClientRect();
+  const sidebar = [...(host?.querySelectorAll('div') ?? [])].map((item) => item.getBoundingClientRect()).find((rect) => Math.round(rect.width) === 56 && Math.round(rect.height) >= 450);
+  return { scrollWidth: document.documentElement.scrollWidth, innerWidth, mapWidth: Math.round(map?.width ?? 0), sidebarWidth: Math.round(sidebar?.width ?? 0) };
+});
+await page.screenshot({ path: 'test-results/parity/react-floor-plan-editor-mobile.png', fullPage: false });
+if (mobileEditor.scrollWidth > mobileEditor.innerWidth || mobileEditor.mapWidth < 300 || mobileEditor.sidebarWidth !== 56) throw new Error(`Exact floor-plan editor mobile regression: ${JSON.stringify(mobileEditor)}`);
+if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only mobile visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
+console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, mobileEditor, blockedMutations, errors }, null, 2));
 await browser.close();
