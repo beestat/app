@@ -146,8 +146,19 @@ export function runtimeAxisLabel(value: number, tickPositions?: readonly number[
   const previous = index > 0 ? new Date(positions[index - 1]) : undefined;
   const dayChanged = !previous || previous.getFullYear() !== date.getFullYear() || previous.getMonth() !== date.getMonth() || previous.getDate() !== date.getDate();
   const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-  const hour = date.toLocaleTimeString('en-US', { hour: 'numeric' }).replace(' ', '').toLowerCase();
+  const hour24 = date.getHours();
+  const hour = `${hour24 % 12 || 12}${hour24 < 12 ? 'am' : 'pm'}`;
   return `${dayChanged ? `${day} ` : ''}${hour}`;
+}
+
+export function runtimeTickPositions(min: number, max: number, width: number) {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return [];
+  // Legacy Highcharts uses a category interval of 77 five-minute samples on
+  // phone-width charts (6h25m), and roughly three hours on desktop.
+  const interval = width < 500 ? 77 * 5 * 60_000 : 3 * 3_600_000;
+  const positions: number[] = [];
+  for (let value = min; value <= max; value += interval) positions.push(value);
+  return positions;
 }
 
 export function unitLabel(unit: string) {

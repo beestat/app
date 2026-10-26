@@ -10,7 +10,7 @@ import { DashboardCard } from '../common/DashboardCard';
 import { RuntimeChips } from './RuntimeChips';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
-import { buildRuntimeData, equipment, formatRuntimeShort, runtimeAxisLabel, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
+import { buildRuntimeData, equipment, formatRuntimeShort, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
@@ -41,11 +41,17 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       step: key.includes('setpoint') ? 'right' as const : undefined, turboThreshold: 0,
     }));
   }, [data]);
+  const temperatureBounds = useMemo(() => {
+    const values = series.filter((item) => item.visible && item.yAxis === 0).flatMap((item) => item.data.map((point) => point[1]).filter((value): value is number => typeof value === 'number'));
+    if (!values.length) return undefined;
+    const interval = thermostat.temperature_unit.includes('C') ? 5 : 10;
+    return { min: Math.floor(Math.min(...values) / interval) * interval - interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
+  }, [series, thermostat.temperature_unit]);
   const options = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, marginRight: 45, animation: false, zooming: { type: 'x' } },
+    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], alignTicks: false, animation: false, zooming: { type: 'x' } },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
-    xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickInterval: 3 * 3_600_000, lineColor: colors.slate.light, tickColor: colors.slate.light, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
-    yAxis: [{ title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickPositioner() { return runtimeTickPositions(Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
+    yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: '#fff' } },
     tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, formatter() {
       const x = Number(this.x);
@@ -67,8 +73,8 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       if (data.offAt[x] > 0) lines.push(`<span style="color:${colors.slate.light}">●</span> Off: <b>${formatRuntimeShort(data.offAt[x])}</b>`);
       return lines.join('<br/>');
     } },
-    plotOptions: { series: { animation: false, marker: { enabled: false }, states: { inactive: { opacity: .35 } } } }, series,
-  }), [data, extremes, series, thermostat.temperature_unit]);
+    plotOptions: { series: { animation: false, marker: { enabled: false }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
+  }), [data, extremes, series, temperatureBounds, thermostat.temperature_unit]);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
