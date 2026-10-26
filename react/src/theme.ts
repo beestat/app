@@ -46,6 +46,7 @@ export const theme = createTheme({
         html: { backgroundColor: colors.slate.light },
         body: { minWidth: 320 },
         '*': { boxSizing: 'border-box' },
+        '.MuiButtonBase-root > input.PrivateSwitchBase-input': { visibility: 'visible' },
       },
     },
     MuiCard: {

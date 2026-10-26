@@ -24,7 +24,7 @@ if (!await page.getByRole('checkbox', { name: /Always Dock Tooltips/ }).count())
 await page.getByRole('checkbox', { name: /Always Dock Tooltips/ }).click();
 await page.getByRole('radio', { name: /°C/ }).click();
 await page.getByRole('radio', { name: /m \/ m²/ }).click();
-const currency = page.locator('.MuiFormControl-root').filter({ has: page.locator('label', { hasText: 'Currency' }) }).getByRole('combobox');
+const currency = page.getByRole('combobox', { name: 'Currency' });
 if (!await currency.count()) throw new Error(`Currency select missing after unit changes: ${(await page.locator('body').innerText()).slice(0, 1_500)}`);
 await currency.click(); await page.getByRole('option', { name: 'CAD' }).click();
 await page.getByRole('checkbox', { name: /Enable Gap Fill/ }).click();
