@@ -49,7 +49,7 @@ console.log('checked legacy visualize');
 const legacyMutationBaseline = blockedMutations.length;
 const react = await inspect('react', 'https://dev.app.beestat.io/react/index.php#/visualize');
 console.log('checked React visualize shell');
-if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8) throw new Error(`Visualizer parity regression: ${JSON.stringify({ react, url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), errors })}`);
+if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8 || react.canvas[0].width !== legacy.canvas[0]?.width || react.canvas[0].height !== legacy.canvas[0]?.height) throw new Error(`Visualizer parity regression: ${JSON.stringify({ legacy, react, url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), errors })}`);
 await page.getByText('Home', { exact: true }).first().click();
 await page.locator('[data-editor-engine="beestat-exact"] svg').first().waitFor({ timeout: 30_000 });
 const editor = await page.evaluate(() => {
@@ -69,7 +69,7 @@ const editor = await page.evaluate(() => {
   };
 });
 await page.screenshot({ path: 'test-results/parity/react-visualize-editor.png', fullPage: false });
-if (editor.exactEngine !== 'beestat-exact' || !editor.map || editor.map.width < 1200 || editor.map.height !== 500 || !editor.sidebar || editor.sidebar.width !== 250 || editor.sidebar.x < editor.map.x + editor.map.width - 270 || !editor.addRoom || !editor.undo || editor.undo.x <= editor.addRoom.x || editor.fields.length !== 3 || editor.canvasCount === 0) throw new Error(`Floor-plan editor layout regression: ${JSON.stringify(editor)}`);
+if (editor.exactEngine !== 'beestat-exact' || !editor.map || editor.map.x !== 32 || editor.map.width !== 1376 || editor.map.height !== 500 || !editor.sidebar || editor.sidebar.width !== 250 || editor.sidebar.x < editor.map.x + editor.map.width - 270 || !editor.addRoom || !editor.undo || editor.undo.x <= editor.addRoom.x || editor.fields.length !== 3 || editor.canvasCount === 0) throw new Error(`Floor-plan editor layout regression: ${JSON.stringify(editor)}`);
 const nativeEditor = await page.evaluate(() => ({
   polygons: document.querySelectorAll('[data-editor-engine="beestat-exact"] svg polygon').length,
   circles: document.querySelectorAll('[data-editor-engine="beestat-exact"] svg circle').length,
@@ -115,7 +115,7 @@ if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-on
 await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('[data-lazy-mount]').last().scrollIntoViewIfNeeded(); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
-if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 16) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
+if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 32) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
 await page.getByText('Home', { exact: true }).first().click();
 await page.getByText('Floor Name', { exact: true }).waitFor({ timeout: 30_000 });
 const mobileEditor = await page.evaluate(() => {

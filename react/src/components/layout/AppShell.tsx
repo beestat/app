@@ -48,7 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <Box sx={{ minHeight: '100dvh', pb: phone ? 10 : 3 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
-          <Toolbar sx={{ gap: 2, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
+          <Toolbar sx={{ gap: 2, px: { xs: 2, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
             <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: compact ? 39 : 144, flex: `0 0 ${compact ? 39 : 144}px`, textDecoration: 'none' }}>
               <Box component="img" src={compact ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
             </Box>
@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </Container>
       </AppBar>
-      <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 2 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: '#fff' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: '#fff' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
       {phone && hasThermostats && <Box component="nav" sx={{ position: 'fixed', zIndex: 1200, bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)', display: 'flex', bgcolor: 'background.paper', boxShadow: '0 -2px 10px rgba(0,0,0,.28)' }}>
         {navItems.map(({ path, label, icon: Icon }) => <Button key={path} component={NavLink} to={path} color="inherit" onPointerDown={() => preloadRoute(path)} onFocus={() => preloadRoute(path)} sx={{ flex: 1, minWidth: 0, flexDirection: 'column', gap: .25, fontSize: 9, color: location.pathname === path ? 'primary.light' : 'text.secondary' }}><Icon size={20} />{label}</Button>)}
       </Box>}
