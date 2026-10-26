@@ -8,6 +8,7 @@ import { ExactFloorPlanEditor } from '../components/visualize/ExactFloorPlanEdit
 import type { FloorPlan } from '../components/visualize/floorPlanModel';
 import { ExactThreeCard } from '../components/visualize/ExactThreeCard';
 import { FloorPlanCreateDialog, type FloorPlanDraft } from '../components/visualize/FloorPlanCreateDialog';
+import { LazyMount } from '../components/common/LazyMount';
 
 export function VisualizePage() {
   const { data, thermostatId } = useDashboard();
@@ -48,10 +49,10 @@ export function VisualizePage() {
   return <Box pb={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
     <Box sx={{ minWidth: 0 }}>
       {!activePlan && <><Card sx={{ mb: 2 }}><CardHeader title="Visualize" /><CardContent sx={{ textAlign: 'center' }}><Button variant="contained" color="success" size="large" startIcon={<Plus />} onClick={() => setCreateOpen(true)}><Stack><span>Get started now!</span><Typography variant="caption">Create my first floor plan</Typography></Stack></Button></CardContent></Card><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>{['https://player.vimeo.com/video/751478276', 'https://player.vimeo.com/video/1173706545'].map((src) => <Box key={src} component="iframe" src={src} title="Visualize walkthrough" allow="autoplay; fullscreen; picture-in-picture" sx={{ width: '100%', border: 0, aspectRatio: '16 / 9' }} />)}</Box></>}
-      {activePlan && <Box mb={2}><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onPlansChanged={setFloorPlans} onSwitch={switchPlan} /></Box>}
+      {activePlan && <Box mb={2}><LazyMount minHeight={548} deferUntilIdle><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onPlansChanged={setFloorPlans} onSwitch={switchPlan} /></LazyMount></Box>}
       {showAffiliate && <Card sx={{ mb: 2 }}><CardHeader title="Need more sensors?" action={<IconButton aria-label="Dismiss sensor offer" onClick={() => updateSetting('visualize.hide_affiliate', true)}><X /></IconButton>} /><CardContent><Button component="a" href="https://amzn.to/3SprUVB" target="_blank" rel="noreferrer" variant="contained" color="success" startIcon={<ExternalLink />}><Stack alignItems="flex-start"><span>SmartSensor 2 Pack</span><Typography variant="caption">Amazon Affiliate</Typography></Stack></Button></CardContent></Card>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
-      {activePlan && <Box mb={2}><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></Box>}
+      {activePlan && <Box mb={2}><LazyMount minHeight={548} rootMargin="-25% 0px" threshold={0.5} deferUntilIdle><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></LazyMount></Box>}
     </Box>
     <FloorPlanCreateDialog open={createOpen} defaultFloors={Math.max(1, Math.min(8, Number(data?.thermostat?.[String(thermostatId)]?.property?.stories ?? 1)))} distanceUnit={String(data?.user?.settings?.units?.distance ?? 'ft')} addresses={data?.address ?? {}} busy={creating} error={createError} onClose={() => setCreateOpen(false)} onCreate={(draft) => void createPlan(draft)} />
     <Dialog open={deleteOpen} onClose={deleting ? undefined : () => setDeleteOpen(false)}><DialogTitle>Delete Floor Plan</DialogTitle><DialogContent><Typography>Are you sure you want to delete “{activePlan?.name}”? This cannot be undone.</Typography></DialogContent><DialogActions><Button color="inherit" disabled={deleting} onClick={() => setDeleteOpen(false)}>Cancel</Button><Button color="error" variant="contained" disabled={deleting} onClick={() => void deletePlan()}>{deleting ? 'Deleting…' : 'Delete Floor Plan'}</Button></DialogActions></Dialog>

@@ -48,7 +48,16 @@ export function ExactThreeCard({
     const instance = new legacy.component.card.three_d().set_floor_plan_id(plan.floor_plan_id);
     card.current = instance;
     legacy.dispatcher.addEventListener('cache.floor_plan', refreshRuntimeKey);
-    instance.render(dollar(host.current));
+    // The renderer fills missing in-memory scene defaults during construction.
+    // That normalization is not a user edit and must not enqueue a floor-plan
+    // database write merely because the user opened Visualize.
+    const queueDataSave = legacy.floor_plan.queue_data_save_;
+    legacy.floor_plan.queue_data_save_ = () => undefined;
+    try {
+      instance.render(dollar(host.current));
+    } finally {
+      legacy.floor_plan.queue_data_save_ = queueDataSave;
+    }
     host.current.dataset.sceneCardEngine = 'beestat-exact';
     const markCanvas = () => {
       const canvas = host.current?.querySelector('canvas');
