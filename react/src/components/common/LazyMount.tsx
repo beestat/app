@@ -6,12 +6,13 @@ type IdleWindow = Window & {
   cancelIdleCallback?: (handle: number) => void;
 };
 
-export function LazyMount({ children, minHeight = 420, deferUntilIdle = false, rootMargin = '500px 0px', threshold = 0 }: {
+export function LazyMount({ children, minHeight = 420, deferUntilIdle = false, rootMargin = '500px 0px', threshold = 0, fallback }: {
   children: React.ReactNode;
   minHeight?: number;
   deferUntilIdle?: boolean;
   rootMargin?: string;
   threshold?: number;
+  fallback?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -54,5 +55,5 @@ export function LazyMount({ children, minHeight = 420, deferUntilIdle = false, r
       if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, [deferUntilIdle, rootMargin, threshold, visible]);
-  return <Box ref={ref} sx={{ minHeight }} aria-busy={!visible} data-lazy-mount data-lazy-visible={visible}>{visible ? children : <Skeleton variant="rounded" height={minHeight} animation="wave" />}</Box>;
+  return <Box ref={ref} sx={{ minHeight }} aria-busy={!visible} data-lazy-mount data-lazy-visible={visible}>{visible ? children : (fallback ?? <Skeleton variant="rounded" height={minHeight} animation="wave" />)}</Box>;
 }

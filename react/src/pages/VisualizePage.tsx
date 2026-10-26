@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, CardHeader, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CardHeader, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { ExternalLink, Plus, X } from 'lucide-react';
 import { apiBatch, apiCall, config } from '../api/client';
@@ -9,6 +9,17 @@ import type { FloorPlan } from '../components/visualize/floorPlanModel';
 import { ExactThreeCard } from '../components/visualize/ExactThreeCard';
 import { FloorPlanCreateDialog, type FloorPlanDraft } from '../components/visualize/FloorPlanCreateDialog';
 import { LazyMount } from '../components/common/LazyMount';
+
+function VisualizerLoader({ label, detail, height = 548 }: { label: string; detail: string; height?: number }) {
+  return <Card role="status" aria-live="polite" sx={{ height, display: 'grid', placeItems: 'center', overflow: 'hidden', background: 'radial-gradient(circle at 50% 42%, rgba(69,170,242,.13), transparent 34%), #2f3d44' }}>
+    <Stack alignItems="center" gap={1.5} sx={{ px: 3, textAlign: 'center' }}>
+      <Box component="img" src="/favicon.png" alt="" sx={{ width: 52, height: 52, opacity: .95 }} />
+      <CircularProgress size={30} thickness={4} aria-hidden="true" />
+      <Typography fontWeight={600}>{label}</Typography>
+      <Typography color="text.secondary" variant="caption">{detail}</Typography>
+    </Stack>
+  </Card>;
+}
 
 export function VisualizePage() {
   const { data, thermostatId } = useDashboard();
@@ -49,10 +60,10 @@ export function VisualizePage() {
   return <Box pb={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
     <Box sx={{ minWidth: 0 }}>
       {!activePlan && <><Card sx={{ mb: 2 }}><CardHeader title="Visualize" /><CardContent sx={{ textAlign: 'center' }}><Button variant="contained" color="success" size="large" startIcon={<Plus />} onClick={() => setCreateOpen(true)}><Stack><span>Get started now!</span><Typography variant="caption">Create my first floor plan</Typography></Stack></Button></CardContent></Card><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>{['https://player.vimeo.com/video/751478276', 'https://player.vimeo.com/video/1173706545'].map((src) => <Box key={src} component="iframe" src={src} title="Visualize walkthrough" allow="autoplay; fullscreen; picture-in-picture" sx={{ width: '100%', border: 0, aspectRatio: '16 / 9' }} />)}</Box></>}
-      {activePlan && <Box mb={2}><LazyMount minHeight={548} deferUntilIdle><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onPlansChanged={setFloorPlans} onSwitch={switchPlan} /></LazyMount></Box>}
+      {activePlan && <Box mb={2}><LazyMount minHeight={548} deferUntilIdle fallback={<VisualizerLoader label="Loading floor plan" detail="Preparing the exact editor and drawing tools…" />}><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onPlansChanged={setFloorPlans} onSwitch={switchPlan} /></LazyMount></Box>}
       {showAffiliate && <Card sx={{ mb: 2 }}><CardHeader title="Need more sensors?" action={<IconButton aria-label="Dismiss sensor offer" onClick={() => updateSetting('visualize.hide_affiliate', true)}><X /></IconButton>} /><CardContent><Button component="a" href="https://amzn.to/3SprUVB" target="_blank" rel="noreferrer" variant="contained" color="success" startIcon={<ExternalLink />}><Stack alignItems="flex-start"><span>SmartSensor 2 Pack</span><Typography variant="caption">Amazon Affiliate</Typography></Stack></Button></CardContent></Card>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
-      {activePlan && <Box mb={2}><LazyMount minHeight={548} rootMargin="-25% 0px" threshold={0.5} deferUntilIdle><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></LazyMount></Box>}
+      {activePlan && <Box mb={2}><LazyMount minHeight={548} rootMargin="-25% 0px" threshold={0.5} deferUntilIdle fallback={<VisualizerLoader label="Preparing 3D view" detail="Building your home, environment, and sensor visualization…" />}><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></LazyMount></Box>}
     </Box>
     <FloorPlanCreateDialog open={createOpen} defaultFloors={Math.max(1, Math.min(8, Number(data?.thermostat?.[String(thermostatId)]?.property?.stories ?? 1)))} distanceUnit={String(data?.user?.settings?.units?.distance ?? 'ft')} addresses={data?.address ?? {}} busy={creating} error={createError} onClose={() => setCreateOpen(false)} onCreate={(draft) => void createPlan(draft)} />
     <Dialog open={deleteOpen} onClose={deleting ? undefined : () => setDeleteOpen(false)}><DialogTitle>Delete Floor Plan</DialogTitle><DialogContent><Typography>Are you sure you want to delete “{activePlan?.name}”? This cannot be undone.</Typography></DialogContent><DialogActions><Button color="inherit" disabled={deleting} onClick={() => setDeleteOpen(false)}>Cancel</Button><Button color="error" variant="contained" disabled={deleting} onClick={() => void deletePlan()}>{deleting ? 'Deleting…' : 'Delete Floor Plan'}</Button></DialogActions></Dialog>
