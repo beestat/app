@@ -1,5 +1,6 @@
 import { Box, Button, Card, CardContent, CardHeader, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { ExternalLink, Plus, X } from 'lucide-react';
 import { apiBatch, apiCall, config } from '../api/client';
 import { useDashboard } from '../state/DashboardContext';
@@ -16,6 +17,10 @@ export function VisualizePage() {
   const [visualizeState, setVisualizeState] = useState<Record<string, any>>({});
   const [savedPlan, setSavedPlan] = useState<FloorPlan>();
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
+  const [preparing3d, setPreparing3d] = useState(false);
+  const pendingRangeUpdates = useRef(new Map<string, unknown>());
+  const rangeFrame = useRef(0);
+  const rangeSecondFrame = useRef(0);
   const [createOpen, setCreateOpen] = useState(false); const [creating, setCreating] = useState(false); const [createError, setCreateError] = useState<string>(); const [deleteOpen, setDeleteOpen] = useState(false); const [deleting, setDeleting] = useState(false);
   useEffect(() => { setVisualizeState(structuredClone(data?.user?.settings?.visualize ?? {})); }, [data?.user?.settings?.visualize]);
   useEffect(() => { setFloorPlans(Object.values(data?.floor_plan ?? {}) as FloorPlan[]); }, [data?.floor_plan]);
@@ -24,13 +29,36 @@ export function VisualizePage() {
   const sourcePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
   const activePlan = savedPlan?.floor_plan_id === sourcePlan?.floor_plan_id ? savedPlan : sourcePlan;
   const storePlan = (next: FloorPlan) => { setSavedPlan(next); setFloorPlans((items) => [...items.filter((item) => item.floor_plan_id !== next.floor_plan_id), next]); };
-  const updateSetting = (key: string, value: unknown) => {
+  const commitSettings = (updates: Array<[string, unknown]>) => {
     setVisualizeState((current) => {
-      const next = structuredClone(current); const parts = key.replace(/^visualize\./, '').split('.'); let target = next;
-      parts.slice(0, -1).forEach((part) => { target[part] ??= {}; target = target[part]; }); target[parts.at(-1)!] = value; return next;
+      const next = structuredClone(current);
+      updates.forEach(([key, value]) => { const parts = key.replace(/^visualize\./, '').split('.'); let target = next; parts.slice(0, -1).forEach((part) => { target[part] ??= {}; target = target[part]; }); target[parts.at(-1)!] = value; });
+      return next;
     });
-    void apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } });
+    updates.forEach(([key, value]) => { void apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } }); });
   };
+  const updateSetting = (key: string, value: unknown) => {
+    if (!key.startsWith('visualize.range_') || !activePlan) {
+      commitSettings([[key, value]]);
+      return;
+    }
+    pendingRangeUpdates.current.set(key, value);
+    // Commit the loader before scheduling any teardown or scene construction.
+    // React's normal event batching can otherwise combine this with the heavy
+    // range update and leave the old frame frozen on screen for several seconds.
+    flushSync(() => setPreparing3d(true));
+    cancelAnimationFrame(rangeFrame.current);
+    cancelAnimationFrame(rangeSecondFrame.current);
+    rangeFrame.current = requestAnimationFrame(() => {
+      rangeSecondFrame.current = requestAnimationFrame(() => {
+        const updates = [...pendingRangeUpdates.current.entries()];
+        pendingRangeUpdates.current.clear();
+        commitSettings(updates);
+        setPreparing3d(false);
+      });
+    });
+  };
+  useEffect(() => () => { cancelAnimationFrame(rangeFrame.current); cancelAnimationFrame(rangeSecondFrame.current); }, []);
   const switchPlan = (floorPlanId: number | null) => { setSavedPlan(undefined); updateSetting('visualize.floor_plan_id', floorPlanId); };
   const createPlan = async (draft: FloorPlanDraft) => {
     setCreating(true); setCreateError(undefined);
@@ -53,7 +81,7 @@ export function VisualizePage() {
       {activePlan && <Box mb={2}><LazyMount minHeight={548} deferUntilIdle fallback={<VisualizerLoader label="Loading floor plan" detail="Preparing the exact editor and drawing tools…" />}><ExactFloorPlanEditor key={activePlan.floor_plan_id} plan={activePlan as FloorPlan} plans={floorPlans} sensors={data?.sensor ?? {}} thermostatId={thermostatId} data={data} onChanged={storePlan} onPlansChanged={setFloorPlans} onSwitch={switchPlan} /></LazyMount></Box>}
       {showAffiliate && <Card sx={{ mb: 2 }}><CardHeader title="Need more sensors?" action={<IconButton aria-label="Dismiss sensor offer" onClick={() => updateSetting('visualize.hide_affiliate', true)}><X /></IconButton>} /><CardContent><Button component="a" href="https://amzn.to/3SprUVB" target="_blank" rel="noreferrer" variant="contained" color="success" startIcon={<ExternalLink />}><Stack alignItems="flex-start"><span>SmartSensor 2 Pack</span><Typography variant="caption">Amazon Affiliate</Typography></Stack></Button></CardContent></Card>}
       {hasFloorPlan && <Box mb={2}><VisualizeSettingsCard initial={visualize} temperatureUnit={String(data?.user?.settings?.units?.temperature ?? '°F')} onChange={updateSetting} /></Box>}
-      {activePlan && <Box mb={2}><LazyMount minHeight={548} rootMargin="-25% 0px" threshold={0.5} deferUntilIdle fallback={<VisualizerLoader label="Preparing 3D view" detail="Building your home, environment, and sensor visualization…" />}><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} /></LazyMount></Box>}
+      {activePlan && <Box mb={2}><LazyMount minHeight={548} rootMargin="-25% 0px" threshold={0.5} deferUntilIdle fallback={<VisualizerLoader label="Preparing 3D view" detail="Building your home, environment, and sensor visualization…" />}><ExactThreeCard plan={activePlan as FloorPlan} settings={visualize} sensors={data?.sensor ?? {}} thermostats={data?.thermostat ?? {}} preparing={preparing3d} /></LazyMount></Box>}
     </Box>
     <FloorPlanCreateDialog open={createOpen} defaultFloors={Math.max(1, Math.min(8, Number(data?.thermostat?.[String(thermostatId)]?.property?.stories ?? 1)))} distanceUnit={String(data?.user?.settings?.units?.distance ?? 'ft')} addresses={data?.address ?? {}} busy={creating} error={createError} onClose={() => setCreateOpen(false)} onCreate={(draft) => void createPlan(draft)} />
     <Dialog open={deleteOpen} onClose={deleting ? undefined : () => setDeleteOpen(false)}><DialogTitle>Delete Floor Plan</DialogTitle><DialogContent><Typography>Are you sure you want to delete “{activePlan?.name}”? This cannot be undone.</Typography></DialogContent><DialogActions><Button color="inherit" disabled={deleting} onClick={() => setDeleteOpen(false)}>Cancel</Button><Button color="error" variant="contained" disabled={deleting} onClick={() => void deletePlan()}>{deleting ? 'Deleting…' : 'Delete Floor Plan'}</Button></DialogActions></Dialog>
