@@ -94,7 +94,10 @@ export function AnalyzePage() {
     const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
     const scale = smartScale(config.group);
     const desktopTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 38));
-    const mobileTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 9));
+    // Legacy Highcharts fits about eleven category labels across the compact
+    // plot. Keep the explicit interval so newer Highcharts does not choose a
+    // sparser (and less useful) 13-month cadence on phones.
+    const mobileTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 11));
     return {
       chart: { backgroundColor: 'transparent', height: 350, marginLeft: 49, marginRight: 46, marginBottom: 108, spacing: [8, 0, 0, 0], zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
       xAxis: { categories: summary.map((row) => String(row.date)), tickInterval: desktopTickInterval, tickLength: 0, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 || this.axis.chart.chartWidth <= 500 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
@@ -107,7 +110,14 @@ export function AnalyzePage() {
   }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, unit]);
   const chipData = useMemo(() => {
     const result = buildRuntimeData([]);
-    for (const code of Object.keys(result.totals)) result.totals[code as keyof typeof result.totals] = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0) * 3600;
+    // Converting aggregated hours back to seconds can land a few billionths
+    // below an exact minute. Legacy Moment formatting floors real partial
+    // minutes, so only neutralize that floating-point noise rather than
+    // rounding genuine seconds up.
+    for (const code of Object.keys(result.totals)) {
+      const seconds = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0) * 3600;
+      result.totals[code as keyof typeof result.totals] = seconds > 0 ? seconds + 1e-6 : 0;
+    }
     return result;
   }, [summary]);
   const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);
@@ -148,6 +158,6 @@ export function AnalyzePage() {
   const summarySubtitle = `${summaryLabel}, grouped by ${config.group} (Gap Fill: ${gapFill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} summary />{summary.length ? <HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} /> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
-    <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} unit={unit} subtitle={profileSubtitle} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profiles.length >= 2 && <Stack direction="row" gap={1.5} alignItems="center" px={.5}><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" /><Typography sx={{ minWidth: 100, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} unit={unit} subtitle={profileSubtitle} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />} sx={{ '& .MuiCardContent-root': { pb: '10px !important' } }}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profiles.length >= 2 && <Stack direction="row" gap={1} alignItems="center" pl={.25} mt="9px"><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" sx={{ color: colors.slate.light, '& .MuiSlider-thumb': { width: 14, height: 14, bgcolor: '#fff' }, '& .MuiSlider-track': { border: 0 }, '& .MuiSlider-rail': { opacity: 1, bgcolor: colors.slate.light } }} /><Typography sx={{ minWidth: 98, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
   </Box>;
 }
