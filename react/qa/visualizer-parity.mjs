@@ -87,7 +87,8 @@ await page.keyboard.press('Escape');
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error('Opening exact floor-plan management attempted a write.');
 console.log('checked exact editor without modifying the plan');
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-await page.locator('[data-lazy-mount]').last().scrollIntoViewIfNeeded();
+await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 });
+await page.locator('[data-lazy-mount]').last().evaluate((node) => node.scrollIntoView());
 await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 await page.waitForTimeout(5_000);
 console.log('checked exact 3D card readiness');
@@ -112,7 +113,7 @@ if (nativeScene.nativeCanvas !== 1 || nativeScene.exactEngine !== true || native
 const vertical = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'].map((label) => nativeScene.layout[label]);
 if (vertical.some((rect) => !rect) || vertical.some((rect) => Math.abs(rect.x - vertical[0].x) > 1) || vertical.some((rect, index) => index > 0 && rect.y <= vertical[index - 1].y)) throw new Error(`Exact 3D toolbar no longer follows the legacy left-column layout: ${JSON.stringify(nativeScene.layout)}`);
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only React visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
-await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('[data-lazy-mount]').last().scrollIntoViewIfNeeded(); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
+await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 }); await page.locator('[data-lazy-mount]').last().evaluate((node) => node.scrollIntoView()); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
 if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 32) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
