@@ -32,6 +32,10 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const occupancyRef = useRef<HighchartsReact.RefObject>(null);
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
   const range = custom ? { value: [`${custom.begin}T00:00:00`, `${custom.end}T23:59:59`], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
+  // Legacy assigns colors from the API/cache insertion order, then sorts the
+  // sensors for display. Preserve that distinction so a named sensor keeps
+  // the exact same color in its line, occupancy lane, and legend.
+  const sensorColors = useMemo(() => new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]])), [sensors]);
   const ordered = useMemo(() => sortSensors(sensors), [sensors]);
   const query = useQuery({
     queryKey: ['runtime-sensors', thermostat.thermostat_id, ordered.map((sensor) => sensor.sensor_id), custom ?? days], enabled: ordered.length > 0,
@@ -44,19 +48,19 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const sensorSeries = useMemo(() => ordered.map((sensor, index) => {
     const rows = query.data?.[`sensor_${sensor.sensor_id}`] ?? [];
     const lane = swimlane(ordered.length, index);
-    return { sensor, color: palette[index % palette.length], lane, temperature: rows.map((row) => [Date.parse(row.timestamp), typeof row.temperature === 'number' ? row.temperature : null] as Point), occupancy: rows.map((row) => [Date.parse(row.timestamp), row.occupancy === true ? lane.y : null] as Point) };
-  }), [ordered, query.data]);
+    return { sensor, color: sensorColors.get(sensor.sensor_id) ?? palette[index % palette.length], lane, temperature: rows.map((row) => [Date.parse(row.timestamp), typeof row.temperature === 'number' ? row.temperature : null] as Point), occupancy: rows.map((row) => [Date.parse(row.timestamp), row.occupancy === true ? lane.y : null] as Point) };
+  }), [ordered, query.data, sensorColors]);
   const occupancyOptions = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: colors.slate.dark, height: 50, marginLeft: 45, marginTop: 0, marginBottom: 0, spacing: [0, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false },
+    chart: { backgroundColor: colors.slate.dark, height: 58, marginLeft: 45, marginBottom: 0, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineWidth: 0, tickLength: 0, labels: { enabled: false } }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', headerFormat: '<b>{point.key}</b><br/>', pointFormat: '<span style="color:{point.color}">●</span> {series.name}: Occupied<br/>', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
     plotOptions: { series: { animation: false, marker: { enabled: false }, connectNulls: false } },
     series: sensorSeries.filter((item) => item.occupancy.some((point) => point[1] !== null)).map((item) => ({ type: 'line', name: item.sensor.name, data: item.occupancy, color: item.color, lineWidth: item.lane.width, linecap: 'square', step: 'left', turboThreshold: 0 })),
   }), [extremes, runtime.max, runtime.min, sensorSeries]);
   const temperatureOptions = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, spacing: [8, 0, 0, 0], animation: false, zooming: { type: 'x' } }, title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
+    chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false, zooming: { type: 'x' } }, title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, tickPositioner() { return runtimeTickPositions(Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: { title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } },
-    legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.light } },
+    legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: '#7f8c8d', textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.main } },
     tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, formatter() {
       const x = Number(this.x);
       const lines = [`<b>${Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x)}</b>`];
@@ -70,7 +74,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
       return lines.join('<br/>');
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false }, turboThreshold: 0, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
-    responsive: { rules: [{ condition: { maxWidth: 400 }, chartOptions: { legend: { itemWidth: 120 } } }] },
+    responsive: { rules: [{ condition: { maxWidth: 400 }, chartOptions: { legend: { itemWidth: 130 } } }] },
     series: [...sensorSeries.map((item) => ({ type: 'spline' as const, name: item.sensor.name, data: item.temperature, color: item.color, lineWidth: 1 })), { type: 'spline' as const, name: 'Indoor Temp', data: runtime.temperature.indoor_temperature, color: colors.gray.light, lineWidth: 2, visible: false }, { type: 'spline' as const, name: 'Outdoor Temp', data: runtime.temperature.outdoor_temperature, color: colors.gray.light, dashStyle: 'ShortDash' as const, lineWidth: 1, visible: false }],
   }), [extremes, runtime, sensorSeries, thermostat.temperature_unit]);
 
@@ -85,6 +89,6 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const download = () => { const svg = chartRef.current?.container.current?.querySelector('svg'); if (!svg) return; const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' })); const link = document.createElement('a'); link.href = url; link.download = 'beestat-sensor-detail.svg'; link.click(); URL.revokeObjectURL(url); };
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
   return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={(value) => { setCustom(undefined); setDays(value); setExtremes(undefined); }} onCustom={(begin, end) => { setCustom({ begin, end }); setExtremes(undefined); }} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" />}>
-    {query.isLoading ? <Box sx={{ height: 411, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} /></>}
+    {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} /></>}
   </DashboardCard>;
 });

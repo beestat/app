@@ -48,11 +48,11 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     return { min: Math.floor(Math.min(...values) / interval) * interval - interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
   }, [series, thermostat.temperature_unit]);
   const options = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], alignTicks: false, animation: false, zooming: { type: 'x' } },
+    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, alignTicks: false, animation: false, zooming: { type: 'x' } },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickPositioner() { return runtimeTickPositions(Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
-    legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' }, itemHoverStyle: { color: '#fff' } },
+    legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: '#7f8c8d', textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.main } },
     tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, formatter() {
       const x = Number(this.x);
       const lines = [`<b>${Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x)}</b>`];
@@ -90,7 +90,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
       <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} />
-      <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} />
+      <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { marginTop: 8 } }} />
     </>}
   </DashboardCard>;
 });

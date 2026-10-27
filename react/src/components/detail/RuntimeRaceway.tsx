@@ -7,7 +7,7 @@ import type { RuntimeChartData } from './runtimeData';
 
 export const RuntimeRaceway = memo(function RuntimeRaceway({ data, extremes, chartRef }: { data: RuntimeChartData; extremes?: [number, number]; chartRef?: RefObject<HighchartsReact.RefObject | null> }) {
   const options = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 44, marginLeft: 45, marginRight: 45, marginTop: 0, marginBottom: 0, animation: false },
+    chart: { backgroundColor: 'transparent', height: 44, marginLeft: 45, marginRight: 0, marginBottom: 0, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false }, legend: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, lineWidth: 0, tickLength: 0, labels: { enabled: false } },
     yAxis: { min: 0, max: 44, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } },
