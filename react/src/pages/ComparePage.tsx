@@ -1,5 +1,5 @@
 import {
-  Alert, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
   MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
@@ -171,7 +171,7 @@ function MetricGroup({ group, values, thermostat }: { group: string; values: Rec
   if (!values) return null;
   const metrics = Object.entries(values).filter(([, metric]) => metric != null);
   if (!metrics.length) return null;
-  return <Box sx={{ mb: 2, minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
+  return <Box sx={{ mb: '18px', minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
 }
 
 function MetricColumns({ values, thermostat }: { values: Record<string, Record<string, any>> | undefined; thermostat: any }) {
@@ -191,7 +191,7 @@ function MetricColumns({ values, thermostat }: { values: Record<string, Record<s
   if (columns.every((column) => column.size === 0)) {
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
-  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 2, pt: '5px' }}>
+  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 2, pt: '1px', '@media (min-width: 801px)': { pt: '5px' } }}>
     {columns.map((column, index) => <Box key={index}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} />)}</Box>)}
   </Box>;
 }
@@ -228,9 +228,9 @@ export function ComparePage() {
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
         <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />} sx={{ '& .MuiCardContent-root': { pb: 4 } }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '210px 1fr' }, gap: { xs: 2, sm: 1.5 } }}>
-            <Box><Typography variant="overline" display="block" mb={1}>Region</Typography><Box><ButtonGroup>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</ButtonGroup></Box></Box>
-            <Box><Typography variant="overline" display="block" mb={1}>Property</Typography><Box><ButtonGroup>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</ButtonGroup></Box></Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, '@media (min-width: 801px)': { gridTemplateColumns: 'calc((100% - 32px) / 3) 1fr' } }}>
+            <Box><Typography variant="overline" display="block" mb={1}>Region</Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', minWidth: 0, borderRadius: .5, textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</Box></Box>
+            <Box><Typography variant="overline" display="block" mb={1}>Property</Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', minWidth: 0, borderRadius: .5, textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</Box></Box>
           </Box>
           <Box mt={2}><Typography fontWeight={600} mb={1}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${titleCase(String(attributes.property_structure_type))}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
           <Box aria-hidden height={8} />

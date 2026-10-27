@@ -31,6 +31,13 @@ for (const width of requestedWidths.length ? requestedWidths : [760, 900, 1051, 
         const style = getComputedStyle(node);
         return { text, x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height), fontSize: style.fontSize, lineHeight: style.lineHeight, margin: style.margin, padding: style.padding };
       });
+      const settingButtons = ['Nearby', 'Global', 'Very Similar', 'Type: Detached', 'All'].map((text) => {
+        const node = [...document.querySelectorAll('*')].find((candidate) => candidate.children.length === 0 && candidate.textContent?.trim() === text);
+        if (!node) return { text };
+        const rect = node.getBoundingClientRect();
+        const parentRect = node.parentElement?.getBoundingClientRect();
+        return { text, x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height), parent: parentRect && { x: Math.round(parentRect.x), y: Math.round(parentRect.y), width: Math.round(parentRect.width), height: Math.round(parentRect.height) } };
+      });
       return {
         innerWidth,
         devicePixelRatio,
@@ -41,6 +48,7 @@ for (const width of requestedWidths.length ? requestedWidths : [760, 900, 1051, 
         chartWidth: chart?.getBoundingClientRect().width,
         firstBars: chart ? [...chart.children].slice(0, 4).map((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })) : [],
         textMetrics,
+        settingButtons,
       };
     }, name);
     console.log(JSON.stringify({ width, name, ...layout }));
