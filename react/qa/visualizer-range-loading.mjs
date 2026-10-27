@@ -21,6 +21,8 @@ await context.route('**/api/', async (route) => {
 });
 
 const page = await context.newPage();
+const errors = [];
+page.on('pageerror', (error) => errors.push(error.message));
 await page.goto('https://dev.app.beestat.io/react/index.php#/visualize', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 });
 await page.locator('[data-lazy-mount]').last().evaluate((node) => node.scrollIntoView());
@@ -33,9 +35,21 @@ const yesterdayBackground = await yesterday.evaluate((node) => getComputedStyle(
 const targetText = todayBackground === yesterdayBackground || todayBackground.includes('55, 71, 79') ? 'Today' : 'Yesterday';
 await page.evaluate(() => {
   window.__rangeLoaderAt = undefined;
+  window.__rangeLongTasks = [];
+  window.__rangeSceneRerenders = 0;
+  const instance = window.beestat?.component?.card?.three_d?.active_instance_;
+  if (instance?.scene_?.rerender) {
+    const rerender = instance.scene_.rerender.bind(instance.scene_);
+    instance.scene_.rerender = (...args) => { window.__rangeSceneRerenders += 1; return rerender(...args); };
+  }
+  window.__rangeLongTaskObserver = new PerformanceObserver((list) => window.__rangeLongTasks.push(...list.getEntries().map((entry) => Math.round(entry.duration))));
+  window.__rangeLongTaskObserver.observe({ type: 'longtask', buffered: false });
   const observer = new MutationObserver(() => {
     const stage = document.querySelector('[data-visualizer-stage]');
-    if (stage?.getAttribute('aria-busy') === 'true' && window.__rangeLoaderAt === undefined) window.__rangeLoaderAt = performance.now();
+    if (stage?.getAttribute('aria-busy') === 'true' && window.__rangeLoaderAt === undefined) {
+      window.__rangeLoaderAt = performance.now();
+      window.__rangeLoaderWasBusy = true;
+    }
   });
   observer.observe(document.querySelector('[data-visualizer-stage]'), { attributes: true, subtree: true, childList: true });
   window.__rangeLoaderObserver = observer;
@@ -54,6 +68,7 @@ const loading = await page.locator('[data-visualizer-stage]').evaluate((node) =>
 await page.locator('[data-visualizer-stage][aria-busy="false"]').waitFor({ timeout: 180_000 });
 await page.locator('canvas[data-native-three="true"]').waitFor({ state: 'visible', timeout: 90_000 });
 const readyMs = Date.now() - started;
-if (loaderVisibleMs > 100 || loading.busy !== 'true' || loading.visibleLegacyLoader) throw new Error(`Range loading responsiveness regression: ${JSON.stringify({ clickReturnedMs, loaderVisibleMs, readyMs, loading })}`);
-console.log(JSON.stringify({ todayBackground, yesterdayBackground, to: targetText, clickReturnedMs, loaderVisibleMs, readyMs, loading }, null, 2));
+const performance = await page.evaluate(() => ({ longTasks: window.__rangeLongTasks, sceneRerenders: window.__rangeSceneRerenders, loaderWasBusy: window.__rangeLoaderWasBusy }));
+if (loaderVisibleMs > 100 || performance.loaderWasBusy !== true || loading.visibleLegacyLoader || errors.length) throw new Error(`Range loading responsiveness regression: ${JSON.stringify({ clickReturnedMs, loaderVisibleMs, readyMs, loading, performance, errors })}`);
+console.log(JSON.stringify({ todayBackground, yesterdayBackground, to: targetText, clickReturnedMs, loaderVisibleMs, readyMs, loading, performance, errors }, null, 2));
 await browser.close();

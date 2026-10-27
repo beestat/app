@@ -22,6 +22,9 @@ if (!await page.getByRole('checkbox', { name: /Always Dock Tooltips/ }).count())
 }
 
 await page.getByRole('checkbox', { name: /Always Dock Tooltips/ }).click();
+await page.getByText(/Saving…|Saved/, { exact: true }).waitFor({ timeout: 5_000 });
+const saveFeedback = await page.evaluate(() => ({ snackbar: document.querySelector('.MuiSnackbar-root') !== null, topAlert: [...document.querySelectorAll('.MuiAlert-root')].some((item) => item.getBoundingClientRect().top < 150) }));
+if (!saveFeedback.snackbar || saveFeedback.topAlert) throw new Error(`Settings save feedback is not a toast: ${JSON.stringify(saveFeedback)}`);
 await page.getByRole('radio', { name: /°C/ }).click();
 await page.getByRole('radio', { name: /m \/ m²/ }).click();
 const currency = page.getByRole('combobox', { name: 'Currency' });
@@ -41,7 +44,7 @@ const keys = mutations.filter((item) => item.method === 'update_setting').map((i
 expectedKeys.forEach((key) => { if (!keys.includes(key)) throw new Error(`Missing persistence call for ${key}.`); });
 
 const routes = {};
-for (const [route, text] of [['announcements', 'Announcements'], ['download', 'Download Data'], ['contribute', 'Contribute']]) {
+for (const [route, text] of [['download', 'Download Data'], ['contribute', 'Contribute']]) {
   await page.goto(`https://dev.app.beestat.io/react/index.php#/${route}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await page.getByText(text, { exact: false }).first().waitFor({ timeout: 30_000 });
   routes[route] = { scrollWidth: await page.evaluate(() => document.documentElement.scrollWidth), innerWidth: await page.evaluate(() => innerWidth) };
@@ -53,5 +56,5 @@ await page.getByText('Manage Thermostats', { exact: true }).waitFor({ timeout: 3
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, thermostat: document.body.innerText.includes('Ziebee II') }));
 if (mobile.scrollWidth > mobile.innerWidth) throw new Error(`Settings horizontal overflow: ${JSON.stringify(mobile)}`);
 
-console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), keys, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
+console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), saveFeedback, keys, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
 await browser.close();

@@ -1,6 +1,5 @@
 import { Box, Button, Card, CardContent, CardHeader, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { ExternalLink, Plus, X } from 'lucide-react';
 import { apiBatch, apiCall, config } from '../api/client';
 import { useDashboard } from '../state/DashboardContext';
@@ -46,7 +45,7 @@ export function VisualizePage() {
     // Commit the loader before scheduling any teardown or scene construction.
     // React's normal event batching can otherwise combine this with the heavy
     // range update and leave the old frame frozen on screen for several seconds.
-    flushSync(() => setPreparing3d(true));
+    setPreparing3d(true);
     cancelAnimationFrame(rangeFrame.current);
     cancelAnimationFrame(rangeSecondFrame.current);
     rangeFrame.current = requestAnimationFrame(() => {

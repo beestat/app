@@ -23,7 +23,7 @@ await context.route('**/api/', async (route) => {
   return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {} }) });
 });
 
-const page = await context.newPage();
+let page = await context.newPage();
 page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
 async function inspect(name, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -50,7 +50,7 @@ const legacyMutationBaseline = blockedMutations.length;
 const react = await inspect('react', 'https://dev.app.beestat.io/react/index.php#/visualize');
 console.log('checked React visualize shell');
 if (react.iframeCount !== 0 || react.canvas.length === 0 || react.controls.length !== 8 || react.canvas[0].width !== legacy.canvas[0]?.width || react.canvas[0].height !== legacy.canvas[0]?.height) throw new Error(`Visualizer parity regression: ${JSON.stringify({ legacy, react, url: page.url(), body: (await page.locator('body').innerText()).slice(0, 1000), errors })}`);
-await page.getByText('Home', { exact: true }).first().click();
+if (!await page.getByText('Floor Name', { exact: true }).isVisible()) await page.locator('[data-editor-engine="beestat-exact"]').getByText('Home', { exact: true }).first().click();
 await page.locator('[data-editor-engine="beestat-exact"] svg').first().waitFor({ timeout: 30_000 });
 const editor = await page.evaluate(() => {
   const host = document.querySelector('[data-editor-engine="beestat-exact"]');
@@ -113,11 +113,11 @@ if (nativeScene.nativeCanvas !== 1 || nativeScene.exactEngine !== true || native
 const vertical = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'].map((label) => nativeScene.layout[label]);
 if (vertical.some((rect) => !rect) || vertical.some((rect) => Math.abs(rect.x - vertical[0].x) > 1) || vertical.some((rect, index) => index > 0 && rect.y <= vertical[index - 1].y)) throw new Error(`Exact 3D toolbar no longer follows the legacy left-column layout: ${JSON.stringify(nativeScene.layout)}`);
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only React visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
-await page.setViewportSize({ width: 390, height: 844 }); await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 }); await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 }); await page.locator('[data-lazy-mount]').last().evaluate((node) => node.scrollIntoView()); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
+await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 }); await page.locator('[data-lazy-mount]').last().evaluate((node) => node.scrollIntoView()); await page.locator('canvas[data-native-three="true"]').waitFor({ timeout: 90_000 });
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, canvasWidth: Math.round(document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect().width ?? 0) }));
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'test-results/parity/react-visualize-native-mobile.png', fullPage: false });
 if (mobile.scrollWidth > mobile.innerWidth || mobile.canvasWidth !== mobile.innerWidth - 32) throw new Error(`Native visualizer mobile overflow: ${JSON.stringify(mobile)}`);
-await page.getByText('Home', { exact: true }).first().click();
+if (!await page.getByText('Floor Name', { exact: true }).isVisible()) await page.locator('[data-editor-engine="beestat-exact"]').getByText('Home', { exact: true }).first().click();
 await page.getByText('Floor Name', { exact: true }).waitFor({ timeout: 30_000 });
 const mobileEditor = await page.evaluate(() => {
   const host = document.querySelector('[data-editor-engine="beestat-exact"]');
@@ -128,5 +128,6 @@ const mobileEditor = await page.evaluate(() => {
 await page.screenshot({ path: 'test-results/parity/react-floor-plan-editor-mobile.png', fullPage: false });
 if (mobileEditor.scrollWidth > mobileEditor.innerWidth || mobileEditor.mapWidth < 300 || mobileEditor.sidebarWidth !== 56) throw new Error(`Exact floor-plan editor mobile regression: ${JSON.stringify(mobileEditor)}`);
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only mobile visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
+if (errors.length) throw new Error(`Visualizer emitted page errors: ${JSON.stringify(errors)}`);
 console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, mobileEditor, blockedMutations, errors }, null, 2));
 await browser.close();

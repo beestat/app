@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
+import { AnnouncementsContent } from '../../pages/AnnouncementsPage';
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -26,14 +27,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const phone = useMediaQuery('(max-width:600px)');
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [lastReadOverride, setLastReadOverride] = useState(0);
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   const platform = new URLSearchParams(window.location.search).get('platform');
   const unread = useMemo(() => {
-    if (location.pathname === '/announcements') return 0;
+    if (announcementsOpen) return 0;
     const lastRead = Math.max(Number(data?.user?.settings?.last_read_announcement_id ?? 0), lastReadOverride);
     return Object.values(data?.announcement ?? {}).filter((item: any) => Number(item.announcement_id) > lastRead).length;
-  }, [data?.announcement, data?.user?.settings?.last_read_announcement_id, lastReadOverride, location.pathname]);
+  }, [announcementsOpen, data?.announcement, data?.user?.settings?.last_read_announcement_id, lastReadOverride]);
   useEffect(() => {
     const read = (event: Event) => setLastReadOverride(Number((event as CustomEvent<number>).detail));
     window.addEventListener('beestat-announcements-read', read);
@@ -45,17 +47,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Box sx={{ minHeight: '100dvh', pb: phone ? 10 : 3 }}>
+    <Box sx={{ minHeight: '100dvh', pb: 3 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
-          <Toolbar sx={{ gap: 2, px: { xs: 2, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
-            <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: compact ? 39 : 144, flex: `0 0 ${compact ? 39 : 144}px`, textDecoration: 'none' }}>
+          <Toolbar sx={{ gap: { xs: .5, sm: 2 }, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
+            <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : compact ? 39 : 144, flex: `0 0 ${phone ? 32 : compact ? 39 : 144}px`, textDecoration: 'none' }}>
               <Box component="img" src={compact ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
             </Box>
-            {!phone && hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: .5, flex: `0 0 ${compact ? 225 : 565}px` }}>
+            {hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: { xs: 0, sm: .5 }, flex: phone ? '1 1 auto' : `0 0 ${compact ? 225 : 565}px`, minWidth: 0 }}>
               {navItems.map(({ path, label, icon: Icon }) => (
-                <Button key={path} component={NavLink} to={path} startIcon={<Icon size={18} />} sx={{
-                  minWidth: compact ? 42 : undefined, px: compact ? 1 : 1.5,
+                <Button key={path} component={NavLink} to={path} aria-label={label} title={phone ? label : undefined} startIcon={<Icon size={18} />} sx={{
+                  minWidth: phone ? 0 : compact ? 42 : undefined, px: phone ? 0 : compact ? 1 : 1.5, flex: phone ? 1 : undefined,
                   mt: { sm: '2px' },
                   color: `${location.pathname === path ? colors.slate.dark : '#fff'} !important`,
                   bgcolor: location.pathname === path ? '#fff' : 'transparent',
@@ -63,29 +65,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }} onPointerEnter={() => preloadRoute(path)} onFocus={() => preloadRoute(path)}>{compact ? null : label}</Button>
               ))}
             </Box>}
-            <Box sx={{ flex: 1 }} />
+            {!phone && <Box sx={{ flex: 1 }} />}
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge>
             </IconButton>
-            <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
+            <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} slotProps={{ list: { sx: { '& .MuiMenuItem-root': { gap: 2 } } } }}>
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
-              <MenuItem onClick={() => { setAnchor(null); navigate('/announcements'); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Bell size={18} /></Badge> Announcements</MenuItem>
+              <MenuItem onClick={() => { setAnchor(null); setAnnouncementsOpen(true); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Bell size={18} /></Badge> Announcements</MenuItem>
               {hasThermostats && <MenuItem onClick={() => { setAnchor(null); navigate('/download'); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}
-              {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => window.location.assign('/?layer=glenwood_enroll')}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
-              {[1, 39285, 50885, 51345].includes(Number(data?.user?.user_id)) && <MenuItem onClick={() => window.location.assign('/?layer=glenwood_report')}><FileChartColumn size={18} /> Glenwood Report</MenuItem>}
+              {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-enrollment'); }}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
+              {[1, 39285, 50885, 51345].includes(Number(data?.user?.user_id)) && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-report'); }}><FileChartColumn size={18} /> Glenwood Report</MenuItem>}
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
+            <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><AnnouncementsContent /></DialogContent></Dialog>
             <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
           </Toolbar>
         </Container>
       </AppBar>
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: '#fff' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
-      {phone && hasThermostats && <Box component="nav" sx={{ position: 'fixed', zIndex: 1200, bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)', display: 'flex', bgcolor: 'background.paper', boxShadow: '0 -2px 10px rgba(0,0,0,.28)' }}>
-        {navItems.map(({ path, label, icon: Icon }) => <Button key={path} component={NavLink} to={path} color="inherit" onPointerDown={() => preloadRoute(path)} onFocus={() => preloadRoute(path)} sx={{ flex: 1, minWidth: 0, flexDirection: 'column', gap: .25, fontSize: 9, color: location.pathname === path ? 'primary.light' : 'text.secondary' }}><Icon size={20} />{label}</Button>)}
-      </Box>}
     </Box>
   );
 }

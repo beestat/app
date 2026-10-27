@@ -10,10 +10,11 @@ const AnalyzePage = lazy(() => import('./pages/AnalyzePage').then((module) => ({
 const ComparePage = lazy(() => import('./pages/ComparePage').then((module) => ({ default: module.ComparePage })));
 const AirQualityPage = lazy(() => import('./pages/AirQualityPage').then((module) => ({ default: module.AirQualityPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
-const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage').then((module) => ({ default: module.AnnouncementsPage })));
 const DownloadPage = lazy(() => import('./pages/DownloadPage').then((module) => ({ default: module.DownloadPage })));
 const ContributePage = lazy(() => import('./pages/ContributePage').then((module) => ({ default: module.ContributePage })));
 const VisualizePage = lazy(() => import('./pages/VisualizePage').then((module) => ({ default: module.VisualizePage })));
+const GlenwoodEnrollmentPage = lazy(() => import('./pages/GlenwoodPage').then((module) => ({ default: module.GlenwoodEnrollmentPage })));
+const GlenwoodReportPage = lazy(() => import('./pages/GlenwoodPage').then((module) => ({ default: module.GlenwoodReportPage })));
 
 function RoutedApp() {
   const { data, loading, error } = useDashboard();
@@ -38,9 +39,10 @@ function RoutedApp() {
         <Route path="compare" element={<ComparePage />} />
         <Route path="air-quality" element={<AirQualityPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="download" element={<DownloadPage />} />
         <Route path="contribute" element={<ContributePage />} />
+        <Route path="glenwood-enrollment" element={<GlenwoodEnrollmentPage />} />
+        <Route path="glenwood-report" element={<GlenwoodReportPage />} />
         <Route path="*" element={<Navigate to="detail" replace />} />
       </Routes></Suspense>
     </AppShell>

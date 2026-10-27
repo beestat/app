@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, RadioGroup, Select, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, RadioGroup, Select, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { Copy, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiBatch, apiCall } from '../api/client';
@@ -58,7 +58,9 @@ export function SettingsPage() {
   const removeThermostat = async (id: number) => { if (!confirm('Remove this thermostat from beestat?')) return; await apiCall({ resource: 'ecobee_thermostat', method: 'update', arguments: { attributes: { ecobee_thermostat_id: id, inactive: 1 } } }); await refresh(); };
   const apiKeyAction = async (method: 'create_api_key' | 'recycle_api_key' | 'delete_api_key') => { if (method !== 'create_api_key' && !confirm(`${method === 'delete_api_key' ? 'Delete' : 'Regenerate'} your API key? Existing integrations will stop working.`)) return; await apiCall({ resource: 'user', method }); await refresh(); };
   return <Box sx={{ display: 'grid', gap: 2, pb: 2, '& .MuiCardContent-root': { pb: '16px !important' }, '& .MuiTextField-root .MuiInputBase-root': { height: 32 } }}>
-    {message && <Alert severity="success">{message}</Alert>}
+    <Snackbar open={Boolean(message)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} autoHideDuration={message === 'Saved' ? 1800 : null} onClose={() => setMessage('')}>
+      <Alert severity="success" variant="filled" onClose={() => setMessage('')}>{message}</Alert>
+    </Snackbar>
     <DashboardCard title="Settings" sx={{ minHeight: 607 }}>
       <Typography fontWeight={600}>User Interface</Typography>
       <FormControlLabel control={<Checkbox checked={values.dock} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, dock: value })); void update('ui.always_dock_tooltips', value); }} />} label="Always Dock Tooltips" />
