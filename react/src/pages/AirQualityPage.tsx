@@ -6,6 +6,7 @@ import HighchartsReact from 'highcharts-react-official';
 import { useMemo, useRef, useState } from 'react';
 import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
+import { chartTooltipHtml, stableTooltipPositioner } from '../components/common/chartTooltip';
 import { ChartRangeMenu } from '../components/detail/ChartRangeMenu';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { buildRuntimeData, runtimeAxisLabel, type RuntimeRow } from '../components/detail/runtimeData';
@@ -79,8 +80,14 @@ export function AirQualityPage() {
     const options = (height: number, series: Highcharts.SeriesOptionsType[], yAxis: Highcharts.YAxisOptions, showLabels = false): Highcharts.Options => ({
       chart: { backgroundColor: 'transparent', height, marginLeft: 60, marginRight: 0, marginTop: 8, marginBottom: showLabels ? 71 : 10, spacing: [0, 0, 0, 0], zooming: { type: 'x' }, animation: false },
       title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false }, xAxis: xAxis(showLabels), yAxis,
-      tooltip: { shared: true, xDateFormat: '%a, %b %e @ %l:%M%P', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
-      plotOptions: { series: { animation: false, marker: { enabled: false }, turboThreshold: 0 } },
+      tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(0), formatter() {
+        const point = this.points?.[0];
+        if (!point || point.y == null) return false;
+        const suffix = point.series.name === 'TVOC' ? ' ppb' : point.series.name === 'CO₂' ? ' ppm' : '';
+        const title = point.series.name === 'Air Quality' ? Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(this.x)) : null;
+        return chartTooltipHtml(title, [[{ label: point.series.name, value: `${point.y}${suffix}`, color: String(point.color) }]]);
+      } },
+      plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } }, turboThreshold: 0 } },
       responsive: showLabels ? { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 66 } } }] } : undefined,
       series,
     });

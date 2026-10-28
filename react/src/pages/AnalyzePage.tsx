@@ -6,6 +6,7 @@ import { CalendarDays, CircleHelp, Download, EllipsisVertical, Info, RotateCcw }
 import { useMemo, useRef, useState } from 'react';
 import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
+import { chartTooltipHtml, stableTooltipPositioner } from '../components/common/chartTooltip';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
@@ -22,6 +23,18 @@ function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: s
 function ordinal(day: number) {
   const remainder = day % 100;
   return `${day}${remainder >= 11 && remainder <= 13 ? 'th' : day % 10 === 1 ? 'st' : day % 10 === 2 ? 'nd' : day % 10 === 3 ? 'rd' : 'th'}`;
+}
+
+function legacyDurationParts(hours: number) {
+  const duration = (globalThis as any).moment?.duration(hours, 'hours');
+  return duration
+    ? { hours: Math.floor(duration.asHours()), minutes: Number(duration.get('minutes')) }
+    : { hours: Math.floor(hours), minutes: Math.floor((hours % 1) * 60) };
+}
+
+function formatLegacyHours(hours: number) {
+  const duration = legacyDurationParts(hours);
+  return `${duration.hours.toLocaleString()}h ${duration.minutes}m`;
 }
 
 const profileNames: Record<string, string> = { cool_1: 'Cool 1 Δ', cool_2: 'Cool 2 Δ', heat_1: 'Heat 1 Δ', heat_2: 'Heat 2 Δ', resist: 'Resist Δ', auxiliary_heat_1: 'Aux Heat 1 Δ', auxiliary_heat_2: 'Aux Heat 2 Δ' };
@@ -81,8 +94,11 @@ export function AnalyzePage() {
   };
   const unit = unitLabel(thermostat?.temperature_unit ?? '°F');
   const summaryOptions = useMemo<Highcharts.Options>(() => {
+    const hasCool2 = summary.some((row) => Number(row.sum_compressor_cool_2) !== 0);
+    const hasHeat2 = summary.some((row) => Number(row.sum_compressor_heat_2) !== 0);
+    const hasAux2 = summary.some((row) => Number(row.sum_auxiliary_heat_2) !== 0);
     const runtimeSeries = [
-      ['sum_compressor_cool_1', 'Cool 1', colors.lightBlue.light], ['sum_compressor_cool_2', 'Cool 2', colors.lightBlue.main], ['sum_compressor_heat_1', 'Heat 1', colors.orange.light], ['sum_compressor_heat_2', 'Heat 2', colors.orange.dark], ['sum_auxiliary_heat_1', 'Aux 1', colors.red.main], ['sum_auxiliary_heat_2', 'Aux 2', colors.red.dark],
+      ['sum_compressor_cool_1', hasCool2 ? 'Cool 1' : 'Cool', colors.lightBlue.light], ['sum_compressor_cool_2', 'Cool 2', colors.lightBlue.main], ['sum_compressor_heat_1', hasHeat2 ? 'Heat 1' : 'Heat', colors.orange.light], ['sum_compressor_heat_2', 'Heat 2', colors.orange.dark], ['sum_auxiliary_heat_1', hasAux2 ? 'Aux Heat 1' : 'Aux', colors.red.main], ['sum_auxiliary_heat_2', 'Aux Heat 2', colors.red.dark],
     ].filter(([key]) => summary.some((row) => Number(row[key]) !== 0)).map(([key, name, color]) => ({ type: 'column' as const, name, color, yAxis: 0, data: summary.map((row) => Number(row[key])) }));
     const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => Number(row.avg_outdoor_temperature)) }];
     if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [Number(row.min_outdoor_temperature), Number(row.max_outdoor_temperature)]) });
@@ -101,22 +117,40 @@ export function AnalyzePage() {
     return {
       chart: { backgroundColor: 'transparent', height: 350, marginLeft: 49, marginRight: 46, marginBottom: 108, spacing: [8, 0, 0, 0], zooming: { type: 'x' }, animation: false }, title: { text: undefined }, credits: { enabled: false },
       xAxis: { categories: summary.map((row) => String(row.date)), tickInterval: desktopTickInterval, tickLength: 0, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 || this.axis.chart.chartWidth <= 500 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
-      yAxis: [{ alignTicks: false, min: 0, softMax: useSmartScale ? scale.max : undefined, tickInterval: useSmartScale ? scale.interval : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main, textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
-      legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, xDateFormat: '%b %e, %Y', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
-      plotOptions: { column: { stacking: 'normal', borderWidth: 0, groupPadding: 0, pointPadding: 0 }, series: { animation: false, marker: { enabled: false } } },
+      yAxis: [{ alignTicks: false, min: 0, softMax: useSmartScale ? scale.max : undefined, tickInterval: useSmartScale ? scale.interval : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main, fontSize: '11px' } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
+      legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() {
+        const points = this.points ?? [];
+        const category = String(points[0]?.category ?? '');
+        const date = new Date(`${category}T00:00:00Z`);
+        const dateTitle = config.group === 'year' ? String(date.getUTCFullYear()) : config.group === 'month' ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) : config.group === 'week' ? `Week of ${date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${ordinal(date.getUTCDate())}, ${date.getUTCFullYear()}` : `${date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${ordinal(date.getUTCDate())}`;
+        const groups: Record<'heat' | 'cool' | 'other', { label: string; value: string; color: string }[]> = { heat: [], cool: [], other: [] };
+        const extremes = points.find((point) => point.series.name === 'Outdoor Temp Extremes') as Highcharts.Point & { low?: number; high?: number } | undefined;
+        points.forEach((point) => {
+          if (point.series.name === 'Outdoor Temp Extremes' || point.y == null) return;
+          let value: string;
+          if (point.series.name === 'Outdoor Temp') value = `${Math.round(point.y)}${unit}${extremes ? ` (${Math.round(Number(extremes.low))}${unit} to ${Math.round(Number(extremes.high))}${unit})` : ''}`;
+          else if (point.series.name.includes('Degree Days')) value = Number(point.y).toFixed(1);
+          else value = formatLegacyHours(point.y);
+          const group = point.series.name.includes('Heat') || point.series.name.startsWith('Aux') ? 'heat' : point.series.name.includes('Cool') ? 'cool' : 'other';
+          groups[group].push({ label: point.series.name, value, color: String(point.color) });
+        });
+        return chartTooltipHtml(dateTitle, [groups.heat, groups.cool, groups.other]);
+      } },
+      plotOptions: { column: { stacking: 'normal', borderWidth: 0, groupPadding: 0, pointPadding: 0 }, series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
       responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 166 }, xAxis: { tickInterval: mobileTickInterval, labels: { step: 1 } } } }] },
       series: [...runtimeSeries, ...weatherSeries, ...degreeDaySeries],
     };
   }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, unit]);
   const chipData = useMemo(() => {
     const result = buildRuntimeData([]);
-    // Converting aggregated hours back to seconds can land a few billionths
-    // below an exact minute. Legacy Moment formatting floors real partial
-    // minutes, so only neutralize that floating-point noise rather than
-    // rounding genuine seconds up.
+    // The legacy chips use Moment's duration bubbling, including its boundary
+    // behavior for long fractional-hour totals. Moment is already loaded for
+    // the ported visualizer, so retain that exact display contract here.
     for (const code of Object.keys(result.totals)) {
-      const seconds = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0) * 3600;
-      result.totals[code as keyof typeof result.totals] = seconds > 0 ? seconds + 1e-6 : 0;
+      const hours = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0);
+      const duration = legacyDurationParts(hours);
+      const seconds = duration.hours * 3600 + duration.minutes * 60;
+      result.totals[code as keyof typeof result.totals] = seconds;
     }
     return result;
   }, [summary]);
@@ -147,7 +181,7 @@ export function AnalyzePage() {
     const absoluteY = Math.max(1, Math.ceil(Math.max(0, ...yValues.map((value) => Math.abs(value))) + .25));
     const profileXMin = Math.min(...entries.flatMap(([, profile]) => Object.keys(profile.deltas ?? {}).map(Number)));
     const plotLines = Number.isFinite(weather) ? [{ value: weather, color: colors.gray.light, dashStyle: 'ShortDash' as const, width: 1, zIndex: 2, label: { text: `Now: ${weather}${unit}`, style: { color: colors.gray.light } } }] : [];
-    return { chart: { backgroundColor: 'transparent', height: 300, marginLeft: 36, marginRight: 0, marginBottom: 31, spacing: [8, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, useHTML: true, backgroundColor: colors.slate.dark, style: { color: '#fff', fontSize: '13px' }, borderWidth: 0, formatter() { const rows = (this.points ?? []).filter((point) => !point.series.name.includes('raw')).map((point) => { const value = Number(point.y).toFixed(1); return `<div><span style="color:${point.color}">●</span> ${point.series.name}: <b>${Number(value) > 0 ? '+' : ''}${value}${unit} / h</b></div>`; }).join(''); return `<div style="margin-bottom:4px"><b>Outdoor Temp: ${Math.round(Number(this.x))}${unit}</b></div>${rows}`; } }, plotOptions: { series: { animation: false, connectNulls: true, states: { hover: { lineWidthPlus: 0 } } } }, responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 48 }, xAxis: { min: Number.isFinite(profileXMin) ? Math.floor(profileXMin / 10) * 10 : undefined, tickInterval: 10, labels: { step: 1 } } } }] }, series };
+    return { chart: { backgroundColor: 'transparent', height: 300, marginLeft: 36, marginRight: 0, marginBottom: 31, spacing: [8, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() { const rows = (this.points ?? []).filter((point) => !point.series.name.includes('raw')).map((point) => { const value = Number(point.y).toFixed(1); return { label: point.series.name, value: `${Number(value) > 0 ? '+' : ''}${value}${unit} / h`, color: String(point.color) }; }); return chartTooltipHtml(`Outdoor Temp: ${Math.round(Number(this.x))}${unit}`, [rows]); } }, plotOptions: { series: { animation: false, connectNulls: true, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false, lineWidthPlus: 0 }, inactive: { opacity: 1 } } } }, responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 48 }, xAxis: { min: Number.isFinite(profileXMin) ? Math.floor(profileXMin / 10) * 10 : undefined, tickInterval: 10, labels: { step: 1 } } } }] }, series };
   }, [selectedProfile, thermostat?.weather?.temperature, unit]);
   const generated = selectedProfile?.metadata?.generated_at;
   const durationWeeks = Math.round(Number(selectedProfile?.metadata?.duration ?? 365) / 7);

@@ -7,6 +7,7 @@ import { apiBatch } from '../../api/client';
 import { colors } from '../../theme';
 import type { Sensor, Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
+import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
 import { buildRuntimeData, runtimeAxisLabel, runtimeTickPositions, unitLabel, type Point, type RuntimeRow } from './runtimeData';
@@ -52,8 +53,8 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   }), [ordered, query.data, sensorColors]);
   const occupancyOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: colors.slate.dark, height: 58, marginLeft: 45, marginBottom: 0, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false },
-    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineWidth: 0, tickLength: 0, labels: { enabled: false } }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { shared: true, outside: true, xDateFormat: '%a, %b %e @ %l:%M%P', headerFormat: '<b>{point.key}</b><br/>', pointFormat: '<span style="color:{point.color}">●</span> {series.name}: Occupied<br/>', backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0 },
-    plotOptions: { series: { animation: false, marker: { enabled: false }, connectNulls: false } },
+    xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineWidth: 0, tickLength: 0, labels: { enabled: false } }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { shared: true, outside: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, positioner: stableTooltipPositioner(0), backgroundColor: 'transparent', borderWidth: 0, formatter() { return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(this.x)), [(this.points ?? []).map((point) => ({ label: point.series.name, value: 'Occupied', color: String(point.color) }))]); } },
+    plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } }, connectNulls: false } },
     series: sensorSeries.filter((item) => item.occupancy.some((point) => point[1] !== null)).map((item) => ({ type: 'line', name: item.sensor.name, data: item.occupancy, color: item.color, lineWidth: item.lane.width, linecap: 'square', step: 'left', turboThreshold: 0 })),
   }), [extremes, runtime.max, runtime.min, sensorSeries]);
   const temperatureOptions = useMemo<Highcharts.Options>(() => ({
@@ -61,19 +62,17 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, tickPositioner() { return runtimeTickPositions(Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: { title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } },
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: '#7f8c8d', textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.main } },
-    tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, formatter() {
+    tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, positioner: stableTooltipPositioner(0), backgroundColor: 'transparent', borderWidth: 0, formatter() {
       const x = Number(this.x);
-      const lines = [`<b>${Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x)}</b>`];
-      if (runtime.climateAt[x]) lines.push(`Comfort Profile: <b>${runtime.climateAt[x].replace(/[<>&]/g, '')}</b>`);
-      [...(this.points ?? [])].sort((a, b) => Number(b.y ?? 0) - Number(a.y ?? 0)).forEach((point) => {
-        if (point.y == null) return;
+      const mode = runtime.climateAt[x] ? [{ label: 'Comfort Profile', value: runtime.climateAt[x].replace(/[<>&]/g, ''), color: colors.gray.main }] : [];
+      const readings = [...(this.points ?? [])].filter((point) => point.y != null).sort((a, b) => Number(b.y) - Number(a.y)).map((point) => {
         const sensor = sensorSeries.find((item) => item.sensor.name === point.series.name);
         const occupied = sensor?.occupancy.some(([timestamp, value]) => timestamp === x && value !== null);
-        lines.push(`<span style="color:${point.color}">●</span> ${point.series.name}: <b>${Highcharts.numberFormat(point.y, 1)}${unitLabel(thermostat.temperature_unit)}${occupied ? ' ●' : ''}</b>`);
+        return { label: point.series.name, value: `${Highcharts.numberFormat(Number(point.y), 1)}${unitLabel(thermostat.temperature_unit)}${occupied ? ' ●' : ''}`, color: String(point.color) };
       });
-      return lines.join('<br/>');
+      return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [mode, readings]);
     } },
-    plotOptions: { series: { animation: false, marker: { enabled: false }, turboThreshold: 0, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
+    plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, turboThreshold: 0, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
     responsive: { rules: [{ condition: { maxWidth: 400 }, chartOptions: { legend: { itemWidth: 130 } } }] },
     series: [...sensorSeries.map((item) => ({ type: 'spline' as const, name: item.sensor.name, data: item.temperature, color: item.color, lineWidth: 1 })), { type: 'spline' as const, name: 'Indoor Temp', data: runtime.temperature.indoor_temperature, color: colors.gray.light, lineWidth: 2, visible: false }, { type: 'spline' as const, name: 'Outdoor Temp', data: runtime.temperature.outdoor_temperature, color: colors.gray.light, dashStyle: 'ShortDash' as const, lineWidth: 1, visible: false }],
   }), [extremes, runtime, sensorSeries, thermostat.temperature_unit]);

@@ -36,7 +36,14 @@ async function gotoReady(target, url) {
 }
 
 async function waitForRoute(target, expected) {
-  await target.getByText(expected, { exact: typeof expected === 'string' }).first().waitFor({ timeout: 90_000 });
+  try {
+    await target.getByText(expected, { exact: typeof expected === 'string' }).first().waitFor({ timeout: 90_000 });
+  } catch (error) {
+    // The dev host occasionally drops a script response. A clean reload makes
+    // the visual sweep deterministic without hiding persistent route failures.
+    await target.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await target.getByText(expected, { exact: typeof expected === 'string' }).first().waitFor({ timeout: 90_000 });
+  }
   await target.getByText('Fetching', { exact: true }).first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
   await target.locator('[role="progressbar"]').first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
 }
@@ -52,7 +59,7 @@ const allRoutes = [
 const requested = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
 const routes = requested.length ? allRoutes.filter(([legacy, react]) => requested.includes(legacy) || requested.includes(react)) : allRoutes;
 await gotoReady(page, 'https://dev.app.beestat.io/react/index.php#/detail');
-await page.getByText(/System - Ziebee II/).first().waitFor({ timeout: 30_000 });
+await waitForRoute(page, /System - Ziebee II/);
 let authenticatedThermostat = await page.getByText(/System - Ziebee II/).first().textContent() ?? '';
 for (const [legacy, react, expected] of routes) {
   await gotoReady(page, `https://dev.app.beestat.io/?layer=${legacy}`);

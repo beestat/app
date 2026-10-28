@@ -26,6 +26,9 @@ for (const width of [390, 1440]) {
       return {
         cards: ['Thermostat Summary', 'Temperature Profiles'].map((title) => ({ title, ...bounds(card(title)) })),
         charts: [...document.querySelectorAll('.highcharts-container')].map(bounds),
+        summaryYAxis: [...document.querySelectorAll('.highcharts-container')][0]
+          ? [...document.querySelectorAll('.highcharts-container')[0].querySelectorAll('.highcharts-yaxis-labels text')].map((node) => ({ text: node.textContent, ...bounds(node), fontSize: getComputedStyle(node).fontSize }))
+          : [],
         slider: bounds(document.querySelector(pageName === 'react' ? '.MuiSlider-root' : 'input[type="range"]')),
       };
     }, name);

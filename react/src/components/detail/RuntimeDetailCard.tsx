@@ -7,6 +7,7 @@ import { apiCall } from '../../api/client';
 import { colors } from '../../theme';
 import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
+import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { RuntimeChips } from './RuntimeChips';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
@@ -53,27 +54,31 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickPositioner() { return runtimeTickPositions(Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: '#7f8c8d', textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.main } },
-    tooltip: { shared: true, backgroundColor: colors.slate.dark, style: { color: '#fff' }, borderWidth: 0, formatter() {
+    tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, positioner: stableTooltipPositioner(60), backgroundColor: 'transparent', borderWidth: 0, formatter() {
       const x = Number(this.x);
-      const lines = [`<b>${Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x)}</b>`];
+      const modeItems: { label: string; value: string; color: string }[] = [];
+      const dataItems: { label: string; value: string; color: string }[] = [];
+      const equipmentItems: { label: string; value: string; color: string }[] = [];
+      const offItems: { label: string; value: string; color: string }[] = [];
       const mode = data.systemModeAt[x];
       const modeLabels: Record<string, string> = { auto: 'Auto', heat: 'Heat', cool: 'Cool', off: 'Off', auxiliary_heat: 'Aux' };
-      if (modeLabels[mode]) lines.push(`System Mode: <b>${modeLabels[mode]}</b>`);
-      if (data.climateAt[x]) lines.push(`Comfort Profile: <b>${data.climateAt[x].replace(/[<>&]/g, '')}</b>`);
+      const modeColors: Record<string, string> = { auto: colors.gray.main, heat: equipment.compressor_heat_1.color, cool: equipment.compressor_cool_1.color, off: colors.gray.main, auxiliary_heat: equipment.auxiliary_heat_1.color };
+      if (modeLabels[mode]) modeItems.push({ label: 'System Mode', value: modeLabels[mode], color: modeColors[mode] });
+      if (data.climateAt[x]) modeItems.push({ label: 'Comfort Profile', value: data.climateAt[x].replace(/[<>&]/g, ''), color: colors.gray.main });
       (this.points ?? []).forEach((point) => {
         if (point.y == null) return;
         const humidity = point.series.name.includes('Humidity');
         const value = humidity ? `${Math.round(point.y)}%` : `${Highcharts.numberFormat(point.y, 1)}${unitLabel(thermostat.temperature_unit)}`;
-        lines.push(`<span style="color:${point.color}">●</span> ${point.series.name}: <b>${value}</b>`);
+        dataItems.push({ label: point.series.name, value, color: String(point.color) });
       });
       (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
         const seconds = data.equipmentAt[x]?.[code] ?? 0;
-        if (seconds > 0) lines.push(`<span style="color:${equipment[code].color}">●</span> ${equipment[code].name}: <b>${formatRuntimeShort(seconds)}</b>`);
+        if (seconds > 0) equipmentItems.push({ label: equipment[code].name, value: formatRuntimeShort(seconds), color: equipment[code].color });
       });
-      if (data.offAt[x] > 0) lines.push(`<span style="color:${colors.slate.light}">●</span> Off: <b>${formatRuntimeShort(data.offAt[x])}</b>`);
-      return lines.join('<br/>');
+      if (data.offAt[x] > 0) offItems.push({ label: 'Off', value: formatRuntimeShort(data.offAt[x]), color: colors.slate.light });
+      return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
     } },
-    plotOptions: { series: { animation: false, marker: { enabled: false }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
+    plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
   }), [data, extremes, series, temperatureBounds, thermostat.temperature_unit]);
 
   useEffect(() => {
