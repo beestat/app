@@ -14,9 +14,11 @@ interface Props {
   maxDays?: number;
   initialBegin?: string;
   initialEnd?: string;
+  minDate?: string;
+  maxDate?: string;
 }
 
-export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd }: Props) {
+export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd, minDate, maxDate }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [rangeType, setRangeType] = useState<'dynamic' | 'static'>('dynamic');
@@ -26,7 +28,11 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, h
   const [begin, setBegin] = useState(prior); const [end, setEnd] = useState(today);
   const close = () => setAnchor(null);
   const staticDays = begin && end ? Math.floor(Math.abs(Date.parse(`${end}T00:00:00Z`) - Date.parse(`${begin}T00:00:00Z`)) / 86_400_000) + 1 : 0;
-  const rangeInvalid = rangeType === 'dynamic' ? !Number.isInteger(dynamicDays) || dynamicDays < 1 || dynamicDays > maxDays : !begin || !end || staticDays > maxDays;
+  const staticFirst = begin <= end ? begin : end;
+  const staticLast = begin <= end ? end : begin;
+  const outsideAvailableRange = rangeType === 'static' && Boolean((minDate && staticFirst < minDate) || (maxDate && staticLast > maxDate));
+  const exceedsMaximum = rangeType === 'static' && staticDays > maxDays;
+  const rangeInvalid = rangeType === 'dynamic' ? !Number.isInteger(dynamicDays) || dynamicDays < 1 || dynamicDays > maxDays : !begin || !end || exceedsMaximum || outsideAvailableRange;
   const openCustom = () => { close(); setRangeType(days == null ? 'static' : 'dynamic'); setDynamicDays(days ?? dynamicDays); if (initialBegin) setBegin(initialBegin); if (initialEnd) setEnd(initialEnd); setCustomOpen(true); };
   const applyCustom = () => {
     if (rangeType === 'dynamic') setDays(dynamicDays);
@@ -53,7 +59,8 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, h
         {rangeType === 'dynamic'
           ? <TextField type="number" label="Days" value={dynamicDays} onChange={(event) => setDynamicDays(Number(event.target.value))} slotProps={{ htmlInput: { min: 1, max: maxDays, step: 1 } }} />
           : <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}><TextField fullWidth type="date" label="Start" value={begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /><TextField fullWidth type="date" label="End" value={end} onChange={(event) => setEnd(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /></Stack>}
-        {rangeInvalid && <Alert severity="error">Max range is {maxDays} days.</Alert>}
+        {(rangeType === 'dynamic' && rangeInvalid || exceedsMaximum) && <Alert severity="error">Max range is {maxDays} days.</Alert>}
+        {outsideAvailableRange && <Alert severity="error">Detail not available for this range.</Alert>}
       </Stack></DialogContent>
       <DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" disabled={rangeInvalid} onClick={applyCustom}>Save</Button></DialogActions>
     </Dialog>

@@ -7,10 +7,23 @@ function legacyDate(value: string) {
 
 export function settingDateToIso(value: unknown) {
   if (typeof value !== 'string' || !value) return undefined;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
   const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!match) return undefined;
   return `${match[3]}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`;
+}
+
+function localIso(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export function chartRangeBounds(syncBegin: unknown, syncEnd: unknown, lookbackMonths: number) {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - lookbackMonths);
+  const cutoffIso = localIso(cutoff);
+  const begin = settingDateToIso(syncBegin);
+  const end = settingDateToIso(syncEnd) ?? localIso(new Date());
+  return { min: begin && begin > cutoffIso ? begin : cutoffIso, max: end };
 }
 
 export function persistChartRange(prefix: string, range: { days: number } | { begin: string; end: string }) {
