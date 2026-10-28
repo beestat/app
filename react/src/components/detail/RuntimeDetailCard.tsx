@@ -46,7 +46,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     const values = series.filter((item) => item.visible && item.yAxis === 0).flatMap((item) => item.data.map((point) => point[1]).filter((value): value is number => typeof value === 'number'));
     if (!values.length) return undefined;
     const interval = thermostat.temperature_unit.includes('C') ? 5 : 10;
-    return { min: Math.floor(Math.min(...values) / interval) * interval - interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
+    return { min: Math.floor(Math.min(...values) / interval) * interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
   }, [series, thermostat.temperature_unit]);
   const options = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, alignTicks: false, animation: false, zooming: { type: 'x' } },
