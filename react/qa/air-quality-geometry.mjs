@@ -22,14 +22,22 @@ async function measure(viewport, kind, url) {
       yLabels: [...container.querySelectorAll('.highcharts-yaxis-labels text')].map((label) => label.textContent),
     };
   }));
+  let summaryMenu;
+  if (kind === 'react') {
+    await page.getByRole('button', { name: 'Air Quality summary options' }).click();
+    summaryMenu = await page.getByRole('menuitem').allTextContents();
+  }
   await page.close();
-  return { kind, viewport, charts };
+  return { kind, viewport, charts, summaryMenu };
 }
 
 const results = [];
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
   results.push(await measure(viewport, 'legacy', 'https://dev.app.beestat.io/?layer=air_quality'));
   results.push(await measure(viewport, 'react', 'https://dev.app.beestat.io/react/index.php#/air-quality'));
+}
+for (const result of results.filter((item) => item.kind === 'react')) {
+  for (const option of ['Past 1 Week', 'Past 4 Weeks', 'Help']) if (!result.summaryMenu?.includes(option)) throw new Error(`Air Quality Summary menu is missing ${option}.`);
 }
 console.log(JSON.stringify(results, null, 2));
 await browser.close();
