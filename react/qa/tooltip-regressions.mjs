@@ -22,6 +22,19 @@ if (!occupancyTooltip.found || occupancyTooltip.parent !== 'BODY' || occupancyTo
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/analyze', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('Temperature Profiles', { exact: true }).waitFor({ timeout: 90_000 });
+const summaryCard = page.getByText('Thermostat Summary', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
+const summaryChart = summaryCard.locator('.highcharts-container').first();
+await summaryChart.scrollIntoViewIfNeeded();
+const summaryBox = await summaryChart.boundingBox();
+if (!summaryBox) throw new Error('Summary chart was not rendered.');
+await page.mouse.move(summaryBox.x + summaryBox.width * .6, summaryBox.y + summaryBox.height * .45);
+await page.waitForTimeout(200);
+const summaryCrosshair = await summaryCard.evaluate((card) => {
+  const crosshair = card.querySelector('.highcharts-crosshair-category, .highcharts-crosshair');
+  const style = crosshair ? getComputedStyle(crosshair) : undefined;
+  return { found: Boolean(crosshair), visibility: style?.visibility, opacity: style?.opacity };
+});
+if (!summaryCrosshair.found || summaryCrosshair.visibility === 'hidden' || summaryCrosshair.opacity === '0') throw new Error(`Summary hover crosshair is missing: ${JSON.stringify(summaryCrosshair)}`);
 const profileCard = page.getByText('Temperature Profiles', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
 const profileChart = profileCard.locator('.highcharts-container').first();
 await profileChart.scrollIntoViewIfNeeded();
@@ -38,5 +51,5 @@ const profileTooltipFont = await profileCard.evaluate((card) => {
 });
 if (profileTooltipFont < 13) throw new Error(`Profile tooltip font is too small: ${profileTooltipFont}px`);
 
-console.log(JSON.stringify({ occupancyTooltip, profileTooltipFont }, null, 2));
+console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont }, null, 2));
 await browser.close();

@@ -3,6 +3,7 @@ import { Copy, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiBatch, apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
+import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 
 function readNested(source: Record<string, any>, path: string, fallback: unknown) {
@@ -61,7 +62,7 @@ export function SettingsPage() {
     <Snackbar open={Boolean(message)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} autoHideDuration={message === 'Saved' ? 1800 : null} onClose={() => setMessage('')}>
       <Alert severity="success" variant="filled" onClose={() => setMessage('')}>{message}</Alert>
     </Snackbar>
-    <DashboardCard title="Settings" sx={{ minHeight: 607 }}>
+    <DashboardCard title="Settings" action={<CardHelpMenu label="Settings" href="https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d" />} sx={{ minHeight: 607 }}>
       <Typography fontWeight={600}>User Interface</Typography>
       <FormControlLabel control={<Checkbox checked={values.dock} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, dock: value })); void update('ui.always_dock_tooltips', value); }} />} label="Always Dock Tooltips" />
       <Typography fontWeight={600} mt={1.5}>Units</Typography>
