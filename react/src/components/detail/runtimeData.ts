@@ -132,13 +132,6 @@ export function formatRuntime(seconds: number) {
   return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
-export function formatRuntimeShort(seconds: number) {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${Math.floor(seconds / 3600)}h${minutes ? ` ${minutes}m` : ''}`;
-}
-
 export function runtimeAxisLabel(value: number, tickPositions?: readonly number[]) {
   const date = new Date(value);
   const positions = tickPositions ?? [];

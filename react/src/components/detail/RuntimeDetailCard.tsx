@@ -11,7 +11,7 @@ import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartToolti
 import { RuntimeChips } from './RuntimeChips';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
-import { buildRuntimeData, equipment, formatRuntimeShort, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
+import { buildRuntimeData, equipment, formatRuntime, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
 import { persistChartRange, settingDateToIso } from './persistChartRange';
@@ -84,9 +84,9 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       });
       (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
         const seconds = data.equipmentAt[x]?.[code] ?? 0;
-        if (seconds > 0) equipmentItems.push({ label: equipment[code].name, value: formatRuntimeShort(seconds), color: equipment[code].color });
+        if (seconds > 0) equipmentItems.push({ label: equipment[code].name, value: formatRuntime(seconds), color: equipment[code].color });
       });
-      if (data.offAt[x] > 0) offItems.push({ label: 'Off', value: formatRuntimeShort(data.offAt[x]), color: colors.slate.light });
+      if (data.offAt[x] > 0) offItems.push({ label: 'Off', value: formatRuntime(data.offAt[x]), color: colors.slate.light });
       return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
