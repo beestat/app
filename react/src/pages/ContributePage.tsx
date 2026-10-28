@@ -7,7 +7,7 @@ import {
   Check, CircleHelp, CreditCard, EllipsisVertical, Gift, Heart, Link2Off,
   MessageCircle, Sparkles, Sticker, X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiCall, config } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { useDashboard } from '../state/DashboardContext';
@@ -62,8 +62,9 @@ export function ContributePage() {
   const [interval, setInterval] = useState<Interval>('year');
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [stripeConnecting, setStripeConnecting] = useState(false);
 
-  const stripeEvents = Object.values(data?.stripe_event ?? {}) as any[];
+  const stripeEvents = useMemo(() => Object.values(data?.stripe_event ?? {}) as any[], [data?.stripe_event]);
   // Match the existing eligibility behavior exactly; historical paid invoices
   // currently keep the direct-giving supporter state active in legacy beestat.
   const stripeActive = stripeEvents.some((event) => event.type === 'invoice.paid' && Number(event.data?.period_end ?? 0) * 1000 <= Date.now());
@@ -74,9 +75,24 @@ export function ContributePage() {
   const billedAmount = Math.round(monthlyAmount * (interval === 'year' ? 12 : 1) * 100) / 100;
   const money = useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: safeCurrency.toUpperCase() }), [safeCurrency]);
 
+  useEffect(() => {
+    if (!stripeConnecting) return;
+    if (contributionActive) { setStripeConnecting(false); return; }
+    const timer = window.setTimeout(() => void refresh(), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [contributionActive, refresh, stripeConnecting, stripeEvents]);
+
+  useEffect(() => {
+    if (!connecting) return;
+    if (patreonConnected) { setConnecting(false); return; }
+    const timer = window.setTimeout(() => void refresh(), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [connecting, patreonConnected, refresh, user]);
+
   const continueToPayment = () => {
     const attributes = { amount: Math.round(billedAmount * 100), currency: safeCurrency, interval, prefilled_email: user.email_address, client_reference_id: user.user_id };
     const url = `${config.apiBase}?resource=stripe_payment_link&method=open&arguments=${encodeURIComponent(JSON.stringify({ attributes }))}&api_key=${encodeURIComponent(config.apiKey)}`;
+    setStripeConnecting(true);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
   const connectPatreon = () => {
@@ -84,7 +100,6 @@ export function ContributePage() {
     window.open(`${config.apiBase}?resource=patreon&method=authorize&arguments=%7B%7D&api_key=${encodeURIComponent(config.apiKey)}`, '_blank', 'noopener,noreferrer');
   };
   const unlinkPatreon = async () => {
-    if (!window.confirm('Unlink your Patreon account from beestat?')) return;
     await apiCall({ resource: 'user', method: 'unlink_patreon_account' });
     await refresh();
   };
@@ -119,7 +134,7 @@ export function ContributePage() {
           <ToggleButton value="year">Give Yearly</ToggleButton><ToggleButton value="month">Give Monthly</ToggleButton>
         </ToggleButtonGroup>
         <Box sx={{ bgcolor: 'background.default', p: 2, my: 2, borderRadius: 1 }}>Give {money.format(billedAmount)} / {interval} until I cancel.</Box>
-        <Box textAlign="right"><Button variant="contained" color="success" size="large" startIcon={<CreditCard />} onClick={continueToPayment}>Continue to Payment</Button></Box>
+        <Box textAlign="right"><Button variant="contained" color="success" size="large" startIcon={<CreditCard />} disabled={stripeConnecting} onClick={continueToPayment}>Continue to Payment</Button></Box>
       </>}
     </DashboardCard></Grid>
 

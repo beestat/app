@@ -34,7 +34,7 @@ console.log(JSON.stringify(results, null, 2));
 for (const viewport of [1440, 390]) {
   const legacy = results.find((result) => result.kind === 'legacy' && result.viewport.width === viewport);
   const react = results.find((result) => result.kind === 'react' && result.viewport.width === viewport);
-  const headerOffset = viewport === 390 ? -9 : 0;
+  const headerOffset = 0;
   for (const title of ['Contribute', 'Benefits', 'Recurring Contribution Status', 'Merch!']) {
     const legacyCard = legacy.cards.find(([name]) => name === title)[1];
     const reactCard = react.cards.find(([name]) => name === title)[1];
