@@ -191,7 +191,7 @@ function MetricColumns({ values, thermostat }: { values: Record<string, Record<s
   if (columns.every((column) => column.size === 0)) {
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
-  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 0, pt: '1px', '@media (min-width: 801px)': { pt: '5px' } }}>
+  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 0, mr: -2, pt: '1px', '@media (min-width: 801px)': { pt: '5px' } }}>
     {columns.map((column, index) => <Box key={index}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} />)}</Box>)}
   </Box>;
 }

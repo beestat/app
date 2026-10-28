@@ -9,6 +9,7 @@ for (const width of requestedWidths.length ? requestedWidths : [760, 900, 1051, 
     viewport: { width, height: 900 },
   });
   const page = await context.newPage();
+  let legacyGroups;
   for (const [name, url] of [
     ['legacy', 'https://dev.app.beestat.io/?layer=compare'],
     ['react', 'https://dev.app.beestat.io/react/index.php#/compare'],
@@ -52,6 +53,17 @@ for (const width of requestedWidths.length ? requestedWidths : [760, 900, 1051, 
       };
     }, name);
     console.log(JSON.stringify({ width, name, ...layout }));
+    if (name === 'legacy') {
+      legacyGroups = layout.groups;
+    } else {
+      const legacyByName = Object.fromEntries(legacyGroups.map((group) => [group.text, group]));
+      for (const group of layout.groups) {
+        const legacy = legacyByName[group.text];
+        if (!legacy || Math.abs(group.x - legacy.x) > 1 || Math.abs(group.width - legacy.width) > 1 || Math.abs(group.y - legacy.y) > 1) {
+          throw new Error(`Metric column geometry differs from legacy at ${width}px: ${JSON.stringify({ legacy, react: group })}`);
+        }
+      }
+    }
   }
   await context.close();
 }
