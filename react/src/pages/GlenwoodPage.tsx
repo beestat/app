@@ -60,7 +60,7 @@ export function GlenwoodEnrollmentPage() {
 
   const visibleThermostats = enrolled ? thermostats.filter((thermostat) => selected.includes(thermostat.thermostat_id)) : thermostats;
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
-    <DashboardCard title="Privacy"><Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
+    <DashboardCard title="Privacy" sx={{ minHeight: 275 }}><Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
       <Typography paragraph>By enrolling, you agree to share certain thermostat data from your beestat account with Glenwood Condominium and its management company. This data will be used only for program administration, energy management, and related reporting.</Typography>
       <Box component="ul" sx={{ pl: '53px', my: 2 }}>
         <li><strong>What is shared:</strong> Runtime summaries and temperature averages, as needed by Glenwood Condominium for its reporting.</li>
@@ -69,7 +69,7 @@ export function GlenwoodEnrollmentPage() {
       </Box>
       <Typography>Beestat will not sell your data, and data shared with Glenwood Condominium will not be disclosed to other parties except as required by law.</Typography>
     </Box></DashboardCard>
-    <DashboardCard title="Enrollment">
+    <DashboardCard title="Enrollment" sx={{ minHeight: 285 }}>
       <Typography sx={{ color: enrolled ? 'success.main' : 'error.main', mb: 2 }}>{enrolled ? 'You are currently enrolled.' : 'You are not currently enrolled.'}</Typography>
       <Stack direction="row" gap={2} mb={2}>
         <TextField size="small" label="Name" value={name} disabled={enrolled || saving} inputProps={{ maxLength: 64 }} sx={{ minWidth: 0, width: { xs: 'calc((100% - 16px) / 2)', sm: 185 } }} onChange={(event) => setName(event.target.value)} />
@@ -102,8 +102,8 @@ export function GlenwoodReportPage() {
     const args = encodeURIComponent(JSON.stringify({ download_begin: begin, download_end: end }));
     window.location.assign(`${config.apiBase}?resource=runtime&method=download_glenwood_report&arguments=${args}&api_key=${encodeURIComponent(config.apiKey)}`);
   };
-  return <Box pb={2}><DashboardCard title="Run Report">
-    <Stack direction="row" gap={2} mb={2}>
+  return <Box pb={2}><DashboardCard title="Run Report" sx={{ minHeight: 195 }}>
+    <Stack direction="row" gap={2} mt="13px" mb={2}>
       <TextField size="small" type="date" label="Begin Date" value={begin} slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 0, width: 110 }} onChange={(event) => setBegin(event.target.value)} />
       <TextField size="small" type="date" label="End Date" value={end} slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 0, width: 110 }} onChange={(event) => setEnd(event.target.value)} />
     </Stack>
