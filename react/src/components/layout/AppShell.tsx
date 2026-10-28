@@ -8,6 +8,7 @@ import { colors } from '../../theme';
 import { AnnouncementsContent } from '../../pages/AnnouncementsPage';
 
 const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
+const NewsletterDialog = lazy(() => import('./NewsletterDialog').then((module) => ({ default: module.NewsletterDialog })));
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -31,6 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [newsletterOpen, setNewsletterOpen] = useState(false);
   const [lastReadOverride, setLastReadOverride] = useState(0);
   const announcementsInitialized = useRef(false);
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
@@ -43,7 +45,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (announcementsInitialized.current) return;
     announcementsInitialized.current = true;
-    if (data?.user?.settings?.first_run === true) return;
+    if (data?.user?.settings?.first_run === true) {
+      setNewsletterOpen(true);
+      void apiCall({ resource: 'user', method: 'update_setting', arguments: { key: 'first_run', value: false } });
+      return;
+    }
     const items = Object.values(data?.announcement ?? {}) as any[];
     if (!items.length) return;
     const lastRead = data?.user?.settings?.last_read_announcement_id;
@@ -95,6 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
             <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><AnnouncementsContent /></DialogContent></Dialog>
+            {newsletterOpen && <Suspense fallback={<Dialog open fullWidth maxWidth="sm"><DialogTitle>Newsletter</DialogTitle><DialogContent dividers>Loading…</DialogContent></Dialog>}><NewsletterDialog emailAddress={String(data?.user?.email_address ?? '')} onClose={() => setNewsletterOpen(false)} /></Suspense>}
             {downloadOpen && <Suspense fallback={<Dialog open fullWidth maxWidth="sm"><DialogTitle>Download Data</DialogTitle><DialogContent dividers>Loading…</DialogContent></Dialog>}><DownloadDialog onClose={() => setDownloadOpen(false)} /></Suspense>}
             <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
           </Toolbar>
