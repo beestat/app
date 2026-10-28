@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import { Activity, ArrowLeftRight, Bell, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -6,6 +6,8 @@ import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
 import { AnnouncementsContent } from '../../pages/AnnouncementsPage';
+
+const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -28,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const [lastReadOverride, setLastReadOverride] = useState(0);
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   const platform = new URLSearchParams(window.location.search).get('platform');
@@ -73,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); setAnnouncementsOpen(true); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Bell size={18} /></Badge> Announcements</MenuItem>
-              {hasThermostats && <MenuItem onClick={() => { setAnchor(null); navigate('/download'); }}><Download size={18} /> Download Data</MenuItem>}
+              {hasThermostats && <MenuItem onClick={() => { setAnchor(null); setDownloadOpen(true); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}
               {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-enrollment'); }}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
@@ -81,6 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
             <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><AnnouncementsContent /></DialogContent></Dialog>
+            {downloadOpen && <Suspense fallback={<Dialog open fullWidth maxWidth="sm"><DialogTitle>Download Data</DialogTitle><DialogContent dividers>Loading…</DialogContent></Dialog>}><DownloadDialog onClose={() => setDownloadOpen(false)} /></Suspense>}
             <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
           </Toolbar>
         </Container>
