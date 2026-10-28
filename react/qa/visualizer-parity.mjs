@@ -94,6 +94,9 @@ await page.waitForTimeout(5_000);
 console.log('checked exact 3D card readiness');
 const nativeScene = await page.evaluate(() => {
   const host = document.querySelector('[data-scene-card-engine="beestat-exact"]');
+  const canvasRect = host?.querySelector('canvas')?.getBoundingClientRect();
+  const watermarkRect = [...(host?.querySelectorAll('img') ?? [])].find((image) => image.src.includes('/img/logo.png'))?.getBoundingClientRect();
+  const dateSliderRect = host?.querySelectorAll('input[type="range"]')[1]?.getBoundingClientRect();
   const titles = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'];
   const layout = Object.fromEntries(titles.map((title) => { const rect = host?.querySelector(`[title="${title}"]`)?.getBoundingClientRect(); return [title, rect && { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) }]; }));
   return {
@@ -104,12 +107,17 @@ const nativeScene = await page.evaluate(() => {
     floors: ['Basement', 'First Floor', 'Second Floor'].filter((title) => host?.querySelector(`[title="${title}"]`)),
     ranges: host?.querySelectorAll('input[type="range"]').length ?? 0,
     currentDate: [...(host?.querySelectorAll('div') ?? [])].some((item) => /^October \d{1,2}$/.test(item.textContent?.trim() ?? '')),
+    bottomHudInsideScene: Boolean(
+      canvasRect && watermarkRect && dateSliderRect &&
+      watermarkRect.top >= canvasRect.top && watermarkRect.bottom <= canvasRect.bottom &&
+      dateSliderRect.top >= canvasRect.top && dateSliderRect.bottom <= canvasRect.bottom
+    ),
     layout,
   };
 });
 await page.locator('canvas[data-native-three="true"]').scrollIntoViewIfNeeded();
 await page.screenshot({ path: 'test-results/parity/react-native-three.png', fullPage: false });
-if (nativeScene.nativeCanvas !== 1 || nativeScene.exactEngine !== true || nativeScene.iframeCount !== 0 || nativeScene.controls.length !== 4 || nativeScene.floors.length !== 3 || nativeScene.ranges !== 2 || nativeScene.currentDate !== true) throw new Error(`Exact 3D card regression: ${JSON.stringify(nativeScene)}`);
+if (nativeScene.nativeCanvas !== 1 || nativeScene.exactEngine !== true || nativeScene.iframeCount !== 0 || nativeScene.controls.length !== 4 || nativeScene.floors.length !== 3 || nativeScene.ranges !== 2 || nativeScene.currentDate !== true || nativeScene.bottomHudInsideScene !== true) throw new Error(`Exact 3D card regression: ${JSON.stringify(nativeScene)}`);
 const vertical = ['Toggle View', 'Toggle Auto-Rotate', 'Weather', 'Scene Settings'].map((label) => nativeScene.layout[label]);
 if (vertical.some((rect) => !rect) || vertical.some((rect) => Math.abs(rect.x - vertical[0].x) > 1) || vertical.some((rect, index) => index > 0 && rect.y <= vertical[index - 1].y)) throw new Error(`Exact 3D toolbar no longer follows the legacy left-column layout: ${JSON.stringify(nativeScene.layout)}`);
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only React visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);

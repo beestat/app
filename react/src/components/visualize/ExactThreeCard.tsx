@@ -242,7 +242,10 @@ export function ExactThreeCard({
   }, [settings]);
 
   const showingLoader = preparing || loading || renderedRangeKey !== rangeKey;
-  return <Box data-visualizer-stage sx={{ position: 'relative', height: 548, overflow: 'hidden', borderRadius: 1 }} aria-busy={showingLoader}>
+  // The exact renderer owns a 500px drawing surface. Keep the lifecycle host
+  // at that same height so its bottom-anchored watermark and date scrubber
+  // remain over the scene instead of falling into space beneath the canvas.
+  return <Box data-visualizer-stage sx={{ position: 'relative', height: 500, overflow: 'hidden', borderRadius: 1 }} aria-busy={showingLoader}>
     <Box ref={host} sx={{ height: '100%', opacity: showingLoader ? 0 : 1, transition: 'opacity 160ms ease-out' }} />
     {showingLoader && <Box sx={{ position: 'absolute', inset: 0, zIndex: 10 }}><VisualizerLoader height="100%" label="Preparing 3D view" detail={preparing ? 'Updating the time period and preparing fresh sensor data…' : loadingDetail} /></Box>}
   </Box>;
