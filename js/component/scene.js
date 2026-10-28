@@ -708,6 +708,7 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
       }, 50);
       return;
     }
+    const frame_started_ms = window.performance.now();
     self.fps_frame_count_++;
     const now_ms = window.performance.now();
     const elapsed_ms = now_ms - self.fps_last_sample_ms_;
@@ -722,15 +723,32 @@ beestat.component.scene.prototype.decorate_ = function(parent) {
     self.update_tree_wind_();
     self.update_weather_();
     self.renderer_.render(self.scene_, self.camera_);
+    if (self.pause_after_frame_ === true) {
+      self.pause_after_frame_ = false;
+      self.animation_paused_ = true;
+    }
+    if (typeof self.after_next_frame_ === 'function') {
+      const after_next_frame = self.after_next_frame_;
+      self.after_next_frame_ = undefined;
+      after_next_frame();
+    }
 
     // A complex home can take longer than one frame to render. Chaining the
     // next requestAnimationFrame immediately lets WebGL monopolize the main
     // thread across many consecutive frames, making unrelated UI feel frozen.
     // Yield briefly between exact-render frames so input, React, and network
     // callbacks remain responsive without changing anything in the scene.
+    const frame_duration_ms = window.performance.now() - frame_started_ms;
+    const next_frame_delay_ms = document.hidden === true
+      ? 250
+      : frame_duration_ms > 100
+        ? 1000
+        : frame_duration_ms > 32
+          ? 50
+          : 16;
     self.animation_timeout_ = window.setTimeout(function() {
       self.animation_frame_ = window.requestAnimationFrame(animate);
-    }, document.hidden === true ? 250 : 16);
+    }, next_frame_delay_ms);
   };
   animate();
 };

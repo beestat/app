@@ -18,7 +18,6 @@ const collapsedEditor = await floorPlanMount.evaluate((node) => ({
   minHeight: getComputedStyle(node).minHeight,
   visible: node.getAttribute('data-lazy-visible'),
 }));
-await page.evaluate(() => { window.requestIdleCallback = () => 1; });
 const threeLoader = page.locator('[data-lazy-mount]').last();
 await threeLoader.scrollIntoViewIfNeeded();
 await page.getByText('Preparing 3D view', { exact: true }).waitFor({ state: 'visible' });
@@ -30,6 +29,6 @@ const loader = await page.locator('[data-visualizer-stage]').evaluate((node) => 
   visibleLegacyLoader: [...node.querySelectorAll('*')].some((item) => item.textContent?.trim() === 'Rendering' && getComputedStyle(item).display !== 'none'),
 }));
 if (collapsedEditor.visible !== 'true' || collapsedEditor.minHeight !== '0px' || collapsedEditor.height > 250) throw new Error(`Collapsed floor-plan wrapper regression: ${JSON.stringify(collapsedEditor)}`);
-if (loader.busy !== 'true' || loader.height !== 548 || !loader.status?.includes('Preparing 3D view') || loader.visibleLegacyLoader) throw new Error(`Visualizer loading state regression: ${JSON.stringify(loader)}`);
+if (loader.busy !== 'true' || loader.height !== 500 || !loader.status?.includes('Preparing 3D view') || loader.visibleLegacyLoader) throw new Error(`Visualizer loading state regression: ${JSON.stringify(loader)}`);
 console.log(JSON.stringify({ collapsedEditor, loader }, null, 2));
 await browser.close();

@@ -42,6 +42,11 @@ export function VisualizePage() {
       return;
     }
     pendingRangeUpdates.current.set(key, value);
+    // Stop the exact legacy render loop in the click handler, before React's
+    // deferred settings effect and before the next expensive WebGL frame can
+    // begin. The scene is resumed after its replacement runtime data lands.
+    const activeThree = (window as any).beestat?.component?.card?.three_d?.active_instance_;
+    if (activeThree?.scene_) activeThree.scene_.animation_paused_ = true;
     // Commit the loader before scheduling any teardown or scene construction.
     // React's normal event batching can otherwise combine this with the heavy
     // range update and leave the old frame frozen on screen for several seconds.

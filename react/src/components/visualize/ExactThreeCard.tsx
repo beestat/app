@@ -39,10 +39,18 @@ export function ExactThreeCard({
     let startFrame = 0;
     let startSecondFrame = 0;
     let legacyLoading = false;
+    let pointerInsideScene = false;
     let readyFrame = 0;
     let readySecondFrame = 0;
     setLoading(true);
     setLoadingDetail('Building your home, environment, and sensor visualization…');
+
+    const shouldPauseScene = () => !pointerInsideScene && instance?.scene_?.controls_?.autoRotate !== true;
+    const handlePointerContext = (event: PointerEvent) => {
+      pointerInsideScene = Boolean(host.current?.contains(event.target as Node));
+      if (instance?.scene_) instance.scene_.animation_paused_ = shouldPauseScene();
+    };
+    document.addEventListener('pointerover', handlePointerContext, true);
 
     const refreshRuntimeKey = () => {
       const livePlan = legacy.cache.floor_plan[plan.floor_plan_id] as FloorPlan;
@@ -91,8 +99,9 @@ export function ExactThreeCard({
         instance.try_align_time_to_recent_data_();
         instance.scene_.set_date(instance.date_m_);
         instance.update_hud_();
+        instance.scene_.pause_after_frame_ = shouldPauseScene();
+        instance.scene_.after_next_frame_ = () => { if (mounted) setLoading(false); };
         instance.scene_.animation_paused_ = false;
-        if (mounted) setLoading(false);
       }, 10);
       legacy.dispatcher.addEventListener(['cache.data.three_d__runtime_sensor', 'cache.data.three_d__runtime_thermostat'], instance.handle_runtime_data_change_);
       const showLoading = instance.show_loading_.bind(instance);
@@ -125,6 +134,7 @@ export function ExactThreeCard({
       } finally {
         legacy.floor_plan.queue_data_save_ = queueDataSave;
       }
+      instance.scene_.animation_paused_ = shouldPauseScene();
       if (!mounted) return;
       setRenderedRangeKey(rangeKey);
       host.current.dataset.sceneCardEngine = 'beestat-exact';
@@ -153,6 +163,7 @@ export function ExactThreeCard({
       cancelAnimationFrame(readySecondFrame);
       window.clearTimeout(markTimer);
       canvasObserver?.disconnect();
+      document.removeEventListener('pointerover', handlePointerContext, true);
       legacy.dispatcher.removeEventListener('cache.floor_plan', refreshRuntimeKey);
       const staleInstance = instance;
       // Scene disposal traverses and releases a large Three.js graph. Deferring
@@ -235,7 +246,7 @@ export function ExactThreeCard({
       setRenderedRangeKey(rangeKey);
     }).catch(() => {
       if (request !== runtimeRequest.current) return;
-      if (instance.scene_) instance.scene_.animation_paused_ = false;
+      if (instance.scene_) instance.scene_.animation_paused_ = !host.current?.matches(':hover') && instance.scene_.controls_?.autoRotate !== true;
       setRenderedRangeKey(rangeKey);
       setLoading(false);
     });

@@ -69,6 +69,6 @@ await page.locator('[data-visualizer-stage][aria-busy="false"]').waitFor({ timeo
 await page.locator('canvas[data-native-three="true"]').waitFor({ state: 'visible', timeout: 90_000 });
 const readyMs = Date.now() - started;
 const performance = await page.evaluate(() => ({ longTasks: window.__rangeLongTasks, sceneRerenders: window.__rangeSceneRerenders, loaderWasBusy: window.__rangeLoaderWasBusy }));
-if (loaderVisibleMs > 100 || performance.loaderWasBusy !== true || loading.visibleLegacyLoader || errors.length) throw new Error(`Range loading responsiveness regression: ${JSON.stringify({ clickReturnedMs, loaderVisibleMs, readyMs, loading, performance, errors })}`);
+if (clickReturnedMs > 250 || loaderVisibleMs > 100 || performance.longTasks.length > 1 || performance.sceneRerenders !== 0 || performance.loaderWasBusy !== true || loading.visibleLegacyLoader || errors.length) throw new Error(`Range loading responsiveness regression: ${JSON.stringify({ clickReturnedMs, loaderVisibleMs, readyMs, loading, performance, errors })}`);
 console.log(JSON.stringify({ todayBackground, yesterdayBackground, to: targetText, clickReturnedMs, loaderVisibleMs, readyMs, loading, performance, errors }, null, 2));
 await browser.close();
