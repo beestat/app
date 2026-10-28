@@ -40,6 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const announcementsInitialized = useRef(false);
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   const platform = new URLSearchParams(window.location.search).get('platform');
+  const embedded = new URLSearchParams(window.location.search).get('embedded') === '1' && location.pathname === '/visualize';
   const unread = useMemo(() => {
     if (announcementsOpen) return 0;
     const lastRead = Math.max(Number(data?.user?.settings?.last_read_announcement_id ?? 0), lastReadOverride);
@@ -71,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ minHeight: '100dvh', pb: 3 }}>
-      <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
+      {!embedded && <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
           <Toolbar sx={{ gap: { xs: .5, sm: 2 }, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
             <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : compact ? 39 : 144, flex: `0 0 ${phone ? 32 : compact ? 39 : 144}px`, textDecoration: 'none' }}>
@@ -109,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
           </Toolbar>
         </Container>
-      </AppBar>
+      </AppBar>}
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 }, pt: { xs: '9px', sm: 0 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: '#fff' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> · <a href="https://community.beestat.io" target="_blank">Feedback</a> · <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> · <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> · <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
     </Box>
   );
