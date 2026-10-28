@@ -30,9 +30,11 @@ await page.getByRole('button', { name: 'Open menu' }).click();
 await page.getByRole('menuitem', { name: /Announcements/ }).click();
 const dialog = page.getByRole('dialog', { name: 'Announcements' });
 await dialog.waitFor({ timeout: 30_000 });
+await dialog.getByText(/Environment Visualizer/).waitFor({ timeout: 30_000 });
 await page.screenshot({ path: 'test-results/parity/react-announcements.png', fullPage: true });
 const geometry = await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }; });
 const renderedTitles = await dialog.locator('h6').allTextContents();
+await page.waitForTimeout(250);
 if (!writes.some((call) => String(call.arguments).includes('last_read_announcement_id'))) throw new Error('Opening announcements did not persist the latest read ID.');
 if (!await dialog.locator('svg.lucide-refresh-cw').count()) throw new Error('The announcement source icon was not mapped to its Lucide equivalent.');
 

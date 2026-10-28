@@ -5,10 +5,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
-import { AnnouncementsContent } from '../../pages/AnnouncementsPage';
 
 const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
 const NewsletterDialog = lazy(() => import('./NewsletterDialog').then((module) => ({ default: module.NewsletterDialog })));
+const AnnouncementsContent = lazy(() => import('../../pages/AnnouncementsPage').then((module) => ({ default: module.AnnouncementsContent })));
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -19,7 +19,10 @@ const navItems = [
 ];
 
 const preloadRoute = (path: string) => {
-  if (path === '/visualize') void import('../../pages/VisualizePage');
+  if (path === '/analyze') void import('../../pages/AnalyzePage');
+  else if (path === '/visualize') void import('../../pages/VisualizePage');
+  else if (path === '/compare') void import('../../pages/ComparePage');
+  else if (path === '/air-quality') void import('../../pages/AirQualityPage');
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -100,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {[1, 39285, 50885, 51345].includes(Number(data?.user?.user_id)) && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-report'); }}><FileChartColumn size={18} /> Glenwood Report</MenuItem>}
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
-            <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><AnnouncementsContent /></DialogContent></Dialog>
+            <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><Suspense fallback="Loading…"><AnnouncementsContent /></Suspense></DialogContent></Dialog>
             {newsletterOpen && <Suspense fallback={<Dialog open fullWidth maxWidth="sm"><DialogTitle>Newsletter</DialogTitle><DialogContent dividers>Loading…</DialogContent></Dialog>}><NewsletterDialog emailAddress={String(data?.user?.email_address ?? '')} onClose={() => setNewsletterOpen(false)} /></Suspense>}
             {downloadOpen && <Suspense fallback={<Dialog open fullWidth maxWidth="sm"><DialogTitle>Download Data</DialogTitle><DialogContent dividers>Loading…</DialogContent></Dialog>}><DownloadDialog onClose={() => setDownloadOpen(false)} /></Suspense>}
             <Dialog open={switcherOpen} onClose={() => setSwitcherOpen(false)} fullWidth maxWidth="sm"><DialogTitle>Change Thermostat</DialogTitle><DialogContent><Typography mb={2}>You have multiple thermostats; which one would you like to view?</Typography><List disablePadding sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>{Object.values(data?.thermostat ?? {}).sort((a, b) => a.name.localeCompare(b.name)).map((item) => <ListItemButton key={item.thermostat_id} selected={item.thermostat_id === thermostatId} onClick={() => { if (item.thermostat_id !== thermostatId) setThermostatId(item.thermostat_id); setSwitcherOpen(false); }} sx={{ bgcolor: item.thermostat_id === thermostatId ? 'primary.main' : 'background.default', borderRadius: 1 }}><ListItemText primary={item.name} /></ListItemButton>)}</List></DialogContent></Dialog>
