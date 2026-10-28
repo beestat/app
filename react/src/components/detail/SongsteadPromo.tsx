@@ -26,7 +26,7 @@ export function SongsteadPromo() {
       <Typography sx={{ color: '#8c9bb1', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', mb: .5 }}>A note from the developer</Typography>
       <Typography sx={{ color: '#263238', fontSize: 18, fontWeight: 600, mb: .5 }}>Introducing Songstead</Typography>
       <Typography sx={{ color: '#37474f', lineHeight: 1.5, mb: 1.5 }}>Are you a musician, taking lessons, or just curious what else I've been up to? Check out my latest app: Songstead! I built it as a musician, for musicians. It's got chord charts, setlists, and sharing tools to keep your band or team organized, plus a generous free tier (best in the space, no credit card needed). It would mean a lot if you tried it out!</Typography>
-      <Box><Button href="https://songstead.app" target="_blank" rel="noreferrer" variant="contained" onClick={() => updateSetting('songstead.promo_clicked_at', new Date().toISOString().slice(0, 19).replace('T', ' '))} sx={{ width: { xs: '100%', sm: 'auto' }, minHeight: 48, px: 1, textTransform: 'none', bgcolor: '#238ac9' }}>Check it out at songstead.app</Button></Box>
+      <Box><Button fullWidth href="https://songstead.app" target="_blank" rel="noreferrer" variant="contained" onClick={() => updateSetting('songstead.promo_clicked_at', new Date().toISOString().slice(0, 19).replace('T', ' '))} sx={{ minHeight: 48, px: 1, textTransform: 'none', bgcolor: '#238ac9' }}>Check it out at songstead.app</Button></Box>
     </CardContent>
   </Card>;
 }
