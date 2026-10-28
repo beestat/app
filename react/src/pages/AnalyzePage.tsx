@@ -162,11 +162,22 @@ export function AnalyzePage() {
     const entries = Object.entries(temperature).filter(([, value]) => value && typeof value === 'object') as [string, any][];
     const extentEntries = Object.entries(thermostat?.profile?.temperature ?? temperature).filter(([, value]) => value && typeof value === 'object') as [string, any][];
     const weather = Math.round(Number(thermostat?.weather?.temperature));
-    const parentExtremes = (parent: 'heat' | 'cool' | 'resist') => {
+    const baseExtremes = (parent: 'heat' | 'cool' | 'resist') => {
       const values = extentEntries.filter(([key]) => key.includes(parent)).flatMap(([, profile]) => Object.keys(profile.deltas ?? {}).map(Number));
-      if (Number.isFinite(weather) && (parent === 'resist' || parent === 'heat')) values.push(weather);
-      if (Number.isFinite(weather) && (parent === 'resist' || parent === 'cool')) values.push(weather);
-      return values.length ? [Math.min(...values) - 5, Math.max(...values) + 5] : [0, 0];
+      if (!values.length) return undefined;
+      let min = Math.min(...values) - 5;
+      let max = Math.max(...values) + 5;
+      if (Number.isFinite(weather) && (parent === 'heat' || parent === 'resist')) min = Math.min(min, weather - 5);
+      if (Number.isFinite(weather) && (parent === 'cool' || parent === 'resist')) max = Math.max(max, weather + 5);
+      return [min, max] as const;
+    };
+    const heatExtremes = baseExtremes('heat');
+    const coolExtremes = baseExtremes('cool');
+    const resistExtremes = baseExtremes('resist');
+    const parentExtremes = (parent: 'heat' | 'cool' | 'resist') => {
+      if (parent === 'heat') return heatExtremes ?? [0, 0];
+      if (parent === 'cool') return coolExtremes ?? [0, 0];
+      return [Math.min(resistExtremes?.[0] ?? Infinity, heatExtremes?.[0] ?? Infinity), Math.max(resistExtremes?.[1] ?? -Infinity, coolExtremes?.[1] ?? -Infinity)];
     };
     const series = entries.flatMap(([key, profile]) => {
       const raw = Object.entries(profile.deltas ?? {}).map(([x, y]) => [Number(x), Number(y)] as [number, number]).sort((a, b) => a[0] - b[0]);
