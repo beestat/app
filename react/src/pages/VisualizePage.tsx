@@ -68,8 +68,8 @@ export function VisualizePage() {
     setCreating(true); setCreateError(undefined);
     try {
       const distanceUnit = String(data?.user?.settings?.units?.distance ?? 'ft'); const ceilingHeight = draft.ceilingHeight * (distanceUnit === 'm' ? 39.37007874 : 12); const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth']; let elevation = draft.basement ? -ceilingHeight : 0; let floor = draft.basement ? 0 : 1;
-      const groups = Array.from({ length: draft.floorCount }, () => { const group = { group_id: crypto.randomUUID(), name: floor === 0 ? 'Basement' : `${ordinals[floor - 1]} Floor`, elevation, height: ceilingHeight, rooms: [], surfaces: [], openings: [], trees: [], lights: [] }; floor += 1; elevation += ceilingHeight; return group; });
-      const attributes = { name: draft.name, ...(draft.addressId == null ? {} : { address_id: draft.addressId }), data: { groups, appearance: { rotation: 0, roof_style: 'hip', roof_color: '#3a3a3a', siding_color: '#889aaa', ground_color: '#4a7c3f' } } };
+      const groups = Array.from({ length: draft.floorCount }, () => { const group = { name: floor === 0 ? 'Basement' : `${ordinals[floor - 1]} Floor`, elevation, height: ceilingHeight, rooms: [] }; floor += 1; elevation += ceilingHeight; return group; });
+      const attributes = { name: draft.name, ...(draft.addressId == null ? {} : { address_id: draft.addressId }), data: { groups } };
       const response = await apiBatch<{ new_floor_plan: { floor_plan_id: number }; floor_plan: Record<string, FloorPlan> }>([{ resource: 'floor_plan', method: 'create', alias: 'new_floor_plan', arguments: { attributes } }, { resource: 'floor_plan', method: 'read_id', alias: 'floor_plan', arguments: {} }]);
       const id = Number(response.new_floor_plan.floor_plan_id); const nextPlans = Object.values(response.floor_plan ?? {}); setFloorPlans(nextPlans); setSavedPlan(nextPlans.find((item) => item.floor_plan_id === id)); switchPlan(id); setCreateOpen(false);
     } catch (error) { setCreateError(error instanceof Error ? error.message : 'Unable to create the floor plan.'); } finally { setCreating(false); }
