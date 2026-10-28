@@ -14,7 +14,7 @@ import { ChartRangeMenu } from './ChartRangeMenu';
 import { buildRuntimeData, equipment, formatRuntimeShort, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
-import { persistChartRange } from './persistChartRange';
+import { persistChartRange, settingDateToIso } from './persistChartRange';
 
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
   const { data: dashboardData } = useDashboard();
@@ -22,7 +22,12 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     const configured = Number(dashboardData?.user?.settings?.runtime_thermostat_detail_range_dynamic);
     return [1, 3, 7].includes(configured) ? configured : 3;
   });
-  const [custom, setCustom] = useState<{ begin: string; end: string }>();
+  const [custom, setCustom] = useState<{ begin: string; end: string } | undefined>(() => {
+    const settings = dashboardData?.user?.settings;
+    const begin = settingDateToIso(settings?.runtime_thermostat_detail_range_static_begin);
+    const end = settingDateToIso(settings?.runtime_thermostat_detail_range_static_end);
+    return settings?.runtime_thermostat_detail_range_type === 'static' && begin && end ? { begin, end } : undefined;
+  });
   const [extremes, setExtremes] = useState<[number, number]>();
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
@@ -99,7 +104,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const changeDays = (value: number) => { setCustom(undefined); setDays(value); setExtremes(undefined); void persistChartRange('runtime_thermostat_detail', { days: value }); };
   const changeCustom = (begin: string, end: string) => { setCustom({ begin, end }); setExtremes(undefined); void persistChartRange('runtime_thermostat_detail', { begin, end }); };
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
-  return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138" />}>
+  return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138" customTitle="Thermostat Detail - Custom Range" customDescription="Choose a custom range to display on the Thermostat Detail chart." maxDays={30} initialBegin={custom?.begin} initialEnd={custom?.end} />}>
     {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
       <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} />

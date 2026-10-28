@@ -5,6 +5,14 @@ function legacyDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
+export function settingDateToIso(value: unknown) {
+  if (typeof value !== 'string' || !value) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return undefined;
+  return `${match[3]}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`;
+}
+
 export function persistChartRange(prefix: string, range: { days: number } | { begin: string; end: string }) {
   const entries: Array<[string, unknown]> = 'days' in range
     ? [[`${prefix}_range_dynamic`, range.days], [`${prefix}_range_type`, 'dynamic']]

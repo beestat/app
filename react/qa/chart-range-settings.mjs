@@ -43,17 +43,36 @@ await page.getByText('Sensor Detail', { exact: true }).waitFor({ timeout: 90_000
 await chooseRange('Thermostat Detail', 'Past 1 Day');
 expectWrite('runtime_thermostat_detail_range_dynamic', 1);
 expectWrite('runtime_thermostat_detail_range_type', 'dynamic');
+const thermostatCard = page.locator('.MuiCard-root').filter({ has: page.getByText('Thermostat Detail', { exact: true }) });
+await thermostatCard.getByRole('button', { name: 'Chart menu' }).click();
+await page.getByRole('menuitem', { name: 'Custom', exact: true }).click();
+await page.getByRole('dialog', { name: 'Thermostat Detail - Custom Range' }).getByLabel('Days').fill('12');
+await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+expectWrite('runtime_thermostat_detail_range_dynamic', 12);
 await chooseRange('Sensor Detail', 'Past 7 Days');
 expectWrite('runtime_sensor_detail_range_dynamic', 7);
 expectWrite('runtime_sensor_detail_range_type', 'dynamic');
 
-const thermostatCard = page.locator('.MuiCard-root').filter({ has: page.getByText('Thermostat Detail', { exact: true }) });
 await thermostatCard.getByRole('button', { name: 'Chart menu' }).click();
 const thermostatHelp = await page.getByRole('menuitem', { name: 'Help' }).getAttribute('href');
 if (thermostatHelp !== 'https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138') {
   throw new Error(`Thermostat Detail help URL differs from legacy: ${thermostatHelp}`);
 }
 await page.keyboard.press('Escape');
+
+const sensorCard = page.locator('.MuiCard-root').filter({ has: page.getByText('Sensor Detail', { exact: true }) });
+await sensorCard.getByRole('button', { name: 'Chart menu' }).click();
+await page.getByRole('menuitem', { name: 'Custom', exact: true }).click();
+const sensorDialog = page.getByRole('dialog', { name: 'Sensor Detail - Custom Range' });
+await sensorDialog.getByRole('button', { name: 'Static' }).click();
+await sensorDialog.getByLabel('Start').fill('2026-10-10');
+await sensorDialog.getByLabel('End').fill('2026-10-20');
+if (!await sensorDialog.getByRole('button', { name: 'Save' }).isDisabled()) throw new Error('Sensor Detail accepted a static range longer than legacy maximum.');
+await sensorDialog.getByLabel('Start').fill('2026-10-15');
+await sensorDialog.getByRole('button', { name: 'Save' }).click();
+expectWrite('runtime_sensor_detail_range_static_begin', '10/15/2026');
+expectWrite('runtime_sensor_detail_range_static_end', '10/20/2026');
+expectWrite('runtime_sensor_detail_range_type', 'static');
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/air-quality', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('Air Quality Detail', { exact: true }).waitFor({ timeout: 90_000 });

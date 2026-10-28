@@ -13,7 +13,7 @@ import { ChartRangeMenu } from './ChartRangeMenu';
 import { buildRuntimeData, runtimeAxisLabel, runtimeTickPositions, unitLabel, type Point, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
-import { persistChartRange } from './persistChartRange';
+import { persistChartRange, settingDateToIso } from './persistChartRange';
 
 const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light];
 
@@ -33,7 +33,12 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
     const configured = Number(dashboardData?.user?.settings?.runtime_sensor_detail_range_dynamic);
     return [1, 3, 7].includes(configured) ? configured : 3;
   });
-  const [custom, setCustom] = useState<{ begin: string; end: string }>();
+  const [custom, setCustom] = useState<{ begin: string; end: string } | undefined>(() => {
+    const settings = dashboardData?.user?.settings;
+    const begin = settingDateToIso(settings?.runtime_sensor_detail_range_static_begin);
+    const end = settingDateToIso(settings?.runtime_sensor_detail_range_static_end);
+    return settings?.runtime_sensor_detail_range_type === 'static' && begin && end ? { begin, end } : undefined;
+  });
   const [extremes, setExtremes] = useState<[number, number]>();
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const occupancyRef = useRef<HighchartsReact.RefObject>(null);
@@ -95,7 +100,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const changeDays = (value: number) => { setCustom(undefined); setDays(value); setExtremes(undefined); void persistChartRange('runtime_sensor_detail', { days: value }); };
   const changeCustom = (begin: string, end: string) => { setCustom({ begin, end }); setExtremes(undefined); void persistChartRange('runtime_sensor_detail', { begin, end }); };
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
-  return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" />}>
+  return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" customTitle="Sensor Detail - Custom Range" customDescription="Choose a custom range to display on the Sensor Detail chart. Max range is 7 days at a time and 3 months in the past." maxDays={7} initialBegin={custom?.begin} initialEnd={custom?.end} />}>
     {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} /></>}
   </DashboardCard>;
 });
