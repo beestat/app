@@ -28,10 +28,17 @@ function RoutedApp() {
   if (error) {
     return <Box sx={{ maxWidth: 720, mx: 'auto', mt: 8, p: 2 }}><Alert severity="error">{error}</Alert></Box>;
   }
-  if (Object.keys(data?.thermostat ?? {}).length === 0) return <AppShell><NoThermostatsPage /></AppShell>;
+  const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   return (
     <AppShell>
       <Suspense fallback={<Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}><Routes>
+        {!hasThermostats ? <>
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="contribute" element={<ContributePage />} />
+          <Route path="glenwood-enrollment" element={<GlenwoodEnrollmentPage />} />
+          <Route path="glenwood-report" element={<GlenwoodReportPage />} />
+          <Route path="*" element={<NoThermostatsPage />} />
+        </> : <>
         <Route index element={<DetailPage />} />
         <Route path="detail" element={<DetailPage />} />
         <Route path="analyze" element={<AnalyzePage />} />
@@ -44,6 +51,7 @@ function RoutedApp() {
         <Route path="glenwood-enrollment" element={<GlenwoodEnrollmentPage />} />
         <Route path="glenwood-report" element={<GlenwoodReportPage />} />
         <Route path="*" element={<Navigate to="detail" replace />} />
+        </>}
       </Routes></Suspense>
     </AppShell>
   );
