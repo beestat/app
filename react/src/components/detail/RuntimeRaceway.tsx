@@ -13,9 +13,12 @@ export const RuntimeRaceway = memo(function RuntimeRaceway({ data, extremes, cha
     yAxis: { min: 0, max: 44, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } },
     tooltip: { enabled: false },
     plotOptions: { series: { animation: false, marker: { enabled: false }, connectNulls: false, enableMouseTracking: false, states: { inactive: { enabled: false } } } },
-    series: Object.entries(data.equipment).filter(([, series]) => series.points.some((point) => point[1] !== null)).map(([code, series]) => ({
-      type: 'line', name: code, data: series.points, color: series.color, lineWidth: series.width, linecap: 'square', step: 'left', turboThreshold: 0,
-    })),
+    series: Object.entries(data.equipment)
+      .filter(([, series]) => series.points.some((point) => point[1] !== null))
+      .sort(([left], [right]) => Number(right.startsWith('calendar_event_')) - Number(left.startsWith('calendar_event_')))
+      .map(([code, series]) => ({
+        type: 'line', name: code, data: series.points, color: series.color, lineWidth: series.width, linecap: 'square', className: 'crisp_edges', turboThreshold: 0,
+      })),
   }), [data, extremes]);
   return <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { height: 44, background: colors.slate.dark } }} />;
 });
