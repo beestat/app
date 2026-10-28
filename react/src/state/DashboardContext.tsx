@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useQuery } from '@tanstack/react-query';
 import { apiBatch, apiCall } from '../api/client';
 import type { DashboardData, Thermostat } from '../types';
-import { getSetting, setSetting } from './settings';
+import { setSetting } from './settings';
 
 const initialCalls = [
   ['thermostat', 'sync', 'thermostat_sync', {}],
@@ -50,15 +50,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     () => Object.values(query.data?.thermostat ?? {}).map((item) => item.thermostat_id),
     [query.data?.thermostat],
   );
-  const [thermostatId, setThermostatIdState] = useState<number | undefined>(() => getSetting<number | undefined>('thermostat_id', undefined));
+  const [thermostatId, setThermostatIdState] = useState<number | undefined>();
+  const serverThermostatId = Number(query.data?.user?.settings?.thermostat_id);
 
   useEffect(() => {
     if (!thermostatIds.length) return;
     if (!thermostatId || !thermostatIds.includes(thermostatId)) {
-      setThermostatIdState(thermostatIds[0]);
-      setSetting('thermostat_id', thermostatIds[0]);
+      const next = thermostatIds.includes(serverThermostatId) ? serverThermostatId : thermostatIds[0];
+      setThermostatIdState(next);
+      setSetting('thermostat_id', next);
+      if (next !== serverThermostatId) void apiCall({ resource: 'user', method: 'update_setting', arguments: { key: 'thermostat_id', value: next } });
     }
-  }, [thermostatId, thermostatIds]);
+  }, [serverThermostatId, thermostatId, thermostatIds]);
 
   useEffect(() => {
     if (!thermostatId) return;
@@ -68,6 +71,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const setThermostatId = useCallback((id: number) => {
     setThermostatIdState(id);
     setSetting('thermostat_id', id);
+    void apiCall({ resource: 'user', method: 'update_setting', arguments: { key: 'thermostat_id', value: id } });
   }, []);
 
   const thermostat = thermostatId ? query.data?.thermostat[String(thermostatId)] : undefined;
