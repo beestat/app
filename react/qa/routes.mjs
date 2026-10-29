@@ -38,6 +38,7 @@ const performanceMetrics = await page.evaluate(() => {
     navigationDurationMs: Math.round(navigation?.duration ?? 0),
     transferBytes: resources.reduce((sum, entry) => sum + ((entry).transferSize ?? 0), 0),
     resourceCount: resources.length,
+    largestResources: resources.map((entry) => ({ name: new URL(entry.name).pathname, bytes: entry.transferSize ?? 0 })).sort((left, right) => right.bytes - left.bytes).slice(0, 5),
   };
 });
 if (performanceMetrics.resourceCount > 35 || performanceMetrics.transferBytes > 1_200_000) throw new Error(`Initial Detail performance budget exceeded: ${JSON.stringify(performanceMetrics)}`);
