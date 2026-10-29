@@ -55,5 +55,16 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
   results.push(await measure(viewport, 'react', 'https://dev.app.beestat.io/react/index.php#/analyze'));
 }
 
+for (let index = 0; index < results.length; index += 2) {
+  const legacy = results[index];
+  const react = results[index + 1];
+  legacy.charts.forEach((legacyChart, chartIndex) => {
+    const reactChart = react.charts[chartIndex];
+    if (!reactChart || JSON.stringify(reactChart.xLabels) !== JSON.stringify(legacyChart.xLabels)) {
+      throw new Error(`Analyze x-axis labels differ from legacy at ${legacy.viewport.width}px: ${JSON.stringify({ legacy: legacyChart.xLabels, react: reactChart?.xLabels })}`);
+    }
+  });
+}
+
 console.log(JSON.stringify(results, null, 2));
 await browser.close();

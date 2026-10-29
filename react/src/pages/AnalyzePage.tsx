@@ -110,10 +110,10 @@ export function AnalyzePage() {
     const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
     const scale = smartScale(config.group);
     const desktopTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 38));
-    // Legacy Highcharts fits about eleven category labels across the compact
-    // plot. Keep the explicit interval so newer Highcharts does not choose a
-    // sparser (and less useful) 13-month cadence on phones.
-    const mobileTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 11));
+    // Legacy Highcharts fits nine category intervals across the 231px compact
+    // plot. Keep that explicit cadence so the newer chart engine does not add
+    // two extra labels and shift every displayed month on phones.
+    const mobileTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 9));
     return {
       chart: { backgroundColor: 'transparent', height: 350, marginLeft: 49, marginRight: 46, marginBottom: 108, spacing: [8, 0, 0, 0], zooming: { type: 'x' }, animation: false, events: { load() { const chart = this; const axis = chart.xAxis[0]; chart.container.addEventListener('mousemove', (event) => { const normalized = chart.pointer.normalize(event as any); if (!chart.isInsidePlot(normalized.chartX - chart.plotLeft, normalized.chartY - chart.plotTop)) return; const category = Math.round(axis.toValue(normalized.chartX)); const point = chart.series.flatMap((series) => series.points).find((candidate) => candidate.x === category); axis.drawCrosshair(normalized, point); }); chart.container.addEventListener('mouseleave', () => axis.hideCrosshair()); } } }, title: { text: undefined }, credits: { enabled: false },
       xAxis: { categories: summary.map((row) => String(row.date)), tickInterval: desktopTickInterval, tickLength: 0, crosshair: { color: 'rgba(255, 255, 255, 0.2)', width: 1, snap: true, zIndex: 100 }, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 || this.axis.chart.chartWidth <= 500 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
