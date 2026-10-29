@@ -96,7 +96,7 @@ export function AirQualityPage() {
     const xAxis = (labels: boolean): Highcharts.XAxisOptions => ({
       type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max,
       tickPositioner() { const min = Number(this.min); const max = Number(this.max); const sample = 5 * 60_000; const sampleCount = Math.max(1, (max - min) / sample); const interval = Math.max(sample, Math.ceil(sampleCount * 25.4 / Math.max(1, this.len)) * sample); const positions = []; for (let value = min; value <= max; value += interval) positions.push(value); return positions; },
-      labels: labels ? { rotation: -45, allowOverlap: true, overflow: 'allow', step: 1, style: { color: colors.gray.main, textOverflow: 'none' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } } : { enabled: false },
+      labels: labels ? { rotation: -45, allowOverlap: true, overflow: 'allow', step: 1, style: { color: colors.gray.main, textOverflow: 'none', width: 80 }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } } : { enabled: false },
       events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } },
     });
     const options = (height: number, series: Highcharts.SeriesOptionsType[], yAxis: Highcharts.YAxisOptions, showLabels = false): Highcharts.Options => ({

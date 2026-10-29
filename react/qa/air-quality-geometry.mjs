@@ -42,6 +42,12 @@ for (const result of results.filter((item) => item.kind === 'react')) {
 for (let index = 0; index < results.length; index += 2) {
   const legacy = results[index];
   const react = results[index + 1];
+  const legacyGaps = legacy.charts.slice(1).map((chart, chartIndex) => Math.round((chart.chart.y - legacy.charts[chartIndex].chart.bottom) * 10) / 10);
+  const reactGaps = react.charts.slice(1).map((chart, chartIndex) => Math.round((chart.chart.y - react.charts[chartIndex].chart.bottom) * 10) / 10);
+  const legacyHeights = legacy.charts.map((chart) => chart.chart.height);
+  const reactHeights = react.charts.map((chart) => chart.chart.height);
+  if (JSON.stringify(reactHeights) !== JSON.stringify(legacyHeights)) throw new Error(`Air Quality chart heights differ from legacy at ${legacy.viewport.width}px: ${JSON.stringify({ legacy: legacyHeights, react: reactHeights })}`);
+  if (JSON.stringify(reactGaps) !== JSON.stringify(legacyGaps)) throw new Error(`Air Quality chart gaps differ from legacy at ${legacy.viewport.width}px: ${JSON.stringify({ legacy: legacyGaps, react: reactGaps })}`);
   const legacyLabels = legacy.charts[3]?.xLabels;
   const reactLabels = react.charts[3]?.xLabels;
   if (JSON.stringify(reactLabels) !== JSON.stringify(legacyLabels)) {
@@ -51,6 +57,7 @@ for (let index = 0; index < results.length; index += 2) {
 console.log(JSON.stringify({
   viewports: [1440, 390],
   xAxisLabelsMatch: true,
+  chartGeometryMatches: true,
   summaryMenuMatches: true,
 }, null, 2));
 await browser.close();
