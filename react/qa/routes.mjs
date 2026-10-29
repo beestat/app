@@ -40,6 +40,7 @@ const performanceMetrics = await page.evaluate(() => {
     resourceCount: resources.length,
   };
 });
+if (performanceMetrics.resourceCount > 35 || performanceMetrics.transferBytes > 1_200_000) throw new Error(`Initial Detail performance budget exceeded: ${JSON.stringify(performanceMetrics)}`);
 await page.screenshot({ path: 'test-results/react-detail-settled.png', fullPage: true });
 
 await page.goto('https://dev.app.beestat.io/react/index.php#/air-quality', { waitUntil: 'networkidle', timeout: 90_000 });

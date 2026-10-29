@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
+import { preloadLegacyVisualizer } from '../visualize/legacyVisualizer';
 
 const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
 const NewsletterDialog = lazy(() => import('./NewsletterDialog').then((module) => ({ default: module.NewsletterDialog })));
@@ -20,7 +21,7 @@ const navItems = [
 
 const preloadRoute = (path: string) => {
   if (path === '/analyze') void import('../../pages/AnalyzePage');
-  else if (path === '/visualize') void import('../../pages/VisualizePage');
+  else if (path === '/visualize') { void import('../../pages/VisualizePage'); void preloadLegacyVisualizer().catch(() => {}); }
   else if (path === '/compare') void import('../../pages/ComparePage');
   else if (path === '/air-quality') void import('../../pages/AirQualityPage');
 };

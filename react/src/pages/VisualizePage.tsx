@@ -10,6 +10,7 @@ import { ExactThreeCard } from '../components/visualize/ExactThreeCard';
 import { FloorPlanCreateDialog, type FloorPlanDraft } from '../components/visualize/FloorPlanCreateDialog';
 import { LazyMount } from '../components/common/LazyMount';
 import { VisualizerLoader } from '../components/visualize/VisualizerLoader';
+import { preloadLegacyVisualizer } from '../components/visualize/legacyVisualizer';
 
 export function VisualizePage() {
   const { data, thermostatId } = useDashboard();
@@ -17,12 +18,15 @@ export function VisualizePage() {
   const [savedPlan, setSavedPlan] = useState<FloorPlan>();
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [preparing3d, setPreparing3d] = useState(false);
+  const [legacyReady, setLegacyReady] = useState(() => Boolean((window as any).beestat?.component?.card?.three_d));
+  const [legacyError, setLegacyError] = useState<string>();
   const pendingRangeUpdates = useRef(new Map<string, unknown>());
   const rangeFrame = useRef(0);
   const rangeSecondFrame = useRef(0);
   const [createOpen, setCreateOpen] = useState(false); const [creating, setCreating] = useState(false); const [createError, setCreateError] = useState<string>(); const [deleteOpen, setDeleteOpen] = useState(false); const [deleting, setDeleting] = useState(false);
   useEffect(() => { setVisualizeState(structuredClone(data?.user?.settings?.visualize ?? {})); }, [data?.user?.settings?.visualize]);
   useEffect(() => { setFloorPlans(Object.values(data?.floor_plan ?? {}) as FloorPlan[]); }, [data?.floor_plan]);
+  useEffect(() => { void preloadLegacyVisualizer().then(() => setLegacyReady(true)).catch((error) => setLegacyError(error instanceof Error ? error.message : 'Unable to load the visualizer.')); }, []);
   const visualize = visualizeState;
   const hasFloorPlan = visualize.floor_plan_id != null || floorPlans[0]?.floor_plan_id != null;
   const sourcePlan = floorPlans.find((plan) => plan.floor_plan_id === visualize.floor_plan_id) ?? floorPlans[0];
@@ -79,6 +83,8 @@ export function VisualizePage() {
     try { const response = await apiBatch<{ floor_plan: Record<string, FloorPlan> }>([{ resource: 'floor_plan', method: 'delete', alias: 'deleted', arguments: { id: activePlan.floor_plan_id } }, { resource: 'floor_plan', method: 'read_id', alias: 'floor_plan', arguments: {} }]); const nextPlans = Object.values(response.floor_plan ?? {}); setFloorPlans(nextPlans); switchPlan(nextPlans[0]?.floor_plan_id ?? null); setDeleteOpen(false); } finally { setDeleting(false); }
   };
   const showAffiliate = hasFloorPlan && visualize.hide_affiliate === false && !config.isDemo;
+  if (legacyError) return <Box pb={2}><Card><CardContent><Typography color="error">{legacyError}</Typography></CardContent></Card></Box>;
+  if (!legacyReady) return <Box pb={2}><VisualizerLoader label="Loading visualizer" detail="Preparing the exact floor plan and 3D toolsâ€¦" /></Box>;
   return <Box pb={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
     <Box sx={{ minWidth: 0 }}>
       {!activePlan && <><Card sx={{ mb: 2 }}><CardHeader title="Visualize" /><CardContent sx={{ textAlign: 'center' }}><Button variant="contained" color="success" size="large" startIcon={<Plus />} onClick={() => setCreateOpen(true)}><Stack><span>Get started now!</span><Typography variant="caption">Create my first floor plan</Typography></Stack></Button></CardContent></Card><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>{['https://player.vimeo.com/video/751478276', 'https://player.vimeo.com/video/1173706545'].map((src) => <Box key={src} component="iframe" src={src} title="Visualize walkthrough" allow="autoplay; fullscreen; picture-in-picture" sx={{ width: '100%', border: 0, aspectRatio: '16 / 9' }} />)}</Box></>}
