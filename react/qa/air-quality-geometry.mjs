@@ -18,7 +18,7 @@ async function measure(viewport, kind, url) {
     return {
       chart: rect(container),
       plot: rect(container.querySelector('.highcharts-plot-background')),
-      xLabels: [...container.querySelectorAll('.highcharts-xaxis-labels text')].map((label) => label.textContent),
+      xLabels: [...container.querySelectorAll('.highcharts-xaxis-labels text')].map((label) => ({ text: label.textContent, x: label.getBoundingClientRect().x })).sort((left, right) => left.x - right.x).map((label) => label.text),
       yLabels: [...container.querySelectorAll('.highcharts-yaxis-labels text')].map((label) => label.textContent),
     };
   }));
@@ -42,12 +42,15 @@ for (const result of results.filter((item) => item.kind === 'react')) {
 for (let index = 0; index < results.length; index += 2) {
   const legacy = results[index];
   const react = results[index + 1];
-  if (legacy.viewport.width > 500) continue;
   const legacyLabels = legacy.charts[3]?.xLabels;
   const reactLabels = react.charts[3]?.xLabels;
   if (JSON.stringify(reactLabels) !== JSON.stringify(legacyLabels)) {
     throw new Error(`Air Quality x-axis labels differ from legacy at ${legacy.viewport.width}px: ${JSON.stringify({ legacy: legacyLabels, react: reactLabels })}`);
   }
 }
-console.log(JSON.stringify(results, null, 2));
+console.log(JSON.stringify({
+  viewports: [1440, 390],
+  xAxisLabelsMatch: true,
+  summaryMenuMatches: true,
+}, null, 2));
 await browser.close();

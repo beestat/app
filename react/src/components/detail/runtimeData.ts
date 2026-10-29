@@ -74,6 +74,7 @@ function equipmentSeconds(row: RuntimeRow, code: EquipmentCode): number {
 export interface RuntimeChartData {
   min: number;
   max: number;
+  timestamps: number[];
   temperature: Record<'indoor_temperature' | 'outdoor_temperature' | 'setpoint_heat' | 'setpoint_cool' | 'indoor_humidity' | 'outdoor_humidity', Point[]>;
   equipment: Record<string, { name: string; color: string; width: number; points: Point[] }>;
   totals: Record<EquipmentCode, number>;
@@ -88,6 +89,7 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
   const result: RuntimeChartData = {
     min: rows.length ? Date.parse(rows[0].timestamp) : Date.now(),
     max: rows.length ? Date.parse(rows.at(-1)!.timestamp) : Date.now(),
+    timestamps: [],
     temperature: { indoor_temperature: [], outdoor_temperature: [], setpoint_heat: [], setpoint_cool: [], indoor_humidity: [], outdoor_humidity: [] },
     equipment: {},
     totals: Object.fromEntries(Object.keys(equipment).map((key) => [key, 0])) as Record<EquipmentCode, number>,
@@ -101,6 +103,7 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
 
   rows.forEach((row) => {
     const x = Date.parse(row.timestamp);
+    result.timestamps.push(x);
     result.temperature.indoor_temperature.push([x, number(row, 'indoor_temperature')]);
     result.temperature.outdoor_temperature.push([x, number(row, 'outdoor_temperature')]);
     result.temperature.indoor_humidity.push([x, number(row, 'indoor_humidity')]);
@@ -144,14 +147,15 @@ export function runtimeAxisLabel(value: number, tickPositions?: readonly number[
   return `${dayChanged ? `${day} ` : ''}${hour}`;
 }
 
-export function runtimeTickPositions(min: number, max: number, width: number) {
+export function runtimeTickPositions(timestamps: readonly number[], min: number, max: number, width: number) {
   if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return [];
-  // Legacy Highcharts uses a category interval of 77 five-minute samples on
-  // phone-width charts (6h25m), and roughly three hours on desktop.
-  const interval = width < 500 ? 77 * 5 * 60_000 : 3 * 3_600_000;
-  const positions: number[] = [];
-  for (let value = min; value <= max; value += interval) positions.push(value);
-  return positions;
+  const visible = timestamps.filter((timestamp) => timestamp >= min && timestamp <= max);
+  if (!visible.length) return [];
+  // The legacy chart uses a category axis and selects roughly one rotated
+  // label per 25 plot pixels. Select actual sampled rows as it does; adding a
+  // fixed five-minute duration drifts whenever an API sample is absent.
+  const interval = Math.max(1, Math.ceil(visible.length * 25 / Math.max(1, width)));
+  return visible.filter((_, index) => index % interval === 0);
 }
 
 export function unitLabel(unit: string) {

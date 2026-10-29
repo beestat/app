@@ -22,6 +22,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
         const charts = [...(root?.querySelectorAll('.highcharts-container') ?? [])].map((chart) => ({
           rect: rect(chart),
           plot: rect(chart.querySelector('.highcharts-plot-background')),
+          xLabels: [...chart.querySelectorAll('.highcharts-xaxis-labels text')].map((label) => ({ text: label.textContent, x: label.getBoundingClientRect().x })).sort((left, right) => left.x - right.x).map((label) => label.text),
           legends: [...chart.querySelectorAll('.highcharts-legend-item')].map((item) => ({ name: item.textContent?.trim(), color: item.querySelector('path')?.getAttribute('stroke') })),
         }));
         return { rect: rect(root), charts };
@@ -31,7 +32,6 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     await page.close();
   }
 }
-console.log(JSON.stringify(results, null, 2));
 for (const viewport of [1440, 390]) {
   const legacy = results.find((result) => result.kind === 'legacy' && result.viewport.width === viewport);
   const react = results.find((result) => result.kind === 'react' && result.viewport.width === viewport);
@@ -40,6 +40,9 @@ for (const viewport of [1440, 390]) {
   if (Math.abs(legacyRaceway.width - reactRaceway.width) > 1 || Math.abs(legacyRaceway.height - reactRaceway.height) > 1) throw new Error(`Thermostat raceway geometry differs at ${viewport}px: ${JSON.stringify({ legacyRaceway, reactRaceway })}`);
   if (Math.abs(legacy.sensor.rect.height - react.sensor.rect.height) > 1) throw new Error(`Sensor Detail card height differs at ${viewport}px: ${JSON.stringify({ legacy: legacy.sensor.rect, react: react.sensor.rect })}`);
   for (let index = 0; index < 3; index += 1) if (Math.abs(legacy.sensor.charts[index].rect.height - react.sensor.charts[index].rect.height) > 1) throw new Error(`Sensor Detail chart ${index} height differs at ${viewport}px.`);
+  for (const [name, legacyChart, reactChart] of [['Thermostat Detail', legacy.thermostat.charts.at(-1), react.thermostat.charts.at(-1)], ['Sensor Detail', legacy.sensor.charts.at(-1), react.sensor.charts.at(-1)]]) {
+    if (JSON.stringify(legacyChart.xLabels) !== JSON.stringify(reactChart.xLabels)) throw new Error(`${name} x-axis labels differ at ${viewport}px: ${JSON.stringify({ legacy: legacyChart, react: reactChart })}`);
+  }
   const reactGaps = react.sensor.charts.slice(1).map((chart, index) => Math.round(chart.rect.y - react.sensor.charts[index].rect.y - react.sensor.charts[index].rect.height));
   if (reactGaps.some((gap) => gap !== 8)) throw new Error(`Sensor Detail chart spacing differs at ${viewport}px: ${JSON.stringify(reactGaps)}`);
   const normalize = (name) => name?.replace(/\u200b/g, ' ');
@@ -47,4 +50,10 @@ for (const viewport of [1440, 390]) {
   const reactColors = Object.fromEntries(react.sensor.charts.at(-1).legends.map((item) => [normalize(item.name), item.color]));
   for (const name of ['Ziebee II', 'Cade', 'Downstairs', 'Master Bedroom', 'Office', 'Upstairs']) if (legacyColors[name] !== reactColors[name]) throw new Error(`${name} color differs at ${viewport}px: ${JSON.stringify({ legacy: legacyColors[name], react: reactColors[name] })}`);
 }
+console.log(JSON.stringify({
+  viewports: [1440, 390],
+  xAxisLabelsMatch: true,
+  racewayGeometryMatches: true,
+  sensorGeometryMatches: true,
+}, null, 2));
 await browser.close();
