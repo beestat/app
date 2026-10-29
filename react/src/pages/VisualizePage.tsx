@@ -84,7 +84,7 @@ export function VisualizePage() {
   };
   const showAffiliate = hasFloorPlan && visualize.hide_affiliate === false && !config.isDemo;
   if (legacyError) return <Box pb={2}><Card><CardContent><Typography color="error">{legacyError}</Typography></CardContent></Card></Box>;
-  if (!legacyReady) return <Box pb={2}><VisualizerLoader label="Loading visualizer" detail="Preparing the exact floor plan and 3D toolsâ€¦" /></Box>;
+  if (!legacyReady) return <Box pb={2}><VisualizerLoader label="Loading visualizer" detail="Preparing the exact floor plan and 3D tools…" /></Box>;
   return <Box pb={2} sx={{ '& canvas': { maxWidth: '100%' } }}>
     <Box sx={{ minWidth: 0 }}>
       {!activePlan && <><Card sx={{ mb: 2 }}><CardHeader title="Visualize" /><CardContent sx={{ textAlign: 'center' }}><Button variant="contained" color="success" size="large" startIcon={<Plus />} onClick={() => setCreateOpen(true)}><Stack><span>Get started now!</span><Typography variant="caption">Create my first floor plan</Typography></Stack></Button></CardContent></Card><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>{['https://player.vimeo.com/video/751478276', 'https://player.vimeo.com/video/1173706545'].map((src) => <Box key={src} component="iframe" src={src} title="Visualize walkthrough" allow="autoplay; fullscreen; picture-in-picture" sx={{ width: '100%', border: 0, aspectRatio: '16 / 9' }} />)}</Box></>}
