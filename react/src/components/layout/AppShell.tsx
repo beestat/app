@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -46,8 +46,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const lastRead = Math.max(Number(data?.user?.settings?.last_read_announcement_id ?? 0), lastReadOverride);
     return Object.values(data?.announcement ?? {}).filter((item: any) => Number(item.announcement_id) > lastRead).length;
   }, [announcementsOpen, data?.announcement, data?.user?.settings?.last_read_announcement_id, lastReadOverride]);
+  const markAnnouncementsRead = useCallback(() => {
+    const latest = Math.max(0, ...Object.values(data?.announcement ?? {}).map((item: any) => Number(item.announcement_id)));
+    if (!latest) return;
+    setLastReadOverride(latest);
+    void apiCall({ resource: 'user', method: 'update_setting', arguments: { key: 'last_read_announcement_id', value: latest } })
+      .then(() => window.dispatchEvent(new CustomEvent('beestat-announcements-read', { detail: latest })))
+      .catch(() => {});
+  }, [data?.announcement]);
+  const openAnnouncements = useCallback(() => {
+    setAnnouncementsOpen(true);
+    markAnnouncementsRead();
+  }, [markAnnouncementsRead]);
   useEffect(() => {
     if (announcementsInitialized.current) return;
+    if (!data?.user || !data.announcement) return;
     announcementsInitialized.current = true;
     if (data?.user?.settings?.first_run === true) {
       setNewsletterOpen(true);
@@ -58,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!items.length) return;
     const lastRead = data?.user?.settings?.last_read_announcement_id;
     const latestImportant = Math.max(0, ...items.filter((item) => item.important === true).map((item) => Number(item.announcement_id)));
-    if (lastRead === undefined || (latestImportant > 0 && Number(lastRead) < latestImportant)) setAnnouncementsOpen(true);
-  }, [data]);
+    if (lastRead === undefined || (latestImportant > 0 && Number(lastRead) < latestImportant)) openAnnouncements();
+  }, [data, openAnnouncements]);
   useEffect(() => {
     const read = (event: Event) => setLastReadOverride(Number((event as CustomEvent<number>).detail));
     window.addEventListener('beestat-announcements-read', read);
@@ -96,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} slotProps={{ list: { sx: { '& .MuiMenuItem-root': { gap: 2 } } } }}>
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
-              <MenuItem onClick={() => { setAnchor(null); setAnnouncementsOpen(true); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Megaphone size={18} /></Badge> Announcements</MenuItem>
+              <MenuItem onClick={() => { setAnchor(null); openAnnouncements(); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Megaphone size={18} /></Badge> Announcements</MenuItem>
               {hasThermostats && <MenuItem onClick={() => { setAnchor(null); setDownloadOpen(true); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}
