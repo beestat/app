@@ -135,7 +135,17 @@ const mobileEditor = await page.evaluate(() => {
 });
 await page.screenshot({ path: 'test-results/parity/react-floor-plan-editor-mobile.png', fullPage: false });
 if (mobileEditor.scrollWidth > mobileEditor.innerWidth || mobileEditor.mapWidth < 300 || mobileEditor.sidebarWidth !== 56) throw new Error(`Exact floor-plan editor mobile regression: ${JSON.stringify(mobileEditor)}`);
+await page.setViewportSize({ width: 320, height: 800 });
+await page.waitForTimeout(250);
+const narrowMobile = await page.evaluate(() => {
+  const host = document.querySelector('[data-editor-engine="beestat-exact"]');
+  const map = host?.querySelector('svg')?.getBoundingClientRect();
+  const canvas = document.querySelector('canvas[data-native-three="true"]')?.getBoundingClientRect();
+  const sidebar = [...(host?.querySelectorAll('div') ?? [])].map((item) => item.getBoundingClientRect()).find((rect) => Math.round(rect.width) === 56 && Math.round(rect.height) >= 450);
+  return { scrollWidth: document.documentElement.scrollWidth, innerWidth, mapWidth: Math.round(map?.width ?? 0), canvasWidth: Math.round(canvas?.width ?? 0), sidebarWidth: Math.round(sidebar?.width ?? 0) };
+});
+if (narrowMobile.scrollWidth > narrowMobile.innerWidth || narrowMobile.canvasWidth !== narrowMobile.innerWidth - 32 || narrowMobile.mapWidth < 230 || narrowMobile.sidebarWidth !== 56) throw new Error(`Exact visualizer 320px regression: ${JSON.stringify(narrowMobile)}`);
 if (blockedMutations.length !== legacyMutationBaseline) throw new Error(`Read-only mobile visualizer QA attempted mutations: ${JSON.stringify(blockedMutations.slice(legacyMutationBaseline))}`);
 if (errors.length) throw new Error(`Visualizer emitted page errors: ${JSON.stringify(errors)}`);
-console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, mobileEditor, blockedMutations, errors }, null, 2));
+console.log(JSON.stringify({ legacy, react, editor, nativeEditor, nativeScene, mobile, mobileEditor, narrowMobile, blockedMutations, errors }, null, 2));
 await browser.close();
