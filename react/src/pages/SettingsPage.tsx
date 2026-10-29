@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, RadioGroup, Select, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { Copy, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiBatch, apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
@@ -23,7 +23,7 @@ export function SettingsPage() {
   const { data, thermostat, refresh } = useDashboard();
   const settings = data?.user?.settings ?? {};
   const profileKey = `thermostat.${thermostat?.thermostat_id}.profile`;
-  const [values, setValues] = useState({
+  const resolvedValues = useMemo(() => ({
     dock: Boolean(readNested(settings, 'ui.always_dock_tooltips', false)),
     gap: Boolean(settings.runtime_thermostat_summary_gap_fill ?? true),
     scale: Boolean(settings.runtime_thermostat_summary_smart_scale ?? true),
@@ -32,7 +32,9 @@ export function SettingsPage() {
     currency: String(readNested(settings, 'units.currency', 'usd')),
     ignoreSolar: Boolean(readNested(settings, `${profileKey}.ignore_solar_gain`, false)),
     profileStart: String(readNested(settings, `${profileKey}.range_begin`, '')),
-  });
+  }), [data?.user?.settings, profileKey, thermostat?.temperature_unit]);
+  const [values, setValues] = useState(resolvedValues);
+  useEffect(() => { setValues(resolvedValues); }, [resolvedValues]);
   const [serial, setSerial] = useState('');
   const [message, setMessage] = useState('');
   const apiSession = useMemo(() => Object.values(data?.session ?? {}).find((session: any) => session.api_user_id != null) as any, [data?.session]);
