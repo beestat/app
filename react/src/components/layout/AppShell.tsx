@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!embedded && <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
           <Toolbar sx={{ gap: { xs: .5, sm: 2 }, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
-            <Box component={NavLink} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : compact ? 39 : 144, flex: `0 0 ${phone ? 32 : compact ? 39 : 144}px`, textDecoration: 'none' }}>
+            <Box component={Link} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : compact ? 39 : 144, flex: `0 0 ${phone ? 32 : compact ? 39 : 144}px`, textDecoration: 'none' }}>
               <Box component="img" src={compact ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
             </Box>
             {hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: { xs: 0, sm: .5 }, flex: phone ? '1 1 auto' : `0 0 ${compact ? 225 : 565}px`, minWidth: 0 }}>

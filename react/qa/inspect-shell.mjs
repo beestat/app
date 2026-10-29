@@ -10,7 +10,7 @@ page.on('response', (response) => { if (response.status() >= 400) failedResponse
 await page.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('System - Ziebee II', { exact: true }).waitFor({ timeout: 90_000 });
 const desktopNavigation = await page.locator('nav').first().getByRole('link').allTextContents();
-const activeDesktopRoute = await page.locator('a[aria-current="page"]').first().textContent();
+const activeDesktopRoute = await page.locator('nav a[aria-current="page"]').textContent();
 await page.getByRole('button', { name: 'Open menu' }).click();
 const menuItems = await page.getByRole('menuitem').allTextContents();
 const menuBadges = await page.locator('.MuiMenu-root .MuiBadge-badge').allTextContents();
@@ -37,11 +37,11 @@ await mobile.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUn
 await mobile.getByText('System - Ziebee II', { exact: true }).waitFor({ timeout: 90_000 });
 const mobileNavigation = await mobile.locator('nav').last().getByRole('link').allTextContents();
 const visibleMobileNavigation = await mobile.locator('nav').last().getByRole('link').evaluateAll((links) => links.filter((link) => { const rect = link.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }).length);
-const activeMobileRoute = await mobile.locator('nav').last().locator('a[aria-current="page"]').textContent();
+const activeMobileRoute = await mobile.locator('nav').last().locator('a[aria-current="page"]').getAttribute('aria-label');
 await mobile.getByRole('button', { name: 'Open menu' }).click();
 const mobileMenuItems = await mobile.getByRole('menuitem').allTextContents();
 await mobile.screenshot({ path: 'test-results/parity/react-shell-menu-mobile.png', fullPage: true });
 
-if (!announcements.dialog || announcements.route !== '#/detail' || visibleMobileNavigation !== 5 || Math.abs(menuGeometry.rightEdgeDelta ?? 99) > 2 || (menuGeometry.iconLabelGap ?? 0) < 10) throw new Error(JSON.stringify({ announcements, visibleMobileNavigation, menuGeometry }));
+if (!announcements.dialog || announcements.route !== '#/detail' || activeDesktopRoute !== 'Detail' || activeMobileRoute !== 'Detail' || visibleMobileNavigation !== 5 || Math.abs(menuGeometry.rightEdgeDelta ?? 99) > 2 || (menuGeometry.iconLabelGap ?? 0) < 10) throw new Error(JSON.stringify({ announcements, activeDesktopRoute, activeMobileRoute, visibleMobileNavigation, menuGeometry }));
 console.log(JSON.stringify({ desktopNavigation, activeDesktopRoute, menuItems, menuBadges, menuGeometry, announcements, mobileNavigation, visibleMobileNavigation, activeMobileRoute, mobileMenuItems, errors, failedResponses }, null, 2));
 await browser.close();
