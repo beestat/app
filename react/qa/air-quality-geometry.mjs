@@ -39,5 +39,15 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
 for (const result of results.filter((item) => item.kind === 'react')) {
   for (const option of ['Past 1 Week', 'Past 4 Weeks', 'Help']) if (!result.summaryMenu?.includes(option)) throw new Error(`Air Quality Summary menu is missing ${option}.`);
 }
+for (let index = 0; index < results.length; index += 2) {
+  const legacy = results[index];
+  const react = results[index + 1];
+  if (legacy.viewport.width > 500) continue;
+  const legacyLabels = legacy.charts[3]?.xLabels;
+  const reactLabels = react.charts[3]?.xLabels;
+  if (JSON.stringify(reactLabels) !== JSON.stringify(legacyLabels)) {
+    throw new Error(`Air Quality x-axis labels differ from legacy at ${legacy.viewport.width}px: ${JSON.stringify({ legacy: legacyLabels, react: reactLabels })}`);
+  }
+}
 console.log(JSON.stringify(results, null, 2));
 await browser.close();
