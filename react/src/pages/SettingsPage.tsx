@@ -61,7 +61,14 @@ export function SettingsPage() {
   };
   const addThermostat = async () => { if (serial.length !== 12) return; await apiBatch([{ resource: 'ecobee_thermostat', method: 'create', alias: 'create', arguments: { attributes: { identifier: serial } } }, { resource: 'ecobee_thermostat', method: 'read_id', alias: 'read_id', arguments: { attributes: { inactive: 0 } } }]); setSerial(''); await refresh(); };
   const removeThermostat = async (id: number) => { await apiBatch([{ resource: 'ecobee_thermostat', method: 'update', alias: 'delete', arguments: { attributes: { ecobee_thermostat_id: id, inactive: 1 } } }, { resource: 'ecobee_thermostat', method: 'read_id', alias: 'read_id', arguments: { attributes: { inactive: 0 } } }]); await refresh(); };
-  const apiKeyAction = async (method: 'create_api_key' | 'recycle_api_key' | 'delete_api_key') => { if (method !== 'create_api_key' && !confirm(`${method === 'delete_api_key' ? 'Delete' : 'Regenerate'} your API key? Existing integrations will stop working.`)) return; await apiCall({ resource: 'user', method }); await refresh(); };
+  const apiKeyAction = async (method: 'create_api_key' | 'recycle_api_key' | 'delete_api_key') => {
+    const confirmation = method === 'recycle_api_key'
+      ? 'Regenerating your API key will invalidate the current key. Any applications using the old key will stop working. Continue?'
+      : 'Are you sure you want to delete your API key? This cannot be undone.';
+    if (method !== 'create_api_key' && !confirm(confirmation)) return;
+    await apiCall({ resource: 'user', method });
+    await refresh();
+  };
   return <Box sx={{ display: 'grid', gap: 2, pb: 2, '& .MuiCardContent-root': { pb: '16px !important' }, '& .MuiTextField-root .MuiInputBase-root': { height: 32 } }}>
     <Snackbar open={Boolean(message)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} autoHideDuration={message === 'Saved' ? 1800 : null} onClose={() => setMessage('')}>
       <Alert severity="success" variant="filled" onClose={() => setMessage('')}>{message}</Alert>

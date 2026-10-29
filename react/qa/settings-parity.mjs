@@ -39,6 +39,26 @@ await page.waitForTimeout(500);
 const serial = page.getByLabel('Serial #'); await serial.fill('123456789012');
 if (await page.getByRole('button', { name: 'Add Thermostat' }).isDisabled()) throw new Error('Valid thermostat serial did not enable Add Thermostat.');
 if (!await page.getByRole('button', { name: /Regenerate Key|Create API Key/ }).isVisible()) throw new Error('API key management is missing.');
+const apiConfirmations = [];
+if (await page.getByRole('button', { name: 'Regenerate Key' }).count()) {
+  page.once('dialog', async (dialog) => { apiConfirmations.push(dialog.message()); await dialog.dismiss(); });
+  await page.getByRole('button', { name: 'Regenerate Key' }).click();
+  await page.waitForTimeout(100);
+  if (mutations.some((item) => item.method === 'recycle_api_key')) throw new Error('Dismissing API key regeneration still submitted a mutation.');
+  page.once('dialog', async (dialog) => { apiConfirmations.push(dialog.message()); await dialog.accept(); });
+  await page.getByRole('button', { name: 'Regenerate Key' }).click();
+  await page.waitForTimeout(500);
+  page.once('dialog', async (dialog) => { apiConfirmations.push(dialog.message()); await dialog.dismiss(); });
+  await page.getByRole('button', { name: 'Delete Key' }).click();
+  await page.waitForTimeout(100);
+  if (mutations.some((item) => item.method === 'delete_api_key')) throw new Error('Dismissing API key deletion still submitted a mutation.');
+  const expectedConfirmations = [
+    'Regenerating your API key will invalidate the current key. Any applications using the old key will stop working. Continue?',
+    'Regenerating your API key will invalidate the current key. Any applications using the old key will stop working. Continue?',
+    'Are you sure you want to delete your API key? This cannot be undone.',
+  ];
+  if (JSON.stringify(apiConfirmations) !== JSON.stringify(expectedConfirmations)) throw new Error(`API key confirmations differ from legacy: ${JSON.stringify(apiConfirmations)}`);
+}
 const expectedKeys = ['ui.always_dock_tooltips', 'units.temperature', 'units.distance', 'units.area', 'units.currency', 'runtime_thermostat_summary_gap_fill', 'runtime_thermostat_summary_smart_scale'];
 const keys = mutations.filter((item) => item.method === 'update_setting').map((item) => item.arguments?.key);
 expectedKeys.forEach((key) => { if (!keys.includes(key)) throw new Error(`Missing persistence call for ${key}.`); });
@@ -64,5 +84,5 @@ await page.getByText('Manage Thermostats', { exact: true }).waitFor({ timeout: 3
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, thermostat: document.body.innerText.includes('Ziebee II') }));
 if (mobile.scrollWidth > mobile.innerWidth) throw new Error(`Settings horizontal overflow: ${JSON.stringify(mobile)}`);
 
-console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), saveFeedback, keys, liveUnitLabels, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
+console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), saveFeedback, keys, liveUnitLabels, apiConfirmations, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
 await browser.close();
