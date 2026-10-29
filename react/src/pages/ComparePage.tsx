@@ -13,6 +13,7 @@ import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
 import { titleCase } from '../utils/format';
+import { convertTemperature } from '../utils/format';
 
 function profileValue(thermostat: any, group: string, name: string) {
   if (group === 'property') return thermostat?.property?.[name];
@@ -28,8 +29,8 @@ function metricLabel(group: string, name: string, value: number, unit: string) {
   if (group === 'property' && name === 'age') return `${value}y`;
   if (group === 'property' && name === 'square_feet') return `${value.toLocaleString()} ft²`;
   if (group === 'runtime_per_degree_day') return `${Math.round(value)}m`;
-  if (group === 'setpoint' || group === 'balance_point') return `${value.toFixed(group === 'setpoint' ? 1 : 0)}${unit}`;
-  if (group === 'setback') return `${value}${unit}`;
+  if (group === 'setpoint' || group === 'balance_point') return `${convertTemperature(value, unit).toFixed(group === 'setpoint' ? 1 : 0)}${unit}`;
+  if (group === 'setback') return `${Number(convertTemperature(value, unit, '°F', true).toFixed(1))}${unit}`;
   return String(value);
 }
 
@@ -167,14 +168,14 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   </Box>;
 }
 
-function MetricGroup({ group, values, thermostat }: { group: string; values: Record<string, any> | undefined; thermostat: any }) {
+function MetricGroup({ group, values, thermostat, unit }: { group: string; values: Record<string, any> | undefined; thermostat: any; unit: string }) {
   if (!values) return null;
   const metrics = Object.entries(values).filter(([, metric]) => metric != null);
   if (!metrics.length) return null;
-  return <Box sx={{ mb: '18px', minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={thermostat?.temperature_unit ?? '°F'} />)}</Box>;
+  return <Box sx={{ mb: '18px', minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={unit} />)}</Box>;
 }
 
-function MetricColumns({ values, thermostat }: { values: Record<string, Record<string, any>> | undefined; thermostat: any }) {
+function MetricColumns({ values, thermostat, unit }: { values: Record<string, Record<string, any>> | undefined; thermostat: any; unit: string }) {
   const threeColumns = useMediaQuery('(min-width:1001px)');
   const twoColumns = useMediaQuery('(min-width:801px)');
   if (!values) return null;
@@ -192,13 +193,14 @@ function MetricColumns({ values, thermostat }: { values: Record<string, Record<s
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
   return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 0, mx: -1, pt: '1px', '@media (min-width: 801px)': { pt: '5px' } }}>
-    {columns.map((column, index) => <Box key={index} sx={{ px: 1 }}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} />)}</Box>)}
+    {columns.map((column, index) => <Box key={index} sx={{ px: 1 }}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} unit={unit} />)}</Box>)}
   </Box>;
 }
 
 export function ComparePage() {
   const { data, thermostat, thermostatId, refresh } = useDashboard();
   const settings = data?.user?.settings ?? {};
+  const temperatureUnit = String(settings.units?.temperature ?? thermostat?.temperature_unit ?? '°F');
   const [region, setRegion] = useState<'nearby' | 'global'>(settings.comparison_region === 'nearby' ? 'nearby' : 'global');
   const initialProperty = ['similar', 'same_structure', 'all'].includes(settings.comparison_property_type) ? settings.comparison_property_type : 'similar';
   const [propertyType, setPropertyType] = useState<'similar' | 'same_structure' | 'all'>(initialProperty);
@@ -261,6 +263,6 @@ export function ComparePage() {
         </DashboardCard>
       </Grid>
     </Grid>
-    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} />}</DashboardCard>
+    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} unit={temperatureUnit} />}</DashboardCard>
   </Box>;
 }

@@ -15,9 +15,11 @@ import { buildRuntimeData, equipment, formatRuntime, runtimeAxisLabel, runtimeTi
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
+import { convertTemperature } from '../../utils/format';
 
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
   const { data: dashboardData } = useDashboard();
+  const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
   const [days, setDays] = useState(() => {
     const configured = Number(dashboardData?.user?.settings?.runtime_thermostat_detail_range_dynamic);
     return [1, 3, 7].includes(configured) ? configured : 3;
@@ -48,22 +50,22 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       ['outdoor_humidity', 'Outdoor Humidity', colors.teal.main, 'ShortDash', 1, false],
     ] as const;
     return definitions.filter(([key]) => data.temperature[key].some((point) => point[1] !== null)).map(([key, name, color, dashStyle, lineWidth, visible]) => ({
-      type: key.includes('setpoint') ? 'line' as const : 'spline' as const, name, data: data.temperature[key], color,
+      type: key.includes('setpoint') ? 'line' as const : 'spline' as const, name, data: key.includes('humidity') ? data.temperature[key] : data.temperature[key].map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color,
       dashStyle: dashStyle as Highcharts.DashStyleValue, lineWidth, visible, yAxis: key.includes('humidity') ? 1 : 0,
       step: key.includes('setpoint') ? 'right' as const : undefined, turboThreshold: 0,
     }));
-  }, [data]);
+  }, [data, displayUnit]);
   const temperatureBounds = useMemo(() => {
     const values = series.filter((item) => item.visible && item.yAxis === 0).flatMap((item) => item.data.map((point) => point[1]).filter((value): value is number => typeof value === 'number'));
     if (!values.length) return undefined;
-    const interval = thermostat.temperature_unit.includes('C') ? 5 : 10;
+    const interval = displayUnit.includes('C') ? 5 : 10;
     return { min: Math.floor(Math.min(...values) / interval) * interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
-  }, [series, thermostat.temperature_unit]);
+  }, [displayUnit, series]);
   const options = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, alignTicks: false, animation: false, zooming: { type: 'x' } },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickPositioner() { return runtimeTickPositions(data.timestamps, Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
-    yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(thermostat.temperature_unit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
+    yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(displayUnit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
     legend: { itemStyle: { color: colors.gray.light, fontWeight: '500' }, itemHiddenStyle: { color: '#7f8c8d', textDecoration: 'line-through' }, itemHoverStyle: { color: colors.gray.main } },
     tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, positioner: stableTooltipPositioner(60), backgroundColor: 'transparent', borderWidth: 0, formatter() {
       const x = Number(this.x);
@@ -79,7 +81,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       (this.points ?? []).forEach((point) => {
         if (point.y == null) return;
         const humidity = point.series.name.includes('Humidity');
-        const value = humidity ? `${Math.round(point.y)}%` : `${Highcharts.numberFormat(point.y, 1)}${unitLabel(thermostat.temperature_unit)}`;
+        const value = humidity ? `${Math.round(point.y)}%` : `${Highcharts.numberFormat(point.y, 1)}${unitLabel(displayUnit)}`;
         dataItems.push({ label: point.series.name, value, color: String(point.color) });
       });
       (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
@@ -90,7 +92,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
-  }), [data, extremes, series, temperatureBounds, thermostat.temperature_unit]);
+  }), [data, displayUnit, extremes, series, temperatureBounds]);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
