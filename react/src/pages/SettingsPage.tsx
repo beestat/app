@@ -20,7 +20,7 @@ function RadioMark({ checked = false }: { checked?: boolean }) {
 }
 
 export function SettingsPage() {
-  const { data, thermostat, refresh } = useDashboard();
+  const { data, thermostat, refresh, setDashboardSetting } = useDashboard();
   const settings = data?.user?.settings ?? {};
   const profileKey = `thermostat.${thermostat?.thermostat_id}.profile`;
   const resolvedValues = useMemo(() => ({
@@ -38,13 +38,15 @@ export function SettingsPage() {
   const [serial, setSerial] = useState('');
   const [message, setMessage] = useState('');
   const apiSession = useMemo(() => Object.values(data?.session ?? {}).find((session: any) => session.api_user_id != null) as any, [data?.session]);
-  const update = async (key: string, value: unknown) => { setMessage('Saving…'); await apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } }); setMessage('Saved'); window.setTimeout(() => setMessage(''), 1800); };
+  const update = async (key: string, value: unknown) => { setMessage('Saving…'); await apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } }); setDashboardSetting(key, value); setMessage('Saved'); window.setTimeout(() => setMessage(''), 1800); };
   const updateDistance = async (value: string) => {
     setMessage('Saving…');
     await apiBatch([
       { resource: 'user', method: 'update_setting', alias: 'distance', arguments: { key: 'units.distance', value } },
       { resource: 'user', method: 'update_setting', alias: 'area', arguments: { key: 'units.area', value: `${value}²` } },
     ]);
+    setDashboardSetting('units.distance', value);
+    setDashboardSetting('units.area', `${value}²`);
     setMessage('Saved');
     window.setTimeout(() => setMessage(''), 1800);
   };

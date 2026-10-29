@@ -43,6 +43,14 @@ const expectedKeys = ['ui.always_dock_tooltips', 'units.temperature', 'units.dis
 const keys = mutations.filter((item) => item.method === 'update_setting').map((item) => item.arguments?.key);
 expectedKeys.forEach((key) => { if (!keys.includes(key)) throw new Error(`Missing persistence call for ${key}.`); });
 
+await page.evaluate(() => { location.hash = '#/detail'; });
+const sensorDetail = page.locator('.MuiCard-root').filter({ has: page.getByText('Sensor Detail', { exact: true }) });
+await sensorDetail.waitFor({ timeout: 30_000 });
+await sensorDetail.scrollIntoViewIfNeeded();
+await sensorDetail.locator('.highcharts-yaxis-labels text').first().waitFor({ timeout: 90_000 });
+const liveUnitLabels = await sensorDetail.locator('.highcharts-yaxis-labels text').allTextContents();
+if (!liveUnitLabels.some((label) => label.endsWith('°C')) || liveUnitLabels.some((label) => label.endsWith('°F'))) throw new Error(`Temperature setting did not update the live dashboard: ${JSON.stringify(liveUnitLabels)}`);
+
 const routes = {};
 for (const [route, text] of [['download', 'Download Data'], ['contribute', 'Contribute']]) {
   await page.goto(`https://dev.app.beestat.io/react/index.php#/${route}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -56,5 +64,5 @@ await page.getByText('Manage Thermostats', { exact: true }).waitFor({ timeout: 3
 const mobile = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth, thermostat: document.body.innerText.includes('Ziebee II') }));
 if (mobile.scrollWidth > mobile.innerWidth) throw new Error(`Settings horizontal overflow: ${JSON.stringify(mobile)}`);
 
-console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), saveFeedback, keys, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
+console.log(JSON.stringify({ settingsCards: await page.locator('.MuiCard-root').count(), saveFeedback, keys, liveUnitLabels, mutations: mutations.map((item) => `${item.resource}.${item.method}`), routes, mobile, errors }, null, 2));
 await browser.close();

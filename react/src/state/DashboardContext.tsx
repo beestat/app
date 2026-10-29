@@ -29,9 +29,31 @@ interface DashboardContextValue {
   thermostatId?: number;
   setThermostatId: (id: number) => void;
   refresh: () => Promise<unknown>;
+  setDashboardSetting: (key: string, value: unknown) => void;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
+
+function setNestedSetting(source: Record<string, any>, key: string, value: unknown) {
+  const result = { ...source };
+  const parts = key.split('.');
+  let cursor = result;
+  parts.forEach((part, index) => {
+    if (index === parts.length - 1) cursor[part] = value;
+    else cursor = cursor[part] = { ...(cursor[part] ?? {}) };
+  });
+  return result;
+}
+
+function mergeSettings(source: Record<string, any>, overrides: Record<string, any>) {
+  const result = { ...source };
+  Object.entries(overrides).forEach(([key, value]) => {
+    result[key] = value && typeof value === 'object' && !Array.isArray(value)
+      ? mergeSettings(result[key] ?? {}, value)
+      : value;
+  });
+  return result;
+}
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const query = useQuery({
@@ -51,7 +73,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     [query.data?.thermostat],
   );
   const [thermostatId, setThermostatIdState] = useState<number | undefined>();
-  const serverThermostatId = Number(query.data?.user?.settings?.thermostat_id);
+  const [settingOverrides, setSettingOverrides] = useState<Record<string, any>>({});
+  const setDashboardSetting = useCallback((key: string, value: unknown) => {
+    setSettingOverrides((current) => setNestedSetting(current, key, value));
+  }, []);
+  const dashboardData = useMemo(() => query.data ? {
+    ...query.data,
+    user: {
+      ...query.data.user,
+      settings: mergeSettings(query.data.user.settings ?? {}, settingOverrides),
+    },
+  } : undefined, [query.data, settingOverrides]);
+  const serverThermostatId = Number(dashboardData?.user?.settings?.thermostat_id);
 
   useEffect(() => {
     if (!thermostatIds.length) return;
@@ -80,14 +113,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, [thermostat?.name]);
 
   const value = useMemo<DashboardContextValue>(() => ({
-    data: query.data,
+    data: dashboardData,
     loading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : undefined,
     thermostat,
     thermostatId,
     setThermostatId,
     refresh: query.refetch,
-  }), [query.data, query.isLoading, query.error, query.refetch, thermostat, thermostatId, setThermostatId]);
+    setDashboardSetting,
+  }), [dashboardData, query.isLoading, query.error, query.refetch, setDashboardSetting, thermostat, thermostatId, setThermostatId]);
 
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }
