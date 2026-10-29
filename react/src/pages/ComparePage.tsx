@@ -12,8 +12,7 @@ import { DashboardCard } from '../components/common/DashboardCard';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
-import { titleCase } from '../utils/format';
-import { convertTemperature } from '../utils/format';
+import { convertTemperature, titleCase } from '../utils/format';
 
 function profileValue(thermostat: any, group: string, name: string) {
   if (group === 'property') return thermostat?.property?.[name];
