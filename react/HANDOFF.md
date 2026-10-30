@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-29 23:35: Claude, iteration 4 (Visualize, coverage audit, e2e)
+
+Done:
+- Visualize side by side at 1440: matches legacy (floor plan card, settings, 3D card, toolbar, timeline).
+- Mobile Compare (390): matches legacy, including the iteration 3 fixes.
+- Audited every legacy `js/component/card/*` and `modal/*` that is actually used (weather, thermostat/filter info, change system type, visualize intro/video/affiliate, rate-app, enjoy-beestat, contribute benefits/status/merchandise). React has an equivalent for each. `early_access` and `rookstack_survey_notification` are not used anywhere in legacy.
+- `7bf46ed`: README no longer says Visualize runs in an isolated surface (it loads the legacy scripts in-page via `legacyVisualizer.ts`) and documents the auth-state reuse and `qa/side-by-side.mjs`.
+- `e2e/smoke.spec.ts` now reuses `test-results/auth-state.json` when `BEESTAT_FORCE_LOGIN_URL` is not set (it used to always skip). It also covers analyze/visualize/compare/air-quality/settings/contribute with a no-page-error assertion: 14/14 pass on desktop and mobile.
+
+Next: interaction-level checks (chart range menus, custom date dialogs) against legacy; Analyze mobile; Detail sensor-tile geometry (legacy rows look slightly taller).
+
 ## 2026-10-29 23:25: Claude, iteration 3 (Compare, Settings, Air Quality)
 
 Done (`7c0c3c9`):
