@@ -7,6 +7,22 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-29 23:25: Claude, iteration 3 (Compare, Settings, Air Quality)
+
+Done (`7c0c3c9`):
+- Compare metric tiles: the percentage used `Math.round(100 * n / sum)`; legacy uses `(n / sum * 100).toFixed(0)`. With 113/200 those give 57 vs 56, so Heat 2 balance point showed "> 57% homes" where legacy shows "> 56%". It now copies legacy's order.
+- "Comparing to homes like…" shows the raw property type ("Property Type: detached"), as legacy does, instead of title-casing it.
+- The tile sub-lines ("450 others", "< 88% homes") were 11px captions; legacy uses the 13px base font for all three lines.
+- Added `qa/side-by-side.mjs <legacy-layer> <react-route> <ready-text> [width]`, which captures settled full-page legacy/React screenshots to `test-results/side-by-side/`.
+
+Reviewed, no change needed:
+- Settings: same content; React's modern controls look intentional. Legacy's Manage Thermostats ⋮ → Help opens `window.open('TODO')`, so React leaving that menu out is deliberate.
+- Air Quality: layout and summary heatmap match.
+
+Verified: tests, typecheck, build; Compare screenshot on dev matches legacy text.
+
+Next: Visualize side by side; contribute/download/announcements dialogs; check mobile widths of Compare/Analyze for the same issues.
+
 ## 2026-10-29 23:30: Claude, iteration 2 (Analyze)
 
 Done:
