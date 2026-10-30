@@ -108,13 +108,13 @@ export function AnalyzePage() {
     const meta = equipmentFor(thermostat);
     const runtimeSeries = (['compressor_cool_1', 'compressor_cool_2', 'compressor_heat_1', 'compressor_heat_2', 'auxiliary_heat_1', 'auxiliary_heat_2'] as const)
       .filter((code) => summary.some((row) => Number(row[`sum_${code}`]) !== 0))
-      .map((code) => ({ type: 'column' as const, name: meta[code].name, color: meta[code].color, yAxis: 0, data: summary.map((row) => Number(row[`sum_${code}`])) }));
+      .map((code) => ({ type: 'column' as const, name: meta[code].name, color: meta[code].color, custom: { code: `sum_${code}` }, yAxis: 0, data: summary.map((row) => Number(row[`sum_${code}`])) }));
     const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => convertProfileX(Number(row.avg_outdoor_temperature), unit)) }];
     if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [convertProfileX(Number(row.min_outdoor_temperature), unit), convertProfileX(Number(row.max_outdoor_temperature), unit)]) });
     const hasDegreeDays = summary.some((row) => Number(row.sum_heating_degree_days) !== 0 || Number(row.sum_cooling_degree_days) !== 0);
     const degreeDaySeries: Highcharts.SeriesOptionsType[] = hasDegreeDays ? [
-      { type: 'spline', id: 'degree-days', name: 'Degree Days', color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
-      { type: 'spline', name: 'Cooling Degree Days', linkedTo: 'degree-days', color: colors.lightBlue.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_cooling_degree_days)) },
+      { type: 'spline', id: 'degree-days', name: 'Degree Days', custom: { code: 'sum_heating_degree_days' }, color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
+      { type: 'spline', name: 'Degree Days', custom: { code: 'sum_cooling_degree_days' }, linkedTo: 'degree-days', color: colors.lightBlue.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_cooling_degree_days)) },
     ] : [];
     const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
     const scale = smartScale(config.group);
@@ -140,7 +140,9 @@ export function AnalyzePage() {
           if (point.series.name === 'Outdoor Temp') value = `${Math.round(point.y)}${unit}${extremes ? ` (${Math.round(Number(extremes.low))}${unit} to ${Math.round(Number(extremes.high))}${unit})` : ''}`;
           else if (point.series.name.includes('Degree Days')) value = Number(point.y).toFixed(1);
           else value = formatLegacyHours(point.y);
-          const group = point.series.name.includes('Heat') || point.series.name.startsWith('Aux') ? 'heat' : point.series.name.includes('Cool') ? 'cool' : 'other';
+          // Legacy groups by series code, so degree days join heat/cool and renamed furnace stages stay in heat.
+          const code = String((point.series.options as { custom?: { code?: string } }).custom?.code ?? '');
+          const group = code.includes('heat') ? 'heat' : code.includes('cool') ? 'cool' : 'other';
           groups[group].push({ label: point.series.name, value, color: String(point.color) });
         });
         return chartTooltipHtml(dateTitle, [groups.heat, groups.cool, groups.other]);

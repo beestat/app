@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:40: Claude, iteration 18 (summary tooltip grouping)
+
+Done: Thermostat Summary series now carry their legacy code in `custom.code` (`sum_compressor_heat_1`, `sum_heating_degree_days`, …), and the tooltip groups rows by whether that code contains "heat" or "cool", as legacy `runtime_thermostat_summary` does. React used to group by display name, which put heating degree days under "other" and would misgroup renamed furnace stages. Both degree-day series are named "Degree Days" as in legacy (React's tooltip said "Cooling Degree Days").
+
+Verified: typecheck, 35 unit tests, build, `qa/analyze-interactions.mjs` (setting writes intercepted).
+
 ## 2026-10-30 01:30: Claude, iteration 17 (data loading review, 900px, runtime tests)
 
 Done:
