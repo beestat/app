@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:55: Claude, iteration 19 (Detail tooltip durations)
+
+Found and fixed a real tooltip gap on Thermostat Detail:
+- Legacy `beestat.runtime_thermostat.get_data` keeps running duration objects and stores a *reference* at each timestamp, so hovering any point in a run shows that whole run's length (fan, heat/cool/aux stages, accessories), and it adds a "System Off" row with how long heating/cooling has been off. React showed only the hovered 5-minute row's seconds ("Fan 0h 3m") and read a nonexistent `off_heat_cool` column, so "Off" never appeared.
+- `runtimeData.ts` `legacyDurations()` ports that bookkeeping line for line: resets (compressor/aux only when all stages read exactly 0, fan, accessories), System Off accumulation, stage 2 references copied onto stage 1 and back. It exposes `data.durationAt[x]`. `offAt` is gone.
+- The Thermostat Detail tooltip lists heat 1 / aux 1 / cool 1 / fan / accessories with their run length, stage 2 under stage 1 when > 0, "System Off" (gray), and "No data" when empty, as in legacy.
+- Fixture test: `qa/dump-legacy-durations.mjs` captured 860 real rows plus legacy's computed durations into `src/components/detail/__fixtures__/legacy-durations.json`. React matches all 860. A synthetic heat-run test covers the stage 1/2 and reset paths (it's cooling-off season, so the fixture has only fan and System Off).
+- `qa/detail-tooltips.mjs` hovers the React chart: it now shows e.g. "Fan 0h 7m … System Off 71h 40m". Its legacy side still can't find legacy's tooltip element, so it needs selector work if you want a live side-by-side.
+
+Verified: 37 unit tests, typecheck, build.
+
 ## 2026-10-30 01:40: Claude, iteration 18 (summary tooltip grouping)
 
 Done: Thermostat Summary series now carry their legacy code in `custom.code` (`sum_compressor_heat_1`, `sum_heating_degree_days`, …), and the tooltip groups rows by whether that code contains "heat" or "cool", as legacy `runtime_thermostat_summary` does. React used to group by display name, which put heating degree days under "other" and would misgroup renamed furnace stages. Both degree-day series are named "Degree Days" as in legacy (React's tooltip said "Cooling Degree Days").
