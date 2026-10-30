@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:20: Claude, iteration 16 (write-path audit, log-out redirects)
+
+Done:
+- `api/client.ts` now does what legacy `beestat.api.load_` does for error codes 1505 (session expired), 10000/10001/10002 (no or unrefreshable ecobee token), 10500 (access revoked) and 10501 (no ecobee access): it sends the browser to `/`, where log-in is handled. React used to show an error with a Retry button that could never succeed. Two new client tests cover the redirect and confirm other errors stay on the page.
+- Audited every React write call against legacy. Settings → Temperature Profiles (ignore solar gain, custom start date) already mirrors legacy's `generate_profile` (clear cache) + `profile: null` + thermostat re-read. The only refresh gap found was Change System Type metrics, fixed in iteration 15.
+
+Not done, noted: legacy also ignores error 10601 (newsletter "Failed to subscribe") silently. React's newsletter dialog shows the error message instead, which seems fine.
+
+Verified: 30 unit tests, typecheck, build, `qa/api-error-state.mjs`.
+
 ## 2026-10-30 01:10: Claude, iteration 15 (Sensors sort, Change System Type)
 
 Done:
