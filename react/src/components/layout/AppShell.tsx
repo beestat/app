@@ -32,8 +32,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   // The index route renders Detail, so highlight it there too.
   const activePath = location.pathname === '/' ? '/detail' : location.pathname;
-  const compact = useMediaQuery('(max-width:900px)');
-  const phone = useMediaQuery('(max-width:600px)');
+  // Legacy header breakpoints: text navigation needs logo 160 + nav 565 + menu 50
+  // + margin 16 = 791px; the full logo needs 160 + 225 + 66 = 451px.
+  const compact = useMediaQuery('(max-width:790px)');
+  const phone = useMediaQuery('(max-width:450px)');
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
@@ -91,13 +93,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!embedded && <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
           <Toolbar sx={{ gap: { xs: .5, sm: 2 }, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
-            <Box component={Link} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : compact ? 39 : 144, flex: `0 0 ${phone ? 32 : compact ? 39 : 144}px`, textDecoration: 'none' }}>
-              <Box component="img" src={compact ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
+            <Box component={Link} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : 144, flex: `0 0 ${phone ? 32 : 144}px`, textDecoration: 'none' }}>
+              <Box component="img" src={phone ? '/favicon.png' : '/img/logo.png'} alt="beestat" sx={{ height: 32, maxWidth: '100%', objectFit: 'contain', position: 'relative', top: { sm: '1px' } }} />
             </Box>
-            {hasThermostats && <Box component="nav" sx={{ display: 'flex', gap: { xs: 0, sm: .5 }, flex: phone ? '1 1 auto' : `0 0 ${compact ? 225 : 565}px`, minWidth: 0 }}>
+            {hasThermostats && <Box component="nav" sx={{ display: 'flex', alignItems: 'center', gap: compact ? 1 : .5, ml: phone ? 2.5 : 0, flex: `0 ${phone ? 1 : 0} ${compact ? 225 : 565}px`, minWidth: 0 }}>
               {navItems.map(({ path, label, icon: Icon }) => (
-                <Button key={path} component={NavLink} to={path} aria-label={label} title={phone ? label : undefined} startIcon={<Icon size={18} />} sx={{
-                  minWidth: phone ? 0 : compact ? 42 : undefined, px: phone ? 0 : compact ? 1 : 1.5, flex: phone ? 1 : undefined,
+                <Button key={path} component={NavLink} to={path} aria-label={label} title={compact ? label : undefined} startIcon={<Icon size={18} />} sx={{
+                  // Legacy icon tiles are 32px squares 40px apart; on the narrowest phones they may shrink rather than overflow.
+                  minWidth: phone ? 0 : compact ? 32 : undefined, px: compact ? 0 : 1.5, flex: compact ? '0 1 32px' : undefined,
+                  ...(compact && { height: 32, '& .MuiButton-startIcon': { m: 0 } }),
                   mt: { sm: '2px' },
                   color: `${activePath === path ? colors.slate.dark : '#fff'} !important`,
                   bgcolor: activePath === path ? '#fff' : 'transparent',
@@ -105,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }} onPointerEnter={() => preloadRoute(path)} onFocus={() => preloadRoute(path)}>{compact ? null : label}</Button>
               ))}
             </Box>}
-            {!phone && <Box sx={{ flex: 1 }} />}
+            <Box sx={{ flex: 1 }} />
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge>
             </IconButton>
