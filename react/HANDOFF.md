@@ -7,6 +7,36 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 07:10: Claude, final summary of the overnight session
+
+60 local commits on `feature/react-modernization` after `a466183`, none pushed. `api/user.php` was left uncommitted (dev-only `force_log_in` change). Every change was compared with the legacy source; the iteration entries below give the evidence and the `qa/` script for each.
+
+**User-visible parity fixes**
+- Header: legacy breakpoints (791/451px), 32px icon tiles, Detail highlighted at `/`, multi-thermostat quick switcher.
+- Detail: chart placeholders while chunks load; sensor tile grid and gutters; System card circle color priority and snowflake color; time-to-temperature (mode priority, "1h 5m", "3:15 pm", "Never"); "•" separators; filter "Replace In" math.
+- Thermostat tooltip: whole-run durations and "System Off", ported from legacy `get_data` and checked against 860 real rows (fixture test).
+- Equipment naming by configured stages and non-heat-pump heat (furnace aux shown as orange "Heat"), across charts, chips and tooltips.
+- Legends: Outdoor Temp/Degree Days exclusive; raceway stays aligned when humidity is shown; sensor occupancy lanes follow the legend; toggles survive refreshes.
+- Docked tooltips under charts below 600px or with "Always Dock Tooltips" (all charts including Air Quality).
+- Analyze: chip minute truncation (Aux 568h 49m), profile axis labels, stage names, summary tooltip grouping, custom count kept across All.
+- Compare: percentage rounding, property type text, tile font size, metrics refetch after changing system type.
+- Range dialogs: local-time request bounds, local default dates, day clamping, Visualize seven-day limit and date swap.
+
+**Robustness**
+- Log-out redirect on session/ecobee-access API errors; route error boundary; guarded localStorage; Highcharts accessibility warning silenced.
+- Refresh like legacy's poll: stale dashboard refetches on tab focus, and each poll re-sends `runtime.sync` and refetches chart data.
+
+**Tests and QA**
+- Unit tests went from 15 to 41. e2e smoke now runs on saved auth across 7 routes × 2 widths (14/14).
+- About 20 new `qa/*.mjs` scripts (side-by-side, header widths/switcher, modal parity, tooltips, console audit, poll refresh, etc.). They mostly don't change account data: setting writes are aborted or intercepted, though the side-by-side and capture scripts make no writes at all.
+- `README.md` corrected; `PARITY.md` gained a "Cross-cutting behaviors" section.
+
+**Open items for Codex**
+- Watch Visualize for reload jank now that the 3D data refetches every 5 minutes (iteration 31).
+- `qa/detail-tooltips.mjs` can't capture legacy's tooltip element yet.
+- Air Quality's extra "Download Chart" and disabled-vs-hidden menu items (iteration 23) are judgment calls.
+- The gas-furnace naming and running-equipment colors are covered by unit tests only, because no such live data was available.
+
 ## 2026-10-30 03:50: Claude, iteration 31 (charts refresh on poll)
 
 Done: legacy `beestat.poll` sends `runtime.sync` every 5-minute poll and, when it isn't served from cache, deletes the Detail/Sensor/Air Quality/3D chart caches so the charts pick up new rows. React synced only when the thermostat changed, so open charts never updated. `DashboardContext` now re-sends `runtime.sync` whenever the dashboard data refreshes (`query.dataUpdatedAt`). After each refresh that isn't the first sync for that thermostat, it invalidates the `runtime-thermostat`, `runtime-sensors`, `air-quality` and `visualize-runtime` queries. React can't see legacy's client-side "from cache" flag, so it invalidates on every poll (at most every 5 minutes).
