@@ -4,6 +4,7 @@ import { memo, useState } from 'react';
 import type { EcobeeThermostat, Thermostat } from '../../types';
 import { colors } from '../../theme';
 import { formatDuration, formatTemperature, titleCase } from '../../utils/format';
+import { filterLifespan, filterReplaceIn } from './filterInfo';
 import { DashboardCard } from '../common/DashboardCard';
 
 const thermostatModels: Record<string, string> = {
@@ -23,21 +24,8 @@ function fullDate(value?: string) {
 function filterDetails(filter: any) {
   const lastChanged = new Date(`${filter.last_changed}T00:00:00`);
   const runtimeHours = Math.round(Number(filter.runtime) / 3600);
-  let replaceIn = 'Unknown';
-  if (filter.life_units === 'month') {
-    const replace = new Date(Date.UTC(lastChanged.getFullYear(), lastChanged.getMonth() + Number(filter.life), lastChanged.getDate()));
-    const now = new Date();
-    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-    const days = Math.trunc((replace.getTime() - today) / 86_400_000);
-    if (days < 0) replaceIn = `${Math.abs(days)}d overdue`;
-    else if (days === 0) replaceIn = 'Now';
-    else if (days < 35) replaceIn = `${days}d`;
-    else { const months = Math.floor(days / 30.436875); replaceIn = `${months}mo ${days - Math.round(months * 30.436875)}d`; }
-  } else if (filter.life_units === 'hour') {
-    const hours = Number(filter.life) - runtimeHours;
-    replaceIn = hours < 0 ? `${Math.abs(hours)}h overdue` : hours === 0 ? 'Now' : `${hours}h`;
-  }
-  const lifespan = `${filter.life}${filter.life_units === 'hour' ? ' runtime' : ''} ${filter.life_units}${Number(filter.life) === 1 ? '' : 's'}`;
+  const replaceIn = filterReplaceIn(filter);
+  const lifespan = filterLifespan(filter);
   return [
     { name: 'Last Changed', value: lastChanged.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) },
     { name: 'Lifespan', value: lifespan }, { name: 'Replace In', value: replaceIn }, { name: 'Runtime', value: `${runtimeHours}h` },
