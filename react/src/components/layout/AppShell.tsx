@@ -30,6 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data, thermostatId, setThermostatId } = useDashboard();
   const navigate = useNavigate();
   const location = useLocation();
+  // The index route renders Detail, so highlight it there too.
+  const activePath = location.pathname === '/' ? '/detail' : location.pathname;
   const compact = useMediaQuery('(max-width:900px)');
   const phone = useMediaQuery('(max-width:600px)');
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -97,8 +99,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Button key={path} component={NavLink} to={path} aria-label={label} title={phone ? label : undefined} startIcon={<Icon size={18} />} sx={{
                   minWidth: phone ? 0 : compact ? 42 : undefined, px: phone ? 0 : compact ? 1 : 1.5, flex: phone ? 1 : undefined,
                   mt: { sm: '2px' },
-                  color: `${location.pathname === path ? colors.slate.dark : '#fff'} !important`,
-                  bgcolor: location.pathname === path ? '#fff' : 'transparent',
+                  color: `${activePath === path ? colors.slate.dark : '#fff'} !important`,
+                  bgcolor: activePath === path ? '#fff' : 'transparent',
                   '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' },
                 }} onPointerEnter={() => preloadRoute(path)} onFocus={() => preloadRoute(path)}>{compact ? null : label}</Button>
               ))}
