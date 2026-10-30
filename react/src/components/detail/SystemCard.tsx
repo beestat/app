@@ -76,10 +76,15 @@ function ordinal(value: number) {
   return `${value}${remainder >= 11 && remainder <= 13 ? 'th' : value % 10 === 1 ? 'st' : value % 10 === 2 ? 'nd' : value % 10 === 3 ? 'rd' : 'th'}`;
 }
 
-function formatStatusTime(value: string) {
-  const date = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`);
+// Legacy picks one format from the age of the status time and uses it for both "As of" and the last-sync tooltip.
+function parseStatusTime(value: string) {
+  return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`);
+}
+
+function formatStatusTime(value: string, reference = value) {
+  const date = parseStatusTime(value);
   const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
-  return Date.now() - date.getTime() > 3 * 3_600_000
+  return Date.now() - parseStatusTime(reference).getTime() > 3 * 3_600_000
     ? `${date.toLocaleDateString('en-US', { month: 'short' })} ${ordinal(date.getDate())} at ${time}`
     : time;
 }
@@ -104,7 +109,7 @@ export const SystemCard = memo(function SystemCard({ thermostat, temperatureUnit
   const setpoint = mode === 'cool' ? temperature(thermostat.setpoint_cool) : mode === 'heat' || mode === 'auxHeatOnly' ? temperature(thermostat.setpoint_heat) : `${temperature(thermostat.setpoint_heat)} - ${temperature(thermostat.setpoint_cool)}`;
   const statusTime = ecobee?.runtime?.lastStatusModified ? formatStatusTime(ecobee.runtime.lastStatusModified) : undefined;
   const modeLabel = mode === 'auxHeatOnly' ? 'Aux' : titleCase(String(mode));
-  const subtitle = <>{modeLabel}{mode !== 'off' ? ` · ${overridden ? 'Overridden' : 'Schedule'} · ${setpoint}` : ''}{statusTime && <><br /><Tooltip title={lastSync ? `Last sync: ${formatStatusTime(lastSync)}` : ''}><Box component="span" sx={{ color: colors.gray.dark }}>As of {statusTime}</Box></Tooltip></>}</>;
+  const subtitle = <>{modeLabel}{mode !== 'off' ? ` • ${overridden ? 'Overridden' : 'Schedule'} • ${setpoint}` : ''}{statusTime && <><br /><Tooltip title={lastSync ? `Last sync: ${formatStatusTime(lastSync, ecobee?.runtime?.lastStatusModified ?? lastSync)}` : ''}><Box component="span" sx={{ color: colors.gray.dark }}>As of {statusTime}</Box></Tooltip></>}</>;
   const action = <><IconButton aria-label="System menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setAnchor(null); setDialog('thermostat'); }}><ListItemIcon><Info size={18} /></ListItemIcon><ListItemText>Thermostat Info</ListItemText></MenuItem>{Object.keys(thermostat.filters ?? {}).length > 0 && <MenuItem onClick={() => { setAnchor(null); setDialog('filter'); }}><ListItemIcon><Filter size={18} /></ListItemIcon><ListItemText>Filter Info</ListItemText></MenuItem>}<MenuItem component="a" href="https://doc.beestat.io/System-44b441bdd99b4c3991d6e0ace2dce893" target="_blank" rel="noreferrer"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu></>;
   const timeTo = timeToTemperature({ running, temperature: thermostat.temperature, setpointHeat: thermostat.setpoint_heat, setpointCool: thermostat.setpoint_cool, outdoorTemperature: thermostat.weather?.temperature, profile: thermostat.profile as any });
   const ClimateIcon = climate?.climateRef === 'sleep' ? AlarmClock : climate?.climateRef === 'away' || (climate?.climateRef !== 'home' && climate?.isOccupied !== true) ? History : Home;
