@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:10: Claude, iteration 21 (Analyze custom range)
+
+Compared the Thermostat Summary custom dialog with legacy `modal/runtime_thermostat_summary_custom.js`. Options, plural labels, ∞ for All, and `parseInt || 1` already matched. Fixed: legacy keeps the typed count while All is selected and saves 0 only on Save, but React zeroed the draft count and came back as 1. The field also shows `max(1, count)` when leaving All, as legacy shows `count || 1`.
+
+Verified: typecheck, 37 unit tests, build, `qa/analyze-interactions.mjs` (writes intercepted; it saves counts 3 and 6 as before).
+
 ## 2026-10-30 02:05: Claude, iteration 20 (console audit)
 
 Done:
