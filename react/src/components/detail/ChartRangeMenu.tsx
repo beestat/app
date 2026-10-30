@@ -51,8 +51,8 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, h
     <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={close}>
       {[1, 3, 7].map((value) => <MenuItem selected={days === value} key={value} onClick={() => { setDays(value); close(); }}><ListItemText>Past {value} Day{value > 1 ? 's' : ''}</ListItemText></MenuItem>)}
       <MenuItem onClick={openCustom}><ListItemIcon><CalendarDays size={18} /></ListItemIcon><ListItemText>Custom</ListItemText></MenuItem>
-      <MenuItem disabled={!onDownload} onClick={() => { close(); onDownload?.(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem>
-      <MenuItem disabled={!onReset} onClick={() => { close(); onReset?.(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem>
+      {onDownload && <MenuItem onClick={() => { close(); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem>}
+      {onReset && <MenuItem onClick={() => { close(); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem>}
       <MenuItem component="a" href={helpUrl} target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem>
     </Menu>
     <Dialog open={customOpen} onClose={() => setCustomOpen(false)} fullWidth maxWidth="xs">
