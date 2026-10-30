@@ -3,7 +3,7 @@ import {
   DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
   MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, MapPin, Ruler, Settings2, Snowflake } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -54,18 +54,18 @@ const systemTypeOptions = {
   cool: ['compressor', 'geothermal', 'none'],
 } as const;
 const systemTypeTitles = { heat: 'Heat', auxiliary_heat: 'Auxiliary Heat', cool: 'Cool' } as const;
-const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.lightBlue.main } as const;
+const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.blue.light } as const;
 type SystemMode = keyof typeof systemTypeOptions;
-type SystemTypes = Record<SystemMode, string>;
+// Modes with neither a reported nor a detected type stay unselected and are left out of the save, as in legacy.
+type SystemTypes = Partial<Record<SystemMode, string>>;
 
 function selectedSystemTypes(thermostat: any): SystemTypes {
   return Object.fromEntries((Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
     const reported = thermostat?.system_type?.reported?.[mode];
     const equipment = (typeof reported === 'string' ? reported : reported?.equipment)
-      ?? thermostat?.system_type?.detected?.[mode]?.equipment
-      ?? 'none';
+      ?? thermostat?.system_type?.detected?.[mode]?.equipment;
     return [mode, equipment];
-  })) as SystemTypes;
+  }).filter(([, equipment]) => equipment != null)) as SystemTypes;
 }
 
 function effectiveSystemType(thermostat: any, mode: SystemMode) {
@@ -78,6 +78,7 @@ function effectiveSystemType(thermostat: any, mode: SystemMode) {
 }
 
 function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => Promise<unknown> }) {
+  const queryClient = useQueryClient();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<SystemTypes>(() => selectedSystemTypes(thermostat));
@@ -96,7 +97,8 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
     setError('');
     try {
       await apiCall({ resource: 'thermostat', method: 'set_reported_system_types', arguments: { thermostat_id: thermostat.thermostat_id, system_types: draft } });
-      await refresh();
+      // Comparisons match on system type, so refetch metrics as legacy does after saving.
+      await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ['metrics', thermostat.thermostat_id] })]);
       setOpen(false);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Unable to update system types.');
@@ -117,7 +119,7 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
         <Typography sx={{ mb: 2 }}>What type of HVAC system do you have? System types that beestat detected are indicated.</Typography>
         {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => <Box key={mode} sx={{ mb: 2 }}>
           <Typography variant="overline" display="block" sx={{ mb: .5 }}>{systemTypeTitles[mode]}</Typography>
-          <ToggleButtonGroup exclusive value={draft[mode]} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '4px !important' } }}>
+          <ToggleButtonGroup exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '4px !important' } }}>
             {systemTypeOptions[mode].map((option) => {
               const detected = thermostat?.system_type?.detected?.[mode]?.equipment === option;
               return <ToggleButton key={option} value={option} sx={{ bgcolor: colors.slate.main, color: '#fff', px: 1, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: '#fff' } }}>{titleCase(option)}{detected ? ' [Detected]' : ''}</ToggleButton>;
