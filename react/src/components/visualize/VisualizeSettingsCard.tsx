@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
+  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
   Menu, MenuItem, Stack, TextField, Typography,
 } from '@mui/material';
 import {
@@ -91,11 +91,14 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
     update('visualize.range_type', 'dynamic');
     update('visualize.range_dynamic', days);
   };
+  // Legacy modal/visualize_custom.js: dates more than seven days apart are rejected, reversed dates are swapped on save.
+  const customSpanTooLong = Boolean(customBegin && customEnd) && Math.abs(Date.parse(`${customEnd}T00:00:00Z`) - Date.parse(`${customBegin}T00:00:00Z`)) / 86_400_000 > 7;
   const saveCustom = () => {
-    if (!customBegin || !customEnd || customBegin > customEnd) return;
+    if (!customBegin || !customEnd || customSpanTooLong) return;
+    const [begin, end] = customBegin <= customEnd ? [customBegin, customEnd] : [customEnd, customBegin];
     update('visualize.range_type', 'static');
-    update('visualize.range_static.begin', toLegacyDate(customBegin));
-    update('visualize.range_static.end', toLegacyDate(customEnd));
+    update('visualize.range_static.begin', toLegacyDate(begin));
+    update('visualize.range_static.end', toLegacyDate(end));
     setCustomOpen(false);
   };
   const staticMin = Number(nested(settings, `heat_map_static.${dataType}.min`, dataType === 'temperature' ? 70 : 0));
@@ -150,9 +153,9 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
       </Box>
     </DashboardCard>
     <Dialog open={customOpen} onClose={() => setCustomOpen(false)} fullWidth maxWidth="xs">
-      <DialogTitle>Custom Time Period</DialogTitle>
-      <DialogContent><Stack gap={2} pt={1}><TextField label="Begin" type="date" value={customBegin} onChange={(event) => setCustomBegin(event.target.value)} InputLabelProps={{ shrink: true }} /><TextField label="End" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} InputLabelProps={{ shrink: true }} /></Stack></DialogContent>
-      <DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" disabled={!customBegin || !customEnd || customBegin > customEnd} onClick={saveCustom}>Apply</Button></DialogActions>
+      <DialogTitle>Visualize - Custom Range</DialogTitle>
+      <DialogContent><Stack gap={2} pt={1}><Typography>Choose a date range of up to seven days. Multi-day ranges will be averaged into a single 24-hour span.</Typography><TextField label="Begin" type="date" value={customBegin} onChange={(event) => setCustomBegin(event.target.value)} InputLabelProps={{ shrink: true }} /><TextField label="End" type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} InputLabelProps={{ shrink: true }} />{customSpanTooLong && <Alert severity="error">Max range is seven days</Alert>}</Stack></DialogContent>
+      <DialogActions><Button onClick={() => setCustomOpen(false)}>Cancel</Button><Button variant="contained" disabled={!customBegin || !customEnd || customSpanTooLong} onClick={saveCustom}>Save</Button></DialogActions>
     </Dialog>
   </>;
 }

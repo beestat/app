@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:20: Claude, iteration 22 (Visualize custom range)
+
+Ported the missing rules from legacy `modal/visualize_custom.js` into `VisualizeSettingsCard`:
+- Dates more than seven days apart show "Max range is seven days" and Save is disabled. React allowed any span, which could load months of sensor data into the 3D averaging.
+- Reversed dates are swapped on save; React used to disable the button instead.
+- Legacy title ("Visualize - Custom Range"), instruction text about multi-day averaging, and button label (Save).
+- `qa/visualize-custom-range.mjs` (setting writes captured, never sent): a 10-day span shows the error with Save disabled; 10/20 → 10/17 saves as begin 10/17, end 10/20.
+
+Verified: typecheck, 37 unit tests, build, the new QA script.
+
 ## 2026-10-30 02:10: Claude, iteration 21 (Analyze custom range)
 
 Compared the Thermostat Summary custom dialog with legacy `modal/runtime_thermostat_summary_custom.js`. Options, plural labels, ∞ for All, and `parseInt || 1` already matched. Fixed: legacy keeps the typed count while All is selected and saves 0 only on Save, but React zeroed the draft count and came back as 1. The field also shows `max(1, count)` when leaving All, as legacy shows `count || 1`.
