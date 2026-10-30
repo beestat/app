@@ -42,6 +42,8 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     staleTime: 5 * 60_000,
   });
   const data = useMemo(() => buildRuntimeData(query.data ?? [], thermostat), [query.data, thermostat]);
+  // Legend toggles are kept in state so data refreshes keep the user's choice and both charts can follow it.
+  const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const series = useMemo(() => {
     const definitions = [
       ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
@@ -53,10 +55,13 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     ] as const;
     return definitions.filter(([key]) => data.temperature[key].some((point) => point[1] !== null)).map(([key, name, color, dashStyle, lineWidth, visible]) => ({
       type: key.includes('setpoint') ? 'line' as const : 'spline' as const, name, data: key.includes('humidity') ? data.temperature[key] : data.temperature[key].map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color,
-      dashStyle: dashStyle as Highcharts.DashStyleValue, lineWidth, visible, yAxis: key.includes('humidity') ? 1 : 0,
+      dashStyle: dashStyle as Highcharts.DashStyleValue, lineWidth, visible: visibility[key] ?? visible, yAxis: key.includes('humidity') ? 1 : 0,
+      events: { legendItemClick() { setVisibility((old) => ({ ...old, [key]: !(old[key] ?? visible) })); return false; } },
       step: key.includes('setpoint') ? 'right' as const : undefined, turboThreshold: 0,
     }));
-  }, [data, displayUnit]);
+  }, [data, displayUnit, visibility]);
+  // Legacy runtime_thermostat_detail: a visible right-axis (humidity) series gives both charts a 45px right margin so they stay aligned.
+  const marginRight = series.some((item) => item.visible && item.yAxis === 1) ? 45 : 0;
   const temperatureBounds = useMemo(() => {
     const values = series.filter((item) => item.visible && item.yAxis === 0).flatMap((item) => item.data.map((point) => point[1]).filter((value): value is number => typeof value === 'number'));
     if (!values.length) return undefined;
@@ -64,7 +69,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     return { min: Math.floor(Math.min(...values) / interval) * interval, max: Math.ceil(Math.max(...values) / interval) * interval, tickInterval: interval };
   }, [displayUnit, series]);
   const options = useMemo<Highcharts.Options>(() => ({
-    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, alignTicks: false, animation: false, zooming: { type: 'x' } },
+    chart: { backgroundColor: 'transparent', height: 350, marginLeft: 45, marginRight, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, alignTicks: false, animation: false, zooming: { type: 'x' } },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? data.min, max: extremes?.[1] ?? data.max, tickPositioner() { return runtimeTickPositions(data.timestamps, Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
     yAxis: [{ ...temperatureBounds, title: { text: undefined }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', allowDecimals: false, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unitLabel(displayUnit)}` } }, { title: { text: undefined }, opposite: true, alignTicks: false, min: 0, minRange: 100, ceiling: 100, gridLineWidth: 0, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: '{value}%' } }],
@@ -117,7 +122,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138" customTitle="Thermostat Detail - Custom Range" customDescription="Choose a custom range to display on the Thermostat Detail chart." maxDays={30} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>
     {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
-      <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} />
+      <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} marginRight={marginRight} />
       <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { marginTop: 8 } }} />
       {dockedTooltip}
     </>}
