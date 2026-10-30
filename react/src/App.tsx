@@ -3,9 +3,16 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, useDashboard } from './state/DashboardContext';
 import { AppShell } from './components/layout/AppShell';
-import { DetailPage } from './pages/DetailPage';
-import { NoThermostatsPage } from './pages/NoThermostatsPage';
 
+// Detail is the overwhelmingly common entry route. Start its split chunk in
+// parallel with the dashboard API so it costs no post-data round trip while
+// keeping all card code out of the bootstrap bundle.
+let detailPagePromise: ReturnType<typeof importDetailPage> | undefined;
+function importDetailPage() { return import('./pages/DetailPage'); }
+function loadDetailPage() { return detailPagePromise ??= importDetailPage(); }
+if (['', '#/', '#/detail'].includes(window.location.hash)) void loadDetailPage();
+const DetailPage = lazy(() => loadDetailPage().then((module) => ({ default: module.DetailPage })));
+const NoThermostatsPage = lazy(() => import('./pages/NoThermostatsPage').then((module) => ({ default: module.NoThermostatsPage })));
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage').then((module) => ({ default: module.AnalyzePage })));
 const ComparePage = lazy(() => import('./pages/ComparePage').then((module) => ({ default: module.ComparePage })));
 const AirQualityPage = lazy(() => import('./pages/AirQualityPage').then((module) => ({ default: module.AirQualityPage })));
