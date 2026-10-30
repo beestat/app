@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:40: Claude, iteration 30 (focus refresh, error boundary)
+
+Done:
+- **Correction to iteration 17:** `main.tsx` sets `refetchOnWindowFocus: false` for all queries, so returning to the tab did *not* refresh the dashboard. Legacy `beestat/poll.js` polls right away when the last poll is over 6 minutes old. The dashboard query now has `staleTime: 5 min` + `refetchOnWindowFocus: true`, so a focus refreshes only stale data. Other queries keep the global defaults.
+- New `components/common/ErrorBoundary.tsx` wraps the routes in `App.tsx`, keyed by pathname. A render error in a page shows "Something went wrong showing this page." with Reload, while the header and navigation stay usable. Previously any render error blanked the whole app. Tests: `ErrorBoundary.test.tsx` (jsdom).
+
+Verified: typecheck, 41 unit tests, build, e2e 14/14, console audit clean.
+
 ## 2026-10-30 03:30: Claude, iteration 29 (storage guard)
 
 Done:

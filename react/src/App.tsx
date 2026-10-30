@@ -1,8 +1,9 @@
 import { Alert, Box, Button, CircularProgress } from '@mui/material';
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DashboardProvider, useDashboard } from './state/DashboardContext';
 import { AppShell } from './components/layout/AppShell';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Detail is the overwhelmingly common entry route. Start its split chunk in
 // parallel with the dashboard API so it costs no post-data round trip while
@@ -25,6 +26,7 @@ const GlenwoodReportPage = lazy(() => import('./pages/GlenwoodPage').then((modul
 
 function RoutedApp() {
   const { data, loading, error, refresh } = useDashboard();
+  const location = useLocation();
   if (loading) {
     return (
       <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
@@ -38,7 +40,7 @@ function RoutedApp() {
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   return (
     <AppShell>
-      <Suspense fallback={<Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}><Routes>
+      <ErrorBoundary key={location.pathname}><Suspense fallback={<Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}><Routes>
         {!hasThermostats ? <>
           <Route path="settings" element={<SettingsPage />} />
           <Route path="contribute" element={<ContributePage />} />
@@ -59,7 +61,7 @@ function RoutedApp() {
         <Route path="glenwood-report" element={<GlenwoodReportPage />} />
         <Route path="*" element={<Navigate to="detail" replace />} />
         </>}
-      </Routes></Suspense>
+      </Routes></Suspense></ErrorBoundary>
     </AppShell>
   );
 }
