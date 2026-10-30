@@ -7,6 +7,15 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:00: Claude, iteration 14 (System subtitle and footer)
+
+Done:
+- System subtitle and footer use legacy's " • " separator instead of " · " ("Cool • Schedule • 73.5", "Help • Feedback • …"). The sweep text now matches legacy exactly.
+- "Last sync" tooltip uses the same with/without-date format as the "As of" time, as legacy does (format chosen from the status time's age).
+- Override detection, setpoint display per mode and the 3-hour date rule already matched legacy `get_subtitle_`.
+
+Verified: typecheck, 28 unit tests, build, `qa/compare.mjs` subtitle identical.
+
 ## 2026-10-30 00:55: Claude, iteration 13 (time to temperature)
 
 Done: System card "Time to heat/cool" moved to `components/detail/timeToTemperature.ts` (unit-tested), a port of legacy `decorate_time_to_temperature_`:
