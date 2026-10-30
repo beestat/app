@@ -17,6 +17,10 @@ export class ApiError extends Error {
 
 const requestTimeoutMs = 60_000;
 
+// Legacy beestat.api sends the browser back to the root (which handles log in) for these:
+// expired session, and missing, unrefreshable, revoked or absent ecobee access.
+const logOutErrorCodes = [1505, 10000, 10001, 10002, 10500, 10501];
+
 async function postApi<T>(body: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   const timeout = AbortSignal.timeout(requestTimeoutMs);
   const combinedSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
@@ -69,6 +73,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
     payload = await response.json();
   } catch {
     throw new ApiError('The API returned an invalid response.');
+  }
+  const errorCode = payload.data?.error_code;
+  if (errorCode !== undefined && logOutErrorCodes.includes(Number(errorCode))) {
+    window.location.assign('/');
+    throw new ApiError('Your session has ended. Redirecting to log in…', errorCode, payload.data);
   }
   if (payload.success !== true) {
     throw new ApiError(
