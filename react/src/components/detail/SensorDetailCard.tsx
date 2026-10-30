@@ -86,7 +86,6 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
       return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [mode, readings]);
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, turboThreshold: 0, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
-    responsive: { rules: [{ condition: { maxWidth: 400 }, chartOptions: { legend: { itemWidth: 130 } } }] },
     series: [...sensorSeries.map((item) => ({ type: 'spline' as const, name: item.sensor.name, data: item.temperature, color: item.color, lineWidth: 1 })), { type: 'spline' as const, name: 'Indoor Temp', data: runtime.temperature.indoor_temperature.map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color: colors.gray.light, lineWidth: 2, visible: false }, { type: 'spline' as const, name: 'Outdoor Temp', data: runtime.temperature.outdoor_temperature.map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color: colors.gray.light, dashStyle: 'ShortDash' as const, lineWidth: 1, visible: false }],
   }), [displayUnit, extremes, runtime, sensorSeries]);
 
