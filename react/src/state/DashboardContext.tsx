@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiBatch, apiCall } from '../api/client';
 import type { DashboardData, Thermostat } from '../types';
 import { setSetting } from './settings';
@@ -100,10 +100,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [serverThermostatId, thermostatId, thermostatIds]);
 
+  // Legacy beestat.poll sends runtime.sync on every poll and then drops the cached chart data so
+  // Detail, Sensor, Air Quality and 3D charts pick up new rows. Mirror that after each dashboard refresh.
+  const queryClient = useQueryClient();
+  const syncedThermostat = useRef<number>(undefined);
   useEffect(() => {
     if (!thermostatId) return;
-    void apiCall({ resource: 'runtime', method: 'sync', arguments: { thermostat_id: thermostatId } });
-  }, [thermostatId]);
+    const isPoll = syncedThermostat.current === thermostatId;
+    syncedThermostat.current = thermostatId;
+    void apiCall({ resource: 'runtime', method: 'sync', arguments: { thermostat_id: thermostatId } })
+      .then(() => {
+        if (!isPoll) return;
+        ['runtime-thermostat', 'runtime-sensors', 'air-quality', 'visualize-runtime'].forEach((key) => { void queryClient.invalidateQueries({ queryKey: [key] }); });
+      })
+      .catch(() => {});
+  }, [query.dataUpdatedAt, queryClient, thermostatId]);
 
   const setThermostatId = useCallback((id: number) => {
     setThermostatIdState(id);

@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:50: Claude, iteration 31 (charts refresh on poll)
+
+Done: legacy `beestat.poll` sends `runtime.sync` every 5-minute poll and, when it isn't served from cache, deletes the Detail/Sensor/Air Quality/3D chart caches so the charts pick up new rows. React synced only when the thermostat changed, so open charts never updated. `DashboardContext` now re-sends `runtime.sync` whenever the dashboard data refreshes (`query.dataUpdatedAt`). After each refresh that isn't the first sync for that thermostat, it invalidates the `runtime-thermostat`, `runtime-sensors`, `air-quality` and `visualize-runtime` queries. React can't see legacy's client-side "from cache" flag, so it invalidates on every poll (at most every 5 minutes).
+
+Verified: typecheck, 41 unit tests, build, `qa/poll-refresh.mjs` (Playwright fake clock, fast-forward 5:05): dashboard → runtime.sync → runtime_thermostat.read repeats after one poll.
+
+Possible follow-up: the 3D view (`visualize-runtime`) now refetches every 5 minutes, as legacy's `three_d` cache deletion does. Watch for visible reload jank on Visualize.
+
 ## 2026-10-30 03:40: Claude, iteration 30 (focus refresh, error boundary)
 
 Done:
