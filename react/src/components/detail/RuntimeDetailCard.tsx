@@ -33,7 +33,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const [extremes, setExtremes] = useState<[number, number]>();
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
-  const range = custom ? { value: [`${custom.begin}T00:00:00`, `${custom.end}T23:59:59`], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
+  const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
   const query = useQuery({
     queryKey: ['runtime-thermostat', thermostat.thermostat_id, custom ?? days],
     queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),

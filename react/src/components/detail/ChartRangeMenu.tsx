@@ -18,13 +18,20 @@ interface Props {
   maxDate?: string;
 }
 
+// YYYY-MM-DD in the viewer's time zone; toISOString would give tomorrow's date every evening in the Americas.
+function localDate(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd, minDate, maxDate }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [rangeType, setRangeType] = useState<'dynamic' | 'static'>('dynamic');
   const [dynamicDays, setDynamicDays] = useState(days ?? 3);
-  const today = new Date().toISOString().slice(0, 10);
-  const prior = new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10);
+  const today = localDate(0);
+  const prior = localDate(-3);
   const [begin, setBegin] = useState(prior); const [end, setEnd] = useState(today);
   const close = () => setAnchor(null);
   const staticDays = begin && end ? Math.floor(Math.abs(Date.parse(`${end}T00:00:00Z`) - Date.parse(`${begin}T00:00:00Z`)) / 86_400_000) + 1 : 0;
@@ -57,7 +64,7 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, h
           <ToggleButton value="dynamic">Dynamic</ToggleButton><ToggleButton value="static">Static</ToggleButton>
         </ToggleButtonGroup>
         {rangeType === 'dynamic'
-          ? <TextField type="number" label="Days" value={dynamicDays} onChange={(event) => setDynamicDays(Number(event.target.value))} slotProps={{ htmlInput: { min: 1, max: maxDays, step: 1 } }} />
+          ? <TextField type="number" label="Days" value={dynamicDays} onChange={(event) => setDynamicDays(Number(event.target.value))} onBlur={() => setDynamicDays((value) => (!Number.isFinite(value) || value < 1 ? 1 : Math.min(Math.floor(value), maxDays)))} slotProps={{ htmlInput: { min: 1, max: maxDays, step: 1 } }} />
           : <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}><TextField fullWidth type="date" label="Start" value={begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /><TextField fullWidth type="date" label="End" value={end} onChange={(event) => setEnd(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /></Stack>}
         {(rangeType === 'dynamic' && rangeInvalid || exceedsMaximum) && <Alert severity="error">Max range is {maxDays} days.</Alert>}
         {outsideAvailableRange && <Alert severity="error">Detail not available for this range.</Alert>}
