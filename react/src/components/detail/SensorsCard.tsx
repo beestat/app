@@ -1,4 +1,4 @@
-import { Box, Grid, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
 import { Check, CircleHelp, Eye, EyeOff, MoreVertical } from 'lucide-react';
 import { memo, useState } from 'react';
 import type { Sensor, Thermostat } from '../../types';
@@ -12,10 +12,11 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
   const temperature = (value: number | null) => value == null ? '???' : formatTemperature(value, temperatureUnit).replace(/°[FC]$/, '');
   return (
     <DashboardCard title="Sensors" action={<><IconButton aria-label="Sensors menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem component="a" href="https://doc.beestat.io/d279d6fb4afc4f199409be2eb323140b" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu></>} sx={{ minHeight: { md: 398 } }}>
-      <Grid container spacing={1}>
+      {/* Legacy: auto-fit columns of at least 160px including a 16px gutter. */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(144px, 1fr))', gap: 2 }}>
         {sorted.map((sensor) => {
           const delta = sensor.temperature === null ? 0 : sensor.temperature - thermostat.temperature;
-          return <Grid key={sensor.sensor_id} size={sensor.type === 'thermostat' ? 12 : 6}><Box sx={{ bgcolor: colors.slate.dark, p: 1.25, borderRadius: 0 }}>
+          return <Box key={sensor.sensor_id} sx={{ gridColumn: sensor.type === 'thermostat' ? '1 / -1' : undefined, bgcolor: colors.slate.dark, p: 1.25, borderRadius: 0 }}>
             <Typography noWrap fontWeight={500}>{sensor.name}{sensor.type === 'thermostat' ? ' (Thermostat)' : ''}</Typography>
             <Stack direction="row" alignItems="center" mt={.75}>
               <Typography sx={{ fontSize: 18 }}>{temperature(sensor.temperature)}</Typography>
@@ -24,9 +25,9 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
               {!['monitor_sensor', 'control_sensor'].includes(sensor.type) && (sensor.occupancy === true ? <Tooltip title="Occupied"><Eye size={19} aria-label="Occupied" /></Tooltip> : <Tooltip title="Unoccupied"><EyeOff size={19} color={colors.slate.light} aria-label="Unoccupied" /></Tooltip>)}
               <Tooltip title={sensor.in_use ? 'In use' : 'Not in use'}><Check size={19} color={sensor.in_use ? '#fff' : colors.slate.light} aria-label={sensor.in_use ? 'In use' : 'Not in use'} /></Tooltip>
             </Stack>
-          </Box></Grid>;
+          </Box>;
         })}
-      </Grid>
+      </Box>
     </DashboardCard>
   );
 });
