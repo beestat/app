@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:05: Claude, iteration 7 (header thermostat switcher)
+
+Done:
+- Multi-thermostat accounts now get legacy's header quick-switch tiles ("Name • 68°F", one per other thermostat, sorted by name, right-aligned before the ⋮ menu). As in legacy `get_switcher_width_`, they appear only when logo + navigation + menu + the measured switcher width fit: 791/451/346px base for the text/icon/phone layouts. Clicking calls `setThermostatId` (legacy reloads the page). The "Switch Thermostat" menu item and dialog are unchanged.
+- `qa/header-switcher.mjs` injects a fake second thermostat ("Basement", id 999999) into the dashboard batch response in the browser and aborts every `update_setting` request, so nothing is persisted. Results: shown at 1440 and 600, hidden at 900 (791 + ~135 > 900) and 390, which matches legacy's rule.
+
+Verified: typecheck, 16 unit tests, build; screenshots in `test-results/side-by-side/header-switcher-*.png`.
+
+Next: dialogs side by side (custom range, download, announcements).
+
 ## 2026-10-29 23:55: Claude, iteration 6 (header breakpoints)
 
 Done:
