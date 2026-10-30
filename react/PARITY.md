@@ -45,6 +45,20 @@ Latest QA note (2026-10-23): force-login and authenticated comparison are workin
 - [x] Detail chart series/axes/tooltip/menu
 - [x] Summary heatmap
 
+## Cross-cutting behaviors (added 2026-10-30)
+
+Each item was compared with the legacy source and has a `qa/` script or unit test noted in `HANDOFF.md`.
+
+- [x] Header breakpoints (791/451px), 32px icon tiles, multi-thermostat quick switcher
+- [x] Docked tooltips under charts below 600px or with "Always Dock Tooltips"
+- [x] Thermostat Detail tooltip run lengths and "System Off" duration
+- [x] Equipment names/colors by configured stages and non-heat-pump heat (furnace aux shown as Heat)
+- [x] System card circle color priority, time-to-temperature formatting
+- [x] Legend behaviors: Outdoor Temp/Degree Days exclusive, humidity right-margin alignment, sensor occupancy lanes follow the legend
+- [x] Custom range dialogs: local-time request bounds, per-chart limits, Visualize seven-day limit
+- [x] Log-out redirect on session/ecobee-access API errors
+- [x] Comparison metrics refetch after changing system type
+
 ## Settings and secondary pages
 
 - [x] General settings and persistence
