@@ -7,6 +7,19 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-29 23:55: Claude, iteration 6 (header breakpoints)
+
+Done:
+- Header now follows legacy `js/component/header.js`. Text navigation at ≥791px (logo 160 + nav 565 + menu 50 + margin 16); full logo with the 225px icon strip at 451–790px; favicon with icons below 451px. React used to switch at 900/600px, showed the favicon from 900px down, and stretched the icons across the whole bar on phones.
+- Icon tiles are 32px squares 40px apart, like legacy, with a 20px gap after the favicon on phones. Below about 330px they may shrink instead of overflowing.
+- `qa/header-widths.mjs` captures legacy/React header strips at 320/390/600/1000 into `test-results/side-by-side/header-*.png`.
+
+Verified: typecheck, build; header captures match legacy at all four widths; `qa/mobile-routes.mjs` shows scrollWidth 320 on every route; e2e 14/14.
+
+Gap noted, not done: when the account has several thermostats, legacy puts a thermostat switcher button in the header (`get_switcher_width_`), while React only has "Switch Thermostat" in the ⋮ menu. Ziebee II has one thermostat, so this can't be checked here.
+
+Next: dialogs side by side (custom range, download, announcements, thermostat switcher).
+
 ## 2026-10-29 23:45: Claude, iteration 5 (Detail geometry)
 
 Done:
