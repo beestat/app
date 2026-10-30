@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { equipmentFor, formatRuntime } from './runtimeData';
+import { buildRuntimeData, equipmentFor, formatRuntime, runtimeTickPositions } from './runtimeData';
 
 describe('formatRuntime', () => {
   it('matches the legacy tooltip duration format below one hour', () => {
@@ -33,5 +33,55 @@ describe('equipmentFor', () => {
     const value = thermostat('gas', { heat: 1, cool: 1, auxiliary_heat: 1 });
     value.system_type.reported.heat = { equipment: 'compressor', stages: 2 } as any;
     expect(equipmentFor(value)).toMatchObject({ compressor_heat_1: { name: 'Heat 1' }, auxiliary_heat_1: { name: 'Aux' } });
+  });
+});
+
+describe('buildRuntimeData', () => {
+  const row = (minute: number, values: Record<string, unknown>) => ({ timestamp: `2026-10-29T12:${String(minute).padStart(2, '0')}:00Z`, ...values });
+
+  it('splits compressor seconds by compressor mode and accessories by type', () => {
+    const data = buildRuntimeData([
+      row(5, { compressor_mode: 'cool', compressor_1: 300, compressor_2: 120, accessory_type: 'dehumidifier', accessory: 60, fan: 300 }),
+      row(0, { compressor_mode: 'heat', compressor_1: 200, auxiliary_heat_1: 30 }),
+    ]);
+    expect(data.timestamps).toEqual([Date.parse('2026-10-29T12:00:00Z'), Date.parse('2026-10-29T12:05:00Z')]);
+    expect(data.totals).toMatchObject({ compressor_heat_1: 200, compressor_cool_1: 300, compressor_cool_2: 120, auxiliary_heat_1: 30, dehumidifier: 60, humidifier: 0, fan: 300 });
+    expect(data.equipment.compressor_cool_1.points).toEqual([[data.timestamps[0], null], [data.timestamps[1], 16]]);
+  });
+
+  it('only shows a setpoint while its mode can act on it, like legacy', () => {
+    const data = buildRuntimeData([
+      row(0, { system_mode: 'cool', setpoint_heat: 68, setpoint_cool: 75 }),
+      row(5, { system_mode: 'auxiliary_heat', setpoint_heat: 68, setpoint_cool: 75 }),
+      row(10, { system_mode: 'auto', setpoint_heat: 68, setpoint_cool: 75 }),
+    ]);
+    expect(data.temperature.setpoint_heat.map(([, value]) => value)).toEqual([null, 68, 68]);
+    expect(data.temperature.setpoint_cool.map(([, value]) => value)).toEqual([75, null, 75]);
+  });
+
+  it('maps comfort profile events onto calendar lanes', () => {
+    const data = buildRuntimeData([
+      row(0, { climate: 'Sleep' }),
+      row(5, { event: 'smartRecovery' }),
+      row(10, { event: 'ecoAway' }),
+      row(15, { climate: 'Work' }),
+    ]);
+    expect(Object.values(data.climateAt)).toEqual(['Sleep', 'Smart Recovery', 'Eco Away', 'Work']);
+    expect(data.equipment.calendar_event_custom.points.map(([, value]) => value)).toEqual([null, null, null, 3]);
+  });
+
+  it('labels equipment for the given thermostat', () => {
+    const furnace = { system_type: { reported: {}, detected: { heat: { equipment: 'gas', stages: 1 }, cool: { stages: 1 }, auxiliary_heat: { stages: 1 } } } };
+    expect(buildRuntimeData([], furnace).equipment.auxiliary_heat_1.name).toBe('Heat');
+  });
+});
+
+describe('runtimeTickPositions', () => {
+  it('picks sampled rows at roughly one label per 25 pixels', () => {
+    const timestamps = Array.from({ length: 100 }, (_, index) => index * 300_000);
+    const ticks = runtimeTickPositions(timestamps, 0, timestamps.at(-1)!, 500);
+    expect(ticks).toHaveLength(20);
+    expect(ticks.every((tick) => timestamps.includes(tick))).toBe(true);
+    expect(runtimeTickPositions(timestamps, 10, 5, 500)).toEqual([]);
   });
 });

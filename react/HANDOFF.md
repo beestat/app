@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:30: Claude, iteration 17 (data loading review, 900px, runtime tests)
+
+Done:
+- Dashboard loading reviewed against legacy `layer/load.js` and `beestat/poll.js`. Same batch, the per-thermostat `runtime.sync`, and a 5-minute refetch. TanStack's refetch-on-focus stands in for legacy's "poll immediately after 6+ minutes in the background" watcher. No change needed.
+- Detail at 900px side by side: matches (text nav, three cards, sensors drop to one column in both).
+- New `buildRuntimeData` tests, after checking the rules against legacy `runtime_thermostat.js`: compressor seconds split by `compressor_mode`, accessories by `accessory_type`, setpoint visibility per system mode, calendar lane mapping (Sleep / Smart Recovery / Eco Away / custom climate), per-thermostat labels, and `runtimeTickPositions` sampling.
+
+Verified: 35 unit tests.
+
+Untested pure modules left: `chartSync.ts`, `state/settings.ts`, `chartTooltip.ts`, `useVisualizeRuntime.ts`.
+
 ## 2026-10-30 01:20: Claude, iteration 16 (write-path audit, log-out redirects)
 
 Done:
