@@ -7,6 +7,15 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:30: Claude, iteration 29 (storage guard)
+
+Done:
+- `state/settings.ts` `setSetting` now ignores storage errors. `localStorage.setItem` throws when storage is blocked or full (e.g. some private-browsing modes), and `setThermostatId` calls it, so switching thermostats could have thrown there. `getSetting` was already guarded. This is the only storage access in `src`.
+- New `state/settings.test.ts` (jsdom via a `// @vitest-environment jsdom` header, since the default test env is Node): round trip, fallback, and throwing storage.
+- Temperature Profiles subtitle (duration wording, date format) checked against legacy: matches.
+
+Verified: 39 unit tests, typecheck, build.
+
 ## 2026-10-30 03:25: Claude, iteration 28 (review sweep, PARITY update)
 
 No code changes needed. Reviewed and found matching or not applicable:
