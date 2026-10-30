@@ -35,9 +35,15 @@ function DownloadData({ dialog, onClose }: { dialog?: boolean; onClose?: () => v
   const allTime = new Date(Math.max(new Date(thermostat?.data_begin ?? 0).getTime(), oneYearAgo.getTime()));
   const presets: Array<[string, Date, Date]> = [['Today', today, today], ['Yesterday', day(-1), day(-1)], ['This Week', thisWeek, today], ['Last Week', lastWeek, day(-today.getDay() - 1)], ['This Month', thisMonth, today], ['Last Month', lastMonth, lastMonthEnd], ['All Time', allTime, today]];
   const valid = Boolean(thermostatId && begin && end);
-  const download = () => { if (!thermostatId || !begin || !end) return; window.location.assign(downloadUrl(thermostatId, begin, end)); };
+  const download = () => {
+    if (!thermostatId || !begin || !end) return;
+    // Legacy closes the modal before handing the URL to the browser. This is
+    // visible when the response is treated as a download instead of navigation.
+    onClose?.();
+    window.location.assign(downloadUrl(thermostatId, begin, end));
+  };
   const fields = <>
-    <Typography color="text.secondary">Beestat stores, at most, the past year of raw thermostat logs. Select a date range to download.</Typography>
+    <Typography color="text.secondary">Beestat stores, at a most, the past year of raw thermostat logs. Select a date range to download.</Typography>
     <Typography variant="overline" display="block" mt={2}>Date Range</Typography>
     <Stack direction="row" gap={1} my={1} alignItems="center" flexWrap="wrap">
       <TextField size="small" type="date" value={begin} error={!begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ htmlInput: { 'aria-label': 'Begin date' } }} sx={{ width: 160 }} />

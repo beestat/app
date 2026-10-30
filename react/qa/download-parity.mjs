@@ -18,6 +18,14 @@ await page.getByRole('button', { name: 'Open menu' }).click();
 await page.getByRole('menuitem', { name: /Download Data/ }).click();
 const dialog = page.getByRole('dialog', { name: 'Download Data' });
 await dialog.waitFor({ timeout: 30_000 });
+await dialog.getByText('Beestat stores, at a most, the past year of raw thermostat logs. Select a date range to download.', { exact: true }).waitFor();
+const initialPreset = await dialog.locator('.MuiButton-contained').filter({ hasText: 'Today' }).count();
+if (initialPreset !== 1) throw new Error('Today is not the initial highlighted download preset.');
+await dialog.getByRole('button', { name: 'Last Month', exact: true }).click();
+if (!await dialog.getByRole('button', { name: 'Last Month', exact: true }).evaluate((node) => node.classList.contains('MuiButton-contained'))) throw new Error('Last Month preset did not become active.');
+await dialog.getByLabel('Begin date').fill('');
+await dialog.getByText('Invalid begin date.', { exact: true }).waitFor();
+if (!await dialog.getByRole('button', { name: 'Download' }).isDisabled()) throw new Error('Invalid range left Download enabled.');
 await dialog.getByLabel('Begin date').fill('2026-10-28');
 await dialog.getByLabel('End date').fill('2026-10-20');
 const geometry = await dialog.evaluate((element) => {
