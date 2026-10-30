@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:40: Claude, iteration 24 (docked tooltips)
+
+Done: React saved Settings → "Always Dock Tooltips" but never used it, and phones got floating tooltips over the chart. Legacy `beestat.component.chart` docks the tooltip into a panel under the chart when that setting is on **or** the window is < 600px. New `components/common/DockedTooltip.tsx` `useDockedTooltip()` returns `show(html)` (floating HTML, or stores it and returns false) and `panel` to render under the chart. It's wired into Thermostat Detail, Sensor Detail, Analyze Summary and Temperature Profiles.
+
+Not done: Air Quality Detail. React draws it as three synchronized charts, each with its own tooltip, so one shared docked panel would show whichever fired last. Legacy's single chart produces one combined tooltip. Docking there needs the three readings merged first.
+
+Verified: typecheck, 37 unit tests, build, e2e 14/14, `qa/docked-tooltips.mjs`: at 390 the tooltip is docked with nothing floating (screenshot `test-results/side-by-side/docked-tooltip-390.png`), at 1440 it floats.
+
 ## 2026-10-30 02:25: Claude, iteration 23 (chart range menus review)
 
 No code changes needed. Checked every chart range dialog against its legacy modal:
