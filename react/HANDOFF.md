@@ -7,6 +7,18 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:25: Claude, iteration 23 (chart range menus review)
+
+No code changes needed. Checked every chart range dialog against its legacy modal:
+- Thermostat Detail: 30-day max, 12-month lookback, title/description match.
+- Sensor Detail: 7-day max, 3-month lookback, title/description match.
+- Air Quality: 7-day max, 1-month lookback (legacy code uses `subtract(1, 'month')` even though its text says 90 days), title/description match.
+- Menus: Past 1/3/7 Days, Custom, Reset Zoom, Help match on all three.
+
+Differences left as-is (decide if they matter):
+- Air Quality's menu in React has "Download Chart"; legacy doesn't. It's extra, not missing.
+- Legacy shows Reset Zoom on Air Quality only when there is data, and `ChartRangeMenu` disables (rather than hides) items with no handler.
+
 ## 2026-10-30 02:20: Claude, iteration 22 (Visualize custom range)
 
 Ported the missing rules from legacy `modal/visualize_custom.js` into `VisualizeSettingsCard`:
