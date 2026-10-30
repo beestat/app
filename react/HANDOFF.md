@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:35: Claude, iteration 11 (equipment naming by system type)
+
+Done: `runtimeData.ts` has `equipmentFor(thermostat)`, a port of the series renames in legacy `layer/load.js`:
+- First stages get " 1" ("Heat 1", "Cool 1", "Aux Heat 1") only when the configured stage count for that mode is > 1 (reported, else detected; `stageCount`/`systemType` helpers mirror `beestat.thermostat.get_stages`/`get_system_type`).
+- **Non-heat-pump heat** (heat equipment not `compressor`/`geothermal`, e.g. a gas furnace): aux stage 1/2 take Heat/Heat 2 names and orange colors. React used to show furnace runtime as red "Aux" everywhere. This affects many legacy users.
+- Aux stage 2 is "Aux 2", as legacy says, not "Aux Heat 2".
+
+Wired into `buildRuntimeData(rows, thermostat)` (Detail, Sensor, Air Quality raceways and tooltips), `RuntimeChips` (labels are the stage-1 name minus its digit, like legacy `name.replace(/\d/, '')`), the Thermostat Detail tooltip mode colors, and the Thermostat Summary columns/chips. React previously guessed "Cool 1" etc. from whether stage-2 data was non-zero.
+
+Verified: 23 unit tests (new `equipmentFor` cases: two-stage heat pump, single-stage with two aux stages, gas furnace, reported overriding detected), typecheck, build, e2e 14/14; Ziebee II Analyze text still matches legacy. The gas-furnace path is covered by unit tests only, since there's no such account available.
+
 ## 2026-10-30 00:20: Claude, iteration 10 (System/Analyze dialogs)
 
 Done:
