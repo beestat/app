@@ -7,9 +7,15 @@ import { AlertsCard } from '../components/detail/AlertsCard';
 import { SongsteadPromo } from '../components/detail/SongsteadPromo';
 import { LazyMount } from '../components/common/LazyMount';
 import { ReminderCard } from '../components/detail/ReminderCard';
+import { DashboardCard } from '../components/common/DashboardCard';
 
 const RuntimeDetailCard = lazy(() => import('../components/detail/RuntimeDetailCard').then((module) => ({ default: module.RuntimeDetailCard })));
 const SensorDetailCard = lazy(() => import('../components/detail/SensorDetailCard').then((module) => ({ default: module.SensorDetailCard })));
+
+// Holds the chart card's place while its chunk loads so the page doesn't collapse and jump.
+function ChartCardFallback({ title }: { title: string }) {
+  return <DashboardCard title={title} loading sx={{ minHeight: 500 }}>{null}</DashboardCard>;
+}
 
 export function DetailPage() {
   const { data, thermostat, thermostatId } = useDashboard();
@@ -22,7 +28,7 @@ export function DetailPage() {
     <AlertsCard alerts={thermostat.alerts ?? []} thermostatId={thermostatId} />
     {data && <ReminderCard data={data} />}
     <SongsteadPromo />
-    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount><Suspense fallback={null}><RuntimeDetailCard thermostat={thermostat} /></Suspense></LazyMount></Box>
-    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount><Suspense fallback={null}><SensorDetailCard thermostat={thermostat} sensors={sensors} /></Suspense></LazyMount></Box>
+    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount minHeight={500} fallback={<ChartCardFallback title="Thermostat Detail" />}><Suspense fallback={<ChartCardFallback title="Thermostat Detail" />}><RuntimeDetailCard thermostat={thermostat} /></Suspense></LazyMount></Box>
+    <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}><LazyMount minHeight={500} fallback={<ChartCardFallback title="Sensor Detail" />}><Suspense fallback={<ChartCardFallback title="Sensor Detail" />}><SensorDetailCard thermostat={thermostat} sensors={sensors} /></Suspense></LazyMount></Box>
   </Box>;
 }
