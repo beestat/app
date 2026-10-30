@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:25: Claude, iteration 28 (review sweep, PARITY update)
+
+No code changes needed. Reviewed and found matching or not applicable:
+- Legacy chart base: the occupancy plot band is just the lane background (React uses the chart background); `afterSetExtremes` sync is covered by Codex's zoom sync.
+- Announcements: the unread count, mark-read on open, the first-run newsletter and auto-open for unread important announcements match `layer/load.js` and `header.js`.
+- `beestat.ecobee.notify_if_down` is disabled in legacy (early `return`), so there's nothing to port.
+- The Floor Plan card menu (Switch/Add New/Edit/Delete/Help) comes from legacy's own `floor_plan_editor` module, which React mounts as-is.
+
+`PARITY.md` has a new "Cross-cutting behaviors" section listing what tonight's iterations verified.
+
 ## 2026-10-30 03:20: Claude, iteration 27 (Sensor legend ↔ occupancy)
 
 Done: Sensor Detail legend visibility is now React state, the same pattern as Thermostat Detail. Hiding a sensor hides its temperature line *and* its occupancy lane, as legacy `card/runtime_sensor_detail.js` does. Indoor/Outdoor Temp keep their hidden-by-default state. Toggles survive data refreshes.
