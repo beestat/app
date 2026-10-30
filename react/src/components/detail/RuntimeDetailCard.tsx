@@ -84,11 +84,16 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
         const value = humidity ? `${Math.round(point.y)}%` : `${Highcharts.numberFormat(point.y, 1)}${unitLabel(displayUnit)}`;
         dataItems.push({ label: point.series.name, value, color: String(point.color) });
       });
-      (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
-        const seconds = data.equipmentAt[x]?.[code] ?? 0;
-        if (seconds > 0) equipmentItems.push({ label: data.equipment[code].name, value: formatRuntime(seconds), color: data.equipment[code].color });
+      // Legacy lists each running stage-1 equipment with its whole run length, then any stage 2 under it.
+      const durations = data.durationAt[x] ?? {};
+      (['compressor_heat_1', 'auxiliary_heat_1', 'compressor_cool_1', 'fan', 'humidifier', 'dehumidifier', 'ventilator', 'economizer'] as EquipmentCode[]).forEach((code) => {
+        if (durations[code] === undefined) return;
+        equipmentItems.push({ label: data.equipment[code].name, value: formatRuntime(durations[code]!), color: data.equipment[code].color });
+        const second = code.replace('_1', '_2') as EquipmentCode;
+        if (second !== code && (durations[second] ?? 0) > 0) equipmentItems.push({ label: data.equipment[second].name, value: formatRuntime(durations[second]!), color: data.equipment[second].color });
       });
-      if (data.offAt[x] > 0) offItems.push({ label: 'Off', value: formatRuntime(data.offAt[x]), color: colors.slate.light });
+      if ((durations.off_heat_cool ?? 0) > 0) offItems.push({ label: 'System Off', value: formatRuntime(durations.off_heat_cool!), color: colors.gray.main });
+      if (!modeItems.length && !dataItems.length && !equipmentItems.length) modeItems.push({ label: 'No data', value: '', color: colors.gray.main });
       return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,

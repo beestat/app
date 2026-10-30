@@ -85,3 +85,29 @@ describe('runtimeTickPositions', () => {
     expect(runtimeTickPositions(timestamps, 10, 5, 500)).toEqual([]);
   });
 });
+
+describe('tooltip durations', () => {
+  it('matches legacy run and System Off durations on real rows', async () => {
+    // Captured from legacy beestat.runtime_thermostat.get_data by qa/dump-legacy-durations.mjs.
+    const fixture = (await import('./__fixtures__/legacy-durations.json')).default as { rows: Array<Record<string, unknown> & { timestamp: string }>; expected: Record<string, Record<string, number>> };
+    const data = buildRuntimeData(fixture.rows);
+    const sorted = (value: Record<string, number> | undefined) => JSON.stringify(Object.entries(value ?? {}).sort());
+    const mismatches = fixture.rows.filter((row) => sorted(data.durationAt[Date.parse(row.timestamp)]) !== sorted(fixture.expected[row.timestamp]));
+    expect(mismatches.slice(0, 3).map((row) => ({ timestamp: row.timestamp, react: data.durationAt[Date.parse(row.timestamp)], legacy: fixture.expected[row.timestamp] }))).toEqual([]);
+  });
+
+  it('reports the whole run length at every point and lists stage 2 under stage 1', () => {
+    const at = (minute: number, values: Record<string, unknown>) => ({ timestamp: `2026-10-29T12:${String(minute).padStart(2, '0')}:00Z`, compressor_1: 0, compressor_2: 0, auxiliary_heat_1: 0, auxiliary_heat_2: 0, fan: 0, accessory: 0, ...values });
+    const data = buildRuntimeData([
+      at(0, {}),
+      at(5, { compressor_mode: 'heat', compressor_1: 300, fan: 300 }),
+      at(10, { compressor_mode: 'heat', compressor_1: 300, compressor_2: 120, fan: 300 }),
+      at(15, {}),
+    ]);
+    const [off, first, second, after] = data.timestamps.map((x) => data.durationAt[x]);
+    expect(first).toEqual({ off_heat_cool: 0, fan: 600, compressor_heat_1: 600, compressor_heat_2: 120 });
+    expect(second).toMatchObject({ compressor_heat_1: 600, compressor_heat_2: 120 });
+    expect(off.off_heat_cool).toBe(300);
+    expect(after).toEqual({ off_heat_cool: 300 });
+  });
+});
