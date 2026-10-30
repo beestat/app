@@ -11,7 +11,7 @@ Ground rules:
 
 Done: System card "Time to heat/cool" moved to `components/detail/timeToTemperature.ts` (unit-tested), a port of legacy `decorate_time_to_temperature_`:
 - Operating mode uses legacy priority (aux 2 > aux 1 > heat 2 > heat 1 > cool 2 > cool 1) via the shared `operatingMode()` (the circle color uses it too). React used to take the first matching item in `running_equipment`.
-- Duration is formatted like `beestat.time` ("1h 15m", minutes floored and unpadded, leading "0h " removed). React showed "1h 15m" as "1h 15m" only by luck and "1h 05m" for single-digit minutes.
+- Duration is formatted like `beestat.time` ("1h 5m": minutes floored and unpadded, leading "0h " removed). React used `formatDuration`, which pads ("1h 05m") and rounds minutes.
 - Clock is Moment `h:mm a` ("3:15 pm"); React used toLocaleTimeString ("3:15 PM").
 - A rate of exactly 0 is "Never", as in legacy; React said "Unknown".
 
