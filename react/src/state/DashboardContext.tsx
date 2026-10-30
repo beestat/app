@@ -67,6 +67,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }),
     refetchInterval: 5 * 60_000,
     refetchIntervalInBackground: false,
+    // Legacy poll_watcher polls right away when returning to a tab whose last poll is over
+    // 6 minutes old; refetch on focus once the data is past the 5-minute poll interval.
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
   });
   const thermostatIds = useMemo(
     () => Object.values(query.data?.thermostat ?? {}).map((item) => item.thermostat_id),
