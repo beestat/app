@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiBatch, apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
+import { ManageThermostatsCard } from '../components/settings/ManageThermostatsCard';
 import { useDashboard } from '../state/DashboardContext';
 
 function readNested(source: Record<string, any>, path: string, fallback: unknown) {
@@ -35,8 +36,6 @@ export function SettingsPage() {
   }), [data?.user?.settings, profileKey, thermostat?.temperature_unit]);
   const [values, setValues] = useState(resolvedValues);
   useEffect(() => { setValues(resolvedValues); }, [resolvedValues]);
-  const [serial, setSerial] = useState('');
-  const [thermostatBusy, setThermostatBusy] = useState(false);
   const [message, setMessage] = useState('');
   const apiSession = useMemo(() => Object.values(data?.session ?? {}).find((session: any) => session.api_user_id != null) as any, [data?.session]);
   const update = async (key: string, value: unknown) => { setMessage('Saving…'); await apiCall({ resource: 'user', method: 'update_setting', arguments: { key, value } }); setDashboardSetting(key, value); setMessage('Saved'); window.setTimeout(() => setMessage(''), 1800); };
@@ -59,23 +58,6 @@ export function SettingsPage() {
       { resource: 'thermostat', method: 'update', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, profile: null } } },
     ]);
     await refresh();
-  };
-  const addThermostat = async () => {
-    if (serial.length !== 12 || thermostatBusy) return;
-    setThermostatBusy(true);
-    try {
-      await apiBatch([{ resource: 'ecobee_thermostat', method: 'create', alias: 'create', arguments: { attributes: { identifier: serial } } }, { resource: 'ecobee_thermostat', method: 'read_id', alias: 'read_id', arguments: { attributes: { inactive: 0 } } }]);
-      setSerial('');
-      await refresh();
-    } finally { setThermostatBusy(false); }
-  };
-  const removeThermostat = async (id: number) => {
-    if (thermostatBusy) return;
-    setThermostatBusy(true);
-    try {
-      await apiBatch([{ resource: 'ecobee_thermostat', method: 'update', alias: 'delete', arguments: { attributes: { ecobee_thermostat_id: id, inactive: 1 } } }, { resource: 'ecobee_thermostat', method: 'read_id', alias: 'read_id', arguments: { attributes: { inactive: 0 } } }]);
-      await refresh();
-    } finally { setThermostatBusy(false); }
   };
   const apiKeyAction = async (method: 'create_api_key' | 'recycle_api_key' | 'delete_api_key') => {
     const confirmation = method === 'recycle_api_key'
@@ -103,7 +85,7 @@ export function SettingsPage() {
       <Typography fontWeight={600} mt={1.5}>Temperature Profiles</Typography>
       <Stack alignItems="flex-start"><FormControlLabel control={<Checkbox checked={values.ignoreSolar} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, ignoreSolar: value })); void updateProfileSetting(`${profileKey}.ignore_solar_gain`, value); }} />} label="Ignore Solar Gain" /><Typography mb={1.5}>Custom Start Date</Typography><TextField size="small" type="date" value={values.profileStart} inputProps={{ 'aria-label': 'Custom Start Date' }} sx={{ width: 205 }} onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, profileStart: value })); void updateProfileSetting(`${profileKey}.range_begin`, value || null); }} /></Stack>
     </DashboardCard>
-    <DashboardCard title="Manage Thermostats"><Typography mb={2}>Thermostats directly connected to your ecobee account are automatically added and synced. In some cases, shared thermostats cannot be automatically detected. Add them here.</Typography><Typography fontWeight={600} mb={1}>Existing Thermostats</Typography><Stack gap={1}>{Object.values(data?.ecobee_thermostat ?? {}).map((item: any) => <Stack key={item.ecobee_thermostat_id} direction="row" alignItems="center" gap={2}><Typography>{item.name || '(Sync Queued)'}</Typography><Typography>{item.identifier}</Typography><IconButton color="error" disabled={thermostatBusy} aria-label={`Remove ${item.name || 'thermostat'}`} onClick={() => void removeThermostat(item.ecobee_thermostat_id)}><Trash2 size={17} /></IconButton></Stack>)}</Stack><Typography fontWeight={600} mt={1} mb={1}>Add Thermostat</Typography><Stack direction="row" gap={2} sx={{ '@media (max-width: 350px)': { flexDirection: 'column' } }}><TextField size="small" placeholder="Serial #" value={serial} disabled={thermostatBusy} inputProps={{ 'aria-label': 'Serial #' }} sx={{ width: 150, flexShrink: 0 }} onChange={(event) => setSerial(event.target.value.replace(/\D/g, '').slice(0, 12))} /><Button variant="contained" color="success" disabled={thermostatBusy || serial.length !== 12} sx={{ height: 32, px: 1, whiteSpace: 'nowrap' }} onClick={() => void addThermostat()}>Add Thermostat</Button></Stack></DashboardCard>
+    <ManageThermostatsCard />
     <DashboardCard title="Manage API Key" action={<Button href="https://api.beestat.io/doc" target="_blank">API Documentation</Button>} sx={{ minHeight: { xs: 340, md: 306 } }}><Typography>API keys allow you to access your beestat data programmatically. Keep your API key secure and do not share it publicly.</Typography>{apiSession ? <><Typography fontWeight={600} mt={2}>Your API Key</Typography><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1, p: 1.5, bgcolor: 'background.default', borderRadius: 1, fontFamily: 'monospace', overflow: 'hidden' }}><Box sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{apiSession.session_key}</Box><IconButton aria-label="Copy API key" onClick={() => void navigator.clipboard.writeText(apiSession.session_key)}><Copy /></IconButton></Box>{apiSession.created_at && <Typography variant="caption" color="text.secondary">Created: {formatUtcDate(apiSession.created_at)}</Typography>}<Typography fontWeight={600} mt="31px" mb={.5}>Manage</Typography><Stack direction="row" gap={2}><Button variant="contained" startIcon={<RefreshCw size={18} />} onClick={() => void apiKeyAction('recycle_api_key')}>Regenerate Key</Button><Button variant="contained" color="error" startIcon={<Trash2 size={18} />} onClick={() => void apiKeyAction('delete_api_key')}>Delete Key</Button></Stack></> : <Button sx={{ mt: 2 }} variant="contained" color="success" startIcon={<KeyRound />} onClick={() => void apiKeyAction('create_api_key')}>Create API Key</Button>}</DashboardCard>
   </Box>;
 }
