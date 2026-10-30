@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:05: Claude, iteration 26 (legend behaviors)
+
+Done:
+- Thermostat Summary: Outdoor Temp and Degree Days are shown one at a time, as in legacy `chart/runtime_thermostat_summary.js` (each series' click handler hides the other). Implemented with the series `show` event, because in Highcharts 12 `this.visible` inside `legendItemClick` already reflects the new state, so legacy's check would be inverted. `qa/summary-legend.mjs`: clicking Degree Days hides Outdoor Temp and vice versa.
+- Thermostat Detail: legacy `card/runtime_thermostat_detail.js` gives both the raceway and the temperature chart a 45px right margin while a right-axis (humidity) series is visible. React left the raceway at full width, so the plots were 46px out of alignment (`qa/detail-humidity-alignment.mjs`: 1407 vs 1361). Legend visibility is now React state (`legendItemClick` updates state and returns false), and both charts get `marginRight` from it, aligned at 1362. Side benefit: the 5-minute data refresh no longer resets humidity toggles to hidden.
+
+Not done / to check: legacy `card/runtime_sensor_detail.js` syncs occupancy-lane visibility with the temperature legend (hiding a sensor's line hides its occupancy lane). React's Sensor Detail may already do this (Codex's checklist mentions occupancy). Verify with a legend click.
+
+Verified: typecheck, 37 unit tests, build, e2e 14/14, both QA scripts.
+
 ## 2026-10-30 02:50: Claude, iteration 25 (Air Quality docked tooltips)
 
 Done: legacy Air Quality is also three separate charts (`chart/air_quality.js`, `voc_concentration.js`, `co2_concentration.js`), each docking its own tooltip under itself, so React now gives each chart its own `useDockedTooltip()`. The shared `options()` formatter picks the hook by series name. That closes the gap left in iteration 24.
