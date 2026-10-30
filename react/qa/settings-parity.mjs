@@ -36,8 +36,28 @@ await page.getByRole('checkbox', { name: /Ignore Solar Gain/ }).click();
 await page.getByLabel('Custom Start Date').fill('2026-01-01');
 await page.waitForTimeout(500);
 
-const serial = page.getByLabel('Serial #'); await serial.fill('123456789012');
-if (await page.getByRole('button', { name: 'Add Thermostat' }).isDisabled()) throw new Error('Valid thermostat serial did not enable Add Thermostat.');
+const serial = page.getByLabel('Serial #');
+const addThermostat = page.getByRole('button', { name: 'Add Thermostat' });
+if (!await addThermostat.isDisabled()) throw new Error('Incomplete thermostat serial enabled Add Thermostat.');
+await serial.fill('abc12345678901234');
+if (await serial.inputValue() !== '123456789012') throw new Error(`Thermostat serial filtering differs from legacy: ${await serial.inputValue()}`);
+if (await addThermostat.isDisabled()) throw new Error('Valid thermostat serial did not enable Add Thermostat.');
+await Promise.all([
+  page.waitForRequest((request) => request.url().endsWith('/api/') && request.postData()?.includes('ecobee_thermostat')),
+  addThermostat.click(),
+]);
+await page.waitForFunction(() => document.querySelector('input[aria-label="Serial #"]')?.value === '', undefined, { timeout: 30_000 });
+const createMutation = mutations.find((item) => item.resource === 'ecobee_thermostat' && item.method === 'create');
+if (createMutation?.arguments?.attributes?.identifier !== '123456789012') throw new Error(`Incorrect thermostat create payload: ${JSON.stringify(createMutation)}`);
+const removeButton = page.getByRole('button', { name: 'Remove Ziebee II' });
+await removeButton.waitFor({ state: 'visible', timeout: 30_000 });
+await Promise.all([
+  page.waitForRequest((request) => request.url().endsWith('/api/') && request.postData()?.includes('ecobee_thermostat')),
+  removeButton.click(),
+]);
+await page.waitForTimeout(250);
+const removeMutation = mutations.find((item) => item.resource === 'ecobee_thermostat' && item.method === 'update' && item.arguments?.attributes?.inactive === 1);
+if (!removeMutation?.arguments?.attributes?.ecobee_thermostat_id) throw new Error(`Incorrect thermostat removal payload: ${JSON.stringify(removeMutation)}`);
 if (!await page.getByRole('button', { name: /Regenerate Key|Create API Key/ }).isVisible()) throw new Error('API key management is missing.');
 const apiConfirmations = [];
 if (await page.getByRole('button', { name: 'Regenerate Key' }).count()) {
