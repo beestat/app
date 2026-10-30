@@ -7,6 +7,22 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:05: Claude, iteration 9 (date edge cases, filter info)
+
+Done:
+- `d570be2`: Glenwood report `validIsoDate` parsed local midnight and compared the UTC date, so it rejected every valid date for users east of UTC. It now parses as UTC.
+- Filter Info "Replace In" moved to `components/detail/filterInfo.ts` (unit-tested; expectations checked against the real `js/lib/moment/moment.js`):
+  - Days are counted from now and truncated (`moment.diff(now, 'days')`). React counted from today's midnight, so a future date showed one day more than legacy.
+  - Month-end last-changed dates clamp like `moment.add(n, 'months')` (Nov 30 + 3 mo = Feb 28) instead of rolling over.
+  - "Xmo Yd" uses Moment's ceiling for the remaining days (React used round).
+  - Lifespan pluralizes only when life > 1, as legacy does.
+- `qa/filter-info-parity.mjs` opens the legacy modal and the React dialog: identical text on dev.
+- Reviewed and already correct: Download Data (presets, local-offset timestamps, mobile-app lockout), `analyzeSummary.ts` date keys (consistently UTC on both sides).
+
+Verified: 20 unit tests, typecheck, build.
+
+Next: thermostat info and weather dialogs vs legacy; temperature profiles info modal.
+
 ## 2026-10-30 00:15: Claude, iteration 8 (custom range dialog and request bounds)
 
 Compared `ChartRangeMenu` with legacy `modal/runtime_thermostat_detail_custom.js`. Fixed:
