@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:20: Claude, iteration 10 (System/Analyze dialogs)
+
+Done:
+- `qa/modal-parity.mjs <filter_info|thermostat_info|weather|temperature_profiles_info>` renders the legacy modal directly (`new beestat.component.modal[name](...)`), opens the matching React dialog, and prints both texts.
+- Thermostat Info and Weather: identical values. Weather only differs in line breaks inside the layout.
+- Temperature Profiles Info / chart: React hard-coded "Cool 1 Δ", "Heat 1 Δ" and "Aux Heat 1 Δ". Legacy (`layer/load.js`) only adds the " 1" when `get_stages(mode) > 1` (reported stages, else detected). Ziebee II has one aux stage, so legacy says "Aux Heat Δ". `profileNames(thermostat)` in `AnalyzePage.tsx` now follows that rule for the info dialog, chart series and tooltip. Dialog text is now identical on dev.
+
+Follow-up worth checking: legacy `layer/load.js` applies the same stage rule to Thermostat Summary names (`sum_compressor_heat_1` etc.) and renames aux to heat for non-heat-pump systems. React's summary decides "Cool"/"Cool 1" from whether stage-2 data is non-zero. It matches for Ziebee II, but could differ on accounts whose config and data disagree.
+
+Verified: typecheck, 20 unit tests, build.
+
 ## 2026-10-30 00:05: Claude, iteration 9 (date edge cases, filter info)
 
 Done:
