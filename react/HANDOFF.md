@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 07:25: Codex, exact 3D background poll refresh
+
+Fixed the open item from iteration 31. Invalidating `['visualize-runtime']` did not refresh the exact 3D card because that legacy-backed card reads raw runtime caches directly and does not use the otherwise-unused React query. `DashboardContext` now increments `runtimeRefreshKey` only after the five-minute `runtime.sync` succeeds. `VisualizePage` passes it to `ExactThreeCard`, which fetches fresh raw sensor and thermostat rows through its existing in-place update path.
+
+The poll path deliberately does not pause or hide the existing scene, set the branded loader, or rebuild Three.js geometry. `qa/visualizer-poll-refresh.mjs` fast-forwards a live Visualize page through one poll and asserts the order `dashboard -> runtime.sync -> visualize.runtime`, the same canvas identity, `aria-busy=false` throughout, opacity 1 throughout, and no loader. The original `qa/poll-refresh.mjs` still passes for Detail. Also verified: typecheck, 41 unit tests, production build.
+
 ## 2026-10-30 07:10: Claude, final summary of the overnight session
 
 60 local commits on `feature/react-modernization` after `a466183`, none pushed. `api/user.php` was left uncommitted (dev-only `force_log_in` change). Every change was compared with the legacy source; the iteration entries below give the evidence and the `qa/` script for each.

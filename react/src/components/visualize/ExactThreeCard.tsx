@@ -12,16 +12,19 @@ export function ExactThreeCard({
   sensors,
   thermostats,
   preparing = false,
+  refreshKey,
 }: {
   plan: FloorPlan;
   settings: Record<string, any>;
   sensors: Record<string, Sensor>;
   thermostats: Record<string, Thermostat>;
   preparing?: boolean;
+  refreshKey: number;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const card = useRef<any>(undefined);
   const previousSettings = useRef<Record<string, any> | undefined>(undefined);
+  const previousRefreshKey = useRef(refreshKey);
   const runtimeRequest = useRef(0);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState('Building your home, environment, and sensor visualization…');
@@ -184,6 +187,8 @@ export function ExactThreeCard({
     user.settings.visualize = structuredClone(settings);
     const previous = previousSettings.current;
     previousSettings.current = structuredClone(settings);
+    const backgroundRefresh = previousRefreshKey.current !== refreshKey;
+    previousRefreshKey.current = refreshKey;
     if (!previous || !card.current) return;
     const instance = card.current;
     const get = (value: Record<string, any>, path: string) => path.split('.').reduce((item, key) => item?.[key], value);
@@ -200,12 +205,14 @@ export function ExactThreeCard({
     });
     const rangeChanged = ['range_type', 'range_dynamic', 'range_static.begin', 'range_static.end']
       .some((path) => get(previous, path) !== get(settings, path));
-    if (!rangeChanged) return;
+    if (!rangeChanged && !backgroundRefresh) return;
 
     const request = ++runtimeRequest.current;
-    instance.scene_.animation_paused_ = true;
-    setLoading(true);
-    setLoadingDetail('Loading sensor history and updating the existing scene…');
+    if (rangeChanged) {
+      instance.scene_.animation_paused_ = true;
+      setLoading(true);
+      setLoadingDetail('Loading sensor history and updating the existing scene…');
+    }
     const sensorIds = Object.keys(legacy.floor_plan.get_sensor_ids_map(plan.floor_plan_id));
     const thermostatIds = Object.keys(legacy.floor_plan.get_thermostat_ids_map(plan.floor_plan_id));
     const beginning = new Date();
@@ -243,14 +250,16 @@ export function ExactThreeCard({
       legacy.cache.data.three_d__runtime_key = runtimeKey;
       legacy.cache.set('data.three_d__runtime_sensor', runtimeSensors);
       legacy.cache.set('data.three_d__runtime_thermostat', runtimeThermostats);
-      setRenderedRangeKey(rangeKey);
+      if (rangeChanged) setRenderedRangeKey(rangeKey);
     }).catch(() => {
       if (request !== runtimeRequest.current) return;
-      if (instance.scene_) instance.scene_.animation_paused_ = !host.current?.matches(':hover') && instance.scene_.controls_?.autoRotate !== true;
-      setRenderedRangeKey(rangeKey);
-      setLoading(false);
+      if (rangeChanged) {
+        if (instance.scene_) instance.scene_.animation_paused_ = !host.current?.matches(':hover') && instance.scene_.controls_?.autoRotate !== true;
+        setRenderedRangeKey(rangeKey);
+        setLoading(false);
+      }
     });
-  }, [settings]);
+  }, [refreshKey, settings]);
 
   const showingLoader = preparing || loading || renderedRangeKey !== rangeKey;
   // The exact renderer owns a 500px drawing surface. Keep the lifecycle host

@@ -23,6 +23,7 @@ const initialCalls = [
 
 interface DashboardContextValue {
   data?: DashboardData;
+  runtimeRefreshKey: number;
   loading: boolean;
   error?: string;
   thermostat?: Thermostat;
@@ -77,6 +78,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     [query.data?.thermostat],
   );
   const [thermostatId, setThermostatIdState] = useState<number | undefined>();
+  const [runtimeRefreshKey, setRuntimeRefreshKey] = useState(0);
   const [settingOverrides, setSettingOverrides] = useState<Record<string, any>>({});
   const setDashboardSetting = useCallback((key: string, value: unknown) => {
     setSettingOverrides((current) => setNestedSetting(current, key, value));
@@ -111,6 +113,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     void apiCall({ resource: 'runtime', method: 'sync', arguments: { thermostat_id: thermostatId } })
       .then(() => {
         if (!isPoll) return;
+        setRuntimeRefreshKey((current) => current + 1);
         ['runtime-thermostat', 'runtime-sensors', 'air-quality', 'visualize-runtime'].forEach((key) => { void queryClient.invalidateQueries({ queryKey: [key] }); });
       })
       .catch(() => {});
@@ -129,6 +132,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<DashboardContextValue>(() => ({
     data: dashboardData,
+    runtimeRefreshKey,
     loading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : undefined,
     thermostat,
@@ -136,7 +140,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setThermostatId,
     refresh: query.refetch,
     setDashboardSetting,
-  }), [dashboardData, query.isLoading, query.error, query.refetch, setDashboardSetting, thermostat, thermostatId, setThermostatId]);
+  }), [dashboardData, query.isLoading, query.error, query.refetch, runtimeRefreshKey, setDashboardSetting, thermostat, thermostatId, setThermostatId]);
 
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }
