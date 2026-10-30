@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 07:35: Codex, exact Thermostat Detail tooltip rows
+
+Fixed the remaining `qa/detail-tooltips.mjs` capture issue. Legacy synchronizes the temperature and raceway charts, which can leave multiple visible HTML tooltips; the script now performs the second synthetic mouse move Highcharts 11 needs and reads the longest visible HTML tooltip instead of the empty SVG group or raceway tooltip.
+
+That live comparison exposed an app gap: legacy reads all six temperature/humidity series from its metadata, regardless of legend visibility, while React relied on Highcharts `this.points` (which omits hidden series). React now uses timestamp maps for all six series, so its tooltip includes Indoor/Outdoor Humidity exactly like legacy even while those lines start hidden. The script asserts capture and the seven common rows on both implementations. Verified live at three positions plus typecheck, 41 unit tests, and build.
+
 ## 2026-10-30 07:25: Codex, exact 3D background poll refresh
 
 Fixed the open item from iteration 31. Invalidating `['visualize-runtime']` did not refresh the exact 3D card because that legacy-backed card reads raw runtime caches directly and does not use the otherwise-unused React query. `DashboardContext` now increments `runtimeRefreshKey` only after the five-minute `runtime.sync` succeeds. `VisualizePage` passes it to `ExactThreeCard`, which fetches fresh raw sensor and thermostat rows through its existing in-place update path.

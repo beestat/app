@@ -18,6 +18,15 @@ import { useDashboard } from '../../state/DashboardContext';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
 
+const temperatureSeries = [
+  ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
+  ['outdoor_temperature', 'Outdoor Temp', colors.gray.light, 'ShortDash', 1, true],
+  ['setpoint_heat', 'Heat Setpoint', colors.orange.light, 'Solid', 1, true],
+  ['setpoint_cool', 'Cool Setpoint', colors.lightBlue.light, 'Solid', 1, true],
+  ['indoor_humidity', 'Indoor Humidity', colors.teal.main, 'Solid', 2, false],
+  ['outdoor_humidity', 'Outdoor Humidity', colors.teal.main, 'ShortDash', 1, false],
+] as const;
+
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
   const { data: dashboardData } = useDashboard();
   const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
@@ -45,21 +54,16 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   // Legend toggles are kept in state so data refreshes keep the user's choice and both charts can follow it.
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const series = useMemo(() => {
-    const definitions = [
-      ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
-      ['outdoor_temperature', 'Outdoor Temp', colors.gray.light, 'ShortDash', 1, true],
-      ['setpoint_heat', 'Heat Setpoint', colors.orange.light, 'Solid', 1, true],
-      ['setpoint_cool', 'Cool Setpoint', colors.lightBlue.light, 'Solid', 1, true],
-      ['indoor_humidity', 'Indoor Humidity', colors.teal.main, 'Solid', 2, false],
-      ['outdoor_humidity', 'Outdoor Humidity', colors.teal.main, 'ShortDash', 1, false],
-    ] as const;
-    return definitions.filter(([key]) => data.temperature[key].some((point) => point[1] !== null)).map(([key, name, color, dashStyle, lineWidth, visible]) => ({
+    return temperatureSeries.filter(([key]) => data.temperature[key].some((point) => point[1] !== null)).map(([key, name, color, dashStyle, lineWidth, visible]) => ({
       type: key.includes('setpoint') ? 'line' as const : 'spline' as const, name, data: key.includes('humidity') ? data.temperature[key] : data.temperature[key].map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color,
       dashStyle: dashStyle as Highcharts.DashStyleValue, lineWidth, visible: visibility[key] ?? visible, yAxis: key.includes('humidity') ? 1 : 0,
       events: { legendItemClick() { setVisibility((old) => ({ ...old, [key]: !(old[key] ?? visible) })); return false; } },
       step: key.includes('setpoint') ? 'right' as const : undefined, turboThreshold: 0,
     }));
   }, [data, displayUnit, visibility]);
+  const temperatureAt = useMemo(() => Object.fromEntries(
+    temperatureSeries.map(([key]) => [key, new Map(data.temperature[key])]),
+  ) as Record<(typeof temperatureSeries)[number][0], Map<number, number | null>>, [data]);
   // Legacy runtime_thermostat_detail: a visible right-axis (humidity) series gives both charts a 45px right margin so they stay aligned.
   const marginRight = series.some((item) => item.visible && item.yAxis === 1) ? 45 : 0;
   const temperatureBounds = useMemo(() => {
@@ -85,11 +89,15 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       const modeColors: Record<string, string> = { auto: colors.gray.main, heat: data.equipment.compressor_heat_1.color, cool: data.equipment.compressor_cool_1.color, off: colors.gray.main, auxiliary_heat: data.equipment.auxiliary_heat_1.color };
       if (modeLabels[mode]) modeItems.push({ label: 'System Mode', value: modeLabels[mode], color: modeColors[mode] });
       if (data.climateAt[x]) modeItems.push({ label: 'Comfort Profile', value: data.climateAt[x].replace(/[<>&]/g, ''), color: colors.gray.main });
-      (this.points ?? []).forEach((point) => {
-        if (point.y == null) return;
-        const humidity = point.series.name.includes('Humidity');
-        const value = humidity ? `${Math.round(point.y)}%` : `${Highcharts.numberFormat(point.y, 1)}${unitLabel(displayUnit)}`;
-        dataItems.push({ label: point.series.name, value, color: String(point.color) });
+      // Legacy reads all six data series directly from its metadata, including
+      // humidity series that start hidden in the legend. Highcharts omits hidden
+      // series from this.points, so use the timestamp maps instead.
+      temperatureSeries.forEach(([key, name, color]) => {
+        const raw = temperatureAt[key].get(x);
+        if (raw == null) return;
+        const humidity = key.includes('humidity');
+        const value = humidity ? `${Math.round(raw)}%` : `${Highcharts.numberFormat(convertTemperature(raw, displayUnit), 1)}${unitLabel(displayUnit)}`;
+        dataItems.push({ label: name, value, color });
       });
       // Legacy lists each running stage-1 equipment with its whole run length, then any stage 2 under it.
       const durations = data.durationAt[x] ?? {};
@@ -104,7 +112,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       return showTooltip(chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]));
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
-  }), [data, displayUnit, extremes, series, temperatureBounds]);
+  }), [data, displayUnit, extremes, series, temperatureAt, temperatureBounds]);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;
