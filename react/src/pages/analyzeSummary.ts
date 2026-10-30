@@ -146,3 +146,12 @@ export function smartScale(group: SummaryGroup) {
   if (group === 'month') return { max: 672, interval: 168 };
   return { max: 8760, interval: 2190 };
 }
+
+// Mirrors moment.duration(hours, 'hours') in legacy beestat.time step for step:
+// Moment multiplies by 1000, 60, 60 in that order and floors each unit, and the
+// float error from that exact order decides the minute at boundaries.
+export function legacyDurationParts(hours: number) {
+  const milliseconds = hours * 1000 * 60 * 60;
+  const minutes = Math.floor(Math.floor(milliseconds / 1000) / 60);
+  return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
+}

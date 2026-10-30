@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateSummary, matchingPreset, presetConfig, smartScale } from './analyzeSummary';
+import { aggregateSummary, legacyDurationParts, matchingPreset, presetConfig, smartScale } from './analyzeSummary';
 
 describe('analyze summary aggregation', () => {
   const rows = [
@@ -36,5 +36,15 @@ describe('analyze summary aggregation', () => {
     ];
     const result = aggregateSummary(summer, presetConfig('3'), false, new Date(2026, 9, 23, 21, 30));
     expect(result.map((row) => row.date)).toEqual(['2026-07-23', '2026-07-24']);
+  });
+});
+
+describe('legacy runtime chip durations', () => {
+  it('matches Moment minute truncation on real totals', () => {
+    // Values and expected text captured from legacy beestat.time on dev.
+    expect(legacyDurationParts(568.8166666666666)).toEqual({ hours: 568, minutes: 49 });
+    expect(legacyDurationParts(6601.649999999998)).toEqual({ hours: 6601, minutes: 38 });
+    expect(legacyDurationParts(11684.783333333331)).toEqual({ hours: 11684, minutes: 46 });
+    expect(legacyDurationParts(9736.129166666662)).toEqual({ hours: 9736, minutes: 7 });
   });
 });

@@ -11,7 +11,7 @@ import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
-import { aggregateSummary, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
+import { aggregateSummary, legacyDurationParts, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
 
 function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: string) {
   const svg = ref.current?.container.current?.querySelector('svg');
@@ -23,13 +23,6 @@ function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: s
 function ordinal(day: number) {
   const remainder = day % 100;
   return `${day}${remainder >= 11 && remainder <= 13 ? 'th' : day % 10 === 1 ? 'st' : day % 10 === 2 ? 'nd' : day % 10 === 3 ? 'rd' : 'th'}`;
-}
-
-function legacyDurationParts(hours: number) {
-  const duration = (globalThis as any).moment?.duration(hours, 'hours');
-  return duration
-    ? { hours: Math.floor(duration.asHours()), minutes: Number(duration.get('minutes')) }
-    : { hours: Math.floor(hours), minutes: Math.floor((hours % 1) * 60) };
 }
 
 function formatLegacyHours(hours: number) {
@@ -158,8 +151,7 @@ export function AnalyzePage() {
   const chipData = useMemo(() => {
     const result = buildRuntimeData([]);
     // The legacy chips use Moment's duration bubbling, including its boundary
-    // behavior for long fractional-hour totals. Moment is already loaded for
-    // the ported visualizer, so retain that exact display contract here.
+    // behavior for long fractional-hour totals.
     for (const code of Object.keys(result.totals)) {
       const hours = summary.reduce((sum, row) => sum + Number(row[`sum_${code}`] ?? 0), 0);
       const duration = legacyDurationParts(hours);
@@ -208,7 +200,7 @@ export function AnalyzePage() {
     const absoluteY = Math.max(1, Math.ceil(Math.max(0, ...yValues.map((value) => Math.abs(value))) + .25));
     const profileXMin = Math.min(...entries.flatMap(([, profile]) => Object.keys(profile.deltas ?? {}).map((value) => convertProfileX(Number(value), unit))));
     const plotLines = Number.isFinite(weather) ? [{ value: weather, color: colors.gray.light, dashStyle: 'ShortDash' as const, width: 1, zIndex: 2, label: { text: `Now: ${weather}${unit}`, style: { color: colors.gray.light } } }] : [];
-    return { chart: { backgroundColor: 'transparent', height: 300, marginLeft: 36, marginRight: 0, marginBottom: 31, spacing: [8, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() { const rows = (this.points ?? []).filter((point) => !point.series.name.includes('raw')).map((point) => { const value = Number(point.y).toFixed(1); return { label: point.series.name, value: `${Number(value) > 0 ? '+' : ''}${value}${unit} / h`, color: String(point.color) }; }); return chartTooltipHtml(`Outdoor Temp: ${Math.round(Number(this.x))}${unit}`, [rows]); } }, plotOptions: { series: { animation: false, connectNulls: true, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false, lineWidthPlus: 0 }, inactive: { opacity: 1 } } } }, responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 48 }, xAxis: { min: Number.isFinite(profileXMin) ? Math.floor(profileXMin / 10) * 10 : undefined, tickInterval: 10, labels: { step: 1 } } } }] }, series };
+    return { chart: { backgroundColor: 'transparent', height: 300, marginRight: 0, marginBottom: 31, spacing: [8, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() { const rows = (this.points ?? []).filter((point) => !point.series.name.includes('raw')).map((point) => { const value = Number(point.y).toFixed(1); return { label: point.series.name, value: `${Number(value) > 0 ? '+' : ''}${value}${unit} / h`, color: String(point.color) }; }); return chartTooltipHtml(`Outdoor Temp: ${Math.round(Number(this.x))}${unit}`, [rows]); } }, plotOptions: { series: { animation: false, connectNulls: true, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false, lineWidthPlus: 0 }, inactive: { opacity: 1 } } } }, responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 48 }, xAxis: { min: Number.isFinite(profileXMin) ? Math.floor(profileXMin / 10) * 10 : undefined, tickInterval: 10, labels: { step: 1 } } } }] }, series };
   }, [selectedProfile, thermostat?.weather?.temperature, unit]);
   const generated = selectedProfile?.metadata?.generated_at;
   const durationWeeks = Math.round(Number(selectedProfile?.metadata?.duration ?? 365) / 7);
