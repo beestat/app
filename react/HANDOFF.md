@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-29 23:45: Claude, iteration 5 (Detail geometry)
+
+Done:
+- `9e61846`: Sensors card now uses legacy's grid, `repeat(auto-fit, minmax(144px, 1fr))` with 16px gaps (legacy's 160px minimum includes a 16px cell padding). React had a fixed 2-column grid with 8px gaps. At 1440 the tile columns now land on the same pixels as legacy (507–712 / 728–933); mobile is two columns with 16px gutters, as in legacy.
+- Sensor Detail legend: removed a `maxWidth: 400` responsive rule forcing `itemWidth: 130`, which wrapped "Master Bedroom" and "Outdoor Temp" on mobile. Legacy sets no item width; it now matches at 390.
+
+Checked, same as legacy: unlabeled fan icon in the System card, Cool Setpoint color (`lightblue.light` in both).
+
+Next: dialogs (custom date range, download, announcements) side by side; Analyze at 390.
+
 ## 2026-10-29 23:35: Claude, iteration 4 (Visualize, coverage audit, e2e)
 
 Done:
