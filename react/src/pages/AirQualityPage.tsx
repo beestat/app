@@ -78,7 +78,7 @@ export function AirQualityPage() {
   const thermostatRows = useMemo(() => query.data?.thermostat ?? [], [query.data]);
   const end = custom ? new Date(`${custom.end}T23:59:59`).getTime() : Date.now() - 3_600_000;
   const rows = useMemo(() => summaryRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }), [summaryRows, end, requestedBegin]);
-  const runtime = useMemo(() => buildRuntimeData(thermostatRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }) as RuntimeRow[]), [end, requestedBegin, thermostatRows]);
+  const runtime = useMemo(() => buildRuntimeData(thermostatRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }) as RuntimeRow[], thermostat), [end, requestedBegin, thermostat, thermostatRows]);
   const occupancyOptions = useMemo<Highcharts.Options>(() => {
     const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light, colors.orange.light, colors.teal.light, colors.purple.light, colors.lightBlue.light, colors.blue.dark, colors.red.dark, colors.yellow.dark, colors.green.dark, colors.orange.dark, colors.teal.dark, colors.purple.dark, colors.lightBlue.dark];
     const sensorColors = new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]]));

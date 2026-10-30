@@ -8,7 +8,7 @@ import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { chartTooltipHtml, stableTooltipPositioner } from '../components/common/chartTooltip';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
-import { buildRuntimeData, unitLabel } from '../components/detail/runtimeData';
+import { buildRuntimeData, equipmentFor, stageCount, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
 import { aggregateSummary, legacyDurationParts, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
@@ -28,12 +28,6 @@ function ordinal(day: number) {
 function formatLegacyHours(hours: number) {
   const duration = legacyDurationParts(hours);
   return `${duration.hours.toLocaleString()}h ${duration.minutes}m`;
-}
-
-// Legacy beestat.thermostat.get_stages: reported stages win over detected ones.
-function stageCount(thermostat: any, mode: string) {
-  const systemType = thermostat?.system_type;
-  return Number(systemType?.reported?.[mode]?.stages ?? systemType?.detected?.[mode]?.stages ?? 0);
 }
 
 // Legacy layer/load.js only numbers the first stage when the system has a second one.
@@ -111,12 +105,10 @@ export function AnalyzePage() {
   };
   const unit = unitLabel(String(settings.units?.temperature ?? thermostat?.temperature_unit ?? '°F'));
   const summaryOptions = useMemo<Highcharts.Options>(() => {
-    const hasCool2 = summary.some((row) => Number(row.sum_compressor_cool_2) !== 0);
-    const hasHeat2 = summary.some((row) => Number(row.sum_compressor_heat_2) !== 0);
-    const hasAux2 = summary.some((row) => Number(row.sum_auxiliary_heat_2) !== 0);
-    const runtimeSeries = [
-      ['sum_compressor_cool_1', hasCool2 ? 'Cool 1' : 'Cool', colors.lightBlue.light], ['sum_compressor_cool_2', 'Cool 2', colors.lightBlue.main], ['sum_compressor_heat_1', hasHeat2 ? 'Heat 1' : 'Heat', colors.orange.light], ['sum_compressor_heat_2', 'Heat 2', colors.orange.dark], ['sum_auxiliary_heat_1', hasAux2 ? 'Aux Heat 1' : 'Aux', colors.red.main], ['sum_auxiliary_heat_2', 'Aux Heat 2', colors.red.dark],
-    ].filter(([key]) => summary.some((row) => Number(row[key]) !== 0)).map(([key, name, color]) => ({ type: 'column' as const, name, color, yAxis: 0, data: summary.map((row) => Number(row[key])) }));
+    const meta = equipmentFor(thermostat);
+    const runtimeSeries = (['compressor_cool_1', 'compressor_cool_2', 'compressor_heat_1', 'compressor_heat_2', 'auxiliary_heat_1', 'auxiliary_heat_2'] as const)
+      .filter((code) => summary.some((row) => Number(row[`sum_${code}`]) !== 0))
+      .map((code) => ({ type: 'column' as const, name: meta[code].name, color: meta[code].color, yAxis: 0, data: summary.map((row) => Number(row[`sum_${code}`])) }));
     const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => convertProfileX(Number(row.avg_outdoor_temperature), unit)) }];
     if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [convertProfileX(Number(row.min_outdoor_temperature), unit), convertProfileX(Number(row.max_outdoor_temperature), unit)]) });
     const hasDegreeDays = summary.some((row) => Number(row.sum_heating_degree_days) !== 0 || Number(row.sum_cooling_degree_days) !== 0);
@@ -157,9 +149,9 @@ export function AnalyzePage() {
       responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 166 }, xAxis: { tickInterval: mobileTickInterval, labels: { step: 1 } } } }] },
       series: [...runtimeSeries, ...weatherSeries, ...degreeDaySeries],
     };
-  }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, unit]);
+  }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, thermostat, unit]);
   const chipData = useMemo(() => {
-    const result = buildRuntimeData([]);
+    const result = buildRuntimeData([], thermostat);
     // The legacy chips use Moment's duration bubbling, including its boundary
     // behavior for long fractional-hour totals.
     for (const code of Object.keys(result.totals)) {
@@ -169,7 +161,7 @@ export function AnalyzePage() {
       result.totals[code as keyof typeof result.totals] = seconds;
     }
     return result;
-  }, [summary]);
+  }, [summary, thermostat]);
   const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);
   const selectedProfile = profileIndex === undefined ? thermostat?.profile : profiles[Math.min(profileIndex, Math.max(0, profiles.length - 1))]?.profile ?? thermostat?.profile;
   const names = useMemo(() => profileNames(thermostat), [thermostat]);

@@ -84,7 +84,38 @@ export interface RuntimeChartData {
   offAt: Record<number, number>;
 }
 
-export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
+// Legacy beestat.thermostat.get_stages / get_system_type: reported config wins over detected.
+export function stageCount(thermostat: any, mode: string) {
+  const systemType = thermostat?.system_type;
+  return Number(systemType?.reported?.[mode]?.stages ?? systemType?.detected?.[mode]?.stages ?? 0);
+}
+
+export function systemType(thermostat: any, mode: string) {
+  const systemType = thermostat?.system_type;
+  return String(systemType?.reported?.[mode]?.equipment ?? systemType?.detected?.[mode]?.equipment ?? 'unknown');
+}
+
+/**
+ * Equipment names and colors for one thermostat, applying legacy layer/load.js:
+ * first stages are numbered only when a second stage exists, and on systems
+ * whose heat is not a heat pump the auxiliary stages are the primary heat.
+ */
+export type EquipmentMeta = Record<EquipmentCode, { name: string; color: string; y: number; width: number }>;
+
+export function equipmentFor(thermostat: any): EquipmentMeta {
+  const result = Object.fromEntries(Object.entries(equipment).map(([code, meta]) => [code, { ...meta }])) as EquipmentMeta;
+  if (stageCount(thermostat, 'heat') > 1) result.compressor_heat_1.name = 'Heat 1';
+  if (stageCount(thermostat, 'auxiliary_heat') > 1) result.auxiliary_heat_1.name = 'Aux Heat 1';
+  if (stageCount(thermostat, 'cool') > 1) result.compressor_cool_1.name = 'Cool 1';
+  if (thermostat && !['compressor', 'geothermal'].includes(systemType(thermostat, 'heat'))) {
+    result.auxiliary_heat_1 = { ...result.auxiliary_heat_1, name: result.compressor_heat_1.name, color: result.compressor_heat_1.color };
+    result.auxiliary_heat_2 = { ...result.auxiliary_heat_2, name: result.compressor_heat_2.name, color: result.compressor_heat_2.color };
+  }
+  return result;
+}
+
+export function buildRuntimeData(input: RuntimeRow[], thermostat?: any): RuntimeChartData {
+  const meta = equipmentFor(thermostat);
   const rows = [...input].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const result: RuntimeChartData = {
     min: rows.length ? Date.parse(rows[0].timestamp) : Date.now(),
@@ -98,7 +129,7 @@ export function buildRuntimeData(input: RuntimeRow[]): RuntimeChartData {
     equipmentAt: {},
     offAt: {},
   };
-  Object.entries(equipment).forEach(([code, meta]) => { result.equipment[code] = { ...meta, points: [] }; });
+  Object.entries(meta).forEach(([code, value]) => { result.equipment[code] = { ...value, points: [] }; });
   Object.values(calendar).forEach((meta) => { result.equipment[meta.code] = { name: meta.name, color: meta.color, width: 6, points: [] }; });
 
   rows.forEach((row) => {

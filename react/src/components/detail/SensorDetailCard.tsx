@@ -58,7 +58,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
       { resource: 'runtime_thermostat', method: 'read', alias: 'runtime_thermostat', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } },
     ], signal), staleTime: 5 * 60_000,
   });
-  const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? []), [query.data]);
+  const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? [], thermostat), [query.data, thermostat]);
   const sensorSeries = useMemo(() => ordered.map((sensor, index) => {
     const rows = query.data?.[`sensor_${sensor.sensor_id}`] ?? [];
     const lane = swimlane(ordered.length, index);

@@ -39,7 +39,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),
     staleTime: 5 * 60_000,
   });
-  const data = useMemo(() => buildRuntimeData(query.data ?? []), [query.data]);
+  const data = useMemo(() => buildRuntimeData(query.data ?? [], thermostat), [query.data, thermostat]);
   const series = useMemo(() => {
     const definitions = [
       ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
@@ -75,7 +75,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       const offItems: { label: string; value: string; color: string }[] = [];
       const mode = data.systemModeAt[x];
       const modeLabels: Record<string, string> = { auto: 'Auto', heat: 'Heat', cool: 'Cool', off: 'Off', auxiliary_heat: 'Aux' };
-      const modeColors: Record<string, string> = { auto: colors.gray.main, heat: equipment.compressor_heat_1.color, cool: equipment.compressor_cool_1.color, off: colors.gray.main, auxiliary_heat: equipment.auxiliary_heat_1.color };
+      const modeColors: Record<string, string> = { auto: colors.gray.main, heat: data.equipment.compressor_heat_1.color, cool: data.equipment.compressor_cool_1.color, off: colors.gray.main, auxiliary_heat: data.equipment.auxiliary_heat_1.color };
       if (modeLabels[mode]) modeItems.push({ label: 'System Mode', value: modeLabels[mode], color: modeColors[mode] });
       if (data.climateAt[x]) modeItems.push({ label: 'Comfort Profile', value: data.climateAt[x].replace(/[<>&]/g, ''), color: colors.gray.main });
       (this.points ?? []).forEach((point) => {
@@ -86,7 +86,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       });
       (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
         const seconds = data.equipmentAt[x]?.[code] ?? 0;
-        if (seconds > 0) equipmentItems.push({ label: equipment[code].name, value: formatRuntime(seconds), color: equipment[code].color });
+        if (seconds > 0) equipmentItems.push({ label: data.equipment[code].name, value: formatRuntime(seconds), color: data.equipment[code].color });
       });
       if (data.offAt[x] > 0) offItems.push({ label: 'Off', value: formatRuntime(data.offAt[x]), color: colors.slate.light });
       return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
