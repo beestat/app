@@ -8,6 +8,7 @@ import { colors } from '../../theme';
 import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
+import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeChips } from './RuntimeChips';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
@@ -32,6 +33,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   });
   const [extremes, setExtremes] = useState<[number, number]>();
   const chartRef = useRef<HighchartsReact.RefObject>(null);
+  const { show: showTooltip, panel: dockedTooltip } = useDockedTooltip();
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
   const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
   const query = useQuery({
@@ -94,7 +96,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       });
       if ((durations.off_heat_cool ?? 0) > 0) offItems.push({ label: 'System Off', value: formatRuntime(durations.off_heat_cool!), color: colors.gray.main });
       if (!modeItems.length && !dataItems.length && !equipmentItems.length) modeItems.push({ label: 'No data', value: '', color: colors.gray.main });
-      return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]);
+      return showTooltip(chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]));
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
   }), [data, displayUnit, extremes, series, temperatureBounds]);
@@ -117,6 +119,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       <RuntimeChips data={data} />
       <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} />
       <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { marginTop: 8 } }} />
+      {dockedTooltip}
     </>}
   </DashboardCard>;
 });
