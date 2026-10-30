@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:45: Claude, iteration 12 (System card colors)
+
+Done:
+- Temperature circle background now follows legacy `beestat.thermostat.get_color`. The highest running stage in the order aux 2 > aux 1 > heat 2 > heat 1 > cool 2 > cool 1 picks its series color from `equipmentFor(thermostat)`: red for aux on heat pumps, orange for aux on furnaces, orange-light/dark for heat stages, light-blue light/main for cool stages. React used one blue for any cooling and one orange for any heating (aux included), and checked cooling first.
+- Running-equipment snowflake uses legacy `blue.light` (#4b7bec) instead of `lightBlue.light`.
+- Running-equipment stage subscripts and "Aux heat" titles were already right (legacy uses detected stages and does not apply the furnace rename here).
+- `qa/system-circle-color.mjs` compares the computed circle color and prints the running equipment. Tonight nothing is running and both are `rgb(38, 50, 56)`; recheck while heat or cool is running.
+
+Verified: typecheck, 23 unit tests, build.
+
 ## 2026-10-30 00:35: Claude, iteration 11 (equipment naming by system type)
 
 Done: `runtimeData.ts` has `equipmentFor(thermostat)`, a port of the series renames in legacy `layer/load.js`:
