@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 03:20: Claude, iteration 27 (Sensor legend ↔ occupancy)
+
+Done: Sensor Detail legend visibility is now React state, the same pattern as Thermostat Detail. Hiding a sensor hides its temperature line *and* its occupancy lane, as legacy `card/runtime_sensor_detail.js` does. Indoor/Outdoor Temp keep their hidden-by-default state. Toggles survive data refreshes.
+
+Verified: typecheck, 37 unit tests, build, e2e 14/14, `qa/sensor-legend-occupancy.mjs [sensor]`: Office lanes go 4 → 3 → 4. QA tip: a hidden Highcharts line here keeps its `g.highcharts-series` group but drops its path after about a second, so count drawn paths rather than groups.
+
 ## 2026-10-30 03:05: Claude, iteration 26 (legend behaviors)
 
 Done:
