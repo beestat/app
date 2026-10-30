@@ -1,4 +1,4 @@
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, Box, Button, CircularProgress } from '@mui/material';
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, useDashboard } from './state/DashboardContext';
@@ -24,7 +24,7 @@ const GlenwoodEnrollmentPage = lazy(() => import('./pages/GlenwoodPage').then((m
 const GlenwoodReportPage = lazy(() => import('./pages/GlenwoodPage').then((module) => ({ default: module.GlenwoodReportPage })));
 
 function RoutedApp() {
-  const { data, loading, error } = useDashboard();
+  const { data, loading, error, refresh } = useDashboard();
   if (loading) {
     return (
       <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
@@ -33,7 +33,7 @@ function RoutedApp() {
     );
   }
   if (error) {
-    return <Box sx={{ maxWidth: 720, mx: 'auto', mt: 8, p: 2 }}><Alert severity="error">{error}</Alert></Box>;
+    return <Box sx={{ maxWidth: 720, mx: 'auto', mt: 8, p: 2 }}><Alert severity="error" action={<Button color="inherit" onClick={() => void refresh()}>Retry</Button>}>{error}</Alert></Box>;
   }
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   return (

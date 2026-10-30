@@ -15,6 +15,27 @@ export class ApiError extends Error {
   }
 }
 
+const requestTimeoutMs = 60_000;
+
+async function postApi<T>(body: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
+  const timeout = AbortSignal.timeout(requestTimeoutMs);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+  let response: Response;
+  try {
+    response = await fetch(runtimeConfig.apiBase, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: combinedSignal,
+    });
+  } catch (error) {
+    if (timeout.aborted && !signal?.aborted) throw new ApiError('The API request timed out. Please try again.');
+    throw error;
+  }
+  return parseResponse<T>(response);
+}
+
 function serialize(call: ApiCall) {
   return {
     resource: call.resource,
@@ -28,31 +49,17 @@ function serialize(call: ApiCall) {
 }
 
 export async function apiCall<T>(call: ApiCall, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(runtimeConfig.apiBase, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...serialize(call), api_key: runtimeConfig.apiKey }),
-    signal,
-  });
-  return parseResponse<T>(response);
+  return postApi<T>({ ...serialize(call), api_key: runtimeConfig.apiKey }, signal);
 }
 
 export async function apiBatch<T>(
   calls: ApiCall[],
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(runtimeConfig.apiBase, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      api_key: runtimeConfig.apiKey,
-      batch: JSON.stringify(calls.map(serialize)),
-    }),
-    signal,
-  });
-  return parseResponse<T>(response);
+  return postApi<T>({
+    api_key: runtimeConfig.apiKey,
+    batch: JSON.stringify(calls.map(serialize)),
+  }, signal);
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
