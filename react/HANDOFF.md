@@ -7,6 +7,17 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 00:15: Claude, iteration 8 (custom range dialog and request bounds)
+
+Compared `ChartRangeMenu` with legacy `modal/runtime_thermostat_detail_custom.js`. Fixed:
+- Thermostat and Sensor Detail sent static ranges as offset-less strings (`2026-10-28T00:00:00`), so the server read them in its own time zone. Legacy sends `moment(...).format()` with the local offset. Both cards now send `new Date(local).toISOString()`; Air Quality already did this. `qa/custom-range-bounds.mjs` (New York time zone, `update_setting` aborted) shows the first row at `04:00Z`, which is local midnight.
+- Dialog default dates used `toISOString().slice(0, 10)`, which is tomorrow's date every evening in the Americas. A `localDate()` helper now uses the viewer's calendar date.
+- The dynamic day count is clamped on blur like legacy (blank/0 → 1, >30 → 30) instead of showing an error and disabling Save.
+
+Already matched: 30-day max, "Detail not available for this range." with min = later of sync begin and 12 months ago.
+
+Next: download/announcements dialogs; check other `toISOString().slice(0, 10)` uses (`analyzeSummary.ts:39`, `AirQualityPage.tsx:72` query key, `GlenwoodPage.tsx:89`) for local-vs-UTC intent.
+
 ## 2026-10-30 00:05: Claude, iteration 7 (header thermostat switcher)
 
 Done:
