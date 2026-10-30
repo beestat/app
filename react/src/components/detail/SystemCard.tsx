@@ -5,6 +5,7 @@ import type { EcobeeThermostat, Thermostat } from '../../types';
 import { colors } from '../../theme';
 import { formatDuration, formatTemperature, titleCase } from '../../utils/format';
 import { filterLifespan, filterReplaceIn } from './filterInfo';
+import { equipmentFor } from './runtimeData';
 import { DashboardCard } from '../common/DashboardCard';
 
 const thermostatModels: Record<string, string> = {
@@ -58,7 +59,7 @@ function windLabel(speed: number, bearing: number) {
 }
 
 function equipmentAppearance(equipment: string) {
-  if (equipment.includes('cool')) return { icon: <Snowflake size={22} />, color: colors.lightBlue.light, title: 'Cool' };
+  if (equipment.includes('cool')) return { icon: <Snowflake size={22} />, color: colors.blue.light, title: 'Cool' };
   if (equipment.includes('auxiliary_heat')) return { icon: <Flame size={22} />, color: colors.red.main, title: 'Aux heat' };
   if (equipment.includes('heat')) return { icon: <Flame size={22} />, color: colors.orange.main, title: 'Heat' };
   if (equipment === 'fan') return { icon: <Fan size={22} />, color: colors.gray.light, title: 'Fan' };
@@ -87,7 +88,11 @@ export const SystemCard = memo(function SystemCard({ thermostat, temperatureUnit
   const [dialog, setDialog] = useState<'thermostat' | 'filter' | 'weather'>();
   const temperature = (value: number | null | undefined, digits = 1) => formatTemperature(value, temperatureUnit, digits).replace(/°[FC]$/, '');
   const running = thermostat.running_equipment ?? [];
-  const activeColor = running.some((item) => item.includes('cool')) ? colors.lightBlue.main : running.some((item) => item.includes('heat')) ? colors.orange.main : colors.slate.dark;
+  // Legacy beestat.thermostat.get_color: the highest-priority running stage picks its series color.
+  const meta = equipmentFor(thermostat);
+  const circleColors: Record<string, string> = { auxiliary_heat_2: meta.auxiliary_heat_1.color, auxiliary_heat_1: meta.auxiliary_heat_1.color, heat_2: meta.compressor_heat_2.color, heat_1: meta.compressor_heat_1.color, cool_2: meta.compressor_cool_2.color, cool_1: meta.compressor_cool_1.color };
+  const circleMode = Object.keys(circleColors).find((mode) => running.some((item) => item.replace(/^compressor_/, '') === mode));
+  const activeColor = circleMode ? circleColors[circleMode] : colors.slate.dark;
   const mode = ecobee?.settings?.hvacMode ?? thermostat.system_mode?.mode ?? 'auto';
   const program = thermostat.program ?? ecobee?.program;
   const climateRef = program?.currentClimateRef;
