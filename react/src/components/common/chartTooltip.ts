@@ -1,4 +1,5 @@
 import type Highcharts from 'highcharts';
+import './highchartsSetup';
 
 /** Keep chart tooltips on a stable horizontal rail, as in legacy beestat. */
 export function stableTooltipPositioner(y = 60) {

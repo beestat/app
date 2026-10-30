@@ -7,6 +7,15 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:05: Claude, iteration 20 (console audit)
+
+Done:
+- Sensor Detail and Air Quality tooltips: legacy computes no durations there (only Thermostat Detail does), so iteration 19's gap doesn't apply.
+- `qa/console-audit.mjs` visits all 7 routes at 1440 and 390, scrolls through each, and reports console warnings/errors, page errors and HTTP ≥ 400. The only finding was Highcharts' "include accessibility.js" warning. `components/common/highchartsSetup.ts` sets `accessibility.enabled: false` globally (legacy doesn't load the module either) and is imported by `chartTooltip.ts`. The audit is now clean across all 14 combinations.
+- Bundle check: the `charts` chunk is byte-identical; `index` is 273.2 kB (it was 271.6 kB at the start of the night, the difference being tonight's header features).
+
+Verified: typecheck, 37 unit tests, build, console audit clean.
+
 ## 2026-10-30 01:55: Claude, iteration 19 (Detail tooltip durations)
 
 Found and fixed a real tooltip gap on Thermostat Detail:
