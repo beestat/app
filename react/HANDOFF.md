@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 02:50: Claude, iteration 25 (Air Quality docked tooltips)
+
+Done: legacy Air Quality is also three separate charts (`chart/air_quality.js`, `voc_concentration.js`, `co2_concentration.js`), each docking its own tooltip under itself, so React now gives each chart its own `useDockedTooltip()`. The shared `options()` formatter picks the hook by series name. That closes the gap left in iteration 24.
+
+Verified: typecheck, 37 unit tests, build, `qa/air-quality-docked.mjs [width]`. At 390, hovering the charts fills the Air Quality, TVOC and CO₂ panels under their own charts with nothing floating; at 1440 there are no docked panels. QA tip: Highcharts needs two mouse moves inside a chart before it shows a tooltip, and hovering the vertical middle of the 135px CO₂ chart can land below the plot. The script hovers 30px from the top.
+
 ## 2026-10-30 02:40: Claude, iteration 24 (docked tooltips)
 
 Done: React saved Settings → "Always Dock Tooltips" but never used it, and phones got floating tooltips over the chart. Legacy `beestat.component.chart` docks the tooltip into a panel under the chart when that setting is on **or** the window is < 600px. New `components/common/DockedTooltip.tsx` `useDockedTooltip()` returns `show(html)` (floating HTML, or stores it and returns false) and `panel` to render under the chart. It's wired into Thermostat Detail, Sensor Detail, Analyze Summary and Temperature Profiles.
