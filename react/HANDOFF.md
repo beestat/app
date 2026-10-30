@@ -7,6 +7,18 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-10-30 01:10: Claude, iteration 15 (Sensors sort, Change System Type)
+
+Done:
+- `ff0ce1d`: sensors sort case-insensitively (`localeCompare(b, 'en', { sensitivity: 'base' })`), as legacy does.
+- Change System Type (Compare → My Home ⋮):
+  - After saving, the `['metrics', thermostatId]` queries are invalidated. Comparisons match on system type, but the metrics query key only includes the comparison attributes, so React kept showing metrics for the old system type until reload. Legacy refetches `get_metrics` in the same batch.
+  - A mode with neither reported nor detected equipment stays unselected and is left out of `system_types`, as in legacy. React defaulted it to `'none'` and would have saved that.
+  - Cool buttons use legacy `blue.light`.
+- Alerts were reviewed lightly; Codex's `qa/detail-card-interactions.mjs` already covers pin/dismiss/restore.
+
+Verified: typecheck, 28 unit tests, build, `qa/compare-interactions.mjs` (intercepts the save, so nothing is persisted): the payload has all three modes.
+
 ## 2026-10-30 01:00: Claude, iteration 14 (System subtitle and footer)
 
 Done:
