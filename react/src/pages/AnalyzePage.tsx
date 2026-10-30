@@ -81,6 +81,13 @@ function ProfileMenu({ profile, names, unit, subtitle, onDownload }: { profile: 
   return <><IconButton aria-label="Temperature profiles menu" onClick={(event) => setAnchor(event.currentTarget)}><EllipsisVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setAnchor(null); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem>{profile && <><MenuItem onClick={() => { setAnchor(null); downloadProfile(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Profile</ListItemText></MenuItem><MenuItem onClick={() => { setAnchor(null); setInfo(true); }}><ListItemIcon><Info size={18} /></ListItemIcon><ListItemText>More Info</ListItemText></MenuItem></>}<MenuItem component="a" href="https://doc.beestat.io/9c0fba6793dd4bc68f798c1516f0ea25" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu><Dialog open={info} onClose={() => setInfo(false)} fullWidth maxWidth="sm"><DialogTitle>Temperature Profiles Info</DialogTitle><DialogContent><Typography color="text.secondary" mb={2}>{subtitle}</Typography><Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 2 }}>{fields.map((field) => <Box key={field.key}><Typography fontWeight={600} mb={.5}>{field.name}</Typography><Typography>Slope = {field.slope.toFixed(4)}<br />Intercept = {field.intercept.toFixed(4)}{unit}</Typography></Box>)}</Box></DialogContent><DialogActions><Button onClick={() => setInfo(false)}>Close</Button></DialogActions></Dialog></>;
 }
 
+// Legacy runtime_thermostat_summary: Outdoor Temp and Degree Days share the right side, so showing one hides the other.
+function showExclusively(otherId: string) {
+  return function (this: Highcharts.Series) {
+    (this.chart.get(otherId) as Highcharts.Series | undefined)?.setVisible(false);
+  };
+}
+
 export function AnalyzePage() {
   const { data, thermostat, thermostatId } = useDashboard();
   const [summaryConfig, setSummaryConfig] = useState<SummaryConfig>();
@@ -113,11 +120,11 @@ export function AnalyzePage() {
     const runtimeSeries = (['compressor_cool_1', 'compressor_cool_2', 'compressor_heat_1', 'compressor_heat_2', 'auxiliary_heat_1', 'auxiliary_heat_2'] as const)
       .filter((code) => summary.some((row) => Number(row[`sum_${code}`]) !== 0))
       .map((code) => ({ type: 'column' as const, name: meta[code].name, color: meta[code].color, custom: { code: `sum_${code}` }, yAxis: 0, data: summary.map((row) => Number(row[`sum_${code}`])) }));
-    const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => convertProfileX(Number(row.avg_outdoor_temperature), unit)) }];
+    const weatherSeries: Highcharts.SeriesOptionsType[] = [{ type: 'spline', id: 'outdoor-temperature', name: 'Outdoor Temp', events: { show: showExclusively('degree-days') }, color: colors.gray.light, dashStyle: 'ShortDash', lineWidth: 1, yAxis: 1, data: summary.map((row) => convertProfileX(Number(row.avg_outdoor_temperature), unit)) }];
     if (summary.some((row) => row.min_outdoor_temperature != null && row.max_outdoor_temperature != null)) weatherSeries.push({ type: 'areasplinerange', name: 'Outdoor Temp Extremes', linkedTo: 'outdoor-temperature', color: colors.gray.dark, fillOpacity: .2, lineWidth: 0, yAxis: 1, data: summary.map((row) => [convertProfileX(Number(row.min_outdoor_temperature), unit), convertProfileX(Number(row.max_outdoor_temperature), unit)]) });
     const hasDegreeDays = summary.some((row) => Number(row.sum_heating_degree_days) !== 0 || Number(row.sum_cooling_degree_days) !== 0);
     const degreeDaySeries: Highcharts.SeriesOptionsType[] = hasDegreeDays ? [
-      { type: 'spline', id: 'degree-days', name: 'Degree Days', custom: { code: 'sum_heating_degree_days' }, color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
+      { type: 'spline', id: 'degree-days', name: 'Degree Days', events: { show: showExclusively('outdoor-temperature') }, custom: { code: 'sum_heating_degree_days' }, color: colors.red.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_heating_degree_days)) },
       { type: 'spline', name: 'Degree Days', custom: { code: 'sum_cooling_degree_days' }, linkedTo: 'degree-days', color: colors.lightBlue.dark, lineWidth: 2, visible: false, yAxis: 2, data: summary.map((row) => Number(row.sum_cooling_degree_days)) },
     ] : [];
     const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
