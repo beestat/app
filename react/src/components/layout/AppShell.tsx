@@ -5,11 +5,20 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { colors } from '../../theme';
+import { formatTemperature } from '../../utils/format';
 import { preloadLegacyVisualizer } from '../visualize/legacyVisualizer';
 
 const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
 const NewsletterDialog = lazy(() => import('./NewsletterDialog').then((module) => ({ default: module.NewsletterDialog })));
 const AnnouncementsContent = lazy(() => import('../../pages/AnnouncementsPage').then((module) => ({ default: module.AnnouncementsContent })));
+
+// Mirrors legacy header get_switcher_width_: label text at 13px/300 plus 16px padding
+// and an 8px margin per tile, plus 16px of column padding.
+function switcherWidth(labels: string[]) {
+  const context = document.createElement('canvas').getContext('2d');
+  if (context) context.font = '300 13px Montserrat';
+  return labels.reduce((width, label) => width + (context?.measureText(label).width ?? label.length * 7) + 24, 16);
+}
 
 const navItems = [
   { path: '/detail', label: 'Detail', icon: Eye },
@@ -36,6 +45,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // + margin 16 = 791px; the full logo needs 160 + 225 + 66 = 451px.
   const compact = useMediaQuery('(max-width:790px)');
   const phone = useMediaQuery('(max-width:450px)');
+  // Legacy shows quick-switch tiles for the other thermostats when they fit beside the navigation.
+  const temperatureUnit = String(data?.user?.settings?.units?.temperature ?? '°F');
+  const otherThermostats = useMemo(() => Object.values(data?.thermostat ?? {})
+    .filter((item) => item.thermostat_id !== thermostatId)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({ id: item.thermostat_id, label: `${item.name} • ${formatTemperature(item.temperature, temperatureUnit, 0)}` })), [data?.thermostat, temperatureUnit, thermostatId]);
+  const switcherFits = useMediaQuery(`(min-width:${(phone ? 346 : compact ? 451 : 791) + switcherWidth(otherThermostats.map((item) => item.label))}px)`);
+  const showSwitcher = switcherFits && otherThermostats.length > 0;
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
@@ -109,7 +126,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 }} onPointerEnter={() => preloadRoute(path)} onFocus={() => preloadRoute(path)}>{compact ? null : label}</Button>
               ))}
             </Box>}
-            <Box sx={{ flex: 1 }} />
+            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, minWidth: 0 }}>
+              {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, textTransform: 'none', mt: { sm: '2px' }, color: '#fff !important', bgcolor: colors.slate.main, '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' } }}>{item.label}</Button>)}
+            </Box>
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge>
             </IconButton>
