@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 06:55: Codex, bounded console audit resume
+
+Resumed after the usage gap. The saved authentication still works; typecheck and all 41 unit tests pass. Hardened `qa/console-audit.mjs`: it snapshots/caps each route's scroll height instead of re-reading a lazy-growing document forever, scrolls from Node in bounded steps, and prints per-route progress. The sweep now completes all 14 desktop/mobile combinations rather than appearing hung.
+
+The November 5 live run encountered intermittent dev API failures (two HTTP 500 responses and several >90s readiness misses) during the long desktop sweep. Mobile navigation and all routes were traversed, and no new React page errors were reported. Treat the missing-card results as backend instability and rerun once the dev API is healthy; do not weaken the audit to hide them.
+
 ## 2026-10-30 07:55: Codex, stable Air Quality rolling-axis parity
 
 Fixed the pre-existing `qa/air-quality-geometry.mjs` false negative noted below. Legacy and React both use a rolling three-day window with five-minute samples; because the pages load sequentially, crossing a sample boundary can shift one suppressed hour label even when the 17-sample tick cadence is identical. The check now allows a one-label density difference and compares day transitions, while retaining exact chart heights and inter-chart gaps at 1440 and 390px. The live geometry run passes.

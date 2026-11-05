@@ -23,9 +23,16 @@ for (const width of [1440, 390]) {
     page.on('response', (response) => { if (response.status() >= 400) messages.push(`http ${response.status()}: ${response.url()}`); });
     await page.goto(`https://dev.app.beestat.io/react/index.php#/${route}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await page.getByText(ready, { exact: false }).first().waitFor({ timeout: 90_000 }).catch(() => messages.push(`missing: ${ready}`));
-    await page.evaluate(async () => { for (let y = 0; y < document.documentElement.scrollHeight; y += 600) { scrollTo(0, y); await new Promise((resolve) => setTimeout(resolve, 150)); } });
+    // Snapshot and cap the height. Reading scrollHeight in the loop can chase
+    // lazy content forever when a route grows as each section mounts.
+    const scrollHeight = Math.min(await page.evaluate(() => document.documentElement.scrollHeight), 30_000);
+    for (let y = 0; y < scrollHeight; y += 600) {
+      await page.evaluate((top) => scrollTo(0, top), y);
+      await page.waitForTimeout(150);
+    }
     await page.waitForTimeout(2_500);
     results.push({ width, route, messages: [...new Set(messages)] });
+    process.stderr.write(`checked ${route} at ${width}px\n`);
     await page.close();
   }
   await context.close();
