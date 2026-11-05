@@ -7,7 +7,15 @@ const page = await context.newPage();
 await page.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('Sensor Detail', { exact: true }).waitFor({ timeout: 90_000 });
 const sensorCard = page.getByText('Sensor Detail', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
+// The card body is lazy-mounted. Bring the card into view before waiting for
+// a descendant that cannot exist until the intersection observer fires.
+await sensorCard.scrollIntoViewIfNeeded();
 const occupancy = sensorCard.locator('.highcharts-container').nth(1);
+try {
+  await occupancy.waitFor({ state: 'visible', timeout: 90_000 });
+} catch {
+  throw new Error(`Sensor Detail occupancy chart did not render: ${JSON.stringify({ chartCount: await sensorCard.locator('.highcharts-container').count(), text: (await sensorCard.innerText()).slice(0, 500) })}`);
+}
 await occupancy.scrollIntoViewIfNeeded();
 const occupancyBox = await occupancy.boundingBox();
 if (!occupancyBox) throw new Error('Occupancy rail was not rendered.');
@@ -20,6 +28,9 @@ const occupancyTooltip = await page.evaluate(() => {
 });
 if (!occupancyTooltip.found || occupancyTooltip.parent !== 'BODY' || occupancyTooltip.top < 0 || occupancyTooltip.bottom > occupancyTooltip.viewportHeight) throw new Error(`Occupancy tooltip is clipped: ${JSON.stringify(occupancyTooltip)}`);
 
+// Analyze's phone tooltips are intentionally docked below the chart like
+// legacy. Use desktop here to inspect the floating Profile tooltip font.
+await page.setViewportSize({ width: 1440, height: 1000 });
 await page.goto('https://dev.app.beestat.io/react/index.php#/analyze', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByText('Temperature Profiles', { exact: true }).waitFor({ timeout: 90_000 });
 const summaryCard = page.getByText('Thermostat Summary', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
@@ -47,8 +58,9 @@ for (const fraction of [.25, .4, .55, .7]) {
 const profileTooltipFont = await profileCard.evaluate((card) => {
   const tooltip = card.querySelector('.highcharts-tooltip');
   const html = tooltip?.querySelector('div');
-  return Number.parseFloat(getComputedStyle(html ?? tooltip).fontSize);
+  return html || tooltip ? Number.parseFloat(getComputedStyle(html ?? tooltip).fontSize) : null;
 });
+if (profileTooltipFont == null) throw new Error('Profile tooltip did not appear.');
 if (profileTooltipFont < 13) throw new Error(`Profile tooltip font is too small: ${profileTooltipFont}px`);
 
 console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont }, null, 2));

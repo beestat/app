@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 07:10: Codex, tooltip QA restored
+
+Repaired two stale hover checks without changing app behavior. `qa/tooltip-regressions.mjs` now scrolls the lazy Sensor Detail card into view before waiting for its charts and switches to desktop before inspecting the floating Temperature Profiles tooltip (phones intentionally dock it). It passes with the mobile occupancy tooltip fully inside the viewport, a visible summary crosshair, and a 16px profile tooltip.
+
+`qa/detail-tooltips.mjs` now finds legacy's anonymous docked tooltip by its actual table content; the prior selector expected a class/data attribute legacy never sets. A three-position live comparison captures every required row (`System Mode`, comfort profile, temperatures, hidden humidity, and `System Off`) in both legacy and React. Summary legend exclusivity and sensor occupancy-lane legend QA also pass. The authenticated e2e suite passes 14/14 and the 320px route sweep passes all ten routes with all five navigation items visible.
+
 ## 2026-11-05 07:06: Codex, Glenwood calendar-day boundary
 
 Fixed Glenwood Report's one-year validation to count date-only calendar boundaries like legacy Moment. React previously divided elapsed local-midnight milliseconds by 24 hours, so an otherwise valid 366-day range spanning a fall DST transition could become `366.0417` and be rejected. Added a shared DST-independent `calendarDayDistance` helper and exact 366-day forward/reverse tests. Typecheck and 12 test files / 44 tests pass; production build passes.

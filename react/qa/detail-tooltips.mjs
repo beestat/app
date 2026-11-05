@@ -33,8 +33,8 @@ for (const [name, url] of [['legacy', 'https://dev.app.beestat.io/'], ['react', 
     samples.push(await page.evaluate(() => {
       // With useHTML, Highcharts leaves an empty SVG tooltip group alongside
       // the actual absolutely-positioned HTML div. Read the div explicitly.
-      const tooltip = [...document.querySelectorAll('div.highcharts-tooltip, .highcharts-tooltip-container, [data-chart-tooltip], [data-highcharts-chart] > div[style*="margin-top"]')]
-        .filter((node) => getComputedStyle(node).visibility !== 'hidden' && node.textContent?.trim())
+      const tooltip = [...document.querySelectorAll('div.highcharts-tooltip, .highcharts-tooltip-container, [data-chart-tooltip], table')]
+        .filter((node) => getComputedStyle(node).visibility !== 'hidden' && node.textContent?.includes('System Mode'))
         .sort((left, right) => (right.textContent?.length ?? 0) - (left.textContent?.length ?? 0))[0];
       return tooltip?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
     }));
