@@ -9,7 +9,7 @@ Ground rules:
 
 ## 2026-11-05 07:29: Codex, remove zero announcement badges
 
-Removed MUI's hidden `0` badge nodes after all announcements are read. They were visually scaled away but remained in page/accessibility text, unlike legacy (and appeared as an unexplained `0` in every route text snapshot). The header and menu now instantiate a Badge only when `unread > 0`; otherwise they render the Lucide icon directly. Announcements dialog/icon/read persistence QA passes and now asserts no zero badge remains. Production build passes.
+Removed MUI's hidden `0` badge nodes after all announcements are read. They were visually scaled away but remained in page/accessibility text, unlike legacy (and appeared as an unexplained `0` in every route text snapshot). The header and menu now instantiate a Badge only when `unread > 0`; otherwise they render the Lucide icon directly. Announcements dialog/icon/read persistence QA passes and now asserts no zero badge remains. Final integrated verification: production build, 12 unit files / 44 tests, and authenticated desktop/mobile e2e 14/14 all pass.
 
 ## 2026-11-05 07:23: Codex, exact Analyze desktop label cadence
 
