@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 07:17: Codex, sequence exact editor and 3D startup
+
+Fixed a Visualize startup scheduling regression exposed by `qa/visualizer-load-performance.mjs`. Once the exact editor collapsed to 120px, the 3D lazy mount became visible and both idle callbacks could run in the same idle period, allowing expensive 3D initialization to follow editor construction before an editor paint. `ExactFloorPlanEditor` now reports readiness; `VisualizePage` gates the existing deferred 3D mount on that signal and keeps a single branded preparation wrapper visible meanwhile. No legacy editor or Three.js rendering implementation was changed.
+
+The performance QA now measures the claimed condition directly: a mutation observer timestamps exact-editor readiness, a double-animation-frame paint opportunity, and exact-scene startup. Live result: `editorPaintOpportunity=2868.5`, `sceneStarted=4145.4`, so 3D starts during a later idle period, with zero floor-plan writes. Range switching still returns in 8ms, shows its loader in 4ms, finishes in 667ms, and performs zero scene rerenders. Exact 3D/editor parity passes at desktop, 390px, and 320px; the prior current-date failure was a stale October-only regex, now month-independent. Five-minute refresh preserves the same canvas, opacity 1, and no loader/flicker. Typecheck and production build pass.
+
 ## 2026-11-05 07:10: Codex, tooltip QA restored
 
 Repaired two stale hover checks without changing app behavior. `qa/tooltip-regressions.mjs` now scrolls the lazy Sensor Detail card into view before waiting for its charts and switches to desktop before inspecting the floating Temperature Profiles tooltip (phones intentionally dock it). It passes with the mobile occupancy tooltip fully inside the viewport, a visible summary crosshair, and a 16px profile tooltip.

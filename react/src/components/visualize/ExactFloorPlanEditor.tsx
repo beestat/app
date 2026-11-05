@@ -16,6 +16,7 @@ export function ExactFloorPlanEditor({
   onChanged,
   onPlansChanged,
   onSwitch,
+  onReady,
 }: {
   plan: FloorPlan;
   plans: FloorPlan[];
@@ -25,6 +26,7 @@ export function ExactFloorPlanEditor({
   onChanged?: (plan: FloorPlan) => void;
   onPlansChanged?: (plans: FloorPlan[]) => void;
   onSwitch?: (floorPlanId: number) => void;
+  onReady?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
 
@@ -72,6 +74,7 @@ export function ExactFloorPlanEditor({
     editor.render(dollar(host.current));
     const restoreQueue = window.setTimeout(() => { legacy.floor_plan.queue_data_save_ = queueDataSave; }, 0);
     host.current.dataset.editorEngine = 'beestat-exact';
+    onReady?.();
     const responsiveEditor = new ResizeObserver(([entry]) => {
       const mobile = entry.contentRect.width < 600;
       if (editor.state_.layers_sidebar.mobile_mode !== mobile) {

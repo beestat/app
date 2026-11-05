@@ -22,9 +22,25 @@ await context.route('**/api/', async (route) => {
 const page = await context.newPage();
 await page.addInitScript(() => {
   window.__beestatLongTasks = [];
+  window.__beestatVisualizerTiming = {};
   new PerformanceObserver((list) => {
     window.__beestatLongTasks.push(...list.getEntries().map((entry) => ({ start: entry.startTime, duration: entry.duration })));
   }).observe({ type: 'longtask', buffered: true });
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      if (!(record.target instanceof HTMLElement)) continue;
+      if (record.attributeName === 'data-editor-engine' && record.target.dataset.editorEngine === 'beestat-exact') {
+        window.__beestatVisualizerTiming.editorReady = performance.now();
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          window.__beestatVisualizerTiming.editorPaintOpportunity = performance.now();
+        }));
+      }
+      if (record.attributeName === 'data-scene-card-engine' && record.target.dataset.sceneCardEngine === 'beestat-exact') {
+        window.__beestatVisualizerTiming.sceneStarted = performance.now();
+      }
+    }
+  });
+  observer.observe(document, { attributes: true, subtree: true, attributeFilter: ['data-editor-engine', 'data-scene-card-engine'] });
 });
 await page.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByRole('link', { name: 'Visualize' }).hover();
@@ -40,10 +56,12 @@ const firstPaintMs = await page.evaluate(() => new Promise((resolve) => {
 }));
 await page.locator('[data-editor-engine="beestat-exact"]').waitFor({ state: 'visible', timeout: 90_000 });
 const editorReadyMs = Date.now() - started;
-const threeStartedBeforeEditorPaint = await page.locator('[data-scene-card-engine="beestat-exact"]').count() > 0;
 await page.locator('[data-lazy-mount]').last().scrollIntoViewIfNeeded();
 await page.locator('canvas[data-native-three="true"]').waitFor({ state: 'visible', timeout: 90_000 });
 const threeReadyMs = Date.now() - started;
+await page.waitForFunction(() => window.__beestatVisualizerTiming.editorPaintOpportunity != null, null, { timeout: 10_000 });
+const visualizerTiming = await page.evaluate(() => window.__beestatVisualizerTiming);
+const threeStartedBeforeEditorPaint = visualizerTiming.sceneStarted < visualizerTiming.editorPaintOpportunity;
 const longTasks = await page.evaluate(() => {
   const start = performance.getEntriesByName('visualizer-navigation-start').at(-1).startTime;
   return window.__beestatLongTasks.filter((entry) => entry.start >= start);
@@ -53,6 +71,7 @@ const result = {
   firstPaintMs: Math.round(firstPaintMs),
   threeReadyMs,
   threeStartedBeforeEditorPaint,
+  visualizerTiming,
   longTaskCount: longTasks.length,
   longestTaskMs: Math.round(Math.max(0, ...longTasks.map((entry) => entry.duration))),
   totalLongTaskMs: Math.round(longTasks.reduce((total, entry) => total + entry.duration, 0)),

@@ -106,7 +106,7 @@ const nativeScene = await page.evaluate(() => {
     controls: titles.filter((title) => host?.querySelector(`[title="${title}"]`)),
     floors: ['Basement', 'First Floor', 'Second Floor'].filter((title) => host?.querySelector(`[title="${title}"]`)),
     ranges: host?.querySelectorAll('input[type="range"]').length ?? 0,
-    currentDate: [...(host?.querySelectorAll('div') ?? [])].some((item) => /^October \d{1,2}$/.test(item.textContent?.trim() ?? '')),
+    currentDate: [...(host?.querySelectorAll('div') ?? [])].some((item) => /^(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}$/.test(item.textContent?.trim() ?? '')),
     bottomHudInsideScene: Boolean(
       canvasRect && watermarkRect && dateSliderRect &&
       watermarkRect.top >= canvasRect.top && watermarkRect.bottom <= canvasRect.bottom &&
