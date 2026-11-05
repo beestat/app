@@ -129,7 +129,10 @@ export function AnalyzePage() {
     ] : [];
     const useSmartScale = settings.runtime_thermostat_summary_smart_scale !== false;
     const scale = smartScale(config.group);
-    const desktopTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 38));
+    // Legacy Highcharts fits roughly 38 category intervals across the desktop
+    // plot. Round down so a 115-month span keeps its three-month cadence
+    // (Apr/Jul/Oct/Jan) instead of jumping to four months.
+    const desktopTickInterval = Math.max(1, Math.floor(Math.max(0, summary.length - 1) / 38));
     // Legacy Highcharts fits nine category intervals across the 231px compact
     // plot. Keep that explicit cadence so the newer chart engine does not add
     // two extra labels and shift every displayed month on phones.
