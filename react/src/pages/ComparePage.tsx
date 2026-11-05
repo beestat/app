@@ -63,6 +63,14 @@ function smoothHistogramPath(histogram: Array<readonly [number, number]>, high: 
   }, `M ${points[0].x} ${points[0].y}`);
 }
 
+function smoothHistogramArea(histogram: Array<readonly [number, number]>, high: number) {
+  const curve = smoothHistogramPath(histogram, high);
+  if (!curve) return '';
+  const firstX = .5 * 100 / histogram.length;
+  const lastX = (histogram.length - .5) * 100 / histogram.length;
+  return `${curve} L ${lastX} 100 L ${firstX} 100 Z`;
+}
+
 const systemTypeOptions = {
   heat: ['gas', 'compressor', 'electric', 'boiler', 'geothermal', 'oil', 'none'],
   auxiliary_heat: ['gas', 'electric', 'oil', 'none'],
@@ -181,6 +189,7 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   const label = name === 'auxiliary_heat_1' ? 'Aux' : group === 'property' && name === 'square_feet' ? 'Area' : titleCase(name.replaceAll('_', ' '));
   const accent = groupColors[group]?.[colorIndex] ?? colors.lightBlue.main;
   const curve = smoothHistogramPath(histogram, high);
+  const curveArea = smoothHistogramArea(histogram, high);
   const ownHeight = Math.max(2, 38 * (histogram[ownIndex]?.[1] ?? 0) / high);
   return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '128px minmax(0, 1fr)', sm: '148px minmax(0, 1fr)' }, minHeight: 68, mb: .75, overflow: 'hidden', borderRadius: 1, bgcolor: 'surface.subtle' }}>
     <Box sx={{ borderLeft: `4px solid ${accent}`, bgcolor: alpha(accent, .1), display: 'grid', gridTemplateColumns: '34px minmax(0, 1fr)', alignItems: 'center', px: .75, py: .5 }}>
@@ -188,8 +197,8 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
       <Box sx={{ minWidth: 0 }}><Typography fontWeight={600} noWrap>{label}</Typography><Typography variant="caption" display="block" color="text.secondary">{others.toLocaleString()} others</Typography><Typography variant="caption" display="block" sx={{ color: accent, fontWeight: 600 }}>{symbol} {percentile}% homes</Typography></Box>
     </Box>
     <Box sx={{ bgcolor: 'surface.chart', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '24px', overflow: 'hidden' }}>
-      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: alpha(accent, index === ownIndex ? .28 : .12), borderBottom: `2px solid ${alpha(accent, index === ownIndex ? .48 : .2)}` }} />)}
-      <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
+      <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
+      <Box aria-hidden sx={{ position: 'absolute', left, bottom: 2, width: 2, height: `${Math.max(8, ownHeight)}px`, ml: '-1px', bgcolor: alpha(accent, .7) }} />
       <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(19, ownHeight)}px`, minWidth: 54, px: .5, py: .125, ml: '-27px', borderRadius: .75, bgcolor: 'surface.raised', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: 1 }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', left: 5, bottom: 1 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', right: 5, bottom: 1 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
