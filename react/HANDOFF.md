@@ -13,6 +13,8 @@ Fixed a live geometry mismatch in Thermostat Summary. For the current 116 monthl
 
 Hardened `qa/detail-geometry.mjs` against sequential live requests landing on different five-minute boundary rows. It now compares label density and median pixel cadence (allowing one edge label) instead of absolute x coordinates, while retaining exact raceway, chart height, gap, and sensor-color checks. It passes at 1440px and 390px.
 
+Also made `qa/poll-refresh.mjs` a real assertion instead of a log-only string search. It structurally parses single/batched API envelopes and requires `dashboard -> runtime.sync -> runtime_thermostat.read` after fast-forwarding five minutes. Both initial load and poll pass (two runtime reads are expected because Thermostat and Sensor Detail each consume thermostat runtime rows).
+
 ## 2026-11-05 07:17: Codex, sequence exact editor and 3D startup
 
 Fixed a Visualize startup scheduling regression exposed by `qa/visualizer-load-performance.mjs`. Once the exact editor collapsed to 120px, the 3D lazy mount became visible and both idle callbacks could run in the same idle period, allowing expensive 3D initialization to follow editor construction before an editor paint. `ExactFloorPlanEditor` now reports readiness; `VisualizePage` gates the existing deferred 3D mount on that signal and keeps a single branded preparation wrapper visible meanwhile. No legacy editor or Three.js rendering implementation was changed.
