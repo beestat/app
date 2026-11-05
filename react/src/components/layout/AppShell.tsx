@@ -130,12 +130,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, textTransform: 'none', mt: { sm: '2px' }, color: '#fff !important', bgcolor: colors.slate.main, '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' } }}>{item.label}</Button>)}
             </Box>
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
-              <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge>
+              {unread > 0 ? <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge> : <EllipsisVertical size={22} />}
             </IconButton>
             <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} slotProps={{ list: { sx: { '& .MuiMenuItem-root': { gap: 2 } } } }}>
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
-              <MenuItem onClick={() => { setAnchor(null); openAnnouncements(); }}><Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Megaphone size={18} /></Badge> Announcements</MenuItem>
+              <MenuItem onClick={() => { setAnchor(null); openAnnouncements(); }}>{unread > 0 ? <Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Megaphone size={18} /></Badge> : <Megaphone size={18} />} Announcements</MenuItem>
               {hasThermostats && <MenuItem onClick={() => { setAnchor(null); setDownloadOpen(true); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}

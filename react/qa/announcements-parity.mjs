@@ -37,6 +37,7 @@ const renderedTitles = await dialog.locator('h6').allTextContents();
 await page.waitForTimeout(250);
 if (!writes.some((call) => String(call.arguments).includes('last_read_announcement_id'))) throw new Error('Opening announcements did not persist the latest read ID.');
 if (!await dialog.locator('svg.lucide-refresh-cw').count()) throw new Error('The announcement source icon was not mapped to its Lucide equivalent.');
+if (await page.locator('.MuiBadge-badge').filter({ hasText: /^0$/ }).count()) throw new Error('A zero unread badge remains in the header DOM.');
 
 const autoContext = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 900, height: 900 }, storageState: 'test-results/auth-state.json' });
 let autoWrite = false;

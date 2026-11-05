@@ -7,6 +7,10 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 07:29: Codex, remove zero announcement badges
+
+Removed MUI's hidden `0` badge nodes after all announcements are read. They were visually scaled away but remained in page/accessibility text, unlike legacy (and appeared as an unexplained `0` in every route text snapshot). The header and menu now instantiate a Badge only when `unread > 0`; otherwise they render the Lucide icon directly. Announcements dialog/icon/read persistence QA passes and now asserts no zero badge remains. Production build passes.
+
 ## 2026-11-05 07:23: Codex, exact Analyze desktop label cadence
 
 Fixed a live geometry mismatch in Thermostat Summary. For the current 116 monthly rows, React rounded its target interval up and rendered `Apr/Aug/Dec` (29 labels), while legacy uses a three-month `Apr/Jul/Oct/Jan` cadence (39 labels). Desktop cadence now rounds down to legacy's roughly 38 intervals; the existing explicit nine-interval phone rule is unchanged. `qa/analyze-geometry.mjs` now passes exact x-label arrays and chart geometry at both 1440px and 390px. Production build passes.
