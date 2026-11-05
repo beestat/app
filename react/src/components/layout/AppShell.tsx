@@ -1,10 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
-import { colors } from '../../theme';
 import { formatTemperature } from '../../utils/format';
 import { preloadLegacyVisualizer } from '../visualize/legacyVisualizer';
 
@@ -36,6 +35,8 @@ const preloadRoute = (path: string) => {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const { data, thermostatId, setThermostatId } = useDashboard();
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ minHeight: '100dvh', pb: 3 }}>
-      {!embedded && <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.default', backgroundImage: 'none' }}>
+      {!embedded && <AppBar position="static" elevation={0} sx={{ bgcolor: 'appBar.main', color: 'appBar.contrastText', backgroundImage: 'none' }}>
         <Container maxWidth="xl" disableGutters>
           <Toolbar sx={{ gap: { xs: .5, sm: 2 }, px: { xs: 1, sm: 2 }, minHeight: { xs: '56px !important', sm: '60px !important' } }}>
             <Box component={Link} to="/detail" sx={{ display: 'flex', alignItems: 'center', width: phone ? 32 : 144, flex: `0 0 ${phone ? 32 : 144}px`, textDecoration: 'none' }}>
@@ -120,14 +121,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   minWidth: phone ? 0 : compact ? 32 : undefined, px: compact ? 0 : 1.5, flex: compact ? '0 1 32px' : undefined,
                   ...(compact && { height: 32, '& .MuiButton-startIcon': { m: 0 } }),
                   mt: { sm: '2px' },
-                  color: `${activePath === path ? colors.slate.dark : '#fff'} !important`,
-                  bgcolor: activePath === path ? '#fff' : 'transparent',
-                  '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' },
+                  color: `${activePath === path ? theme.palette.appBar.main : theme.palette.appBar.contrastText} !important`,
+                  bgcolor: activePath === path ? theme.palette.appBar.contrastText : 'transparent',
+                  '&:hover': { color: `${theme.palette.appBar.main} !important`, bgcolor: theme.palette.appBar.contrastText },
                 }} onPointerEnter={() => preloadRoute(path)} onFocus={() => preloadRoute(path)}>{compact ? null : label}</Button>
               ))}
             </Box>}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, minWidth: 0 }}>
-              {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, textTransform: 'none', mt: { sm: '2px' }, color: '#fff !important', bgcolor: colors.slate.main, '&:hover': { color: `${colors.slate.dark} !important`, bgcolor: '#fff' } }}>{item.label}</Button>)}
+              {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, textTransform: 'none', mt: { sm: '2px' }, color: `${theme.palette.appBar.contrastText} !important`, bgcolor: colors.slate.main, '&:hover': { color: `${theme.palette.appBar.main} !important`, bgcolor: theme.palette.appBar.contrastText } }}>{item.label}</Button>)}
             </Box>
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               {unread > 0 ? <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge> : <EllipsisVertical size={22} />}

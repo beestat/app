@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-  Menu, MenuItem, Stack, TextField, Typography,
+  Menu, MenuItem, Stack, TextField, Typography, useTheme,
 } from '@mui/material';
 import {
   CalendarDays, Eye, HelpCircle, LockKeyhole, MoreVertical, MoveHorizontal,
   Pencil, Thermometer,
 } from 'lucide-react';
-import { colors } from '../../theme';
 import { DashboardCard } from '../common/DashboardCard';
 
 type VisualizeSettings = Record<string, any>;
@@ -43,12 +42,13 @@ function normalizeSettings(initial: VisualizeSettings) {
 function SettingTile({ active, color, icon, label, onClick }: {
   active: boolean; color: string; icon: React.ReactNode; label: string; onClick: () => void;
 }) {
+  const theme = useTheme();
   return <Button
     onClick={onClick}
     startIcon={icon}
     sx={{
-      minWidth: 0, minHeight: 33, px: 1.5, justifyContent: 'flex-start', color: '#fff',
-      bgcolor: active ? color : colors.slate.light,
+      minWidth: 0, minHeight: 33, px: 1.5, justifyContent: 'flex-start', color: theme.palette.getContrastText(color),
+      bgcolor: active ? color : theme.palette.colors.slate.light,
       '&:hover': { bgcolor: color },
     }}
   >{label}</Button>;
@@ -59,6 +59,8 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
   temperatureUnit: string;
   onChange: (key: string, value: unknown) => void;
 }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const [settings, setSettings] = useState(() => normalizeSettings(initial));
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
@@ -146,7 +148,7 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
             <SettingTile active={settings.range_type === 'static'} color={colors.purple.main} icon={<CalendarDays size={19} />} label="Custom" onClick={() => setCustomOpen(true)} />
             {settings.range_type === 'static' && <>
               <Typography sx={{ px: 1 }}>{staticRange.begin} to {staticRange.end}</Typography>
-              <IconButton aria-label="Edit custom range" onClick={() => setCustomOpen(true)} sx={{ bgcolor: colors.slate.light }}><Pencil size={18} /></IconButton>
+              <IconButton aria-label="Edit custom range" onClick={() => setCustomOpen(true)} sx={{ bgcolor: 'surface.subtle' }}><Pencil size={18} /></IconButton>
             </>}
           </Stack>
         </Box>

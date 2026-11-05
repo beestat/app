@@ -1,7 +1,7 @@
 import {
   Box, Button, Grid, IconButton, InputAdornment, List, ListItem, ListItemIcon,
   ListItemText, Menu, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup,
-  Tooltip, Typography,
+  Tooltip, Typography, useTheme,
 } from '@mui/material';
 import {
   Check, CircleHelp, CreditCard, EllipsisVertical, Gift, Heart, Link2Off,
@@ -11,7 +11,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiCall, config } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { useDashboard } from '../state/DashboardContext';
-import { colors } from '../theme';
 
 type Currency = 'usd' | 'cad' | 'aud' | 'gbp';
 type Interval = 'year' | 'month';
@@ -40,7 +39,7 @@ function openWithIdentity(url: string, user: Record<string, any>) {
 }
 
 function StatusPanel({ active, inactiveText, children }: { active: boolean; inactiveText: string; children?: React.ReactNode }) {
-  return <Box sx={{ bgcolor: colors.slate.dark, p: 2, display: 'flex', flexWrap: 'wrap', columnGap: 1.5, rowGap: 3, alignItems: 'center', borderRadius: 1, '& .MuiButton-root': { height: 32, px: 1 } }}>
+  return <Box sx={{ bgcolor: 'surface.subtle', p: 2, display: 'flex', flexWrap: 'wrap', columnGap: 1.5, rowGap: 3, alignItems: 'center', borderRadius: 1, '& .MuiButton-root': { height: 32, px: 1 } }}>
     <Stack direction="row" gap={1} alignItems="center" sx={{ flex: active ? '1 1 120px' : '1 1 300px', color: active ? 'success.main' : 'text.secondary' }}>
       {active ? <Check size={20} /> : <X size={20} />}
       <Typography color="inherit">{active ? 'Supporter' : inactiveText}</Typography>
@@ -50,6 +49,8 @@ function StatusPanel({ active, inactiveText, children }: { active: boolean; inac
 }
 
 export function ContributePage() {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const { data, refresh } = useDashboard();
   const user = data?.user ?? {};
   const currency = String(nested(user.settings ?? {}, 'units.currency', 'usd')).toLowerCase() as Currency;
@@ -140,7 +141,7 @@ export function ContributePage() {
 
     <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits" sx={{ '& .MuiCardContent-root': { pb: '16px !important' } }}>
       <Typography paragraph>In addition to satisfaction of supporting a great project, you&apos;ll get:</Typography>
-      <List sx={{ bgcolor: colors.slate.dark, borderRadius: 1, py: 1, '& .MuiListItem-root': { minHeight: 39.5 } }}>
+      <List sx={{ bgcolor: 'surface.subtle', borderRadius: 1, py: 1, '& .MuiListItem-root': { minHeight: 39.5 } }}>
         {['Early access to new features', 'Private Discord membership', 'More frequent data syncing', 'Removed contribute banner'].map((benefit) => <ListItem key={benefit} sx={{ color: colors.yellow.main }}><ListItemIcon sx={{ minWidth: 34, color: colors.yellow.main }}><Sparkles size={19} /></ListItemIcon><ListItemText primary={benefit} /></ListItem>)}
         <ListItem sx={{ color: 'error.main' }}><ListItemIcon sx={{ minWidth: 34, color: 'error.main' }}><Heart size={19} /></ListItemIcon><ListItemText primary="My unending gratitude" /></ListItem>
       </List>
@@ -156,7 +157,7 @@ export function ContributePage() {
       {patreonConnected ? <StatusPanel active={patreonActive} inactiveText="Not a Supporter">
         <Button color="inherit" startIcon={<Link2Off />} onClick={() => void unlinkPatreon()}>Unlink</Button>
         <Button color="error" variant="contained" startIcon={<Heart />} href="https://patreon.com/beestat" target="_blank">Manage Support</Button>
-      </StatusPanel> : <Box sx={{ bgcolor: colors.slate.dark, p: 2, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', borderRadius: 1 }}>
+      </StatusPanel> : <Box sx={{ bgcolor: 'surface.subtle', p: 2, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', borderRadius: 1 }}>
         <Stack direction="row" gap={1} alignItems="center" color="text.secondary" sx={{ flex: 1 }}><CircleHelp size={20} /><Typography>Account not connected</Typography></Stack>
         {connecting ? <Button color="error" variant="contained" startIcon={<X />} onClick={() => setConnecting(false)}>Cancel Connection</Button> : <Button color="error" variant="contained" startIcon={<Heart />} onClick={connectPatreon}>Connect Account</Button>}
       </Box>}

@@ -1,4 +1,4 @@
-import { Alert, Box, Button, CircularProgress, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
@@ -12,12 +12,11 @@ import { ChartRangeMenu } from '../components/detail/ChartRangeMenu';
 import { buildRuntimeData, runtimeAxisLabel, type RuntimeRow } from '../components/detail/runtimeData';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from '../components/detail/persistChartRange';
 import { useDashboard } from '../state/DashboardContext';
-import { colors } from '../theme';
 import { CalendarDays, CircleHelp, EllipsisVertical, ExternalLink } from 'lucide-react';
 import { localDaysAgo } from '../utils/date';
 
-function heatColor(value?: number) {
-  if (value == null) return colors.slate.light;
+function heatColor(value: number | undefined, fallback: string) {
+  if (value == null) return fallback;
   const t = Math.max(0, Math.min(1, value / 100));
   const from = t < .5 ? [32, 191, 107] : [247, 183, 49];
   const to = t < .5 ? [247, 183, 49] : [235, 59, 90];
@@ -39,6 +38,8 @@ function SummaryRangeMenu({ days, onChange }: { days: number; onChange: (days: n
 }
 
 export function AirQualityPage() {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const { data, thermostat, thermostatId } = useDashboard();
   const [days, setDays] = useState(() => {
     const configured = Number(data?.user?.settings?.air_quality_detail_range_dynamic);
@@ -85,7 +86,7 @@ export function AirQualityPage() {
   const thermostatRows = useMemo(() => query.data?.thermostat ?? [], [query.data]);
   const end = custom ? new Date(`${custom.end}T23:59:59`).getTime() : Date.now() - 3_600_000;
   const rows = useMemo(() => summaryRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }), [summaryRows, end, requestedBegin]);
-  const runtime = useMemo(() => buildRuntimeData(thermostatRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }) as RuntimeRow[], thermostat), [end, requestedBegin, thermostat, thermostatRows]);
+  const runtime = useMemo(() => buildRuntimeData(thermostatRows.filter((row) => { const time = Date.parse(row.timestamp); return time >= requestedBegin && time <= end; }) as RuntimeRow[], thermostat, colors), [colors, end, requestedBegin, thermostat, thermostatRows]);
   const occupancyOptions = useMemo<Highcharts.Options>(() => {
     const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light, colors.orange.light, colors.teal.light, colors.purple.light, colors.lightBlue.light, colors.blue.dark, colors.red.dark, colors.yellow.dark, colors.green.dark, colors.orange.dark, colors.teal.dark, colors.purple.dark, colors.lightBlue.dark];
     const sensorColors = new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]]));
@@ -97,8 +98,8 @@ export function AirQualityPage() {
       const y = baseWidth * (index + 1) + Math.round(baseWidth / 2);
       return { type: 'line' as const, name: sensor.name, color: sensorColors.get(sensor.sensor_id), lineWidth: width, linecap: 'square' as const, step: 'left' as const, data: (query.data?.[`sensor_${sensor.sensor_id}`] ?? []).map((row) => [Date.parse(row.timestamp), row.occupancy === true ? y : null]), turboThreshold: 0 };
     }).filter((seriesItem) => seriesItem.data.some((point) => point[1] !== null));
-    return { chart: { backgroundColor: colors.slate.dark, height: 58, marginLeft: 45, marginRight: 0, marginTop: 8, marginBottom: 0, spacing: [0, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false }, xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, visible: false }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { enabled: false }, plotOptions: { series: { animation: false, marker: { enabled: false }, enableMouseTracking: false, connectNulls: false } }, series };
-  }, [extremes, query.data, runtime.max, runtime.min, sensors]);
+    return { chart: { backgroundColor: theme.palette.surface.subtle, height: 58, marginLeft: 45, marginRight: 0, marginTop: 8, marginBottom: 0, spacing: [0, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, legend: { enabled: false }, xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, visible: false }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { enabled: false }, plotOptions: { series: { animation: false, marker: { enabled: false }, enableMouseTracking: false, connectNulls: false } }, series };
+  }, [colors, extremes, query.data, runtime.max, runtime.min, sensors, theme.palette.surface.subtle]);
   const detailOptions = useMemo(() => {
     const xAxis = (labels: boolean): Highcharts.XAxisOptions => ({
       type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max,
@@ -127,7 +128,7 @@ export function AirQualityPage() {
       voc: options(75, [{ type: 'spline', name: 'TVOC', color: colors.yellow.dark, lineWidth: 1, data: rows.map((row) => [Date.parse(row.timestamp), supportsAirQuality ? row.voc_concentration : 0]) }], { ...axis, labels: { ...axis.labels, formatter() { return Number(this.value).toLocaleString('en-US', { useGrouping: false }); } } }),
       co2: options(135, [{ type: 'spline', name: 'CO₂', color: colors.blue.main, lineWidth: 1, data: rows.map((row) => [Date.parse(row.timestamp), supportsAirQuality ? row.co2_concentration : 0]) }], axis, true),
     };
-  }, [extremes, rows, runtime.max, runtime.min, supportsAirQuality]);
+  }, [colors, extremes, rows, runtime.max, runtime.min, supportsAirQuality]);
   const grid = useMemo(() => { const values = new Map<string, number[]>(); summaryRows.forEach((row) => { if (supportsAirQuality && typeof row.air_quality !== 'number') return; const date = new Date(row.timestamp); const key = `${date.getDay()}_${date.getHours()}`; values.set(key, [...(values.get(key) ?? []), supportsAirQuality ? row.air_quality : 0]); }); return values; }, [summaryRows, supportsAirQuality]);
   const changeDetailDays = (value: number) => { setCustom(undefined); setDays(value); setExtremes(undefined); void persistChartRange('air_quality_detail', { days: value }); };
   const changeDetailCustom = (begin: string, end: string) => { setCustom({ begin, end }); setExtremes(undefined); void persistChartRange('air_quality_detail', { begin, end }); };
@@ -143,6 +144,6 @@ export function AirQualityPage() {
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     {!supportsAirQuality && <DashboardCard title="Unsupported Thermostat" sx={{ bgcolor: colors.blue.light }}><Typography mb={2}>Access to Air Quality information requires a compatible thermostat. Support beestat by buying through this affiliate link.</Typography><Button component="a" href="https://amzn.to/3A7vv3S" target="_blank" rel="noreferrer" variant="contained" color="success" startIcon={<ExternalLink />}><Box textAlign="left"><div>Ecobee Smart Thermostat Premium</div><Typography variant="caption">Amazon Affiliate</Typography></Box></Button></DashboardCard>}
     <DashboardCard title="Air Quality Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDetailDays} onCustom={changeDetailCustom} onReset={rows.length || thermostatRows.length ? () => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); } : undefined} helpUrl="https://doc.beestat.io/2685b4aae86a4f5d80dd0a4e5dd88201" customTitle="Air Quality Detail - Custom Range" customDescription="Choose a custom range to display on the Air Quality Detail chart. Max range is 7 days at a time and 90 days in the past." maxDays={7} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>{query.isLoading || summaryQuery.isLoading ? <Box sx={{ height: 400, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error || summaryQuery.error ? <Alert severity="error">{query.error?.message ?? summaryQuery.error?.message}</Alert> : <><HighchartsReact highcharts={Highcharts} options={occupancyOptions} /><Typography component="p" sx={{ my: '17px' }}>Air Quality (%)</Typography><HighchartsReact ref={chartRef} highcharts={Highcharts} options={detailOptions.airQuality} />{airQualityTooltip.panel}<Typography component="p" sx={{ my: '17px' }}>TVOC Concentration (ppb)</Typography><HighchartsReact highcharts={Highcharts} options={detailOptions.voc} />{vocTooltip.panel}<Typography component="p" sx={{ my: '16.5px' }}>CO₂ Concentration (ppm)</Typography><HighchartsReact highcharts={Highcharts} options={detailOptions.co2} />{co2Tooltip.panel}</>}</DashboardCard>
-    <DashboardCard title="Air Quality Summary" subheader={`Past ${summaryDays / 7} week${summaryDays === 7 ? '' : 's'}`} action={<SummaryRangeMenu days={summaryDays} onChange={updateSummaryRange} />}><Box sx={{ display: 'grid', gridTemplateColumns: '50px repeat(24, minmax(7px, 1fr))', alignItems: 'center', overflowX: 'auto' }}><Box />{Array.from({ length: 24 }, (_, hour) => <Typography key={hour} variant="caption" textAlign="center">{hour % 12 || 12}{compactSummary ? '' : hour >= 12 ? 'p' : 'a'}</Typography>)}{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].flatMap((day, dayIndex) => [<Typography key={day}>{day}</Typography>, ...Array.from({ length: 24 }, (_, hour) => { const values = grid.get(`${dayIndex}_${hour}`); const average = values?.length ? values.reduce((a, b) => a + b, 0) / values.length : undefined; return <Tooltip key={`${day}_${hour}`} title={average == null ? 'No data' : Math.round(average)}><Box sx={{ height: 20, bgcolor: heatColor(average) }} /></Tooltip>; })])}</Box></DashboardCard>
+    <DashboardCard title="Air Quality Summary" subheader={`Past ${summaryDays / 7} week${summaryDays === 7 ? '' : 's'}`} action={<SummaryRangeMenu days={summaryDays} onChange={updateSummaryRange} />}><Box sx={{ display: 'grid', gridTemplateColumns: '50px repeat(24, minmax(7px, 1fr))', alignItems: 'center', overflowX: 'auto' }}><Box />{Array.from({ length: 24 }, (_, hour) => <Typography key={hour} variant="caption" textAlign="center">{hour % 12 || 12}{compactSummary ? '' : hour >= 12 ? 'p' : 'a'}</Typography>)}{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].flatMap((day, dayIndex) => [<Typography key={day}>{day}</Typography>, ...Array.from({ length: 24 }, (_, hour) => { const values = grid.get(`${dayIndex}_${hour}`); const average = values?.length ? values.reduce((a, b) => a + b, 0) / values.length : undefined; return <Tooltip key={`${day}_${hour}`} title={average == null ? 'No data' : Math.round(average)}><Box sx={{ height: 20, bgcolor: heatColor(average, colors.slate.light) }} /></Tooltip>; })])}</Box></DashboardCard>
   </Box>;
 }

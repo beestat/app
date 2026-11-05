@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DashboardProvider, useDashboard } from './state/DashboardContext';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AppThemeProvider } from './components/layout/AppThemeProvider';
 
 // Detail is the overwhelmingly common entry route. Start its split chunk in
 // parallel with the dashboard API so it costs no post-data round trip while
@@ -67,5 +68,5 @@ function RoutedApp() {
 }
 
 export function App() {
-  return <DashboardProvider><RoutedApp /></DashboardProvider>;
+  return <DashboardProvider><AppThemeProvider><RoutedApp /></AppThemeProvider></DashboardProvider>;
 }

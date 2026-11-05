@@ -1,7 +1,7 @@
 import {
   Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
-  MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+  MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme,
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -11,7 +11,7 @@ import { apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
-import { colors } from '../theme';
+import type { ThemeColors } from '../theme';
 import { convertTemperature, titleCase } from '../utils/format';
 
 function profileValue(thermostat: any, group: string, name: string) {
@@ -40,13 +40,11 @@ const groupNames: Record<string, string[]> = {
   balance_point: ['heat_1', 'heat_2', 'resist'],
   runtime_per_degree_day: ['cool_1', 'cool_2', 'heat_1', 'heat_2', 'auxiliary_heat_1'],
 };
-const groupColors: Record<string, string[]> = {
-  setback: [colors.lightBlue.light, colors.orange.light],
-  property: [colors.purple.main, colors.purple.main],
-  setpoint: [colors.lightBlue.light, colors.orange.light],
-  balance_point: [colors.orange.light, colors.orange.dark, colors.gray.main],
+function metricColors(colors: ThemeColors): Record<string, string[]> { return {
+  setback: [colors.lightBlue.light, colors.orange.light], property: [colors.purple.main, colors.purple.main],
+  setpoint: [colors.lightBlue.light, colors.orange.light], balance_point: [colors.orange.light, colors.orange.dark, colors.gray.main],
   runtime_per_degree_day: [colors.lightBlue.light, colors.lightBlue.main, colors.orange.light, colors.orange.dark, colors.red.main],
-};
+}; }
 
 const systemTypeOptions = {
   heat: ['gas', 'compressor', 'electric', 'boiler', 'geothermal', 'oil', 'none'],
@@ -54,7 +52,6 @@ const systemTypeOptions = {
   cool: ['compressor', 'geothermal', 'none'],
 } as const;
 const systemTypeTitles = { heat: 'Heat', auxiliary_heat: 'Auxiliary Heat', cool: 'Cool' } as const;
-const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.blue.light } as const;
 type SystemMode = keyof typeof systemTypeOptions;
 // Modes with neither a reported nor a detected type stay unselected and are left out of the save, as in legacy.
 type SystemTypes = Partial<Record<SystemMode, string>>;
@@ -78,6 +75,9 @@ function effectiveSystemType(thermostat: any, mode: SystemMode) {
 }
 
 function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => Promise<unknown> }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
+  const systemTypeColors = { heat: colors.orange.main, auxiliary_heat: colors.red.dark, cool: colors.blue.light } as const;
   const queryClient = useQueryClient();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -122,7 +122,7 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
           <ToggleButtonGroup exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '4px !important' } }}>
             {systemTypeOptions[mode].map((option) => {
               const detected = thermostat?.system_type?.detected?.[mode]?.equipment === option;
-              return <ToggleButton key={option} value={option} sx={{ bgcolor: colors.slate.main, color: '#fff', px: 1, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: '#fff' } }}>{titleCase(option)}{detected ? ' [Detected]' : ''}</ToggleButton>;
+              return <ToggleButton key={option} value={option} sx={{ bgcolor: 'background.paper', color: 'text.primary', px: 1, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: theme.palette.getContrastText(systemTypeColors[mode]) } }}>{titleCase(option)}{detected ? ' [Detected]' : ''}</ToggleButton>;
             })}
           </ToggleButtonGroup>
         </Box>)}
@@ -134,6 +134,9 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
 }
 
 function MetricRow({ group, name, metric, value, unit }: { group: string; name: string; metric: any; value: number; unit: string }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
+  const groupColors = metricColors(colors);
   const interval = Number(metric?.interval);
   if (!Number.isFinite(value) || !Number.isFinite(interval) || interval <= 0) return null;
   const precision = Number.isInteger(interval) ? 0 : String(interval).split('.')[1]?.length ?? 0;
@@ -162,8 +165,8 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   const ownHeight = Math.max(2, 40 * (histogram[ownIndex]?.[1] ?? 0) / high);
   return <Box sx={{ display: 'grid', gridTemplateColumns: '136px 1fr', height: 60, mb: .5, overflow: 'hidden' }}>
     <Box sx={{ bgcolor: groupColors[group]?.[colorIndex] ?? colors.lightBlue.main, display: 'grid', gridTemplateColumns: '36px 1fr', alignItems: 'center', pr: .5 }}><Icon size={20} style={{ justifySelf: 'center' }} /><Box><Typography>{label}</Typography><Typography>{others.toLocaleString()} others</Typography><Typography>{symbol} {percentile}% homes</Typography></Box></Box>
-    <Box sx={{ bgcolor: colors.slate.dark, position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '20px', overflow: 'hidden' }}>
-      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: index === ownIndex ? '#516169' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? '#516169' : colors.slate.light}` }} />)}
+    <Box sx={{ bgcolor: 'surface.subtle', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '20px', overflow: 'hidden' }}>
+      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: index === ownIndex ? 'surface.raised' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? theme.palette.surface.raised : colors.slate.light}` }} />)}
       <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight)}px`, width: 60, ml: '-30px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '1px 1px 1px rgba(0,0,0,.5)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       <Typography variant="caption" sx={{ position: 'absolute', left: 4, bottom: 0 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" sx={{ position: 'absolute', right: 4, bottom: 0 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
@@ -200,6 +203,8 @@ function MetricColumns({ values, thermostat, unit }: { values: Record<string, Re
 }
 
 export function ComparePage() {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const { data, thermostat, thermostatId, refresh } = useDashboard();
   const settings = data?.user?.settings ?? {};
   const temperatureUnit = String(settings.units?.temperature ?? thermostat?.temperature_unit ?? '°F');

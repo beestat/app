@@ -2,10 +2,11 @@ import { memo, useMemo } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import type { RefObject } from 'react';
-import { colors } from '../../theme';
+import { useTheme } from '@mui/material';
 import type { RuntimeChartData } from './runtimeData';
 
 export const RuntimeRaceway = memo(function RuntimeRaceway({ data, extremes, chartRef, marginRight = 0 }: { data: RuntimeChartData; extremes?: [number, number]; chartRef?: RefObject<HighchartsReact.RefObject | null>; marginRight?: number }) {
+  const theme = useTheme();
   const options = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 44, marginLeft: 45, marginRight, marginBottom: 0, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false },
     title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false }, legend: { enabled: false },
@@ -20,5 +21,5 @@ export const RuntimeRaceway = memo(function RuntimeRaceway({ data, extremes, cha
         type: 'line', name: code, data: series.points, color: series.color, lineWidth: series.width, linecap: 'square', className: 'crisp_edges', turboThreshold: 0,
       })),
   }), [data, extremes, marginRight]);
-  return <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { height: 44, background: colors.slate.dark } }} />;
+  return <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { height: 44, background: theme.palette.surface.subtle } }} />;
 });

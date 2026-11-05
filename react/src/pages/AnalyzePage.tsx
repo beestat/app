@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
 import Highcharts from 'highcharts';
 import 'highcharts/highcharts-more';
 import HighchartsReact from 'highcharts-react-official';
@@ -11,7 +11,6 @@ import { useDockedTooltip } from '../components/common/DockedTooltip';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, equipmentFor, stageCount, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
-import { colors } from '../theme';
 import { aggregateSummary, legacyDurationParts, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
 
 function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: string) {
@@ -89,6 +88,8 @@ function showExclusively(otherId: string) {
 }
 
 export function AnalyzePage() {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const { data, thermostat, thermostatId } = useDashboard();
   const [summaryConfig, setSummaryConfig] = useState<SummaryConfig>();
   const [profileIndex, setProfileIndex] = useState<number>();
@@ -116,7 +117,7 @@ export function AnalyzePage() {
   };
   const unit = unitLabel(String(settings.units?.temperature ?? thermostat?.temperature_unit ?? '°F'));
   const summaryOptions = useMemo<Highcharts.Options>(() => {
-    const meta = equipmentFor(thermostat);
+    const meta = equipmentFor(thermostat, colors);
     const runtimeSeries = (['compressor_cool_1', 'compressor_cool_2', 'compressor_heat_1', 'compressor_heat_2', 'auxiliary_heat_1', 'auxiliary_heat_2'] as const)
       .filter((code) => summary.some((row) => Number(row[`sum_${code}`]) !== 0))
       .map((code) => ({ type: 'column' as const, name: meta[code].name, color: meta[code].color, custom: { code: `sum_${code}` }, yAxis: 0, data: summary.map((row) => Number(row[`sum_${code}`])) }));
@@ -139,7 +140,7 @@ export function AnalyzePage() {
     const mobileTickInterval = Math.max(1, Math.ceil(Math.max(0, summary.length - 1) / 9));
     return {
       chart: { backgroundColor: 'transparent', height: 350, marginLeft: 49, marginRight: 46, marginBottom: 108, spacing: [8, 0, 0, 0], zooming: { type: 'x' }, animation: false, events: { load() { const chart = this; const axis = chart.xAxis[0]; chart.container.addEventListener('mousemove', (event) => { const normalized = chart.pointer.normalize(event as any); if (!chart.isInsidePlot(normalized.chartX - chart.plotLeft, normalized.chartY - chart.plotTop)) return; const category = Math.round(axis.toValue(normalized.chartX)); const point = chart.series.flatMap((series) => series.points).find((candidate) => candidate.x === category); axis.drawCrosshair(normalized, point); }); chart.container.addEventListener('mouseleave', () => axis.hideCrosshair()); } } }, title: { text: undefined }, credits: { enabled: false },
-      xAxis: { categories: summary.map((row) => String(row.date)), tickInterval: desktopTickInterval, tickLength: 0, crosshair: { color: 'rgba(255, 255, 255, 0.2)', width: 1, snap: true, zIndex: 100 }, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 || this.axis.chart.chartWidth <= 500 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
+      xAxis: { categories: summary.map((row) => String(row.date)), tickInterval: desktopTickInterval, tickLength: 0, crosshair: { color: theme.palette.divider, width: 1, snap: true, zIndex: 100 }, labels: { style: { color: colors.gray.main }, formatter() { const date = new Date(`${String(this.value)}T00:00:00`); const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); const year = date.getUTCFullYear(); if (config.group === 'year') return String(year); if (config.group === 'month') return `${month}${this.isFirst || date.getUTCMonth() === 0 || this.axis.chart.chartWidth <= 500 ? ` ${year}` : ''}`; if (config.group === 'week') return `${month} ${date.getUTCDate()}${this.isFirst || date.getUTCMonth() === 0 ? ` ${year}` : ''}`; return `${this.isFirst || date.getUTCDate() <= 2 ? `${month} ` : ''}${date.getUTCDate()}${this.isFirst || (date.getUTCMonth() === 0 && date.getUTCDate() <= 2) ? ` ${year}` : ''}`; } } },
       yAxis: [{ alignTicks: false, min: 0, softMax: useSmartScale ? scale.max : undefined, tickInterval: useSmartScale ? scale.interval : undefined, reversedStacks: false, title: { text: undefined }, labels: { format: '{value}h', style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' } }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash' }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { format: `{value}${unit}`, style: { color: colors.gray.main, fontSize: '11px' } } }, { alignTicks: false, title: { text: undefined }, opposite: true, allowDecimals: false, gridLineWidth: 0, labels: { enabled: false } }],
       legend: { itemStyle: { color: colors.gray.light, fontWeight: '400' }, itemHiddenStyle: { color: colors.gray.dark, textDecoration: 'line-through' } }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() {
         const points = this.points ?? [];
@@ -165,9 +166,9 @@ export function AnalyzePage() {
       responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 166 }, xAxis: { tickInterval: mobileTickInterval, labels: { step: 1 } } } }] },
       series: [...runtimeSeries, ...weatherSeries, ...degreeDaySeries],
     };
-  }, [config.group, settings.runtime_thermostat_summary_smart_scale, summary, thermostat, unit]);
+  }, [colors, config.group, settings.runtime_thermostat_summary_smart_scale, summary, thermostat, theme.palette.divider, unit]);
   const chipData = useMemo(() => {
-    const result = buildRuntimeData([], thermostat);
+    const result = buildRuntimeData([], thermostat, colors);
     // The legacy chips use Moment's duration bubbling, including its boundary
     // behavior for long fractional-hour totals.
     for (const code of Object.keys(result.totals)) {
@@ -177,7 +178,7 @@ export function AnalyzePage() {
       result.totals[code as keyof typeof result.totals] = seconds;
     }
     return result;
-  }, [summary, thermostat]);
+  }, [colors, summary, thermostat]);
   const profiles = useMemo(() => Object.values(data?.profile ?? {}).filter((item: any) => Number(item.thermostat_id) === thermostatId && item.profile).sort((a: any, b: any) => String(a.profile.metadata?.generated_at).localeCompare(String(b.profile.metadata?.generated_at))) as any[], [data?.profile, thermostatId]);
   const selectedProfile = profileIndex === undefined ? thermostat?.profile : profiles[Math.min(profileIndex, Math.max(0, profiles.length - 1))]?.profile ?? thermostat?.profile;
   const names = useMemo(() => profileNames(thermostat), [thermostat]);
@@ -220,7 +221,7 @@ export function AnalyzePage() {
     const profileXMin = Math.min(...entries.flatMap(([, profile]) => Object.keys(profile.deltas ?? {}).map((value) => convertProfileX(Number(value), unit))));
     const plotLines = Number.isFinite(weather) ? [{ value: weather, color: colors.gray.light, dashStyle: 'ShortDash' as const, width: 1, zIndex: 2, label: { text: `Now: ${weather}${unit}`, style: { color: colors.gray.light } } }] : [];
     return { chart: { backgroundColor: 'transparent', height: 300, marginRight: 0, marginBottom: 31, spacing: [8, 0, 0, 0], animation: false }, title: { text: undefined }, credits: { enabled: false }, xAxis: { lineWidth: 0, tickLength: 0, tickInterval: 5, gridLineWidth: 1, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', title: { text: undefined }, labels: { style: { color: colors.gray.main, textOverflow: 'none' }, format: `{value}${unit}` }, plotLines }, yAxis: { min: -absoluteY, max: absoluteY, tickInterval: 1, startOnTick: false, endOnTick: false, title: { text: undefined }, labels: { style: { color: colors.gray.main, fontSize: '11px', textOverflow: 'none' }, format: `{value}${unit}` }, gridLineColor: colors.slate.light, gridLineDashStyle: 'LongDash', plotLines: [{ value: 0, color: colors.slate.light, width: 3, zIndex: 1 }] }, legend: { enabled: false }, tooltip: { shared: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, backgroundColor: 'transparent', borderWidth: 0, positioner: stableTooltipPositioner(60), formatter() { const rows = (this.points ?? []).filter((point) => !point.series.name.includes('raw')).map((point) => { const value = Number(point.y).toFixed(1); return { label: point.series.name, value: `${Number(value) > 0 ? '+' : ''}${value}${unit} / h`, color: String(point.color) }; }); return profileTooltip.show(chartTooltipHtml(`Outdoor Temp: ${Math.round(Number(this.x))}${unit}`, [rows])); } }, plotOptions: { series: { animation: false, connectNulls: true, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false, lineWidthPlus: 0 }, inactive: { opacity: 1 } } } }, responsive: { rules: [{ condition: { maxWidth: 500 }, chartOptions: { chart: { marginBottom: 48 }, xAxis: { min: Number.isFinite(profileXMin) ? Math.floor(profileXMin / 10) * 10 : undefined, tickInterval: 10, labels: { step: 1 } } } }] }, series };
-  }, [names, selectedProfile, thermostat?.weather?.temperature, unit]);
+  }, [colors, names, selectedProfile, thermostat?.profile?.temperature, thermostat?.weather?.temperature, unit]);
   const generated = selectedProfile?.metadata?.generated_at;
   const durationWeeks = Math.round(Number(selectedProfile?.metadata?.duration ?? 365) / 7);
   const duration = durationWeeks === 0 ? 'few days' : durationWeeks === 1 ? 'week' : durationWeeks >= 52 ? 'year' : `${durationWeeks} weeks`;
@@ -230,6 +231,6 @@ export function AnalyzePage() {
   const summarySubtitle = `${summaryLabel}, grouped by ${config.group} (Gap Fill: ${gapFill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}><RuntimeChips data={chipData} summary />{summary.length ? <><HighchartsReact ref={summaryRef} highcharts={Highcharts} options={summaryOptions} />{summaryTooltip.panel}</> : <Alert severity="info">No summary data is available yet.</Alert>}</DashboardCard>
-    <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} names={names} unit={unit} subtitle={profileSubtitle} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />} sx={{ '& .MuiCardContent-root': { pb: '10px !important' } }}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profileTooltip.panel}{profiles.length >= 2 && <Stack direction="row" gap={1} alignItems="center" pl={.25} mt="9px"><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" sx={{ color: colors.slate.light, '& .MuiSlider-thumb': { width: 14, height: 14, bgcolor: '#fff' }, '& .MuiSlider-track': { border: 0 }, '& .MuiSlider-rail': { opacity: 1, bgcolor: colors.slate.light } }} /><Typography sx={{ minWidth: 98, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
+    <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} names={names} unit={unit} subtitle={profileSubtitle} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />} sx={{ '& .MuiCardContent-root': { pb: '10px !important' } }}>{profileOptions.series?.length ? <><HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />{profileTooltip.panel}{profiles.length >= 2 && <Stack direction="row" gap={1} alignItems="center" pl={.25} mt="9px"><Slider min={0} max={profiles.length - 1} step={1} value={profileIndex ?? profiles.length - 1} onChange={(_, value) => setProfileIndex(value as number)} aria-label="Historical temperature profile" sx={{ color: colors.slate.light, '& .MuiSlider-thumb': { width: 14, height: 14, bgcolor: 'text.primary' }, '& .MuiSlider-track': { border: 0 }, '& .MuiSlider-rail': { opacity: 1, bgcolor: colors.slate.light } }} /><Typography sx={{ minWidth: 98, textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date((profiles[profileIndex ?? profiles.length - 1] as any).profile.metadata.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Typography></Stack>}</> : <Alert severity="info">A temperature profile has not been generated yet.</Alert>}</DashboardCard>
   </Box>;
 }

@@ -1,10 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, Box, CircularProgress, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { apiBatch } from '../../api/client';
-import { colors } from '../../theme';
 import type { Sensor, Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
@@ -18,8 +17,6 @@ import { chartRangeBounds, persistChartRange, settingDateToIso } from './persist
 import { convertTemperature } from '../../utils/format';
 import { localDaysAgoIso } from '../../utils/date';
 
-const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light];
-
 function sortSensors(sensors: Sensor[]) {
   return [...sensors].sort((a, b) => a.type === 'thermostat' ? -1 : b.type === 'thermostat' ? 1 : a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
 }
@@ -31,6 +28,9 @@ function swimlane(count: number, index: number) {
 }
 
 export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sensors }: { thermostat: Thermostat; sensors: Sensor[] }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
+  const palette = useMemo(() => [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light], [colors]);
   const { data: dashboardData } = useDashboard();
   const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
   const [days, setDays] = useState(() => {
@@ -52,7 +52,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   // Legacy assigns colors from the API/cache insertion order, then sorts the
   // sensors for display. Preserve that distinction so a named sensor keeps
   // the exact same color in its line, occupancy lane, and legend.
-  const sensorColors = useMemo(() => new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]])), [sensors]);
+  const sensorColors = useMemo(() => new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]])), [palette, sensors]);
   const ordered = useMemo(() => sortSensors(sensors), [sensors]);
   const query = useQuery({
     queryKey: ['runtime-sensors', thermostat.thermostat_id, ordered.map((sensor) => sensor.sensor_id), custom ?? days], enabled: ordered.length > 0,
@@ -61,12 +61,12 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
       { resource: 'runtime_thermostat', method: 'read', alias: 'runtime_thermostat', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } },
     ], signal), staleTime: 5 * 60_000,
   });
-  const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? [], thermostat), [query.data, thermostat]);
+  const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? [], thermostat, colors), [colors, query.data, thermostat]);
   const sensorSeries = useMemo(() => ordered.map((sensor, index) => {
     const rows = query.data?.[`sensor_${sensor.sensor_id}`] ?? [];
     const lane = swimlane(ordered.length, index);
     return { sensor, color: sensorColors.get(sensor.sensor_id) ?? palette[index % palette.length], lane, temperature: rows.map((row) => [Date.parse(row.timestamp), typeof row.temperature === 'number' ? convertTemperature(row.temperature, displayUnit) : null] as Point), occupancy: rows.map((row) => [Date.parse(row.timestamp), row.occupancy === true ? lane.y : null] as Point) };
-  }), [displayUnit, ordered, query.data, sensorColors]);
+  }), [displayUnit, ordered, palette, query.data, sensorColors]);
   // Legacy runtime_sensor_detail keeps each sensor's occupancy lane in sync with its temperature legend item.
   // Visibility lives in state so both charts follow it and data refreshes keep the choice.
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
@@ -76,7 +76,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, lineWidth: 0, tickLength: 0, labels: { enabled: false } }, yAxis: { min: 0, max: 50, reversed: true, endOnTick: false, gridLineWidth: 0, title: { text: undefined }, labels: { enabled: false } }, tooltip: { shared: true, outside: true, useHTML: true, followPointer: true, hideDelay: 1, shadow: false, positioner: stableTooltipPositioner(0), backgroundColor: 'transparent', borderWidth: 0, formatter() { return chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(this.x)), [(this.points ?? []).map((point) => ({ label: point.series.name, value: 'Occupied', color: String(point.color) }))]); } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } }, connectNulls: false } },
     series: sensorSeries.filter((item) => item.occupancy.some((point) => point[1] !== null)).map((item) => ({ type: 'line', name: item.sensor.name, data: item.occupancy, color: item.color, lineWidth: item.lane.width, linecap: 'square', step: 'left', turboThreshold: 0, visible: visibility[item.sensor.name] ?? true })),
-  }), [extremes, runtime.max, runtime.min, sensorSeries, visibility]);
+  }), [colors, extremes, runtime.max, runtime.min, sensorSeries, visibility]);
   const temperatureOptions = useMemo<Highcharts.Options>(() => ({
     chart: { backgroundColor: 'transparent', height: 300, marginLeft: 45, spacing: [8, 0, 0, 0], style: { fontFamily: 'Montserrat' }, animation: false, zooming: { type: 'x' } }, title: { text: undefined }, credits: { enabled: false }, exporting: { enabled: false },
     xAxis: { type: 'datetime', min: extremes?.[0] ?? runtime.min, max: extremes?.[1] ?? runtime.max, tickPositioner() { return runtimeTickPositions(runtime.timestamps, Number(this.min), Number(this.max), this.len); }, lineColor: colors.slate.light, tickLength: 0, labels: { rotation: -45, allowOverlap: true, style: { color: colors.gray.main, fontSize: '11px' }, formatter() { return runtimeAxisLabel(Number(this.value), this.axis.tickPositions); } }, events: { afterSetExtremes(event) { if (event.trigger && Number.isFinite(event.min) && Number.isFinite(event.max)) setExtremes([event.min, event.max]); } } },
@@ -94,7 +94,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, turboThreshold: 0, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } },
     series: [...sensorSeries.map((item) => ({ type: 'spline' as const, name: item.sensor.name, data: item.temperature, color: item.color, lineWidth: 1, visible: visibility[item.sensor.name] ?? true, events: legendToggle(item.sensor.name, true) })), { type: 'spline' as const, name: 'Indoor Temp', data: runtime.temperature.indoor_temperature.map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color: colors.gray.light, lineWidth: 2, visible: visibility['Indoor Temp'] ?? false, events: legendToggle('Indoor Temp', false) }, { type: 'spline' as const, name: 'Outdoor Temp', data: runtime.temperature.outdoor_temperature.map(([x, value]) => [x, value == null ? null : convertTemperature(value, displayUnit)]), color: colors.gray.light, dashStyle: 'ShortDash' as const, lineWidth: 1, visible: visibility['Outdoor Temp'] ?? false, events: legendToggle('Outdoor Temp', false) }],
-  }), [displayUnit, extremes, runtime, sensorSeries, visibility]);
+  }), [colors, displayUnit, extremes, runtime, sensorSeries, showTooltip, visibility]);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;

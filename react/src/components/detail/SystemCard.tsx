@@ -1,8 +1,8 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography, useTheme } from '@mui/material';
 import { AlarmClock, Ban as XCircle, CircleDollarSign, CircleHelp, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, DropletOff, Droplets, Fan, Filter, Flame, History, Home, Info, Lightbulb, MoreVertical, Snowflake, Sun, Wind } from 'lucide-react';
 import { memo, useState } from 'react';
 import type { EcobeeThermostat, Thermostat } from '../../types';
-import { colors } from '../../theme';
+import type { ThemeColors } from '../../theme';
 import { formatTemperature, titleCase } from '../../utils/format';
 import { filterLifespan, filterReplaceIn } from './filterInfo';
 import { equipmentFor } from './runtimeData';
@@ -34,7 +34,7 @@ function filterDetails(filter: any) {
   ];
 }
 
-function weatherIcon(condition?: string) {
+function weatherIcon(condition: string | undefined, colors: ThemeColors) {
   const value = condition ?? '';
   if (value.includes('lightning') || value.includes('thunder')) return { Icon: CloudLightning, color: colors.yellow.main };
   if (value.includes('snow') || value.includes('sleet')) return { Icon: CloudSnow, color: colors.gray.light };
@@ -59,7 +59,7 @@ function windLabel(speed: number, bearing: number) {
   return `${speed}mph ${bearings[Math.floor(((bearing / 22.5) + .5) % 16)]}`;
 }
 
-function equipmentAppearance(equipment: string) {
+function equipmentAppearance(equipment: string, colors: ThemeColors) {
   if (equipment.includes('cool')) return { icon: <Snowflake size={22} />, color: colors.blue.light, title: 'Cool' };
   if (equipment.includes('auxiliary_heat')) return { icon: <Flame size={22} />, color: colors.red.main, title: 'Aux heat' };
   if (equipment.includes('heat')) return { icon: <Flame size={22} />, color: colors.orange.main, title: 'Heat' };
@@ -90,12 +90,14 @@ function formatStatusTime(value: string, reference = value) {
 }
 
 export const SystemCard = memo(function SystemCard({ thermostat, temperatureUnit, ecobee, lastSync }: { thermostat: Thermostat; temperatureUnit: string; ecobee?: EcobeeThermostat; lastSync?: string }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [dialog, setDialog] = useState<'thermostat' | 'filter' | 'weather'>();
   const temperature = (value: number | null | undefined, digits = 1) => formatTemperature(value, temperatureUnit, digits).replace(/°[FC]$/, '');
   const running = thermostat.running_equipment ?? [];
   // Legacy beestat.thermostat.get_color: the highest-priority running stage picks its series color.
-  const meta = equipmentFor(thermostat);
+  const meta = equipmentFor(thermostat, colors);
   const circleColors: Record<OperatingMode, string> = { auxiliary_heat_2: meta.auxiliary_heat_1.color, auxiliary_heat_1: meta.auxiliary_heat_1.color, heat_2: meta.compressor_heat_2.color, heat_1: meta.compressor_heat_1.color, cool_2: meta.compressor_cool_2.color, cool_1: meta.compressor_cool_1.color };
   const circleMode = operatingMode(running);
   const activeColor = circleMode ? circleColors[circleMode] : colors.slate.dark;
@@ -115,14 +117,14 @@ export const SystemCard = memo(function SystemCard({ thermostat, temperatureUnit
   const ClimateIcon = climate?.climateRef === 'sleep' ? AlarmClock : climate?.climateRef === 'away' || (climate?.climateRef !== 'home' && climate?.isOccupied !== true) ? History : Home;
   const indoorTemperature = temperature(thermostat.temperature);
   const [temperatureWhole, temperatureFraction] = indoorTemperature.split('.');
-  const { Icon: WeatherIcon, color: weatherColor } = weatherIcon(thermostat.weather?.condition);
+  const { Icon: WeatherIcon, color: weatherColor } = weatherIcon(thermostat.weather?.condition, colors);
   return <DashboardCard title={`System - ${thermostat.name}`} subheader={subtitle} action={action} sx={{ minHeight: { md: 398 } }}>
     <Box sx={{ position: 'relative', width: 180, height: 180, borderRadius: '50%', bgcolor: activeColor, mx: 'auto', my: 1, display: 'grid', placeItems: 'center', textAlign: 'center', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.08)' }}>
       <Box><Box sx={{ lineHeight: 1 }}><Typography component="span" sx={{ fontSize: 48, fontWeight: 300 }}>{temperatureWhole}</Typography>{temperatureFraction != null && <Typography component="span" sx={{ fontSize: 24 }}>.{temperatureFraction}</Typography>}</Box><Stack direction="row" alignItems="center" justifyContent="center" gap={.5} mt={1}><Droplets size={18} /><span>{thermostat.humidity}%</span></Stack></Box>
       <Tooltip title={titleCase(thermostat.weather?.condition ?? 'Outdoor conditions')}><Box role="button" aria-label="Weather details" tabIndex={0} onClick={() => setDialog('weather')} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setDialog('weather'); }} sx={{ position: 'absolute', right: -5, top: 20, width: 66, height: 66, borderRadius: '50%', bgcolor: 'background.default', display: 'grid', placeItems: 'center', cursor: 'pointer', '&:hover': { bgcolor: colors.gray.dark } }}><Box><Typography sx={{ fontSize: 22, fontWeight: 300 }}>{temperature(thermostat.weather?.temperature, 0)}</Typography><Stack direction="row" justifyContent="center" alignItems="center"><Droplets size={14} /><Typography variant="caption">{thermostat.weather?.humidity_relative}%</Typography></Stack></Box></Box></Tooltip>
     </Box>
     <Divider aria-hidden sx={{ my: 1.5, borderColor: 'transparent' }} />
-    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}><Stack direction="row" gap={.75} flexWrap="wrap">{running.length ? running.map((item) => { const appearance = equipmentAppearance(item); const match = item.match(/_(\d)$/); const modeKey = item.startsWith('auxiliary_heat') ? 'auxiliary_heat' : item.startsWith('heat') ? 'heat' : item.startsWith('cool') ? 'cool' : undefined; const stages = modeKey ? (thermostat.system_type as any)?.detected?.[modeKey]?.stages : 0; const stage = match?.[1] !== '1' || Number(stages) > 1 ? match?.[1] : undefined; return <Tooltip key={item} title={`${appearance.title}${stage ? ` ${stage}` : ''}`}><Stack direction="row" alignItems="end" sx={{ color: appearance.color }}>{appearance.icon}{stage && <Typography variant="caption" fontWeight={600} color="inherit">{stage}</Typography>}</Stack></Tooltip>; }) : <Tooltip title="No equipment running"><Stack direction="row" alignItems="end" color="text.secondary"><XCircle size={22} /><Typography variant="caption">none</Typography></Stack></Tooltip>}</Stack><Stack direction="row" gap={.5} alignItems="center"><ClimateIcon size={20} /><Typography variant="body2">{climate?.name ?? 'Home'}</Typography></Stack></Stack>
+    <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}><Stack direction="row" gap={.75} flexWrap="wrap">{running.length ? running.map((item) => { const appearance = equipmentAppearance(item, colors); const match = item.match(/_(\d)$/); const modeKey = item.startsWith('auxiliary_heat') ? 'auxiliary_heat' : item.startsWith('heat') ? 'heat' : item.startsWith('cool') ? 'cool' : undefined; const stages = modeKey ? (thermostat.system_type as any)?.detected?.[modeKey]?.stages : 0; const stage = match?.[1] !== '1' || Number(stages) > 1 ? match?.[1] : undefined; return <Tooltip key={item} title={`${appearance.title}${stage ? ` ${stage}` : ''}`}><Stack direction="row" alignItems="end" sx={{ color: appearance.color }}>{appearance.icon}{stage && <Typography variant="caption" fontWeight={600} color="inherit">{stage}</Typography>}</Stack></Tooltip>; }) : <Tooltip title="No equipment running"><Stack direction="row" alignItems="end" color="text.secondary"><XCircle size={22} /><Typography variant="caption">none</Typography></Stack></Tooltip>}</Stack><Stack direction="row" gap={.5} alignItems="center"><ClimateIcon size={20} /><Typography variant="body2">{climate?.name ?? 'Home'}</Typography></Stack></Stack>
     {timeTo && <Box sx={{ bgcolor: 'background.default', textAlign: 'center', p: 1, mt: 2, borderRadius: 1 }}><Typography fontWeight={600}>Time to {timeTo.mode}{timeTo.rate != null ? ` (${formatTemperature(timeTo.rate, temperatureUnit, 1, '°F', true)} / h)` : ''}</Typography><Typography>{timeTo.text}</Typography></Box>}
     <Dialog open={dialog === 'thermostat'} onClose={() => setDialog(undefined)} fullWidth maxWidth="sm"><DialogTitle>Thermostat Info</DialogTitle><DialogContent><InfoGrid fields={[{ name: 'Model', value: thermostatModels[String(ecobee?.model_number)] ?? 'Unknown' }, { name: 'Serial Number', value: String(ecobee?.identifier ?? 'Unknown') }, { name: 'Firmware Revision', value: String(ecobee?.version?.thermostatFirmwareVersion ?? 'Unknown') }, { name: 'First Connected', value: fullDate(ecobee?.runtime?.firstConnected) }]} /></DialogContent><DialogActions><Button onClick={() => setDialog(undefined)}>Close</Button></DialogActions></Dialog>
     <Dialog open={dialog === 'filter'} onClose={() => setDialog(undefined)} fullWidth maxWidth="sm"><DialogTitle>Filter Info</DialogTitle><DialogContent><Stack gap={2}>{Object.entries(thermostat.filters ?? {}).map(([type, value]) => { const appearance = filterAppearance(type); return <Box key={type}><Stack direction="row" alignItems="center" gap={.75} mb={1}><appearance.Icon size={24} /><Typography fontWeight={600}>{appearance.title}</Typography></Stack><Box sx={{ bgcolor: colors.gray.light, color: colors.slate.dark, p: 2, borderRadius: 1 }}><InfoGrid fields={filterDetails(value)} /></Box></Box>; })}</Stack></DialogContent><DialogActions><Button onClick={() => setDialog(undefined)}>Close</Button></DialogActions></Dialog>

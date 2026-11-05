@@ -1,11 +1,19 @@
 # React migration handoff log
 
-Shared notes between agents (Codex / Claude) working on `feature/react-modernization`. Newest entry first. Each entry: what was done, what is verified, what is next.
+Shared notes between agents (Codex / Claude) working on the React migration and cleanup branches. Newest entry first. Each entry: what was done, what is verified, what is next.
 
 Ground rules:
 - Never commit `api/user.php` (local dev-only change that makes `force_log_in` public for QA).
-- Commit locally in small pieces; do not push.
+- Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
+
+## 2026-11-05 12:20: Codex, theme-driven cleanup foundation
+
+Pushed the completed parity work on `feature/react-modernization` and created `feature/react-theme-cleanup` on top. Replaced the single static MUI theme with a Songstead-style definition/factory architecture and three user-selectable themes: exact legacy Beestat, Midnight, and Daylight. The saved `ui.theme` setting is applied live through `AppThemeProvider`; a new Appearance picker on Settings uses the existing generic setting API, so neither the backend nor database changed. `auto` is accepted for forward/legacy compatibility.
+
+Moved the active palette through the major app surfaces rather than recoloring only MUI chrome: runtime equipment/calendar metadata, Thermostat and Sensor Detail charts/raceways, System/Sensors/Alerts, Analyze charts, Air Quality charts, Compare, Contribute, header navigation, Visualize settings, and Highcharts HTML tooltip shells. Semantic surfaces (`raised`, `subtle`, `chart`, `tooltip`) and app-bar colors now live in the theme. The default Beestat definition preserves the current exact colors and layout.
+
+Verified typecheck, 12 unit files / 44 tests, production build, existing Settings parity, and new intercepted `qa/theme-picker.mjs`. Theme QA performs Midnight -> Daylight -> Beestat live changes without mutating the account and checks exact body/app-bar/card RGB values. Next: centralize the remaining repeated component-state styling into MUI variants/overrides, audit raw visual literals, add chart-series theme QA, then run the full authenticated desktop/mobile suite and parity screenshots before pushing this cleanup branch.
 
 ## 2026-11-05 07:29: Codex, remove zero announcement badges
 

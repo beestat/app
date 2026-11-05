@@ -1,10 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, Box, CircularProgress, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { apiCall } from '../../api/client';
-import { colors } from '../../theme';
+import type { ThemeColors } from '../../theme';
 import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
@@ -12,23 +12,28 @@ import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeChips } from './RuntimeChips';
 import { RuntimeRaceway } from './RuntimeRaceway';
 import { ChartRangeMenu } from './ChartRangeMenu';
-import { buildRuntimeData, equipment, formatRuntime, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
+import { buildRuntimeData, formatRuntime, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
 import { localDaysAgoIso } from '../../utils/date';
 
-const temperatureSeries = [
-  ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
-  ['outdoor_temperature', 'Outdoor Temp', colors.gray.light, 'ShortDash', 1, true],
-  ['setpoint_heat', 'Heat Setpoint', colors.orange.light, 'Solid', 1, true],
-  ['setpoint_cool', 'Cool Setpoint', colors.lightBlue.light, 'Solid', 1, true],
-  ['indoor_humidity', 'Indoor Humidity', colors.teal.main, 'Solid', 2, false],
-  ['outdoor_humidity', 'Outdoor Humidity', colors.teal.main, 'ShortDash', 1, false],
-] as const;
+function makeTemperatureSeries(colors: ThemeColors) {
+  return [
+    ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
+    ['outdoor_temperature', 'Outdoor Temp', colors.gray.light, 'ShortDash', 1, true],
+    ['setpoint_heat', 'Heat Setpoint', colors.orange.light, 'Solid', 1, true],
+    ['setpoint_cool', 'Cool Setpoint', colors.lightBlue.light, 'Solid', 1, true],
+    ['indoor_humidity', 'Indoor Humidity', colors.teal.main, 'Solid', 2, false],
+    ['outdoor_humidity', 'Outdoor Humidity', colors.teal.main, 'ShortDash', 1, false],
+  ] as const;
+}
 
 export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }: { thermostat: Thermostat }) {
+  const theme = useTheme();
+  const colors = theme.palette.colors;
+  const temperatureSeries = useMemo(() => makeTemperatureSeries(colors), [colors]);
   const { data: dashboardData } = useDashboard();
   const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
   const [days, setDays] = useState(() => {
@@ -51,7 +56,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),
     staleTime: 5 * 60_000,
   });
-  const data = useMemo(() => buildRuntimeData(query.data ?? [], thermostat), [query.data, thermostat]);
+  const data = useMemo(() => buildRuntimeData(query.data ?? [], thermostat, colors), [colors, query.data, thermostat]);
   // Legend toggles are kept in state so data refreshes keep the user's choice and both charts can follow it.
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   const series = useMemo(() => {
@@ -61,10 +66,10 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       events: { legendItemClick() { setVisibility((old) => ({ ...old, [key]: !(old[key] ?? visible) })); return false; } },
       step: key.includes('setpoint') ? 'right' as const : undefined, turboThreshold: 0,
     }));
-  }, [data, displayUnit, visibility]);
+  }, [data, displayUnit, temperatureSeries, visibility]);
   const temperatureAt = useMemo(() => Object.fromEntries(
     temperatureSeries.map(([key]) => [key, new Map(data.temperature[key])]),
-  ) as Record<(typeof temperatureSeries)[number][0], Map<number, number | null>>, [data]);
+  ) as Record<(typeof temperatureSeries)[number][0], Map<number, number | null>>, [data, temperatureSeries]);
   // Legacy runtime_thermostat_detail: a visible right-axis (humidity) series gives both charts a 45px right margin so they stay aligned.
   const marginRight = series.some((item) => item.visible && item.yAxis === 1) ? 45 : 0;
   const temperatureBounds = useMemo(() => {
@@ -113,7 +118,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
       return showTooltip(chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', x), [modeItems, dataItems, equipmentItems, offItems]));
     } },
     plotOptions: { series: { animation: false, marker: { enabled: false, states: { hover: { enabled: false } } }, states: { hover: { enabled: false }, inactive: { opacity: 1 } } } }, series,
-  }), [data, displayUnit, extremes, series, temperatureAt, temperatureBounds]);
+  }), [colors, data, displayUnit, extremes, series, showTooltip, temperatureAt, temperatureBounds, temperatureSeries]);
 
   useEffect(() => {
     let dispose: (() => void) | undefined;

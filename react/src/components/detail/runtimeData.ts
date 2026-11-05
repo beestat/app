@@ -1,42 +1,39 @@
-import { colors } from '../../theme';
+import { colors, type ThemeColors } from '../../theme';
 
 export type RuntimeRow = Record<string, unknown> & { timestamp: string };
 export type Point = [number, number | null];
 
-export const equipment = {
-  compressor_heat_1: { name: 'Heat', color: colors.orange.light, y: 16, width: 12 },
-  compressor_heat_2: { name: 'Heat 2', color: colors.orange.dark, y: 16, width: 12 },
-  auxiliary_heat_1: { name: 'Aux', color: colors.red.main, y: 16, width: 12 },
-  auxiliary_heat_2: { name: 'Aux 2', color: colors.red.dark, y: 16, width: 12 },
-  compressor_cool_1: { name: 'Cool', color: colors.lightBlue.light, y: 16, width: 12 },
-  compressor_cool_2: { name: 'Cool 2', color: colors.lightBlue.main, y: 16, width: 12 },
-  fan: { name: 'Fan', color: colors.gray.main, y: 29, width: 6 },
-  humidifier: { name: 'Humidifier', color: colors.gray.light, y: 39, width: 6 },
-  dehumidifier: { name: 'Dehumidifier', color: colors.gray.light, y: 39, width: 6 },
-  ventilator: { name: 'Ventilator', color: colors.gray.light, y: 39, width: 6 },
-  economizer: { name: 'Economizer', color: colors.gray.light, y: 39, width: 6 },
-} as const;
+function makeEquipment(palette: ThemeColors) {
+  return {
+    compressor_heat_1: { name: 'Heat', color: palette.orange.light, y: 16, width: 12 }, compressor_heat_2: { name: 'Heat 2', color: palette.orange.dark, y: 16, width: 12 },
+    auxiliary_heat_1: { name: 'Aux', color: palette.red.main, y: 16, width: 12 }, auxiliary_heat_2: { name: 'Aux 2', color: palette.red.dark, y: 16, width: 12 },
+    compressor_cool_1: { name: 'Cool', color: palette.lightBlue.light, y: 16, width: 12 }, compressor_cool_2: { name: 'Cool 2', color: palette.lightBlue.main, y: 16, width: 12 },
+    fan: { name: 'Fan', color: palette.gray.main, y: 29, width: 6 }, humidifier: { name: 'Humidifier', color: palette.gray.light, y: 39, width: 6 },
+    dehumidifier: { name: 'Dehumidifier', color: palette.gray.light, y: 39, width: 6 }, ventilator: { name: 'Ventilator', color: palette.gray.light, y: 39, width: 6 },
+    economizer: { name: 'Economizer', color: palette.gray.light, y: 39, width: 6 },
+  } as const;
+}
+
+export const equipment = makeEquipment(colors);
 
 export type EquipmentCode = keyof typeof equipment;
 
-const calendar = {
-  smartrecovery: { code: 'calendar_event_smartrecovery', name: 'Smart Recovery', color: colors.yellow.main },
-  home: { code: 'calendar_event_home', name: 'Home', color: colors.green.main },
-  away: { code: 'calendar_event_away', name: 'Away', color: colors.gray.main },
-  sleep: { code: 'calendar_event_sleep', name: 'Sleep', color: colors.purple.light },
-  smarthome: { code: 'calendar_event_smarthome', name: 'Smart Home', color: colors.yellow.main },
-  smartaway: { code: 'calendar_event_smartaway', name: 'Smart Away', color: colors.yellow.main },
-  hold: { code: 'calendar_event_hold', name: 'Hold', color: colors.gray.main },
-  vacation: { code: 'calendar_event_vacation', name: 'Vacation', color: colors.blue.main },
-  quicksave: { code: 'calendar_event_quicksave', name: 'Quick Save', color: colors.gray.main },
-  door: { code: 'calendar_event_door_window_open', name: 'Door/Window Open', color: colors.teal.light },
-  other: { code: 'calendar_event_other', name: 'Other', color: colors.gray.main },
-  custom: { code: 'calendar_event_custom', name: 'Custom', color: colors.teal.main },
-} as const;
+function makeCalendar(palette: ThemeColors) {
+  return {
+    smartrecovery: { code: 'calendar_event_smartrecovery', name: 'Smart Recovery', color: palette.yellow.main }, home: { code: 'calendar_event_home', name: 'Home', color: palette.green.main },
+    away: { code: 'calendar_event_away', name: 'Away', color: palette.gray.main }, sleep: { code: 'calendar_event_sleep', name: 'Sleep', color: palette.purple.light },
+    smarthome: { code: 'calendar_event_smarthome', name: 'Smart Home', color: palette.yellow.main }, smartaway: { code: 'calendar_event_smartaway', name: 'Smart Away', color: palette.yellow.main },
+    hold: { code: 'calendar_event_hold', name: 'Hold', color: palette.gray.main }, vacation: { code: 'calendar_event_vacation', name: 'Vacation', color: palette.blue.main },
+    quicksave: { code: 'calendar_event_quicksave', name: 'Quick Save', color: palette.gray.main }, door: { code: 'calendar_event_door_window_open', name: 'Door/Window Open', color: palette.teal.light },
+    other: { code: 'calendar_event_other', name: 'Other', color: palette.gray.main }, custom: { code: 'calendar_event_custom', name: 'Custom', color: palette.teal.main },
+  } as const;
+}
+
+const calendar = makeCalendar(colors);
 
 type CalendarValue = { code: string; name: string; color: string };
 
-function calendarValue(row: RuntimeRow): CalendarValue {
+function calendarValue(row: RuntimeRow, values = calendar): CalendarValue {
   const event = String(row.event ?? '');
   if (!event) {
     const climate = String(row.climate ?? '');
@@ -163,8 +160,9 @@ export function systemType(thermostat: any, mode: string) {
  */
 export type EquipmentMeta = Record<EquipmentCode, { name: string; color: string; y: number; width: number }>;
 
-export function equipmentFor(thermostat: any): EquipmentMeta {
-  const result = Object.fromEntries(Object.entries(equipment).map(([code, meta]) => [code, { ...meta }])) as EquipmentMeta;
+export function equipmentFor(thermostat: any, palette: ThemeColors = colors): EquipmentMeta {
+  const themedEquipment = makeEquipment(palette);
+  const result = Object.fromEntries(Object.entries(themedEquipment).map(([code, meta]) => [code, { ...meta }])) as EquipmentMeta;
   if (stageCount(thermostat, 'heat') > 1) result.compressor_heat_1.name = 'Heat 1';
   if (stageCount(thermostat, 'auxiliary_heat') > 1) result.auxiliary_heat_1.name = 'Aux Heat 1';
   if (stageCount(thermostat, 'cool') > 1) result.compressor_cool_1.name = 'Cool 1';
@@ -175,8 +173,9 @@ export function equipmentFor(thermostat: any): EquipmentMeta {
   return result;
 }
 
-export function buildRuntimeData(input: RuntimeRow[], thermostat?: any): RuntimeChartData {
-  const meta = equipmentFor(thermostat);
+export function buildRuntimeData(input: RuntimeRow[], thermostat?: any, palette: ThemeColors = colors): RuntimeChartData {
+  const meta = equipmentFor(thermostat, palette);
+  const calendarValues = makeCalendar(palette);
   const rows = [...input].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const result: RuntimeChartData = {
     min: rows.length ? Date.parse(rows[0].timestamp) : Date.now(),
@@ -191,7 +190,7 @@ export function buildRuntimeData(input: RuntimeRow[], thermostat?: any): Runtime
     durationAt: {},
   };
   Object.entries(meta).forEach(([code, value]) => { result.equipment[code] = { ...value, points: [] }; });
-  Object.values(calendar).forEach((meta) => { result.equipment[meta.code] = { name: meta.name, color: meta.color, width: 6, points: [] }; });
+  Object.values(calendarValues).forEach((meta) => { result.equipment[meta.code] = { name: meta.name, color: meta.color, width: 6, points: [] }; });
 
   rows.forEach((row) => {
     const x = Date.parse(row.timestamp);
@@ -206,16 +205,16 @@ export function buildRuntimeData(input: RuntimeRow[], thermostat?: any): Runtime
     result.temperature.setpoint_heat.push([x, ['auto', 'heat', 'auxiliary_heat'].includes(mode) ? number(row, 'setpoint_heat') : null]);
     result.temperature.setpoint_cool.push([x, ['auto', 'cool'].includes(mode) ? number(row, 'setpoint_cool') : null]);
 
-    const activeCalendar = calendarValue(row);
+    const activeCalendar = calendarValue(row, calendarValues);
     result.climateAt[x] = activeCalendar.name;
     Object.keys(result.equipment).filter((key) => key.startsWith('calendar_event_')).forEach((code) => {
       result.equipment[code].points.push([x, code === activeCalendar.code ? 3 : null]);
     });
-    (Object.keys(equipment) as EquipmentCode[]).forEach((code) => {
+    (Object.keys(meta) as EquipmentCode[]).forEach((code) => {
       const seconds = equipmentSeconds(row, code);
       result.equipmentAt[x][code] = seconds;
       result.totals[code] += seconds;
-      result.equipment[code].points.push([x, seconds > 0 ? equipment[code].y : null]);
+      result.equipment[code].points.push([x, seconds > 0 ? meta[code].y : null]);
     });
   });
   result.durationAt = legacyDurations(rows);
