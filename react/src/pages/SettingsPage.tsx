@@ -29,6 +29,7 @@ export function SettingsPage() {
   const profileKey = `thermostat.${thermostat?.thermostat_id}.profile`;
   const resolvedValues = useMemo(() => ({
     theme: String(readNested(settings, 'ui.theme', 'beestat')),
+    highContrast: Boolean(readNested(settings, 'ui.high_contrast', false)),
     dock: Boolean(readNested(settings, 'ui.always_dock_tooltips', false)),
     gap: Boolean(settings.runtime_thermostat_summary_gap_fill ?? true),
     scale: Boolean(settings.runtime_thermostat_summary_smart_scale ?? true),
@@ -75,9 +76,9 @@ export function SettingsPage() {
     <Snackbar open={Boolean(message)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} autoHideDuration={message === 'Saved' ? 1800 : null} onClose={() => setMessage('')}>
       <Alert severity="success" variant="filled" onClose={() => setMessage('')}>{message}</Alert>
     </Snackbar>
-    <DashboardCard title="Settings" action={<CardHelpMenu label="Settings" href="https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d" />} sx={{ minHeight: 607 }} contentSx={compactCardContent}>
+    <DashboardCard title="Settings" action={<CardHelpMenu label="Settings" href="https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d" />} contentSx={compactCardContent}>
       <Typography fontWeight={600}>Appearance</Typography>
-      <Box mt={1} mb={2}><ThemePicker value={values.theme} onChange={(value) => { setValues((old) => ({ ...old, theme: value })); void update('ui.theme', value); }} /></Box>
+      <Box mt={1} mb={2}><ThemePicker value={values.theme} highContrast={values.highContrast} onChange={(value) => { setValues((old) => ({ ...old, theme: value })); void update('ui.theme', value); }} onHighContrastChange={(value) => { setValues((old) => ({ ...old, highContrast: value })); void update('ui.high_contrast', value); }} /></Box>
       <Typography fontWeight={600}>User Interface</Typography>
       <FormControlLabel control={<Checkbox checked={values.dock} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, dock: value })); void update('ui.always_dock_tooltips', value); }} />} label="Always Dock Tooltips" />
       <Typography fontWeight={600} mt={1.5}>Units</Typography>

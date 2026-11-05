@@ -41,14 +41,13 @@ async function selectAndRead(label, expectedStroke) {
   return strokes;
 }
 
-const beestat = await selectAndRead(/^Beestat/, '#d1d8e0');
+const beestat = await selectAndRead('OG Beestat', '#d1d8e0');
 const midnight = await selectAndRead(/Midnight/, '#d6dde7');
-const daylight = await selectAndRead(/Daylight/, '#8897a8');
-await page.getByRole('radio', { name: /^Beestat/ }).click();
+await page.getByRole('radio', { name: 'OG Beestat' }).click();
 
-if (new Set([JSON.stringify(beestat), JSON.stringify(midnight), JSON.stringify(daylight)]).size !== 3) {
+if (JSON.stringify(beestat) === JSON.stringify(midnight)) {
   throw new Error('Runtime chart series did not change with the selected theme.');
 }
 
-console.log(JSON.stringify({ beestat, midnight, daylight }, null, 2));
+console.log(JSON.stringify({ beestat, midnight }, null, 2));
 await browser.close();
