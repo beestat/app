@@ -7,7 +7,8 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   const { data } = useDashboard();
   const configured = String(data?.user?.settings?.ui?.theme ?? 'beestat');
   const base = configured === 'midnight' || configured === 'midnight-high-contrast' || configured === 'true-black' ? 'midnight' : 'beestat';
-  const highContrast = Boolean(data?.user?.settings?.ui?.high_contrast) || configured.endsWith('-high-contrast');
+  const configuredHighContrast = data?.user?.settings?.ui?.high_contrast;
+  const highContrast = configuredHighContrast == null ? configured.endsWith('-high-contrast') : Boolean(configuredHighContrast);
   const requested = highContrast ? `${base}-high-contrast` : base;
   const theme = useMemo(() => createAppTheme(requested), [requested]);
 

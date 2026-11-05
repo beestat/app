@@ -15,6 +15,8 @@ Reimagined Compare Metrics without changing its data or meaning. Solid color sla
 
 Added `qa/ui-review.mjs`, which captures the header menu, Announcements dialog, Compare menu, system-type dialog, mobile Metrics, and the mobile menu while intercepting setting writes. Updated theme picker/chart QA for the two-base-plus-checkbox model. Verified: typecheck/build, 13 unit files / 53 tests, authenticated e2e 14/14, Settings parity, Compare interactions, chart theme switching, four-way theme surfaces, six-state visual review, and no mobile overflow. `git diff --check` only reports Jon's intentionally untouched trailing whitespace in `api/user.php`.
 
+The screenshot pass also removed Settings' desktop single-column dead space: Appearance stays full width, while UI, units, and profile controls now form a responsive section grid that collapses back to one column on phones. The legacy fixed heights on Settings and API-key cards were removed so their surfaces hug actual content.
+
 ## 2026-11-05 12:42: Codex, expanded theme presets and System mode
 
 Expanded the Songstead-style theme catalog from three choices to five presets plus System: Beestat, Midnight, True Black, Daylight, and Honeycomb. True Black supplies pure-black OLED foundations; Honeycomb is a warm light palette that keeps the Beestat character; System follows the browser/device light-dark preference and previews the currently resolved palette. The default remains exact Beestat.
