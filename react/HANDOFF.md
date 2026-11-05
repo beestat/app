@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 12:42: Codex, expanded theme presets and System mode
+
+Expanded the Songstead-style theme catalog from three choices to five presets plus System: Beestat, Midnight, True Black, Daylight, and Honeycomb. True Black supplies pure-black OLED foundations; Honeycomb is a warm light palette that keeps the Beestat character; System follows the browser/device light-dark preference and previews the currently resolved palette. The default remains exact Beestat.
+
+Extended intercepted theme QA across the full six-choice sequence, including exact surfaces/app bars/cards/link colors, System resolving to an emulated light preference, live persistence order, and a 390px no-horizontal-overflow assertion. The test always restores Beestat and does not mutate the account. Production build and typecheck pass.
+
 ## 2026-11-05 12:37: Codex, custom-theme visual audit and legacy CSS isolation
 
 Captured and visually inspected full-page Midnight and Daylight Settings screenshots. Both palettes are coherent and the theme preview tiles remain representative inside either active theme. Disabled ripple animation on the theme tiles so selection changes are visually stable.

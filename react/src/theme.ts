@@ -63,7 +63,19 @@ const daylightTheme: AppThemeDefinition = {
   primary: daylightColors.lightBlue.main, secondary: daylightColors.teal.main, colors: daylightColors,
 };
 
-export function getAppThemes() { return [beestatTheme, midnightTheme, daylightTheme]; }
+const trueBlackTheme: AppThemeDefinition = {
+  ...midnightTheme, name: 'true-black', label: 'True Black', description: 'An OLED-friendly theme with pure black foundations.',
+  background: '#000000', paper: '#080a0d', raised: '#11151a', subtle: '#050607', chart: '#080a0d', tooltip: '#000000', appBar: '#000000',
+};
+
+const honeycombTheme: AppThemeDefinition = {
+  ...daylightTheme, name: 'honeycomb', label: 'Honeycomb', description: 'A warm, softly tinted take on Beestat.',
+  background: '#fff8e7', paper: '#fffdf8', raised: '#ffffff', subtle: '#f5ead2', chart: '#fffdf8', tooltip: '#30291d',
+  textPrimary: '#30291d', textSecondary: '#6f6250', divider: 'rgba(48, 41, 29, 0.15)', appBar: '#3d3425', appBarText: '#ffffff',
+  primary: daylightColors.orange.main, secondary: daylightColors.purple.main,
+};
+
+export function getAppThemes() { return [beestatTheme, midnightTheme, trueBlackTheme, daylightTheme, honeycombTheme]; }
 export function getAppThemeDefinition(name?: string) { return getAppThemes().find((candidate) => candidate.name === name) ?? beestatTheme; }
 const contrastText = (background: string) => getContrastRatio(background, '#fff') >= 3 ? '#fff' : '#111';
 

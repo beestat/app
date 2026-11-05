@@ -1,10 +1,13 @@
-import { Box, ButtonBase, Stack, Typography } from '@mui/material';
+import { Box, ButtonBase, Stack, Typography, useMediaQuery } from '@mui/material';
 import { Check } from 'lucide-react';
 import { getAppThemes } from '../../theme';
 
 export function ThemePicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+  const systemBase = getAppThemes().find((theme) => theme.name === (prefersDark ? 'midnight' : 'daylight'))!;
+  const options = [{ ...systemBase, name: 'auto', label: 'System', description: 'Automatically follows this device’s appearance.' }, ...getAppThemes()];
   return <Box role="radiogroup" aria-label="Theme" sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 1 }}>
-    {getAppThemes().map((option) => {
+    {options.map((option) => {
       const selected = option.name === value;
       return <ButtonBase disableRipple key={option.name} role="radio" aria-checked={selected} onClick={() => onChange(option.name)} sx={{ display: 'block', textAlign: 'left', border: 2, borderColor: selected ? 'primary.main' : 'divider', borderRadius: 1, overflow: 'hidden' }}>
         <Box sx={{ bgcolor: option.background, color: option.textPrimary, p: 1 }}>
