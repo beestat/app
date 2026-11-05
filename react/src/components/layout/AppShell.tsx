@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { alpha, Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../state/DashboardContext';
@@ -36,7 +36,6 @@ const preloadRoute = (path: string) => {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
-  const colors = theme.palette.colors;
   const { data, thermostatId, setThermostatId } = useDashboard();
   const navigate = useNavigate();
   const location = useLocation();
@@ -128,7 +127,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </Box>}
             <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, minWidth: 0 }}>
-              {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, textTransform: 'none', mt: { sm: '2px' }, color: `${theme.palette.appBar.contrastText} !important`, bgcolor: colors.slate.main, '&:hover': { color: `${theme.palette.appBar.main} !important`, bgcolor: theme.palette.appBar.contrastText } }}>{item.label}</Button>)}
+              {showSwitcher && otherThermostats.map((item) => <Button key={item.id} onClick={() => setThermostatId(item.id)} sx={{ height: 32, px: 1, whiteSpace: 'nowrap', fontWeight: 300, mt: { sm: '2px' }, color: `${theme.palette.appBar.contrastText} !important`, bgcolor: alpha(theme.palette.appBar.contrastText, .12), '&:hover': { color: `${theme.palette.appBar.main} !important`, bgcolor: theme.palette.appBar.contrastText } }}>{item.label}</Button>)}
             </Box>
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               {unread > 0 ? <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge> : <EllipsisVertical size={22} />}

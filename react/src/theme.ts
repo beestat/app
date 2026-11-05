@@ -69,6 +69,7 @@ const contrastText = (background: string) => getContrastRatio(background, '#fff'
 
 export function createAppTheme(name?: string) {
   const definition = getAppThemeDefinition(name);
+  const linkStates = (className: string) => [`a.${className}:link`, `a.${className}:visited`, `a.${className}:focus`, `a.${className}:hover`, `a.${className}:active`].join(',');
   const theme = createTheme({
     palette: {
       mode: definition.mode,
@@ -88,7 +89,18 @@ export function createAppTheme(name?: string) {
       h5: { fontWeight: 500, fontSize: '15px', lineHeight: '24px' }, h6: { fontWeight: 600, fontSize: '14px', lineHeight: '24px' },
     },
     components: {
-      MuiCssBaseline: { styleOverrides: { html: { backgroundColor: definition.background, colorScheme: definition.mode, '--beestat-surface-tooltip': definition.tooltip, '--beestat-text-primary': definition.textPrimary, '--beestat-text-secondary': definition.textSecondary }, body: { minWidth: 320 }, '*, *::before, *::after': { boxSizing: 'border-box' }, '.MuiButtonBase-root > input.PrivateSwitchBase-input': { visibility: 'visible' } } },
+      MuiCssBaseline: { styleOverrides: {
+        html: { backgroundColor: definition.background, colorScheme: definition.mode, '--beestat-surface-tooltip': definition.tooltip, '--beestat-text-primary': definition.textPrimary, '--beestat-text-secondary': definition.textSecondary },
+        body: { minWidth: 320 }, '*, *::before, *::after': { boxSizing: 'border-box' }, '.MuiButtonBase-root > input.PrivateSwitchBase-input': { visibility: 'visible' },
+        [linkStates('MuiButton-textPrimary')]: { color: definition.primary },
+        [linkStates('MuiButton-containedPrimary')]: { color: contrastText(definition.primary) },
+        [linkStates('MuiButton-containedSecondary')]: { color: contrastText(definition.secondary) },
+        [linkStates('MuiButton-containedSuccess')]: { color: contrastText(definition.colors.green.main) },
+        [linkStates('MuiButton-containedError')]: { color: contrastText(definition.colors.red.main) },
+        [linkStates('MuiButton-containedWarning')]: { color: contrastText(definition.colors.orange.main) },
+        [linkStates('MuiButton-containedInfo')]: { color: contrastText(definition.colors.lightBlue.main) },
+        [linkStates('MuiMenuItem-root')]: { color: definition.textPrimary },
+      } },
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       MuiCard: { styleOverrides: { root: { backgroundImage: 'none', boxShadow: definition.mode === 'dark' ? '0 2px 6px rgba(0,0,0,.24)' : '0 2px 10px rgba(34,48,58,.10)' } } },
       MuiButton: { defaultProps: { disableElevation: true }, styleOverrides: { root: { minHeight: 32, textTransform: 'none' } } },

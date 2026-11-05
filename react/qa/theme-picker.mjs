@@ -26,19 +26,23 @@ const colors = async () => page.evaluate(() => ({
   body: getComputedStyle(document.body).backgroundColor,
   appBar: getComputedStyle(document.querySelector('.MuiAppBar-root')).backgroundColor,
   card: getComputedStyle(document.querySelector('.MuiCard-root')).backgroundColor,
+  apiLink: getComputedStyle([...document.querySelectorAll('a')].find((item) => item.textContent === 'API Documentation')).color,
 }));
 
 await page.getByRole('radio', { name: /Midnight/ }).click();
 await page.waitForFunction(() => getComputedStyle(document.body).backgroundColor === 'rgb(17, 21, 27)');
 const midnight = await colors();
+await page.screenshot({ path: 'test-results/theme-midnight.png', fullPage: true });
 await page.getByRole('radio', { name: /Daylight/ }).click();
 await page.waitForFunction(() => getComputedStyle(document.body).backgroundColor === 'rgb(238, 242, 246)');
 const daylight = await colors();
+await page.screenshot({ path: 'test-results/theme-daylight.png', fullPage: true });
 await page.getByRole('radio', { name: /^Beestat/ }).click();
 await page.waitForFunction(() => getComputedStyle(document.body).backgroundColor === 'rgb(55, 71, 79)');
 const beestat = await colors();
 
 if (JSON.stringify(writes) !== JSON.stringify(['midnight', 'daylight', 'beestat'])) throw new Error(`Theme settings were not persisted in order: ${JSON.stringify(writes)}`);
 if (new Set([midnight.body, daylight.body, beestat.body]).size !== 3) throw new Error('Theme backgrounds did not change immediately.');
+if (midnight.apiLink !== 'rgb(75, 168, 232)' || daylight.apiLink !== 'rgb(40, 127, 185)' || beestat.apiLink !== 'rgb(35, 138, 201)') throw new Error(`Legacy link CSS leaked into themed MUI buttons: ${JSON.stringify({ midnight: midnight.apiLink, daylight: daylight.apiLink, beestat: beestat.apiLink })}`);
 console.log(JSON.stringify({ writes, midnight, daylight, beestat }, null, 2));
 await browser.close();

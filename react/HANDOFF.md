@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 12:37: Codex, custom-theme visual audit and legacy CSS isolation
+
+Captured and visually inspected full-page Midnight and Daylight Settings screenshots. Both palettes are coherent and the theme preview tiles remain representative inside either active theme. Disabled ripple animation on the theme tiles so selection changes are visually stable.
+
+The Daylight screenshot exposed a real integration issue: legacy `dashboard.css` globally forces every `a:link` to `#ecf0f1`, overriding MUI anchor-buttons and making API Documentation nearly white on a white card. Added theme-owned link-state rules for MUI text/contained buttons and menu items across all semantic colors; legacy pages are untouched. `qa/theme-picker.mjs` now captures both theme screenshots and asserts the exact themed API-link color, preventing that leak from returning. Also made the app-bar thermostat switcher use a semantic translucent contrast surface (the Daylight slate ramp would otherwise produce white-on-white) and moved Sensor Detail's occupancy rail to the semantic subtle surface.
+
+Verified production build, theme surface/link QA, runtime chart palette QA, 44 unit tests, Visualize branded loading state, and Visualize startup scheduling/performance. The latter still reports one expected long task from the verbatim legacy 3D implementation, but editor paint occurs before scene startup and there are zero floor-plan writes.
+
 ## 2026-11-05 12:30: Codex, theme-driven components and chart QA
 
 Completed the first visual-literal audit. Remaining application colors now come from semantic MUI surfaces, palette ramps, contrast colors, or CSS theme variables; the few remaining inline RGB/RGBA values are data interpolation and shadows. Visualizer loading, Songstead promotion, compare chips/histograms, synchronized chart crosshairs, alert/sensor states, and header demo state no longer pin themselves to the legacy dark palette.
