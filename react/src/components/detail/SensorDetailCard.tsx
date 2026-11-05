@@ -16,6 +16,7 @@ import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
+import { localDaysAgoIso } from '../../utils/date';
 
 const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light];
 
@@ -47,7 +48,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const { show: showTooltip, panel: dockedTooltip } = useDockedTooltip();
   const occupancyRef = useRef<HighchartsReact.RefObject>(null);
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
-  const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
+  const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: localDaysAgoIso(Date.now(), days), operator: '>=' };
   // Legacy assigns colors from the API/cache insertion order, then sorts the
   // sensors for display. Preserve that distinction so a named sensor keeps
   // the exact same color in its line, occupancy lane, and legend.

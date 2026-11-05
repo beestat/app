@@ -17,6 +17,7 @@ import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
 import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
+import { localDaysAgoIso } from '../../utils/date';
 
 const temperatureSeries = [
   ['indoor_temperature', 'Indoor Temp', colors.gray.light, 'Solid', 2, true],
@@ -44,7 +45,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const { show: showTooltip, panel: dockedTooltip } = useDockedTooltip();
   const racewayRef = useRef<HighchartsReact.RefObject>(null);
-  const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: new Date(Date.now() - days * 86_400_000).toISOString(), operator: '>=' };
+  const range = custom ? { value: [new Date(`${custom.begin}T00:00:00`).toISOString(), new Date(`${custom.end}T23:59:59`).toISOString()], operator: 'between' } : { value: localDaysAgoIso(Date.now(), days), operator: '>=' };
   const query = useQuery({
     queryKey: ['runtime-thermostat', thermostat.thermostat_id, custom ?? days],
     queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),

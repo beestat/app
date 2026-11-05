@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 07:00: Codex, DST-safe rolling chart ranges
+
+Matched legacy Moment's calendar-day subtraction for dynamic Thermostat Detail, Sensor Detail, Air Quality Detail, and Air Quality summary ranges. The previous fixed `days * 86,400,000` subtraction shifted the requested local hour when a range crossed a daylight-saving transition. A shared `localDaysAgo` helper now preserves local wall-clock time.
+
+Added unit coverage plus `qa/dynamic-range-dst.mjs`, which runs Detail in `America/New_York` at noon on November 5, selects Past 7 Days, intercepts the API, and verifies the lower bound is noon EDT on October 29 (`16:00Z`, not the incorrect `17:00Z`). Verified: browser QA passes, typecheck passes, 12 test files / 43 tests pass, and the production build passed before the browser check.
+
 ## 2026-11-05 06:55: Codex, bounded console audit resume
 
 Resumed after the usage gap. The saved authentication still works; typecheck and all 41 unit tests pass. Hardened `qa/console-audit.mjs`: it snapshots/caps each route's scroll height instead of re-reading a lazy-growing document forever, scrolls from Node in bounded steps, and prints per-route progress. The sweep now completes all 14 desktop/mobile combinations rather than appearing hung.

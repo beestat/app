@@ -14,6 +14,7 @@ import { chartRangeBounds, persistChartRange, settingDateToIso } from '../compon
 import { useDashboard } from '../state/DashboardContext';
 import { colors } from '../theme';
 import { CalendarDays, CircleHelp, EllipsisVertical, ExternalLink } from 'lucide-react';
+import { localDaysAgo } from '../utils/date';
 
 function heatColor(value?: number) {
   if (value == null) return colors.slate.light;
@@ -61,8 +62,9 @@ export function AirQualityPage() {
   const thermostatSensors = useMemo(() => sensors.filter((sensor) => sensor.type === 'thermostat'), [sensors]);
   const ecobee = thermostat ? data?.ecobee_thermostat?.[String(thermostat.ecobee_thermostat_id)] as any : undefined;
   const supportsAirQuality = ecobee?.model_number === 'aresSmart';
-  const summaryBegin = Date.now() - summaryDays * 86_400_000;
-  const requestedBegin = custom ? new Date(`${custom.begin}T00:00:00`).getTime() : Date.now() - days * 86_400_000;
+  const now = Date.now();
+  const summaryBegin = localDaysAgo(now, summaryDays).getTime();
+  const requestedBegin = custom ? new Date(`${custom.begin}T00:00:00`).getTime() : localDaysAgo(now, days).getTime();
   const fetchBegin = new Date(requestedBegin).toISOString();
   const query = useQuery({
     queryKey: ['air-quality', thermostatId, sensors.map((sensor) => sensor.sensor_id), fetchBegin.slice(0, 10)],
