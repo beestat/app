@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 18:10: Codex, focused themes and reimagined Metrics
+
+Replaced the expanded preset catalog with the requested two-choice model: OG Beestat and Midnight are the only selectable base themes, and a separate `ui.high_contrast` checkbox resolves each to its internal high-contrast counterpart. Old saved System/Daylight/Honeycomb values safely fall back to OG Beestat; True Black falls back to Midnight. The four internal definitions now have deliberately separated page/card surfaces. Cards use contrast and a soft shadow rather than the disliked inset outline. Bright semantic surfaces now select whichever of white or near-black has the strongest actual contrast instead of accepting marginal white text; `theme.test.ts` locks all semantic controls in all four combinations to at least 4.5:1.
+
+Reimagined Compare Metrics without changing its data or meaning. Solid color slabs became compact accent rails; the histogram buckets remain visible as subdued raw data while a Catmull-Rom-style smooth density curve is now the primary visual. The current-home bin/value, percentile, sample count, and min/max labels remain. The groups use responsive auto-fit layout and the current-value badge clamps at histogram edges. Desktop and 390px screenshots were inspected.
+
+Added `qa/ui-review.mjs`, which captures the header menu, Announcements dialog, Compare menu, system-type dialog, mobile Metrics, and the mobile menu while intercepting setting writes. Updated theme picker/chart QA for the two-base-plus-checkbox model. Verified: typecheck/build, 13 unit files / 53 tests, authenticated e2e 14/14, Settings parity, Compare interactions, chart theme switching, four-way theme surfaces, six-state visual review, and no mobile overflow. `git diff --check` only reports Jon's intentionally untouched trailing whitespace in `api/user.php`.
+
 ## 2026-11-05 12:42: Codex, expanded theme presets and System mode
 
 Expanded the Songstead-style theme catalog from three choices to five presets plus System: Beestat, Midnight, True Black, Daylight, and Honeycomb. True Black supplies pure-black OLED foundations; Honeycomb is a warm light palette that keeps the Beestat character; System follows the browser/device light-dark preference and previews the currently resolved palette. The default remains exact Beestat.

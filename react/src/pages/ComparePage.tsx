@@ -1,10 +1,9 @@
 import {
-  Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, alpha, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
   MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme,
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, MapPin, Ruler, Settings2, Snowflake } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
@@ -45,6 +44,24 @@ function metricColors(colors: ThemeColors): Record<string, string[]> { return {
   setpoint: [colors.lightBlue.light, colors.orange.light], balance_point: [colors.orange.light, colors.orange.dark, colors.gray.main],
   runtime_per_degree_day: [colors.lightBlue.light, colors.lightBlue.main, colors.orange.light, colors.orange.dark, colors.red.main],
 }; }
+
+function smoothHistogramPath(histogram: Array<readonly [number, number]>, high: number) {
+  const points = histogram.map(([, count], index) => ({
+    x: (index + .5) * 100 / histogram.length,
+    y: 98 - 94 * count / high,
+  }));
+  if (points.length < 2) return '';
+  return points.slice(1).reduce((path, point, index) => {
+    const previous = points[index];
+    const before = points[Math.max(0, index - 1)];
+    const after = points[Math.min(points.length - 1, index + 2)];
+    const control1X = previous.x + (point.x - before.x) / 6;
+    const control1Y = previous.y + (point.y - before.y) / 6;
+    const control2X = point.x - (after.x - previous.x) / 6;
+    const control2Y = point.y - (after.y - previous.y) / 6;
+    return `${path} C ${control1X} ${control1Y}, ${control2X} ${control2Y}, ${point.x} ${point.y}`;
+  }, `M ${points[0].x} ${points[0].y}`);
+}
 
 const systemTypeOptions = {
   heat: ['gas', 'compressor', 'electric', 'boiler', 'geothermal', 'oil', 'none'],
@@ -158,17 +175,23 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   // Legacy divides first, then scales and uses toFixed; 100 * 113 / 200 would round 56.5 up where legacy shows 56.
   const percentile = (Math.max(below, above) / Math.max(others, 1) * 100).toFixed(0);
   const symbol = below >= above ? '>' : '<';
-  const left = `${Math.min(85, (ownIndex + .5) * 100 / histogram.length)}%`;
+  const left = `${Math.max(10, Math.min(90, (ownIndex + .5) * 100 / histogram.length))}%`;
   const colorIndex = Math.max(0, groupNames[group]?.indexOf(name) ?? 0);
   const Icon = group === 'property' ? (name === 'age' ? Clock3 : Ruler) : name === 'resist' ? Activity : name.startsWith('cool') ? Snowflake : Flame;
   const label = name === 'auxiliary_heat_1' ? 'Aux' : group === 'property' && name === 'square_feet' ? 'Area' : titleCase(name.replaceAll('_', ' '));
-  const ownHeight = Math.max(2, 40 * (histogram[ownIndex]?.[1] ?? 0) / high);
-  return <Box sx={{ display: 'grid', gridTemplateColumns: '136px 1fr', height: 60, mb: .5, overflow: 'hidden' }}>
-    <Box sx={{ bgcolor: groupColors[group]?.[colorIndex] ?? colors.lightBlue.main, display: 'grid', gridTemplateColumns: '36px 1fr', alignItems: 'center', pr: .5 }}><Icon size={20} style={{ justifySelf: 'center' }} /><Box><Typography>{label}</Typography><Typography>{others.toLocaleString()} others</Typography><Typography>{symbol} {percentile}% homes</Typography></Box></Box>
-    <Box sx={{ bgcolor: 'surface.subtle', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '20px', overflow: 'hidden' }}>
-      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: index === ownIndex ? 'surface.raised' : colors.slate.light, borderBottom: `2px solid ${index === ownIndex ? theme.palette.surface.raised : colors.slate.light}` }} />)}
-      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight)}px`, width: 60, ml: '-30px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '1px 1px 1px rgba(0,0,0,.5)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
-      <Typography variant="caption" sx={{ position: 'absolute', left: 4, bottom: 0 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" sx={{ position: 'absolute', right: 4, bottom: 0 }}>{metricLabel(group, name, max, unit)}</Typography>
+  const accent = groupColors[group]?.[colorIndex] ?? colors.lightBlue.main;
+  const curve = smoothHistogramPath(histogram, high);
+  const ownHeight = Math.max(2, 38 * (histogram[ownIndex]?.[1] ?? 0) / high);
+  return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '128px minmax(0, 1fr)', sm: '148px minmax(0, 1fr)' }, minHeight: 68, mb: .75, overflow: 'hidden', borderRadius: 1, bgcolor: 'surface.subtle' }}>
+    <Box sx={{ borderLeft: `4px solid ${accent}`, bgcolor: alpha(accent, .1), display: 'grid', gridTemplateColumns: '34px minmax(0, 1fr)', alignItems: 'center', px: .75, py: .5 }}>
+      <Icon size={19} color={accent} strokeWidth={2.25} style={{ justifySelf: 'center' }} />
+      <Box sx={{ minWidth: 0 }}><Typography fontWeight={600} noWrap>{label}</Typography><Typography variant="caption" display="block" color="text.secondary">{others.toLocaleString()} others</Typography><Typography variant="caption" display="block" sx={{ color: accent, fontWeight: 600 }}>{symbol} {percentile}% homes</Typography></Box>
+    </Box>
+    <Box sx={{ bgcolor: 'surface.chart', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '24px', overflow: 'hidden' }}>
+      {histogram.map(([bucket, count], index) => <Box key={bucket} sx={{ flex: '1 1 0', minWidth: '1px', height: `${100 * count / high}%`, bgcolor: alpha(accent, index === ownIndex ? .28 : .12), borderBottom: `2px solid ${alpha(accent, index === ownIndex ? .48 : .2)}` }} />)}
+      <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
+      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(19, ownHeight)}px`, minWidth: 54, px: .5, py: .125, ml: '-27px', borderRadius: .75, bgcolor: 'surface.raised', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: 1 }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', left: 5, bottom: 1 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', right: 5, bottom: 1 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
   </Box>;
 }
@@ -177,28 +200,20 @@ function MetricGroup({ group, values, thermostat, unit }: { group: string; value
   if (!values) return null;
   const metrics = Object.entries(values).filter(([, metric]) => metric != null);
   if (!metrics.length) return null;
-  return <Box sx={{ mb: '18px', minWidth: 0 }}><Typography component="p" sx={{ my: 1 }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={unit} />)}</Box>;
+  return <Box sx={{ minWidth: 0 }}><Typography variant="overline" component="h3" sx={{ display: 'block', mb: .75, color: 'text.secondary' }}>{titleCase(group.replaceAll('_', ' '))}</Typography>{metrics.map(([name, metric]) => <MetricRow key={name} group={group} name={name} metric={metric} value={Number(profileValue(thermostat, group, name))} unit={unit} />)}</Box>;
 }
 
 function MetricColumns({ values, thermostat, unit }: { values: Record<string, Record<string, any>> | undefined; thermostat: any; unit: string }) {
-  const threeColumns = useMediaQuery('(min-width:1001px)');
-  const twoColumns = useMediaQuery('(min-width:801px)');
   if (!values) return null;
-  const columnCount = threeColumns ? 3 : twoColumns ? 2 : 1;
-  const columns = Array.from({ length: columnCount }, () => ({ size: 0, groups: [] as Array<[string, Record<string, any>]> }));
-  Object.entries(values).forEach(([group, groupValues]) => {
+  const groups = Object.entries(values).map(([group, groupValues]) => {
     const populated = Object.fromEntries(Object.entries(groupValues ?? {}).filter(([, metric]) => metric != null));
-    const size = Object.keys(populated).length;
-    if (!size) return;
-    const column = columns.reduce((smallest, candidate) => candidate.size < smallest.size ? candidate : smallest, columns[0]);
-    column.groups.push([group, populated]);
-    column.size += size;
-  });
-  if (columns.every((column) => column.size === 0)) {
+    return [group, populated] as const;
+  }).filter(([, populated]) => Object.keys(populated).length > 0);
+  if (!groups.length) {
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
-  return <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`, columnGap: 0, mx: -1, pt: '1px', '@media (min-width: 801px)': { pt: '5px' } }}>
-    {columns.map((column, index) => <Box key={index} sx={{ px: 1 }}>{column.groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} unit={unit} />)}</Box>)}
+  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: 2, pt: .5, alignItems: 'start' }}>
+    {groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} unit={unit} />)}
   </Box>;
 }
 
