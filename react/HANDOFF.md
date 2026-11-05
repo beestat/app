@@ -19,6 +19,8 @@ The screenshot pass also removed Settings' desktop single-column dead space: App
 
 Detail's top row no longer leaves an unexplained empty panel below the System status row. The fixed 398px card minimums were removed; Sensors now determines the row's natural height, and System uses a flex content layout that anchors equipment/climate status to the card bottom. This preserves the aligned three-card row without the marked dead area. Exact Detail chart/raceway geometry still passes at 1440px and 390px.
 
+Chart range menus now align every row on the same icon column. Preset ranges use Calendar Range icons, Custom retains Calendar Days, and subtle dividers separate range selection, chart actions, and Help. The UI review suite now captures this open-menu state; Air Quality's exact conditional row set still passes.
+
 ## 2026-11-05 12:42: Codex, expanded theme presets and System mode
 
 Expanded the Songstead-style theme catalog from three choices to five presets plus System: Beestat, Midnight, True Black, Daylight, and Honeycomb. True Black supplies pure-black OLED foundations; Honeycomb is a warm light palette that keeps the Beestat character; System follows the browser/device light-dark preference and previews the currently resolved palette. The default remains exact Beestat.

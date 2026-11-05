@@ -36,6 +36,12 @@ await page.getByRole('menuitem', { name: /Announcements/ }).click();
 await page.getByRole('dialog', { name: 'Announcements' }).waitFor();
 await shot('test-results/ui-review/announcements-dialog.png');
 await page.getByRole('dialog', { name: 'Announcements' }).press('Escape');
+const chartMenu = page.getByRole('button', { name: 'Chart menu' }).first();
+await chartMenu.scrollIntoViewIfNeeded();
+await chartMenu.click();
+await page.getByRole('menuitem', { name: 'Past 3 Days' }).waitFor();
+await shot('test-results/ui-review/chart-range-menu.png');
+await page.getByRole('menu').press('Escape');
 
 await open('compare', 'Comparison Settings');
 await page.getByRole('button', { name: 'My Home options' }).click();
@@ -57,5 +63,5 @@ const mobile = await page.evaluate(() => ({ width: innerWidth, scrollWidth: docu
 if (mobile.width !== mobile.scrollWidth) throw new Error(`Mobile UI overflows horizontally: ${JSON.stringify(mobile)}`);
 if (errors.length) throw new Error(`UI review found browser errors: ${errors.join('\n')}`);
 
-console.log(JSON.stringify({ screenshots: 6, mobile, errors }, null, 2));
+console.log(JSON.stringify({ screenshots: 7, mobile, errors }, null, 2));
 await browser.close();
