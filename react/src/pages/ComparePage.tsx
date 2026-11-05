@@ -198,8 +198,9 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
     </Box>
     <Box sx={{ bgcolor: 'surface.chart', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '24px', overflow: 'hidden' }}>
       <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
-      <Box aria-hidden sx={{ position: 'absolute', left, bottom: 2, width: 2, height: `${Math.max(8, ownHeight)}px`, ml: '-1px', bgcolor: alpha(accent, .7) }} />
-      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(19, ownHeight)}px`, minWidth: 54, px: .5, py: .125, ml: '-27px', borderRadius: .75, bgcolor: 'surface.raised', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, boxShadow: 1 }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
+      <Box aria-hidden sx={{ position: 'absolute', left, bottom: 2, width: '1px', height: `${Math.max(8, ownHeight)}px`, ml: '-.5px', bgcolor: accent }} />
+      <Box aria-hidden sx={{ position: 'absolute', left, bottom: `${Math.max(8, ownHeight) - 3}px`, width: 7, height: 7, ml: '-3.5px', borderRadius: '50%', bgcolor: accent, border: '2px solid', borderColor: 'surface.chart' }} />
+      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight + 5)}px`, minWidth: 54, ml: '-27px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,.8)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', left: 5, bottom: 1 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', right: 5, bottom: 1 }}>{metricLabel(group, name, max, unit)}</Typography>
     </Box>
   </Box>;
