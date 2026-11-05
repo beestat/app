@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { apiBatch, config } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { useDashboard } from '../state/DashboardContext';
+import { calendarDayDistance } from '../utils/date';
 
 const settingCall = (key: string, value: unknown, alias: string) => ({
   resource: 'user', method: 'update_setting', alias, arguments: { key, value },
@@ -97,7 +98,9 @@ export function GlenwoodReportPage() {
   const run = () => {
     if (!begin || !end) { setError('Both begin and end dates are required.'); return; }
     if (!validIsoDate(begin) || !validIsoDate(end)) { setError('Both dates must be valid.'); return; }
-    const days = Math.abs((new Date(`${end}T00:00:00`).getTime() - new Date(`${begin}T00:00:00`).getTime()) / 86_400_000);
+    // These are calendar dates, not elapsed instants. Local-midnight elapsed
+    // time can be 23/25 hours across DST and differs from Moment's diff(days).
+    const days = calendarDayDistance(begin, end);
     if (days > 366) { setError('Maximum range is one year.'); return; }
     setError('');
     const args = encodeURIComponent(JSON.stringify({ download_begin: begin, download_end: end }));

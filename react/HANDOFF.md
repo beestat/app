@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces; do not push.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 07:06: Codex, Glenwood calendar-day boundary
+
+Fixed Glenwood Report's one-year validation to count date-only calendar boundaries like legacy Moment. React previously divided elapsed local-midnight milliseconds by 24 hours, so an otherwise valid 366-day range spanning a fall DST transition could become `366.0417` and be rejected. Added a shared DST-independent `calendarDayDistance` helper and exact 366-day forward/reverse tests. Typecheck and 12 test files / 44 tests pass; production build passes.
+
+The live `qa/glenwood-parity.mjs` rerun was attempted but the legacy enrollment page timed out waiting for its card during the current dev API instability. Its existing side-by-side screenshots and geometry audit remain unchanged; rerun it when the legacy page is healthy.
+
 ## 2026-11-05 07:00: Codex, DST-safe rolling chart ranges
 
 Matched legacy Moment's calendar-day subtraction for dynamic Thermostat Detail, Sensor Detail, Air Quality Detail, and Air Quality summary ranges. The previous fixed `days * 86,400,000` subtraction shifted the requested local hour when a range crossed a daylight-saving transition. A shared `localDaysAgo` helper now preserves local wall-clock time.
