@@ -55,7 +55,7 @@ export const AlertsCard = memo(function AlertsCard({ alerts, thermostatId }: { a
     ? <IconButton aria-label="Back to alerts" onClick={() => setSelected(undefined)}><ArrowLeft /></IconButton>
     : <><IconButton aria-label="Alerts menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setShowDismissed((value) => !value); setAnchor(null); }}>{showDismissed ? <BellOff size={18} /> : <Bell size={18} />}<Box ml={1}>{showDismissed ? 'Hide dismissed' : 'Show dismissed'}</Box></MenuItem><MenuItem component="a" href="https://doc.beestat.io/dd453829dc7c47019a775130c93bde0c" target="_blank" onClick={() => setAnchor(null)}><HelpCircle size={18} /><Box ml={1}>Help</Box></MenuItem></Menu></>;
   return (
-    <DashboardCard title="Alerts" action={action} sx={{ minHeight: { md: 398 }, bgcolor: visible.length ? colors.red.main : 'background.paper', color: visible.length ? theme.palette.getContrastText(colors.red.main) : 'text.primary' }}>
+    <DashboardCard title="Alerts" action={action} sx={{ bgcolor: visible.length ? colors.red.main : 'background.paper', color: visible.length ? theme.palette.getContrastText(colors.red.main) : 'text.primary' }}>
       {!visible.length && <Box sx={{ minHeight: 128, display: 'grid', placeItems: 'center' }}><ThumbsUp size={64} color={colors.slate.light} /></Box>}
       {!active && visible.map((alert, index) => {
         const Icon = iconFor(Number(alert.code));
