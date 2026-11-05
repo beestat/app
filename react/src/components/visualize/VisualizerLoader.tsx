@@ -1,7 +1,8 @@
-import { Box, Card, CircularProgress, Stack, Typography } from '@mui/material';
+import { alpha, Box, Card, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
 
 export function VisualizerLoader({ label, detail, height = 548 }: { label: string; detail: string; height?: number | string }) {
-  return <Card role="status" aria-live="polite" sx={{ height, display: 'grid', placeItems: 'center', overflow: 'hidden', background: 'radial-gradient(circle at 50% 42%, rgba(69,170,242,.13), transparent 34%), #2f3d44' }}>
+  const theme = useTheme();
+  return <Card role="status" aria-live="polite" sx={{ height, display: 'grid', placeItems: 'center', overflow: 'hidden', background: `radial-gradient(circle at 50% 42%, ${alpha(theme.palette.primary.main, .13)}, transparent 34%), ${theme.palette.surface.chart}` }}>
     <Stack alignItems="center" gap={1.5} sx={{ px: 3, textAlign: 'center' }}>
       <Box component="img" src="/favicon.png" alt="" sx={{ width: 52, height: 52, opacity: .95 }} />
       <CircularProgress size={30} thickness={4} aria-hidden="true" />

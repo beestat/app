@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, getContrastRatio } from '@mui/material/styles';
 
 export const colorNames = ['red', 'orange', 'yellow', 'green', 'teal', 'lightBlue', 'blue', 'purple', 'gray', 'slate'] as const;
 export type BeestatColorName = (typeof colorNames)[number];
@@ -65,15 +65,16 @@ const daylightTheme: AppThemeDefinition = {
 
 export function getAppThemes() { return [beestatTheme, midnightTheme, daylightTheme]; }
 export function getAppThemeDefinition(name?: string) { return getAppThemes().find((candidate) => candidate.name === name) ?? beestatTheme; }
+const contrastText = (background: string) => getContrastRatio(background, '#fff') >= 3 ? '#fff' : '#111';
 
 export function createAppTheme(name?: string) {
   const definition = getAppThemeDefinition(name);
   const theme = createTheme({
     palette: {
       mode: definition.mode,
-      primary: { main: definition.primary, contrastText: '#fff' }, secondary: { main: definition.secondary, contrastText: '#fff' },
-      error: { ...definition.colors.red, contrastText: '#fff' }, warning: { ...definition.colors.orange, contrastText: '#fff' },
-      success: { ...definition.colors.green, contrastText: '#fff' }, info: { ...definition.colors.lightBlue, contrastText: '#fff' },
+      primary: { main: definition.primary, contrastText: contrastText(definition.primary) }, secondary: { main: definition.secondary, contrastText: contrastText(definition.secondary) },
+      error: { ...definition.colors.red, contrastText: contrastText(definition.colors.red.main) }, warning: { ...definition.colors.orange, contrastText: contrastText(definition.colors.orange.main) },
+      success: { ...definition.colors.green, contrastText: contrastText(definition.colors.green.main) }, info: { ...definition.colors.lightBlue, contrastText: contrastText(definition.colors.lightBlue.main) },
       divider: definition.divider, background: { default: definition.background, paper: definition.paper },
       text: { primary: definition.textPrimary, secondary: definition.textSecondary },
     },
@@ -91,8 +92,15 @@ export function createAppTheme(name?: string) {
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       MuiCard: { styleOverrides: { root: { backgroundImage: 'none', boxShadow: definition.mode === 'dark' ? '0 2px 6px rgba(0,0,0,.24)' : '0 2px 10px rgba(34,48,58,.10)' } } },
       MuiButton: { defaultProps: { disableElevation: true }, styleOverrides: { root: { minHeight: 32, textTransform: 'none' } } },
+      MuiToggleButton: { styleOverrides: { root: { minHeight: 32, borderColor: definition.divider, color: definition.textPrimary, fontSize: '13px', fontWeight: 400, textTransform: 'none' } } },
       MuiChip: { styleOverrides: { label: { fontSize: '13px' } } }, MuiIconButton: { defaultProps: { size: 'small' } },
-      MuiDialog: { styleOverrides: { paper: { backgroundImage: 'none' } } }, MuiMenu: { styleOverrides: { paper: { backgroundImage: 'none' } } },
+      MuiDialog: { styleOverrides: { paper: { backgroundImage: 'none' } } },
+      MuiDialogTitle: { styleOverrides: { root: { fontSize: '16px', fontWeight: 600 } } },
+      MuiMenu: { styleOverrides: { paper: { backgroundImage: 'none' } } },
+      MuiMenuItem: { styleOverrides: { root: { gap: 12, minHeight: 36 } } },
+      MuiListItemIcon: { styleOverrides: { root: { minWidth: 32 } } },
+      MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: definition.tooltip, boxShadow: '0 2px 8px rgba(0,0,0,.24)', color: definition.textPrimary, fontSize: '12px', padding: '8px 10px' }, arrow: { color: definition.tooltip } } },
+      MuiSnackbarContent: { styleOverrides: { root: { backgroundColor: definition.raised, color: definition.textPrimary } } },
     },
   });
   theme.name = definition.name; theme.label = definition.label;

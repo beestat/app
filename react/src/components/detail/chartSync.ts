@@ -32,7 +32,7 @@ export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefi
       if (!syncChart.beestatCrosshair) {
         syncChart.beestatCrosshair = chart.renderer.path()
           .addClass('highcharts-crosshair beestat-synchronized-crosshair')
-          .attr({ stroke: '#a5b1c2', 'stroke-width': 1, zIndex: 4 })
+          .attr({ stroke: 'var(--beestat-text-secondary)', 'stroke-width': 1, zIndex: 4 })
           .add();
       }
       syncChart.beestatCrosshair.attr({ d: [['M', x, chart.plotTop], ['L', x, chart.plotTop + chart.plotHeight]] }).show();

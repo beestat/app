@@ -233,10 +233,12 @@ export function ComparePage() {
   const ageRange = (attributes.property_age as { value?: number[] } | undefined)?.value;
   const areaRange = (attributes.property_square_feet as { value?: number[] } | undefined)?.value;
   const storiesFilter = attributes.property_stories as { operator?: string; value?: number } | number | undefined;
+  const propertyChipColor = theme.palette.getContrastText(colors.purple.main);
+  const propertyChipSx = { bgcolor: colors.purple.main, color: propertyChipColor, '& .MuiChip-icon': { color: propertyChipColor } };
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />} sx={{ '& .MuiCardContent-root': { pb: 4 } }}>
+        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />} contentSx={{ pb: 4, '&:last-child': { pb: 4 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, '@media (min-width: 801px)': { gridTemplateColumns: 'calc((100% - 32px) / 3) 1fr' } }}>
             <Box><Typography variant="overline" display="block" mb={1}>Region</Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{(['nearby', 'global'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', minWidth: 0, borderRadius: .5, textTransform: 'none', bgcolor: region === value ? colors.green.main : colors.slate.light, '&:hover': { bgcolor: region === value ? colors.green.dark : colors.slate.main } }} onClick={() => { setRegion(value); saveComparison('comparison_region', value); }}>{titleCase(value)}</Button>)}</Box></Box>
             <Box><Typography variant="overline" display="block" mb={1}>Property</Typography><Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{(['similar', 'same_structure', 'all'] as const).map((value) => <Button key={value} variant="contained" sx={{ px: '7px', minWidth: 0, borderRadius: .5, textTransform: 'none', bgcolor: propertyType === value ? colors.purple.main : colors.slate.light, '&:hover': { bgcolor: propertyType === value ? colors.purple.dark : colors.slate.main } }} onClick={() => { setPropertyType(value); saveComparison('comparison_property_type', value); }}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</Button>)}</Box></Box>
@@ -246,7 +248,7 @@ export function ComparePage() {
         </DashboardCard>
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />} sx={{ '& .MuiCardContent-root': { pb: 4 } }}>
+        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />} contentSx={{ pb: 4, '&:last-child': { pb: 4 } }}>
           <Typography variant="overline" display="block" mb={1}>System</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
             {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
@@ -254,17 +256,19 @@ export function ComparePage() {
               if (!system.equipment) return null;
               const Icon = mode === 'cool' ? Snowflake : Flame;
               const stages = mode !== 'auxiliary_heat' && Number(system.stages) > 1 ? ' (2 Stage)' : '';
-              return <Chip key={mode} icon={<Icon />} color={mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning'} label={`${titleCase(system.equipment)}${stages}`} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />;
+              const chipColor = mode === 'cool' ? 'primary' : mode === 'auxiliary_heat' ? 'error' : 'warning';
+              const contrast = theme.palette[chipColor].contrastText;
+              return <Chip key={mode} icon={<Icon />} color={chipColor} label={`${titleCase(system.equipment)}${stages}`} sx={{ color: contrast, '& .MuiChip-icon': { color: contrast } }} />;
             })}
           </Stack>
           <Typography variant="overline" display="block" mt={2} mb={1}>Region</Typography>
-          <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} sx={{ color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />
+          <Chip icon={<MapPin />} color={regionLabel === 'No data' ? 'default' : 'success'} label={regionLabel} sx={regionLabel === 'No data' ? undefined : { color: 'success.contrastText', '& .MuiChip-icon': { color: 'success.contrastText' } }} />
           <Typography variant="overline" display="block" mt={2} mb={1}>Property</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
-            {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
-            {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
-            {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
-            {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={{ bgcolor: colors.purple.main, color: '#fff', '& .MuiChip-icon': { color: '#fff' } }} />}
+            {thermostat?.property?.structure_type && <Chip icon={<Home />} label={titleCase(thermostat.property.structure_type)} sx={propertyChipSx} />}
+            {thermostat?.property?.stories && ['detached', 'townhouse', 'semi-detached'].includes(thermostat.property.structure_type ?? '') && <Chip icon={<Layers />} label={`${thermostat.property.stories} ${thermostat.property.stories === 1 ? 'Story' : 'Stories'}`} sx={propertyChipSx} />}
+            {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={propertyChipSx} />}
+            {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={propertyChipSx} />}
           </Stack>
           <Box aria-hidden height={8} />
         </DashboardCard>

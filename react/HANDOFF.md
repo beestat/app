@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-05 12:30: Codex, theme-driven components and chart QA
+
+Completed the first visual-literal audit. Remaining application colors now come from semantic MUI surfaces, palette ramps, contrast colors, or CSS theme variables; the few remaining inline RGB/RGBA values are data interpolation and shadows. Visualizer loading, Songstead promotion, compare chips/histograms, synchronized chart crosshairs, alert/sensor states, and header demo state no longer pin themselves to the legacy dark palette.
+
+Centralized consistent MUI behavior for buttons, toggle buttons, menus, list icons, dialogs, tooltips, snackbars, and contrast text in `theme.ts`. Added a typed `contentSx` escape hatch to `DashboardCard` and removed page-level `.MuiCardContent-root` overrides. The legacy 24px card default remains intact; Settings/Contribute use explicit compact content and Compare/Analyze retain their geometry-specific values. An attempted universal 16px default was rejected after `qa/detail-geometry.mjs` caught an 8px Sensor Detail regression; after correction, exact desktop/mobile detail geometry passes again.
+
+Added `qa/theme-charts.mjs`, which intercepts theme writes, switches through all themes, navigates to Detail without reloading dashboard state, and verifies exact Highcharts SVG strokes for each palette before restoring Beestat. Verified: theme surface QA, chart theme QA, typecheck, 44 unit tests, production build, authenticated e2e 14/14, Analyze geometry, Compare route audit, Contribute geometry, and exact Detail geometry. Next: inspect remaining repeated `sx` control patterns for reusable semantic components, capture light/dark screenshots, and run interaction/tooltip/visualizer checks before the next commit.
+
 ## 2026-11-05 12:20: Codex, theme-driven cleanup foundation
 
 Pushed the completed parity work on `feature/react-modernization` and created `feature/react-theme-cleanup` on top. Replaced the single static MUI theme with a Songstead-style definition/factory architecture and three user-selectable themes: exact legacy Beestat, Midnight, and Daylight. The saved `ui.theme` setting is applied live through `AppThemeProvider`; a new Appearance picker on Settings uses the existing generic setting API, so neither the backend nor database changed. `auto` is accepted for forward/legacy compatibility.

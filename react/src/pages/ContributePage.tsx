@@ -14,6 +14,7 @@ import { useDashboard } from '../state/DashboardContext';
 
 type Currency = 'usd' | 'cad' | 'aud' | 'gbp';
 type Interval = 'year' | 'month';
+const compactCardContent = { pb: 2, '&:last-child': { pb: 2 } } as const;
 
 const oneTimeLinks: Record<Currency, Record<'dev' | 'live', string>> = {
   usd: { dev: 'https://donate.stripe.com/test_bIY2by6pS1ii99u8wG', live: 'https://donate.stripe.com/7sIcPp4Gt6APais144' },
@@ -114,7 +115,7 @@ export function ContributePage() {
   </>;
 
   return <Box sx={{ pb: 2 }}><Grid container spacing={2} alignItems="stretch">
-    <Grid size={{ xs: 12, md: 8 }}><DashboardCard title="Contribute" action={contributeAction} sx={{ '& .MuiCardContent-root': { pb: '16px !important' } }}>
+    <Grid size={{ xs: 12, md: 8 }}><DashboardCard title="Contribute" action={contributeAction} contentSx={compactCardContent}>
       {contributionActive ? <>
         <Typography sx={{ mb: '13px' }}>Thank you so much for your support! Your contribution goes a long way towards keeping beestat running and enabling me to create a rich and useful application. My hope is that you are able to use beestat to save money and improve the efficiency of your home.</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1} mb="14px">
@@ -126,7 +127,7 @@ export function ContributePage() {
       </> : <>
         <Typography paragraph>Beestat is completely free to use and does not run ads or sell your data. If you find this service useful, please consider contributing. Your gift directly supports operating costs and project development.</Typography>
         <Typography mb={1}>I would like to give...</Typography>
-        <ToggleButtonGroup exclusive value={custom ? 'other' : amount} onChange={(_, value) => { if (value === null) return; setCustom(value === 'other'); if (value !== 'other') setAmount(Number(value)); }} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, '& .MuiToggleButtonGroup-grouped': { borderRadius: '6px!important', border: '1px solid rgba(255,255,255,.12)!important' } }}>
+        <ToggleButtonGroup exclusive value={custom ? 'other' : amount} onChange={(_, value) => { if (value === null) return; setCustom(value === 'other'); if (value !== 'other') setAmount(Number(value)); }} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, '& .MuiToggleButtonGroup-grouped': { borderRadius: '6px!important', border: `1px solid ${theme.palette.divider}!important` } }}>
           {[1, 2, 3].map((value) => <ToggleButton key={value} value={value * multiplier} color="success">{money.format(value * multiplier)} / month</ToggleButton>)}
           <ToggleButton value="other" color="success">Other Amount</ToggleButton>
         </ToggleButtonGroup>
@@ -139,7 +140,7 @@ export function ContributePage() {
       </>}
     </DashboardCard></Grid>
 
-    <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits" sx={{ '& .MuiCardContent-root': { pb: '16px !important' } }}>
+    <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits" contentSx={compactCardContent}>
       <Typography paragraph>In addition to satisfaction of supporting a great project, you&apos;ll get:</Typography>
       <List sx={{ bgcolor: 'surface.subtle', borderRadius: 1, py: 1, '& .MuiListItem-root': { minHeight: 39.5 } }}>
         {['Early access to new features', 'Private Discord membership', 'More frequent data syncing', 'Removed contribute banner'].map((benefit) => <ListItem key={benefit} sx={{ color: colors.yellow.main }}><ListItemIcon sx={{ minWidth: 34, color: colors.yellow.main }}><Sparkles size={19} /></ListItemIcon><ListItemText primary={benefit} /></ListItem>)}
@@ -147,7 +148,7 @@ export function ContributePage() {
       </List>
     </DashboardCard></Grid>
 
-    <Grid size={12}><DashboardCard title="Recurring Contribution Status" sx={{ '& .MuiCardContent-root': { pb: '16px !important' } }}>
+    <Grid size={12}><DashboardCard title="Recurring Contribution Status" contentSx={compactCardContent}>
       <Typography paragraph>Use this area to view, update, or cancel your recurring support of beestat. If you have made a one-time direct donation, use the Manage Support button to view payment history.</Typography>
       <Typography fontWeight={600} mb={1}>Direct Giving</Typography>
       <StatusPanel active={stripeActive} inactiveText="Not a recurring supporter (please allow up to an hour for new payments to sync)">
@@ -164,11 +165,11 @@ export function ContributePage() {
       {patreonActive && <Typography mt={1.5} fontStyle="italic" color="text.secondary">Want to switch to direct giving? First cancel your Patreon subscription and unlink your account.</Typography>}
     </DashboardCard></Grid>
 
-    <Grid size={12}><DashboardCard title="Merch!" sx={{ '& .MuiCardContent-root': { pb: '16px !important' } }}>
+    <Grid size={12}><DashboardCard title="Merch!" contentSx={compactCardContent}>
       <Typography paragraph>Slap a sticker on your furnace and another on a water bottle to support your favorite thermostat analytics platform! Stickers are high quality, made in the USA, and shipped within 3 business days.</Typography>
       <Stack direction="row" flexWrap="wrap" gap={2} alignItems="center">
-        <Box sx={{ bgcolor: '#8c9bb1', px: 2, borderRadius: 1, width: 196, height: 100, display: 'grid', placeItems: 'center' }}><Box component="img" src="/img/merchandise/sticker_logo_text.png" alt="beestat wordmark sticker" sx={{ height: 48, maxWidth: '100%' }} /></Box>
-        <Box sx={{ bgcolor: '#8c9bb1', px: 2, borderRadius: 1, width: 107, height: 100, display: 'grid', placeItems: 'center' }}><Box component="img" src="/img/merchandise/sticker_logo.png" alt="beestat logo sticker" sx={{ height: 64 }} /></Box>
+        <Box sx={{ bgcolor: colors.gray.dark, px: 2, borderRadius: 1, width: 196, height: 100, display: 'grid', placeItems: 'center' }}><Box component="img" src="/img/merchandise/sticker_logo_text.png" alt="beestat wordmark sticker" sx={{ height: 48, maxWidth: '100%' }} /></Box>
+        <Box sx={{ bgcolor: colors.gray.dark, px: 2, borderRadius: 1, width: 107, height: 100, display: 'grid', placeItems: 'center' }}><Box component="img" src="/img/merchandise/sticker_logo.png" alt="beestat logo sticker" sx={{ height: 64 }} /></Box>
         <Box sx={{ flex: '1 1 220px', textAlign: 'center' }}><Button size="large" variant="contained" startIcon={<Sticker />} onClick={() => openWithIdentity(merchandise[safeCurrency].paymentLink[environment], user)}>Buy Sticker 2-Pack&nbsp; {money.format(merchandise[safeCurrency].amount)}</Button></Box>
       </Stack>
     </DashboardCard></Grid>

@@ -8,6 +8,8 @@ import { ManageThermostatsCard } from '../components/settings/ManageThermostatsC
 import { ThemePicker } from '../components/settings/ThemePicker';
 import { useDashboard } from '../state/DashboardContext';
 
+const compactCardContent = { pb: 2, '&:last-child': { pb: 2 } } as const;
+
 function readNested(source: Record<string, any>, path: string, fallback: unknown) {
   return path.split('.').reduce<any>((value, part) => value?.[part], source) ?? fallback;
 }
@@ -69,11 +71,11 @@ export function SettingsPage() {
     await apiCall({ resource: 'user', method });
     await refresh();
   };
-  return <Box sx={{ display: 'grid', gap: 2, pb: 2, '& .MuiCardContent-root': { pb: '16px !important' }, '& .MuiTextField-root .MuiInputBase-root': { height: 32 } }}>
+  return <Box sx={{ display: 'grid', gap: 2, pb: 2, '& .MuiTextField-root .MuiInputBase-root': { height: 32 } }}>
     <Snackbar open={Boolean(message)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} autoHideDuration={message === 'Saved' ? 1800 : null} onClose={() => setMessage('')}>
       <Alert severity="success" variant="filled" onClose={() => setMessage('')}>{message}</Alert>
     </Snackbar>
-    <DashboardCard title="Settings" action={<CardHelpMenu label="Settings" href="https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d" />} sx={{ minHeight: 607 }}>
+    <DashboardCard title="Settings" action={<CardHelpMenu label="Settings" href="https://doc.beestat.io/9d01e7256390473ca8121d4098d91c9d" />} sx={{ minHeight: 607 }} contentSx={compactCardContent}>
       <Typography fontWeight={600}>Appearance</Typography>
       <Box mt={1} mb={2}><ThemePicker value={values.theme} onChange={(value) => { setValues((old) => ({ ...old, theme: value })); void update('ui.theme', value); }} /></Box>
       <Typography fontWeight={600}>User Interface</Typography>
@@ -90,6 +92,6 @@ export function SettingsPage() {
       <Stack alignItems="flex-start"><FormControlLabel control={<Checkbox checked={values.ignoreSolar} onChange={(event) => { const value = event.target.checked; setValues((old) => ({ ...old, ignoreSolar: value })); void updateProfileSetting(`${profileKey}.ignore_solar_gain`, value); }} />} label="Ignore Solar Gain" /><Typography mb={1.5}>Custom Start Date</Typography><TextField size="small" type="date" value={values.profileStart} inputProps={{ 'aria-label': 'Custom Start Date' }} sx={{ width: 205 }} onChange={(event) => { const value = event.target.value; setValues((old) => ({ ...old, profileStart: value })); void updateProfileSetting(`${profileKey}.range_begin`, value || null); }} /></Stack>
     </DashboardCard>
     <ManageThermostatsCard />
-    <DashboardCard title="Manage API Key" action={<Button href="https://api.beestat.io/doc" target="_blank">API Documentation</Button>} sx={{ minHeight: { xs: 340, md: 306 } }}><Typography>API keys allow you to access your beestat data programmatically. Keep your API key secure and do not share it publicly.</Typography>{apiSession ? <><Typography fontWeight={600} mt={2}>Your API Key</Typography><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1, p: 1.5, bgcolor: 'background.default', borderRadius: 1, fontFamily: 'monospace', overflow: 'hidden' }}><Box sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{apiSession.session_key}</Box><IconButton aria-label="Copy API key" onClick={() => void navigator.clipboard.writeText(apiSession.session_key)}><Copy /></IconButton></Box>{apiSession.created_at && <Typography variant="caption" color="text.secondary">Created: {formatUtcDate(apiSession.created_at)}</Typography>}<Typography fontWeight={600} mt="31px" mb={.5}>Manage</Typography><Stack direction="row" gap={2}><Button variant="contained" startIcon={<RefreshCw size={18} />} onClick={() => void apiKeyAction('recycle_api_key')}>Regenerate Key</Button><Button variant="contained" color="error" startIcon={<Trash2 size={18} />} onClick={() => void apiKeyAction('delete_api_key')}>Delete Key</Button></Stack></> : <Button sx={{ mt: 2 }} variant="contained" color="success" startIcon={<KeyRound />} onClick={() => void apiKeyAction('create_api_key')}>Create API Key</Button>}</DashboardCard>
+    <DashboardCard title="Manage API Key" action={<Button href="https://api.beestat.io/doc" target="_blank">API Documentation</Button>} sx={{ minHeight: { xs: 340, md: 306 } }} contentSx={compactCardContent}><Typography>API keys allow you to access your beestat data programmatically. Keep your API key secure and do not share it publicly.</Typography>{apiSession ? <><Typography fontWeight={600} mt={2}>Your API Key</Typography><Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1, p: 1.5, bgcolor: 'background.default', borderRadius: 1, fontFamily: 'monospace', overflow: 'hidden' }}><Box sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{apiSession.session_key}</Box><IconButton aria-label="Copy API key" onClick={() => void navigator.clipboard.writeText(apiSession.session_key)}><Copy /></IconButton></Box>{apiSession.created_at && <Typography variant="caption" color="text.secondary">Created: {formatUtcDate(apiSession.created_at)}</Typography>}<Typography fontWeight={600} mt="31px" mb={.5}>Manage</Typography><Stack direction="row" gap={2}><Button variant="contained" startIcon={<RefreshCw size={18} />} onClick={() => void apiKeyAction('recycle_api_key')}>Regenerate Key</Button><Button variant="contained" color="error" startIcon={<Trash2 size={18} />} onClick={() => void apiKeyAction('delete_api_key')}>Delete Key</Button></Stack></> : <Button sx={{ mt: 2 }} variant="contained" color="success" startIcon={<KeyRound />} onClick={() => void apiKeyAction('create_api_key')}>Create API Key</Button>}</DashboardCard>
   </Box>;
 }

@@ -133,7 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <IconButton color="inherit" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Open menu" sx={{ mt: { sm: '2px' } }}>
               {unread > 0 ? <Badge badgeContent={unread} color="error"><EllipsisVertical size={22} /></Badge> : <EllipsisVertical size={22} />}
             </IconButton>
-            <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} slotProps={{ list: { sx: { '& .MuiMenuItem-root': { gap: 2 } } } }}>
+            <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
               {Object.keys(data?.ecobee_thermostat ?? {}).length > 1 && <MenuItem onClick={() => { setAnchor(null); setSwitcherOpen(true); }}><ArrowLeftRight size={18} /> Switch Thermostat</MenuItem>}
               {!config.isDemo && <MenuItem onClick={() => { setAnchor(null); navigate('/contribute'); }}><Heart size={18} /> Support beestat</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); openAnnouncements(); }}>{unread > 0 ? <Badge badgeContent={unread} color="error" sx={{ '& .MuiBadge-badge': { right: -8, top: 1 } }}><Megaphone size={18} /></Badge> : <Megaphone size={18} />} Announcements</MenuItem>
@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </Container>
       </AppBar>}
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 }, pt: { xs: '9px', sm: 0 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: '#fff' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> • <a href="https://community.beestat.io" target="_blank">Feedback</a> • <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> • <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> • <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 }, pt: { xs: '9px', sm: 0 } }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mt: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> • <a href="https://community.beestat.io" target="_blank">Feedback</a> • <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> • <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> • <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
     </Box>
   );
 }
