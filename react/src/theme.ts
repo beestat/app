@@ -41,6 +41,22 @@ const midnightColors: Record<BeestatColorName, ColorRamp> = {
   gray: { light: '#d6dde7', main: '#9ba9ba', dark: '#718094' }, slate: { light: '#202833', main: '#181e27', dark: '#11161d' },
 };
 
+const beestatHighContrastColors: ThemeColors = {
+  red: { light: '#ff8490', main: '#ff4f6d', dark: '#e83255' }, orange: { light: '#ffb36d', main: '#ff9147', dark: '#f06a18' },
+  yellow: { light: '#ffe06a', main: '#ffd044', dark: '#d9a900' }, green: { light: '#67efa9', main: '#32da8a', dark: '#16aa68' },
+  teal: { light: '#69e5da', main: '#2fd1c5', dark: '#0b9f98' }, lightBlue: { light: '#82ceff', main: '#49b7f5', dark: '#168bd0' },
+  blue: { light: '#8ba8ff', main: '#668cff', dark: '#3c65d7' }, purple: { light: '#d09aff', main: '#b572f0', dark: '#874bc4' },
+  gray: { light: '#ffffff', main: '#d9e3ec', dark: '#aebdca' }, slate: { light: '#718792', main: '#536973', dark: '#34474f' },
+};
+
+const midnightHighContrastColors: ThemeColors = {
+  red: { light: '#ff8b9c', main: '#ff5c7c', dark: '#dd3458' }, orange: { light: '#ffc078', main: '#ff9b55', dark: '#dd7028' },
+  yellow: { light: '#ffe986', main: '#ffd85c', dark: '#caa62c' }, green: { light: '#76f0b8', main: '#40dda0', dark: '#1baa75' },
+  teal: { light: '#76eee4', main: '#38d5ca', dark: '#0ca096' }, lightBlue: { light: '#91d5ff', main: '#55bdf8', dark: '#1889cb' },
+  blue: { light: '#9db5ff', main: '#728fff', dark: '#4561ca' }, purple: { light: '#dca5ff', main: '#bd78f2', dark: '#8b4bc0' },
+  gray: { light: '#ffffff', main: '#dce7f2', dark: '#aab9c9' }, slate: { light: '#647383', main: '#3d4b5a', dark: '#202c38' },
+};
+
 const midnightTheme: AppThemeDefinition = {
   name: 'midnight', label: 'Midnight', mode: 'dark', description: 'A quieter dark palette for late nights.',
   background: '#10151b', paper: '#1b232d', raised: '#26313e', subtle: '#141a22', chart: '#1b232d', tooltip: '#0b0f14',
@@ -55,6 +71,7 @@ const beestatHighContrastTheme: AppThemeDefinition = {
   description: 'The Beestat palette with stronger surface and text separation.',
   background: '#202c32', paper: '#3a4c55', raised: '#4b606a', subtle: '#182228', chart: '#303f47', tooltip: '#0d1316',
   textPrimary: '#ffffff', textSecondary: '#edf2f6', divider: 'rgba(255, 255, 255, 0.34)', appBar: '#293940',
+  primary: beestatHighContrastColors.lightBlue.main, secondary: beestatHighContrastColors.teal.main, colors: beestatHighContrastColors,
 };
 
 const midnightHighContrastTheme: AppThemeDefinition = {
@@ -64,6 +81,7 @@ const midnightHighContrastTheme: AppThemeDefinition = {
   description: 'Midnight with maximum surface and text separation.',
   background: '#000000', paper: '#18212b', raised: '#293746', subtle: '#090d12', chart: '#111820', tooltip: '#000000',
   textPrimary: '#ffffff', textSecondary: '#e1e8f0', divider: 'rgba(255, 255, 255, 0.38)', appBar: '#0b1016',
+  primary: midnightHighContrastColors.lightBlue.main, secondary: midnightHighContrastColors.teal.main, colors: midnightHighContrastColors,
 };
 
 export function getSelectableThemes() { return [beestatTheme, midnightTheme]; }
@@ -122,8 +140,10 @@ export function createAppTheme(name?: string) {
       MuiButtonBase: { styleOverrides: { root: { '&.Mui-focusVisible': { outline: `2px solid ${definition.primary}`, outlineOffset: 2 } } } },
       MuiChip: { styleOverrides: { root: { borderRadius: 7, fontWeight: 500 }, label: { fontSize: '12px' } } }, MuiIconButton: { defaultProps: { size: 'small' }, styleOverrides: { root: { transition: 'background-color 160ms ease, color 160ms ease' } } },
       MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 7, backgroundColor: alpha(definition.textPrimary, definition.mode === 'dark' ? .025 : .015), transition: 'background-color 160ms ease, box-shadow 160ms ease', '&:hover': { backgroundColor: alpha(definition.textPrimary, definition.mode === 'dark' ? .045 : .025) }, '&.Mui-focused': { boxShadow: `0 0 0 3px ${alpha(definition.primary, .14)}` }, '& .MuiOutlinedInput-notchedOutline': { borderColor: subtleBorder } } } },
-      MuiDialog: { styleOverrides: { paper: { backgroundImage: 'none', border: `1px solid ${subtleBorder}`, borderRadius: 12, boxShadow: floatingShadow } } },
-      MuiDialogTitle: { styleOverrides: { root: { fontSize: '16px', fontWeight: 600 } } },
+      MuiDialog: { styleOverrides: { paper: { width: 'calc(100% - 32px)', margin: 16, backgroundImage: 'none', border: `1px solid ${subtleBorder}`, borderRadius: 12, boxShadow: floatingShadow } } },
+      MuiDialogTitle: { styleOverrides: { root: { padding: '20px 20px 12px', fontSize: '16px', fontWeight: 600 } } },
+      MuiDialogContent: { styleOverrides: { root: { padding: '8px 20px 20px', '&.MuiDialogContent-dividers': { padding: '16px 20px', borderColor: subtleBorder } } } },
+      MuiDialogActions: { styleOverrides: { root: { gap: 8, padding: '12px 20px 20px', '& > :not(style) ~ :not(style)': { marginLeft: 0 } } } },
       MuiMenu: { styleOverrides: { paper: { backgroundImage: 'none', border: `1px solid ${subtleBorder}`, borderRadius: 10, boxShadow: floatingShadow, marginTop: 4 } } },
       MuiMenuItem: { styleOverrides: { root: { gap: 12, minHeight: 36, margin: '2px 4px', borderRadius: 6, transition: 'background-color 140ms ease' } } },
       MuiListItemIcon: { styleOverrides: { root: { minWidth: 32 } } },

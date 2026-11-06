@@ -14,7 +14,7 @@ await context.route('**/api/', async (route) => {
     const calls = Array.isArray(batch) ? batch : Object.values(batch);
     const changesTheme = calls.some((call) => {
       const args = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : call.arguments;
-      return call.resource === 'user' && call.method === 'update_setting' && args?.key === 'ui.theme';
+      return call.resource === 'user' && call.method === 'update_setting' && ['ui.theme', 'ui.high_contrast'].includes(args?.key);
     });
     if (changesTheme) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {} }) });
   } catch { /* Non-JSON requests continue normally. */ }
@@ -25,9 +25,11 @@ const page = await context.newPage();
 await page.goto('https://dev.app.beestat.io/react/index.php#/settings', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 await page.getByRole('radiogroup', { name: 'Theme' }).waitFor({ timeout: 90_000 });
 
-async function selectAndRead(label, expectedStroke) {
+async function selectAndRead(label, expectedStroke, highContrast = false) {
   await page.getByRole('radio', { name: label }).click();
   await page.getByRole('radio', { name: label }).waitFor({ state: 'visible' });
+  const contrast = page.getByRole('checkbox', { name: /High Contrast/ });
+  if (await contrast.isChecked() !== highContrast) await contrast.click();
   await page.evaluate(() => { window.location.hash = '#/detail'; });
   await page.getByText('Thermostat Detail', { exact: true }).waitFor();
   await page.evaluate(() => [...document.querySelectorAll('*')].find((node) => node.textContent === 'Thermostat Detail')?.scrollIntoView({ block: 'center' }));
@@ -42,12 +44,15 @@ async function selectAndRead(label, expectedStroke) {
 }
 
 const beestat = await selectAndRead('OG Beestat', '#d1d8e0');
+const beestatHighContrast = await selectAndRead('OG Beestat', '#ffffff', true);
 const midnight = await selectAndRead(/Midnight/, '#d6dde7');
+const midnightHighContrast = await selectAndRead(/Midnight/, '#ffffff', true);
 await page.getByRole('radio', { name: 'OG Beestat' }).click();
+await page.getByRole('checkbox', { name: /High Contrast/ }).click();
 
-if (JSON.stringify(beestat) === JSON.stringify(midnight)) {
-  throw new Error('Runtime chart series did not change with the selected theme.');
+if (new Set([beestat, beestatHighContrast, midnight, midnightHighContrast].map(JSON.stringify)).size !== 4) {
+  throw new Error('Runtime chart series did not provide a distinct palette for all four theme combinations.');
 }
 
-console.log(JSON.stringify({ beestat, midnight }, null, 2));
+console.log(JSON.stringify({ beestat, beestatHighContrast, midnight, midnightHighContrast }, null, 2));
 await browser.close();

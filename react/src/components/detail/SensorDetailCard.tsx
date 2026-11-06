@@ -1,11 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress, useTheme } from '@mui/material';
+import { Alert, Box, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import { apiBatch } from '../../api/client';
 import type { Sensor, Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
+import { BeestatLoader } from '../common/BeestatLoader';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeRaceway } from './RuntimeRaceway';
@@ -110,6 +111,6 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const rangeBounds = chartRangeBounds(thermostat.sync_begin ?? thermostat.data_begin, thermostat.sync_end ?? thermostat.data_end, 3);
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
   return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" customTitle="Sensor Detail - Custom Range" customDescription="Choose a custom range to display on the Sensor Detail chart. Max range is 7 days at a time and 3 months in the past." maxDays={7} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>
-    {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} />{dockedTooltip}</>}
+    {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading sensor detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} />{dockedTooltip}</>}
   </DashboardCard>;
 });

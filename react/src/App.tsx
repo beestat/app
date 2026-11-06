@@ -1,9 +1,10 @@
-import { Alert, Box, Button, CircularProgress } from '@mui/material';
+import { Alert, Box, Button } from '@mui/material';
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DashboardProvider, useDashboard } from './state/DashboardContext';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { BeestatLoader } from './components/common/BeestatLoader';
 import { AppThemeProvider } from './components/layout/AppThemeProvider';
 
 // Detail is the overwhelmingly common entry route. Start its split chunk in
@@ -31,7 +32,7 @@ function RoutedApp() {
   if (loading) {
     return (
       <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
-        <Box sx={{ textAlign: 'center' }}><img src="/favicon.png" width="72" height="72" alt="beestat" /><br /><CircularProgress sx={{ mt: 3 }} /></Box>
+        <BeestatLoader size={80} label="Loading beestat" />
       </Box>
     );
   }
@@ -41,7 +42,7 @@ function RoutedApp() {
   const hasThermostats = Object.keys(data?.thermostat ?? {}).length > 0;
   return (
     <AppShell>
-      <ErrorBoundary key={location.pathname}><Suspense fallback={<Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>}><Routes>
+      <ErrorBoundary key={location.pathname}><Suspense fallback={<Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading page" /></Box>}><Routes>
         {!hasThermostats ? <>
           <Route path="settings" element={<SettingsPage />} />
           <Route path="contribute" element={<ContributePage />} />

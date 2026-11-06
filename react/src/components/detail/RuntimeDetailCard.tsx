@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress, useTheme } from '@mui/material';
+import { Alert, Box, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
@@ -7,6 +7,7 @@ import { apiCall } from '../../api/client';
 import type { ThemeColors } from '../../theme';
 import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
+import { BeestatLoader } from '../common/BeestatLoader';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeChips } from './RuntimeChips';
@@ -134,7 +135,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const rangeBounds = chartRangeBounds(thermostat.sync_begin ?? thermostat.data_begin, thermostat.sync_end ?? thermostat.data_end, 12);
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
   return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} helpUrl="https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138" customTitle="Thermostat Detail - Custom Range" customDescription="Choose a custom range to display on the Thermostat Detail chart." maxDays={30} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>
-    {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
+    {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading thermostat detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
       <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} marginRight={marginRight} />
       <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { marginTop: 8 } }} />

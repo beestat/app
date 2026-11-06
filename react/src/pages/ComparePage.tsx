@@ -1,5 +1,5 @@
 import {
-  Alert, alpha, Box, Button, Chip, CircularProgress, Dialog, DialogActions,
+  Alert, alpha, Box, Button, Chip, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, IconButton, ListItemIcon, ListItemText, Menu,
   MenuItem, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useTheme,
 } from '@mui/material';
@@ -8,6 +8,7 @@ import { Activity, CircleHelp, Clock3, EllipsisVertical, Flame, Home, Layers, Ma
 import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
+import { BeestatLoader } from '../components/common/BeestatLoader';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 import type { ThemeColors } from '../theme';
@@ -141,16 +142,20 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
     <Dialog open={open} onClose={() => !saving && setOpen(false)} fullWidth maxWidth="sm" aria-labelledby="change-system-type-title">
       <DialogTitle id="change-system-type-title">Change System Type</DialogTitle>
       <DialogContent>
-        <Typography sx={{ mb: 2 }}>What type of HVAC system do you have? System types that beestat detected are indicated.</Typography>
-        {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => <Box key={mode} sx={{ mb: 2 }}>
-          <Typography variant="overline" display="block" sx={{ mb: .5 }}>{systemTypeTitles[mode]}</Typography>
-          <ToggleButtonGroup exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '4px !important' } }}>
+        <Typography color="text.secondary" sx={{ mb: { xs: 1.25, sm: 2 } }}>Choose the equipment installed in your home. Options marked Detected came from your thermostat.</Typography>
+        <Stack gap={{ xs: 1, sm: 2 }}>
+        {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
+          const ModeIcon = mode === 'cool' ? Snowflake : Flame;
+          return <Box key={mode} sx={{ bgcolor: 'surface.subtle', borderRadius: 1.25, p: { xs: 1, sm: 1.5 } }}>
+          <Stack direction="row" alignItems="center" gap={.75} sx={{ mb: { xs: .75, sm: 1.25 }, color: systemTypeColors[mode] }}><ModeIcon size={18} /><Typography fontWeight={600} color="text.primary">{systemTypeTitles[mode]}</Typography></Stack>
+          <ToggleButtonGroup fullWidth exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { minHeight: { xs: 44, sm: 48 }, border: `1px solid ${theme.palette.divider} !important`, borderRadius: '7px !important', bgcolor: 'background.paper', px: .5, '&:hover': { bgcolor: 'surface.raised' } } }}>
             {systemTypeOptions[mode].map((option) => {
               const detected = thermostat?.system_type?.detected?.[mode]?.equipment === option;
-              return <ToggleButton key={option} value={option} sx={{ bgcolor: 'background.paper', color: 'text.primary', px: 1, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: theme.palette.getContrastText(systemTypeColors[mode]) } }}>{titleCase(option)}{detected ? ' [Detected]' : ''}</ToggleButton>;
+              return <ToggleButton key={option} value={option} sx={{ color: 'text.primary', '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: theme.palette.getContrastText(systemTypeColors[mode]) } }}><Box><Typography component="span" color="inherit" fontWeight={500}>{titleCase(option)}</Typography>{detected && <Typography component="span" display="block" variant="caption" color="inherit" sx={{ opacity: .82 }}>Detected</Typography>}</Box></ToggleButton>;
             })}
           </ToggleButtonGroup>
-        </Box>)}
+        </Box>})}
+        </Stack>
         {error && <Alert severity="error">{error}</Alert>}
       </DialogContent>
       <DialogActions><Button color="inherit" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button><Button variant="contained" color="success" onClick={() => void save()} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button></DialogActions>
@@ -299,6 +304,6 @@ export function ComparePage() {
         </DashboardCard>
       </Grid>
     </Grid>
-    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} unit={temperatureUnit} />}</DashboardCard>
+    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading comparison metrics" /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} unit={temperatureUnit} />}</DashboardCard>
   </Box>;
 }
