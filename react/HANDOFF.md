@@ -15,7 +15,7 @@ Added a code-native animated Beestat loader: the roof, chimney, four staggered p
 
 The exact legacy floor-plan implementation remains intact, but its inline chrome is now bridged to MUI semantic surfaces, text, divider, and primary colors. Added overflow containment without changing editor geometry. `qa/floor-plan-theme.mjs` captures all four base/contrast combinations and verifies distinct computed paper/primary colors; exact Visualize parity still passes at 1440px, 390px, and 320px with the original toolbar, geometry, scene, and no test writes.
 
-High-contrast variants now own genuinely distinct semantic/chart series ramps instead of inheriting their base palette. `qa/theme-charts.mjs` verifies four different live Highcharts palettes. Settings was reorganized into an Appearance card, a responsive Interface/Units/Temperature Profiles row, and paired thermostat/API management cards with consistent icons, descriptions, surfaces, and phone action layout. Existing setting keys, API calls, toast behavior, and profile regeneration are unchanged; Settings parity and screenshot review pass.
+High-contrast variants now own genuinely distinct semantic/chart series ramps instead of inheriting their base palette. `qa/theme-charts.mjs` verifies four different live Highcharts palettes across Detail, Analyze, and Air Quality. Settings was reorganized into an Appearance card, a responsive Interface/Units/Temperature Profiles row, and paired thermostat/API management cards with consistent icons, descriptions, surfaces, and phone action layout. Existing setting keys, API calls, toast behavior, and profile regeneration are unchanged; Settings parity and screenshot review pass.
 
 ## 2026-11-05 18:10: Codex, focused themes and reimagined Metrics
 

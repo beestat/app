@@ -37,10 +37,21 @@ async function selectAndRead(label, expectedStroke, highContrast = false) {
   const card = heading.locator('xpath=ancestor::*[contains(@class,"MuiCard-root")][1]');
   await card.locator('.highcharts-root').last().waitFor({ timeout: 90_000 });
   await page.waitForFunction((stroke) => [...document.querySelectorAll('.highcharts-series path')].some((path) => path.getAttribute('stroke')?.toLowerCase() === stroke), expectedStroke);
-  const strokes = await card.locator('.highcharts-series path').evaluateAll((paths) => [...new Set(paths.map((path) => path.getAttribute('stroke')).filter(Boolean))]);
+  const detail = await card.locator('.highcharts-series path').evaluateAll((paths) => [...new Set(paths.map((path) => path.getAttribute('stroke')).filter(Boolean))]);
+  const collect = async (route, heading) => {
+    await page.evaluate((nextRoute) => { window.location.hash = `#/${nextRoute}`; }, route);
+    const routeHeading = page.getByText(heading, { exact: true }).first();
+    await routeHeading.waitFor({ timeout: 90_000 });
+    await routeHeading.scrollIntoViewIfNeeded();
+    const routeCard = routeHeading.locator('xpath=ancestor::*[contains(@class,"MuiCard-root")][1]');
+    await routeCard.locator('.highcharts-series path[stroke]').first().waitFor({ state: 'attached', timeout: 90_000 });
+    return routeCard.locator('.highcharts-series path[stroke]').evaluateAll((paths) => [...new Set(paths.map((path) => path.getAttribute('stroke')).filter((stroke) => stroke && stroke !== 'none'))].sort());
+  };
+  const analyze = await collect('analyze', 'Thermostat Summary');
+  const airQuality = await collect('air-quality', 'Air Quality Detail');
   await page.evaluate(() => { window.location.hash = '#/settings'; });
   await page.getByRole('radiogroup', { name: 'Theme' }).waitFor();
-  return strokes;
+  return { detail, analyze, airQuality };
 }
 
 const beestat = await selectAndRead('OG Beestat', '#d1d8e0');
@@ -50,8 +61,9 @@ const midnightHighContrast = await selectAndRead(/Midnight/, '#ffffff', true);
 await page.getByRole('radio', { name: 'OG Beestat' }).click();
 await page.getByRole('checkbox', { name: /High Contrast/ }).click();
 
-if (new Set([beestat, beestatHighContrast, midnight, midnightHighContrast].map(JSON.stringify)).size !== 4) {
-  throw new Error('Runtime chart series did not provide a distinct palette for all four theme combinations.');
+const combinations = [beestat, beestatHighContrast, midnight, midnightHighContrast];
+for (const route of ['detail', 'analyze', 'airQuality']) {
+  if (new Set(combinations.map((combination) => JSON.stringify(combination[route]))).size !== 4) throw new Error(`${route} chart series did not provide a distinct palette for all four theme combinations.`);
 }
 
 console.log(JSON.stringify({ beestat, beestatHighContrast, midnight, midnightHighContrast }, null, 2));
