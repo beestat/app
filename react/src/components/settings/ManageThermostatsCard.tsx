@@ -1,5 +1,5 @@
 import { Button, IconButton, Stack, TextField, Typography } from '@mui/material';
-import { Trash2 } from 'lucide-react';
+import { Thermometer, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { apiBatch } from '../../api/client';
 import { useDashboard } from '../../state/DashboardContext';
@@ -38,7 +38,7 @@ export function ManageThermostatsCard() {
     } finally { setBusy(false); }
   };
 
-  return <DashboardCard title="Manage Thermostats">
+  return <DashboardCard title={<Stack direction="row" alignItems="center" gap={1}><Thermometer size={18} aria-hidden /><span>Manage Thermostats</span></Stack>}>
     <Typography mb={2}>Thermostats directly connected to your ecobee account are automatically added and synced. In some cases, shared thermostats cannot be automatically detected. Add them here.</Typography>
     <Typography fontWeight={600} mb={1}>Existing Thermostats</Typography>
     <Stack gap={1}>{thermostats.map((item: any) => <Stack key={item.ecobee_thermostat_id} direction="row" alignItems="center" gap={2}>

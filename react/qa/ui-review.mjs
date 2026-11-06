@@ -51,17 +51,21 @@ await page.getByRole('dialog', { name: 'Change System Type' }).waitFor();
 await shot('test-results/ui-review/system-type-dialog.png');
 await page.getByRole('dialog', { name: 'Change System Type' }).press('Escape');
 
+await open('settings', 'Settings');
+await shot('test-results/ui-review/settings.png');
+
 await page.setViewportSize({ width: 390, height: 844 });
 await open('compare', 'Metrics');
 await page.getByText('Metrics', { exact: true }).scrollIntoViewIfNeeded();
 await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
 await shot('test-results/ui-review/mobile-metrics.png');
 await open('settings', 'Settings');
+await shot('test-results/ui-review/settings-mobile.png');
 await page.getByRole('button', { name: 'Open menu' }).click();
 await shot('test-results/ui-review/mobile-menu.png');
 const mobile = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
 if (mobile.width !== mobile.scrollWidth) throw new Error(`Mobile UI overflows horizontally: ${JSON.stringify(mobile)}`);
 if (errors.length) throw new Error(`UI review found browser errors: ${errors.join('\n')}`);
 
-console.log(JSON.stringify({ screenshots: 7, mobile, errors }, null, 2));
+console.log(JSON.stringify({ screenshots: 9, mobile, errors }, null, 2));
 await browser.close();

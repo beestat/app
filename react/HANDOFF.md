@@ -7,6 +7,16 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-06: Codex, cohesive dialogs, branded loading, themed editor, and Settings redesign
+
+Applied a shared MUI dialog shell (spacing, rounded surfaced paper, borders, shadows, and actions) and rebuilt Change System Type as three semantic equipment groups with clear detected states. Its phone layout uses three compact columns so every choice remains visible above the actions. Added `qa/dialog-review.mjs`, which captures nine real dialogs at desktop and phone widths without mutating the account.
+
+Added a code-native animated Beestat loader: the roof, chimney, four staggered pulsing bars, and floating bee use the active theme and respect the existing loading wrappers. It now replaces generic spinners in app startup/lazy routes, Detail runtime/sensors, Air Quality, Compare metrics, and Visualize. `qa/loading-indicator.mjs` verifies all four staggered animations and captures the real blocked-API startup state.
+
+The exact legacy floor-plan implementation remains intact, but its inline chrome is now bridged to MUI semantic surfaces, text, divider, and primary colors. Added overflow containment without changing editor geometry. `qa/floor-plan-theme.mjs` captures all four base/contrast combinations and verifies distinct computed paper/primary colors; exact Visualize parity still passes at 1440px, 390px, and 320px with the original toolbar, geometry, scene, and no test writes.
+
+High-contrast variants now own genuinely distinct semantic/chart series ramps instead of inheriting their base palette. `qa/theme-charts.mjs` verifies four different live Highcharts palettes. Settings was reorganized into an Appearance card, a responsive Interface/Units/Temperature Profiles row, and paired thermostat/API management cards with consistent icons, descriptions, surfaces, and phone action layout. Existing setting keys, API calls, toast behavior, and profile regeneration are unchanged; Settings parity and screenshot review pass.
+
 ## 2026-11-05 18:10: Codex, focused themes and reimagined Metrics
 
 Replaced the expanded preset catalog with the requested two-choice model: OG Beestat and Midnight are the only selectable base themes, and a separate `ui.high_contrast` checkbox resolves each to its internal high-contrast counterpart. Old saved System/Daylight/Honeycomb values safely fall back to OG Beestat; True Black falls back to Midnight. The four internal definitions now have deliberately separated page/card surfaces. Cards use contrast and a soft shadow rather than the disliked inset outline. Bright semantic surfaces now select whichever of white or near-black has the strongest actual contrast instead of accepting marginal white text; `theme.test.ts` locks all semantic controls in all four combinations to at least 4.5:1.
