@@ -12,14 +12,17 @@ const page = await context.newPage();
 await page.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 const loader = page.locator('[data-beestat-loader]').first();
 await loader.waitFor({ state: 'visible', timeout: 10_000 });
+await loader.evaluate(async (node) => Promise.all([...node.querySelectorAll('img')].map((image) => image.decode())));
 const result = await loader.evaluate((node) => ({
   label: node.getAttribute('aria-label'),
-  bars: [...node.querySelectorAll('[data-loader-bar]')].map((bar) => ({
+  sourceImages: [...node.querySelectorAll('img')].map((image) => image.getAttribute('src')),
+  bars: [...node.querySelectorAll('[data-loader-part^="bar-"]')].map((bar) => ({
     animationName: getComputedStyle(bar).animationName,
     animationDelay: getComputedStyle(bar).animationDelay,
   })),
+  beeAnimation: getComputedStyle(node.querySelector('[data-loader-part="bee"]')).animationName,
 }));
 await page.screenshot({ path: 'test-results/loading-indicator/app-loading.png', animations: 'allow' });
-if (result.bars.length !== 4 || new Set(result.bars.map((bar) => bar.animationDelay)).size !== 4 || result.bars.some((bar) => bar.animationName === 'none')) throw new Error(`Branded loader animation regression: ${JSON.stringify(result)}`);
+if (result.sourceImages.some((source) => source !== '/favicon.png') || result.bars.length !== 4 || new Set(result.bars.map((bar) => bar.animationDelay)).size !== 4 || result.bars.some((bar) => bar.animationName === 'none') || result.beeAnimation === 'none') throw new Error(`Branded loader animation regression: ${JSON.stringify(result)}`);
 console.log(JSON.stringify(result, null, 2));
 await browser.close();

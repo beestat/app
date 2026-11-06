@@ -1,25 +1,41 @@
 import { Box, keyframes } from '@mui/material';
 
 const barPulse = keyframes`
-  0%, 70%, 100% { transform: scaleY(.68); opacity: .48; }
-  28% { transform: scaleY(1); opacity: 1; }
+  0%, 68%, 100% { transform: translateY(0); opacity: 0; }
+  34% { transform: translateY(-1px); opacity: .34; }
 `;
 
 const beeFloat = keyframes`
-  0%, 100% { transform: translateY(1px) rotate(-4deg); }
-  50% { transform: translateY(-3px) rotate(4deg); }
+  0%, 100% { transform: translate(0, 0) rotate(0); opacity: 0; }
+  50% { transform: translate(1px, -1px) rotate(1deg); opacity: .3; }
 `;
 
+const parts = [
+  { x: 37, y: 216, width: 66, height: 152 },
+  { x: 131, y: 159, width: 67, height: 262 },
+  { x: 226, y: 120, width: 67, height: 355 },
+  { x: 321, y: 159, width: 67, height: 262 },
+] as const;
+
 export function BeestatLoader({ size = 64, label = 'Loading' }: { size?: number; label?: string }) {
-  const scale = size / 64;
-  const bars = [{ left: 8, height: 25 }, { left: 21, height: 38 }, { left: 34, height: 50 }, { left: 47, height: 38 }];
+  const ratio = size / 512;
+  const image = (x = 0, y = 0) => ({
+    position: 'absolute' as const,
+    left: -x * ratio,
+    top: -y * ratio,
+    width: size,
+    height: size,
+    maxWidth: 'none',
+    objectFit: 'contain' as const,
+  });
+
   return <Box role="status" aria-label={label} data-beestat-loader sx={{ position: 'relative', width: size, height: size, flex: '0 0 auto' }}>
-    <Box aria-hidden sx={{ position: 'absolute', inset: 0, transform: `scale(${scale})`, transformOrigin: 'top left', width: 64, height: 64 }}>
-      <Box sx={{ position: 'absolute', left: 4, top: 19, width: 35, height: 7, bgcolor: 'success.main', borderRadius: 1, transform: 'rotate(-32deg)', transformOrigin: 'left center' }} />
-      <Box sx={{ position: 'absolute', left: 33, top: 1, width: 31, height: 7, bgcolor: 'success.main', borderRadius: 1, transform: 'rotate(32deg)', transformOrigin: 'left center' }} />
-      <Box sx={{ position: 'absolute', left: 48, top: 2, width: 8, height: 17, bgcolor: 'success.main', borderRadius: '3px 3px 0 0' }} />
-      {bars.map((bar, index) => <Box data-loader-bar key={bar.left} sx={{ position: 'absolute', left: bar.left, bottom: 4, width: 10, height: bar.height, bgcolor: 'colors.yellow.main', borderRadius: '4px 4px 6px 6px', transformOrigin: 'bottom center', animation: `${barPulse} 1.25s ease-in-out ${index * 110}ms infinite` }} />)}
-      <Box sx={{ position: 'absolute', right: -1, bottom: 15, width: 9, height: 14, borderRadius: '55% 45% 50% 50%', bgcolor: 'colors.yellow.main', animation: `${beeFloat} 1.3s ease-in-out infinite`, '&::before': { content: '""', position: 'absolute', left: -3, top: 1, width: 6, height: 6, border: '2px solid', borderColor: 'colors.yellow.main', borderRadius: '50%' } }} />
+    <Box component="img" data-loader-part="base" src="/favicon.png" alt="" aria-hidden sx={image()} />
+    {parts.map((part, index) => <Box data-loader-part={`bar-${index + 1}`} key={part.x} sx={{ position: 'absolute', left: part.x * ratio, top: part.y * ratio, width: part.width * ratio, height: part.height * ratio, overflow: 'hidden', transformOrigin: 'bottom center', filter: 'brightness(1.18)', animation: `${barPulse} 1.65s ease-in-out ${index * 120}ms infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
+      <Box component="img" src="/favicon.png" alt="" aria-hidden sx={image(part.x, part.y)} />
+    </Box>)}
+    <Box data-loader-part="bee" sx={{ position: 'absolute', left: 414 * ratio, top: 194 * ratio, width: 98 * ratio, height: 176 * ratio, overflow: 'hidden', transformOrigin: 'center', filter: 'brightness(1.18)', animation: `${beeFloat} 1.65s ease-in-out infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
+      <Box component="img" src="/favicon.png" alt="" aria-hidden sx={image(414, 194)} />
     </Box>
   </Box>;
 }
