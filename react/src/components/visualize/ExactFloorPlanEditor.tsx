@@ -1,3 +1,4 @@
+import { alpha, Box, useTheme } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import type { DashboardData, Sensor } from '../../types';
 import type { FloorPlan } from './floorPlanModel';
@@ -28,6 +29,7 @@ export function ExactFloorPlanEditor({
   onSwitch?: (floorPlanId: number) => void;
   onReady?: () => void;
 }) {
+  const theme = useTheme();
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,5 +103,23 @@ export function ExactFloorPlanEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan.floor_plan_id, thermostatId]);
 
-  return <div ref={host} />;
+  const themed = (color: string) => `${color} !important`;
+  return <Box ref={host} sx={{
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    '& [style*="background: rgb(47, 61, 68)"]': { background: themed(theme.palette.background.paper) },
+    '& [style*="background: rgba(47, 61, 68, 0.9)"]': { background: themed(alpha(theme.palette.background.paper, .94)) },
+    '& [style*="background: rgb(38, 50, 56)"]': { background: themed(theme.palette.surface.subtle) },
+    '& [style*="background: rgb(55, 71, 79)"]': { background: themed(theme.palette.surface.raised) },
+    '& [style*="background: rgb(35, 138, 201)"]': { background: themed(theme.palette.primary.main) },
+    '& [style*="color: rgb(255, 255, 255)"]': { color: themed(theme.palette.text.primary) },
+    '& [style*="color: rgb(209, 216, 224)"]': { color: themed(theme.palette.text.secondary) },
+    '& [style*="color: rgb(69, 170, 242)"]': { color: themed(theme.palette.primary.light) },
+    '& [style*="color: rgb(38, 50, 56)"]': { color: themed(theme.palette.primary.contrastText) },
+    '& [style*="border-color: rgba(255, 255, 255, 0.12)"]': { borderColor: themed(theme.palette.divider) },
+    '& [style*="border-color: rgba(255, 255, 255, 0.18)"]': { borderColor: themed(theme.palette.divider) },
+    '& [style*="box-shadow: rgb(69, 170, 242) 3px 0px 0px inset"]': { boxShadow: themed(`${theme.palette.primary.main} 3px 0 0 inset`) },
+  }} />;
 }
