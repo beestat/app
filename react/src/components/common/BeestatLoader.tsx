@@ -1,13 +1,13 @@
 import { Box, keyframes } from '@mui/material';
 
 const barPulse = keyframes`
-  0%, 68%, 100% { transform: translateY(0); opacity: 0; }
-  34% { transform: translateY(-1px); opacity: .34; }
+  0%, 70%, 100% { transform: scaleY(.82); opacity: .72; }
+  35% { transform: scaleY(1); opacity: 1; }
 `;
 
 const beeFloat = keyframes`
-  0%, 100% { transform: translate(0, 0) rotate(0); opacity: 0; }
-  50% { transform: translate(1px, -1px) rotate(1deg); opacity: .3; }
+  0%, 100% { transform: translate(0, 1px) rotate(-1deg); }
+  50% { transform: translate(1px, -2px) rotate(2deg); }
 `;
 
 const parts = [
@@ -30,11 +30,11 @@ export function BeestatLoader({ size = 64, label = 'Loading' }: { size?: number;
   });
 
   return <Box role="status" aria-label={label} data-beestat-loader sx={{ position: 'relative', width: size, height: size, flex: '0 0 auto' }}>
-    <Box component="img" data-loader-part="base" src="/favicon.png" alt="" aria-hidden sx={image()} />
-    {parts.map((part, index) => <Box data-loader-part={`bar-${index + 1}`} key={part.x} sx={{ position: 'absolute', left: part.x * ratio, top: part.y * ratio, width: part.width * ratio, height: part.height * ratio, overflow: 'hidden', transformOrigin: 'bottom center', filter: 'brightness(1.18)', animation: `${barPulse} 1.65s ease-in-out ${index * 120}ms infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
+    <Box component="img" data-loader-part="roof" src="/favicon.png" alt="" aria-hidden sx={{ ...image(), clipPath: 'polygon(0 34%, 47% 6%, 53% 6%, 63% 13%, 63% 10%, 65% 7%, 74% 7%, 76% 10%, 76% 21%, 89% 28%, 90% 33%, 85% 39%, 51% 19%, 5% 46%, 2% 46%, 0 39%)' }} />
+    {parts.map((part, index) => <Box data-loader-part={`bar-${index + 1}`} key={part.x} sx={{ position: 'absolute', left: part.x * ratio, top: part.y * ratio, width: part.width * ratio, height: part.height * ratio, overflow: 'hidden', transformOrigin: 'bottom center', animation: `${barPulse} 1.2s ease-in-out ${index * 110}ms infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 1 } }}>
       <Box component="img" src="/favicon.png" alt="" aria-hidden sx={image(part.x, part.y)} />
     </Box>)}
-    <Box data-loader-part="bee" sx={{ position: 'absolute', left: 414 * ratio, top: 194 * ratio, width: 98 * ratio, height: 176 * ratio, overflow: 'hidden', transformOrigin: 'center', filter: 'brightness(1.18)', animation: `${beeFloat} 1.65s ease-in-out infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
+    <Box data-loader-part="bee" sx={{ position: 'absolute', left: 414 * ratio, top: 194 * ratio, width: 98 * ratio, height: 176 * ratio, overflow: 'hidden', transformOrigin: 'center', animation: `${beeFloat} 1.2s ease-in-out infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none' } }}>
       <Box component="img" src="/favicon.png" alt="" aria-hidden sx={image(414, 194)} />
     </Box>
   </Box>;
