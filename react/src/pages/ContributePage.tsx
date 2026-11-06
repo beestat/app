@@ -114,8 +114,8 @@ export function ContributePage() {
     </Menu>
   </>;
 
-  return <Box sx={{ pb: 2 }}><Grid container spacing={2} alignItems="stretch">
-    <Grid size={{ xs: 12, md: 8 }}><DashboardCard title="Contribute" action={contributeAction} contentSx={compactCardContent}>
+  return <Box sx={{ pb: 2 }}><Grid container spacing={2} alignItems="flex-start">
+    <Grid size={{ xs: 12, md: 8 }}><DashboardCard title="Contribute" action={contributeAction} contentSx={compactCardContent} sx={{ height: 'auto' }}>
       {contributionActive ? <>
         <Typography sx={{ mb: '13px' }}>Thank you so much for your support! Your contribution goes a long way towards keeping beestat running and enabling me to create a rich and useful application. My hope is that you are able to use beestat to save money and improve the efficiency of your home.</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1} mb="14px">
@@ -140,7 +140,7 @@ export function ContributePage() {
       </>}
     </DashboardCard></Grid>
 
-    <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits" contentSx={compactCardContent}>
+    <Grid size={{ xs: 12, md: 4 }}><DashboardCard title="Benefits" contentSx={compactCardContent} sx={{ height: 'auto' }}>
       <Typography paragraph>In addition to satisfaction of supporting a great project, you&apos;ll get:</Typography>
       <List sx={{ bgcolor: 'surface.subtle', borderRadius: 1, py: 1, '& .MuiListItem-root': { minHeight: 39.5 } }}>
         {['Early access to new features', 'Private Discord membership', 'More frequent data syncing', 'Removed contribute banner'].map((benefit) => <ListItem key={benefit} sx={{ color: colors.yellow.main }}><ListItemIcon sx={{ minWidth: 34, color: colors.yellow.main }}><Sparkles size={19} /></ListItemIcon><ListItemText primary={benefit} /></ListItem>)}

@@ -36,7 +36,9 @@ await page.goto('https://dev.app.beestat.io/react/index.php#/compare', { waitUnt
 await page.getByText('Comparison Settings', { exact: true }).waitFor({ timeout: 90_000 });
 await page.locator('[role="progressbar"]').first().waitFor({ state: 'detached', timeout: 90_000 }).catch(() => {});
 
-await page.getByRole('button', { name: 'Global', exact: true }).click();
+const globalButton = page.getByRole('button', { name: 'Global', exact: true });
+if (await globalButton.getAttribute('aria-pressed') === 'true') await page.getByRole('button', { name: 'Nearby', exact: true }).click();
+await globalButton.click();
 await page.getByRole('button', { name: 'All', exact: true }).click();
 if (!await page.getByText('Any property type', { exact: true }).isVisible()
   || !await page.getByText('Any region', { exact: true }).isVisible()) {
@@ -54,22 +56,22 @@ const dialog = page.getByRole('dialog', { name: 'Change System Type' });
 await dialog.waitFor();
 const expectedOptions = { Heat: 7, 'Auxiliary Heat': 4, Cool: 3 };
 for (const [title, count] of Object.entries(expectedOptions)) {
-  const section = dialog.getByText(title, { exact: true }).locator('..');
+  const section = dialog.getByText(title, { exact: true }).locator('../..');
   if (await section.getByRole('button').count() !== count) {
     throw new Error(`${title} system type options differ from legacy.`);
   }
 }
-if (await dialog.getByRole('button', { name: /\[Detected\]/ }).count() < 2) {
+if (await dialog.getByRole('button', { name: /Detected/ }).count() < 2) {
   throw new Error('Detected system types are not identified in the dialog.');
 }
 
-const heatSection = dialog.getByText('Heat', { exact: true }).locator('..');
+const heatSection = dialog.getByText('Heat', { exact: true }).locator('../..');
 const heatButtons = heatSection.getByRole('button');
 let replacement;
 for (let index = 0; index < await heatButtons.count(); index += 1) {
   const button = heatButtons.nth(index);
   if (await button.getAttribute('aria-pressed') === 'false') {
-    replacement = (await button.innerText()).replace(' [Detected]', '').toLowerCase();
+    replacement = (await button.innerText()).replace(/\s*Detected/, '').toLowerCase();
     await button.click();
     break;
   }

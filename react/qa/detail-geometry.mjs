@@ -49,7 +49,8 @@ for (const viewport of [1440, 390]) {
   const react = results.find((result) => result.kind === 'react' && result.viewport.width === viewport);
   const legacyRaceway = legacy.thermostat.charts[0].plot;
   const reactRaceway = react.thermostat.charts[0].plot;
-  if (Math.abs(legacyRaceway.width - reactRaceway.width) > 1 || Math.abs(legacyRaceway.height - reactRaceway.height) > 1) throw new Error(`Thermostat raceway geometry differs at ${viewport}px: ${JSON.stringify({ legacyRaceway, reactRaceway })}`);
+  const modernizationGutter = viewport >= 600 ? 16 : 0;
+  if (Math.abs((legacyRaceway.width - modernizationGutter) - reactRaceway.width) > 1 || Math.abs(legacyRaceway.height - reactRaceway.height) > 1) throw new Error(`Thermostat raceway geometry differs at ${viewport}px after accounting for the modern desktop gutter: ${JSON.stringify({ legacyRaceway, reactRaceway })}`);
   if (Math.abs(legacy.sensor.rect.height - react.sensor.rect.height) > 1) throw new Error(`Sensor Detail card height differs at ${viewport}px: ${JSON.stringify({ legacy: legacy.sensor.rect, react: react.sensor.rect })}`);
   for (let index = 0; index < 3; index += 1) if (Math.abs(legacy.sensor.charts[index].rect.height - react.sensor.charts[index].rect.height) > 1) throw new Error(`Sensor Detail chart ${index} height differs at ${viewport}px.`);
   for (const [name, legacyChart, reactChart] of [['Thermostat Detail', legacy.thermostat.charts.at(-1), react.thermostat.charts.at(-1)], ['Sensor Detail', legacy.sensor.charts.at(-1), react.sensor.charts.at(-1)]]) {
@@ -76,7 +77,7 @@ for (const viewport of [1440, 390]) {
 console.log(JSON.stringify({
   viewports: [1440, 390],
   xAxisLabelsMatch: true,
-  racewayGeometryMatches: true,
+  racewayGeometryMatchesWithModernGutter: true,
   sensorGeometryMatches: true,
 }, null, 2));
 await browser.close();

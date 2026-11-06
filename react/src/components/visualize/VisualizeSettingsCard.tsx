@@ -47,9 +47,11 @@ function SettingTile({ active, color, icon, label, onClick }: {
     onClick={onClick}
     startIcon={icon}
     sx={{
-      minWidth: 0, minHeight: 33, px: 1.5, justifyContent: 'flex-start', color: theme.palette.getContrastText(color),
-      bgcolor: active ? color : theme.palette.colors.slate.light,
-      '&:hover': { bgcolor: color },
+      minWidth: 0, minHeight: 33, px: 1.5, justifyContent: 'flex-start',
+      color: active ? theme.palette.getContrastText(color) : 'text.primary',
+      bgcolor: active ? color : 'surface.subtle', border: '1px solid', borderColor: active ? 'transparent' : 'divider',
+      boxShadow: active ? '0 2px 8px rgba(0,0,0,.16)' : 'none',
+      '&:hover': { bgcolor: active ? color : 'surface.raised', borderColor: active ? 'transparent' : 'text.secondary' },
     }}
   >{label}</Button>;
 }

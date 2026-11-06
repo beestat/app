@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-06: Codex, post-parity usability and visual-cohesion pass
+
+Started the deliberate “keep Beestat, fix its old rough edges” pass. The app content now has a consistent 16px gutter below the header on desktop and mobile instead of the first card touching the app bar. MUI toggle buttons received clear theme-owned inactive, hover, focus, and selected surfaces. Compare’s Region/Property controls are real exclusive toggle groups with semantic green/purple selected states and outlined surfaced inactive states; Visualize settings use the same visual language rather than filling inactive buttons with a misleading slate color.
+
+Added `qa/design-review.mjs`, which captures all seven primary routes at desktop and phone widths, scrolls through lazy cards, waits for branded loaders to finish, checks horizontal overflow, and blocks setting writes. The screenshot pass also changed Settings unit choices from checkbox-like squares to proper circular radio marks, gave the empty Alerts card an explicit “No active alerts / Everything looks good” state, and removed Contribute’s artificially stretched intro card. Dynamic colored cards/circles now derive foreground contrast from their actual theme color, including System status, Air Quality unsupported state, and Filter Info.
+
 ## 2026-11-06: Codex, cohesive dialogs, branded loading, themed editor, and Settings redesign
 
 Applied a shared MUI dialog shell (spacing, rounded surfaced paper, borders, shadows, and actions) and rebuilt Change System Type as three semantic equipment groups with clear detected states. Its phone layout uses three compact columns so every choice remains visible above the actions. Added `qa/dialog-review.mjs`, which captures nine real dialogs at desktop and phone widths without mutating the account.

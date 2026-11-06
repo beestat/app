@@ -24,7 +24,7 @@ function formatUtcDate(value: string) {
 }
 
 function RadioMark({ checked = false }: { checked?: boolean }) {
-  return <Box sx={{ width: 20, height: 20, border: '1px solid', borderColor: 'text.secondary', borderRadius: '3px', display: 'grid', placeItems: 'center', '&::after': checked ? { content: '""', width: 11, height: 11, borderRadius: '2px', bgcolor: 'primary.main' } : undefined }} />;
+  return <Box sx={{ width: 18, height: 18, border: '1px solid', borderColor: checked ? 'primary.main' : 'text.secondary', borderRadius: '50%', display: 'grid', placeItems: 'center', transition: 'border-color 160ms ease', '&::after': checked ? { content: '""', width: 9, height: 9, borderRadius: '50%', bgcolor: 'primary.main' } : undefined }} />;
 }
 
 export function SettingsPage() {

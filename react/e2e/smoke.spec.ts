@@ -20,7 +20,7 @@ test('dashboard renders the primary navigation and cards', async ({ page }) => {
   await expect(page.getByRole('link', { name: /beestat/i })).toBeVisible();
   await expect(page.getByText('Thermostat Detail')).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText('Sensors')).toBeVisible();
-  await expect(page.getByText('Alerts')).toBeVisible();
+  await expect(page.getByText('Alerts', { exact: true })).toBeVisible();
 });
 
 const routes = [
