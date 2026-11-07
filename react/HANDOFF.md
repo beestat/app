@@ -13,6 +13,8 @@ Normalized the MUI control scale: ordinary buttons, toggle buttons, Visualize se
 
 Rebuilt the Compare Metrics plot geometry so the user's vertical marker and density curve share the exact same SVG coordinate system. Edge markers are no longer clamped away from their actual bucket. The value label clamps independently for readability, while min/max bounds now occupy a dedicated axis row beneath the plot instead of floating over the curve/fill. `qa/compare-metric-geometry.mjs` checks all 28 rendered metrics: marker/curve error is below 0.001 viewBox units and every bounds row remains inside its graph.
 
+Moved the System card's weather bubble 23px farther outward so it no longer crowds the indoor temperature. `qa/system-circle-color.mjs` now checks the geometry at 1440px, 390px, and 320px; the measured text-to-bubble gap is 12.28px at each width and the bubble remains inside the card.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

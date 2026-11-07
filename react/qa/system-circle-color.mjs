@@ -23,5 +23,22 @@ await modern.goto('https://dev.app.beestat.io/react/index.php#/detail', { waitUn
 await modern.getByText(/System - /).first().waitFor({ timeout: 90_000 });
 const reactColor = await circleColor(modern);
 
-console.log(JSON.stringify({ running, legacyColor, reactColor, match: legacyColor === reactColor }));
+const spacing = [];
+for (const width of [1440, 390, 320]) {
+  await modern.setViewportSize({ width, height: 1000 });
+  const geometry = await modern.evaluate(() => {
+    const card = document.querySelector('[data-system-circle]');
+    const temperature = document.querySelector('[data-system-temperature]');
+    const weather = document.querySelector('[data-system-weather]');
+    if (!(card instanceof HTMLElement) || !(temperature instanceof HTMLElement) || !(weather instanceof HTMLElement)) return null;
+    const cardRect = card.getBoundingClientRect();
+    const temperatureRect = temperature.getBoundingClientRect();
+    const weatherRect = weather.getBoundingClientRect();
+    return { gap: weatherRect.left - temperatureRect.right, weatherInsideCardWidth: weatherRect.right <= card.closest('.MuiCard-root').getBoundingClientRect().right };
+  });
+  spacing.push({ width, ...geometry });
+}
+if (spacing.some((item) => item.gap < 12 || !item.weatherInsideCardWidth)) throw new Error(`System weather spacing regression: ${JSON.stringify(spacing)}`);
+
+console.log(JSON.stringify({ running, legacyColor, reactColor, match: legacyColor === reactColor, spacing }));
 await browser.close();
