@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-07: Codex, button sizing and Metrics geometry
+
+Normalized the MUI control scale: ordinary buttons, toggle buttons, Visualize setting tiles, header controls, and small icon buttons are exactly 32px high; small controls are 28px and intentional large CTAs are 40px. Lucide icons inside buttons are constrained to 18px so a default 24px icon can no longer silently make one button taller. The Change System Type choices are explicitly large option tiles and keep their deliberate 44/48px touch targets. `qa/button-consistency.mjs` checks all primary routes and currently verifies 71 medium controls plus 24 icon buttons at 32px.
+
+Rebuilt the Compare Metrics plot geometry so the user's vertical marker and density curve share the exact same SVG coordinate system. Edge markers are no longer clamped away from their actual bucket. The value label clamps independently for readability, while min/max bounds now occupy a dedicated axis row beneath the plot instead of floating over the curve/fill. `qa/compare-metric-geometry.mjs` checks all 28 rendered metrics: marker/curve error is below 0.001 viewBox units and every bounds row remains inside its graph.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

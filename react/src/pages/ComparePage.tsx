@@ -148,7 +148,7 @@ function MyHomeMenu({ thermostat, refresh }: { thermostat: any; refresh: () => P
           const ModeIcon = mode === 'cool' ? Snowflake : Flame;
           return <Box key={mode} sx={{ bgcolor: 'surface.subtle', borderRadius: 1.25, p: { xs: 1, sm: 1.5 } }}>
           <Stack direction="row" alignItems="center" gap={.75} sx={{ mb: { xs: .75, sm: 1.25 }, color: systemTypeColors[mode] }}><ModeIcon size={18} /><Typography fontWeight={600} color="text.primary">{systemTypeTitles[mode]}</Typography></Stack>
-          <ToggleButtonGroup fullWidth exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { minHeight: { xs: 44, sm: 48 }, border: `1px solid ${theme.palette.divider} !important`, borderRadius: '7px !important', bgcolor: 'background.paper', px: .5, '&:hover': { bgcolor: 'surface.raised' } } }}>
+          <ToggleButtonGroup size="large" fullWidth exclusive value={draft[mode] ?? null} onChange={(_event, value: string | null) => value && setDraft((current) => ({ ...current, [mode]: value }))} sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: .75, '& .MuiToggleButtonGroup-grouped': { minHeight: { xs: 44, sm: 48 }, border: `1px solid ${theme.palette.divider} !important`, borderRadius: '7px !important', bgcolor: 'background.paper', px: .5, '&:hover': { bgcolor: 'surface.raised' } } }}>
             {systemTypeOptions[mode].map((option) => {
               const detected = thermostat?.system_type?.detected?.[mode]?.equipment === option;
               return <ToggleButton key={option} value={option} sx={{ color: 'text.primary', '&.Mui-selected, &.Mui-selected:hover': { bgcolor: systemTypeColors[mode], color: theme.palette.getContrastText(systemTypeColors[mode]) } }}><Box><Typography component="span" color="inherit" fontWeight={500}>{titleCase(option)}</Typography>{detected && <Typography component="span" display="block" variant="caption" color="inherit" sx={{ opacity: .82 }}>Detected</Typography>}</Box></ToggleButton>;
@@ -188,25 +188,25 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   // Legacy divides first, then scales and uses toFixed; 100 * 113 / 200 would round 56.5 up where legacy shows 56.
   const percentile = (Math.max(below, above) / Math.max(others, 1) * 100).toFixed(0);
   const symbol = below >= above ? '>' : '<';
-  const left = `${Math.max(10, Math.min(90, (ownIndex + .5) * 100 / histogram.length))}%`;
+  const pointX = (ownIndex + .5) * 100 / histogram.length;
   const colorIndex = Math.max(0, groupNames[group]?.indexOf(name) ?? 0);
   const Icon = group === 'property' ? (name === 'age' ? Clock3 : Ruler) : name === 'resist' ? Activity : name.startsWith('cool') ? Snowflake : Flame;
   const label = name === 'auxiliary_heat_1' ? 'Aux' : group === 'property' && name === 'square_feet' ? 'Area' : titleCase(name.replaceAll('_', ' '));
   const accent = groupColors[group]?.[colorIndex] ?? colors.lightBlue.main;
   const curve = smoothHistogramPath(histogram, high);
   const curveArea = smoothHistogramArea(histogram, high);
-  const ownHeight = Math.max(2, 38 * (histogram[ownIndex]?.[1] ?? 0) / high);
+  const pointY = 98 - 94 * (histogram[ownIndex]?.[1] ?? 0) / high;
   return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '128px minmax(0, 1fr)', sm: '148px minmax(0, 1fr)' }, minHeight: 68, mb: .75, overflow: 'hidden', borderRadius: 1, bgcolor: 'surface.subtle' }}>
     <Box sx={{ borderLeft: `4px solid ${accent}`, bgcolor: alpha(accent, .1), display: 'grid', gridTemplateColumns: '34px minmax(0, 1fr)', alignItems: 'center', px: .75, py: .5 }}>
       <Icon size={19} color={accent} strokeWidth={2.25} style={{ justifySelf: 'center' }} />
       <Box sx={{ minWidth: 0 }}><Typography fontWeight={600} noWrap>{label}</Typography><Typography variant="caption" display="block" color="text.secondary">{others.toLocaleString()} others</Typography><Typography variant="caption" display="block" sx={{ color: 'text.primary', fontWeight: 600 }}>{symbol} {percentile}% homes</Typography></Box>
     </Box>
-    <Box sx={{ bgcolor: 'surface.chart', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '24px', overflow: 'hidden' }}>
-      <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
-      <Box aria-hidden sx={{ position: 'absolute', left, bottom: 2, width: '1px', height: `${Math.max(8, ownHeight)}px`, ml: '-.5px', bgcolor: accent }} />
-      <Box aria-hidden sx={{ position: 'absolute', left, bottom: `${Math.max(8, ownHeight) - 3}px`, width: 7, height: 7, ml: '-3.5px', borderRadius: '50%', bgcolor: accent, border: '2px solid', borderColor: 'surface.chart' }} />
-      <Typography sx={{ position: 'absolute', left, bottom: `${Math.max(20, ownHeight + 5)}px`, minWidth: 54, ml: '-27px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,.8)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', left: 5, bottom: 1 }}>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" sx={{ position: 'absolute', right: 5, bottom: 1 }}>{metricLabel(group, name, max, unit)}</Typography>
+    <Box sx={{ bgcolor: 'surface.chart', minWidth: 0, display: 'grid', gridTemplateRows: 'minmax(51px, 1fr) 17px', overflow: 'hidden' }}>
+      <Box sx={{ position: 'relative', minWidth: 0, overflow: 'hidden' }}>
+        <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '18px 0 0', width: '100%', height: 'calc(100% - 18px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" data-metric-curve d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /><Box component="line" data-metric-marker x1={pointX} x2={pointX} y1={pointY} y2={100} stroke={accent} strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></Box>
+        <Typography sx={{ position: 'absolute', left: `clamp(29px, ${pointX}%, calc(100% - 29px))`, top: 2, minWidth: 58, transform: 'translateX(-50%)', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,.8)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
+      </Box>
+      <Box data-metric-bounds sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, px: .75, borderTop: '1px solid', borderColor: 'divider' }}><Typography variant="caption" color="text.secondary" noWrap>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" noWrap>{metricLabel(group, name, max, unit)}</Typography></Box>
     </Box>
   </Box>;
 }
