@@ -1,4 +1,4 @@
-import { Alert, Box, Button, ButtonGroup, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { config } from '../api/client';
@@ -53,9 +53,9 @@ function DownloadData({ dialog, onClose }: { dialog?: boolean; onClose?: () => v
     {!begin && <Typography color="error">Invalid begin date.</Typography>}
     {!end && <Typography color="error">Invalid end date.</Typography>}
     <Typography variant="overline" display="block" mt={2}>Presets</Typography>
-    <ButtonGroup sx={{ mb: 2, flexWrap: 'wrap', '& .MuiButtonGroup-grouped': { borderRadius: 0 } }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: .75, mb: 2 }}>
       {presets.map(([label, start, finish]) => <Button key={label} variant={begin === isoDate(start) && end === isoDate(finish) ? 'contained' : 'outlined'} onClick={() => choose(start, finish)}>{label}</Button>)}
-    </ButtonGroup>
+    </Box>
     {nativeApp && <Alert severity="error">Download Data is only available directly in a browser.</Alert>}
   </>;
 

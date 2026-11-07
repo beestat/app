@@ -15,6 +15,8 @@ Standardized MUI menu density, icon columns, typography, selected surfaces, dire
 
 The screenshot pass also removes Compare's deliberately padded dead space, balances Metrics into two dense desktop columns while preserving the legacy one-column mobile order, increases Air Quality series visibility, makes runtime-chip foregrounds derive from each segment's actual background, and rounds the nested sensor surfaces. Menu, chart, route, mobile-overflow, theme, typecheck, unit, and production-build checks pass; rerun the full suite after the final build/commit.
 
+The Download Data preset strip no longer overrides the theme with welded square buttons. Presets are separate rounded controls with a consistent 6px gap and the same selected treatment as the rest of the app; download URL/date behavior and the 390px dialog geometry still pass.
+
 ## 2026-11-06: Codex, post-parity usability and visual-cohesion pass
 
 Started the deliberate “keep Beestat, fix its old rough edges” pass. The app content now has a consistent 16px gutter below the header on desktop and mobile instead of the first card touching the app bar. MUI toggle buttons received clear theme-owned inactive, hover, focus, and selected surfaces. Compare’s Region/Property controls are real exclusive toggle groups with semantic green/purple selected states and outlined surfaced inactive states; Visualize settings use the same visual language rather than filling inactive buttons with a misleading slate color.
