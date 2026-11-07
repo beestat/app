@@ -19,6 +19,8 @@ Separated the Sensors card's occupancy and in-use status icons with the theme sp
 
 Removed the decorative thumbs-up from the empty Alerts card. The concise title and supporting copy now form the complete centered empty state, with less visual noise; the rebuilt 14-state desktop/mobile design review passes without errors.
 
+Replaced the footer's tiny centered bullet list with a dedicated theme-driven `AppFooter`: a quiet divider, compact Beestat identity, properly grouped link targets, consistent hover/focus states, and an intentional stacked phone layout. All existing destinations remain unchanged, and the rebuilt 14-state desktop/mobile design review passes without errors or overflow.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

@@ -6,6 +6,7 @@ import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { formatTemperature } from '../../utils/format';
 import { preloadLegacyVisualizer } from '../visualize/legacyVisualizer';
+import { AppFooter } from './AppFooter';
 
 const DownloadDialog = lazy(() => import('../../pages/DownloadPage').then((module) => ({ default: module.DownloadDialog })));
 const NewsletterDialog = lazy(() => import('./NewsletterDialog').then((module) => ({ default: module.NewsletterDialog })));
@@ -150,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </Container>
       </AppBar>}
-      <Container maxWidth="xl" sx={{ px: 2, pt: 2 }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mb: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<Box component="footer" sx={{ textAlign: 'center', color: 'text.secondary', py: 2, '& a': { color: 'inherit', mx: .5 } }}><a href="https://doc.beestat.io" target="_blank">Help</a> • <a href="https://community.beestat.io" target="_blank">Feedback</a> • <a href="https://beestat.io/privacy.html" target="_blank">Privacy</a> • <a href="https://newsletter.beestat.io" target="_blank">Newsletter</a> • <a href="mailto:contact@beestat.io">Contact</a></Box></Container>
+      <Container maxWidth="xl" sx={{ px: 2, pt: 2 }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mb: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<AppFooter /></Container>
     </Box>
   );
 }
