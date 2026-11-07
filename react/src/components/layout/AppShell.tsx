@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </Container>
       </AppBar>}
-      <Container maxWidth="xl" sx={{ px: 2, pt: 2 }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mb: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<AppFooter /></Container>
+      <Container maxWidth="xl" sx={{ px: 2, pt: 2 }}>{config.isDemo && <Alert icon={false} severity="info" sx={{ mb: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}>This is a demo of beestat; it works exactly like the real thing. Changes you make will not be saved.</Alert>}{children}<AppFooter onNewsletter={() => setNewsletterOpen(true)} /></Container>
     </Box>
   );
 }

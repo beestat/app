@@ -21,6 +21,8 @@ Removed the decorative thumbs-up from the empty Alerts card. The concise title a
 
 Replaced the footer's tiny centered bullet list with a dedicated theme-driven `AppFooter`: a quiet divider, compact Beestat identity, properly grouped link targets, consistent hover/focus states, and an intentional stacked phone layout. All existing destinations remain unchanged, and the rebuilt 14-state desktop/mobile design review passes without errors or overflow.
 
+Corrected the footer's Newsletter action to open the existing in-app subscription dialog instead of navigating to the external newsletter site. `qa/footer-newsletter.mjs` verifies the button semantics, finished dialog, and no overflow at 1440px, 390px, and 320px without submitting; the dialog's introductory copy also fixes the pre-existing “for an updates” typo.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

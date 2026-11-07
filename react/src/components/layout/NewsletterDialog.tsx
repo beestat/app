@@ -22,7 +22,7 @@ export function NewsletterDialog({ emailAddress, onClose }: { emailAddress: stri
   return <Dialog open onClose={status === 'submitting' ? undefined : onClose} fullWidth maxWidth="sm">
     <DialogTitle>Newsletter</DialogTitle>
     <DialogContent dividers>
-      <Typography mb={2}>Interested in following beestat development? Subscribe to the newsletter for an updates. Emails are sparse; only a few every year.</Typography>
+      <Typography mb={2}>Interested in following beestat development? Subscribe to the newsletter for updates. Emails are sparse; only a few every year.</Typography>
       <TextField size="small" value={email} disabled={complete || status === 'submitting'} error={status === 'error'} slotProps={{ htmlInput: { 'aria-label': 'Email address' }, input: { startAdornment: <InputAdornment position="start">{complete ? <Check size={18} /> : <Mail size={18} />}</InputAdornment> } }} sx={{ width: { xs: '100%', sm: '50%' } }} onChange={(event) => { setEmail(event.target.value); if (status === 'error') { setStatus('idle'); setError(''); } }} />
       {complete && <Typography mt={2}>You are now subscribed to the beestat newsletter!</Typography>}
       {status === 'error' && <Typography mt={2} color="error">{error}</Typography>}
