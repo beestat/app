@@ -2,7 +2,7 @@ import { Box, Button, IconButton, Menu, MenuItem, Stack, Typography, useTheme } 
 import {
   ArrowLeft, BatteryLow, Bell, BellOff, CalendarClock, CircleDollarSign, Droplets,
   Eye, EyeOff, Fan, Flame, HelpCircle, KeyRound, MessageSquare, MoreVertical,
-  RadioTower, Settings2, Snowflake, ThumbsUp, Wifi, WifiOff,
+  RadioTower, Settings2, Snowflake, Wifi, WifiOff,
   type LucideIcon,
 } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
@@ -56,7 +56,7 @@ export const AlertsCard = memo(function AlertsCard({ alerts, thermostatId }: { a
     : <><IconButton aria-label="Alerts menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setShowDismissed((value) => !value); setAnchor(null); }}>{showDismissed ? <BellOff size={18} /> : <Bell size={18} />}<Box>{showDismissed ? 'Hide dismissed' : 'Show dismissed'}</Box></MenuItem><MenuItem component="a" href="https://doc.beestat.io/dd453829dc7c47019a775130c93bde0c" target="_blank" onClick={() => setAnchor(null)}><HelpCircle size={18} /><Box>Help</Box></MenuItem></Menu></>;
   return (
     <DashboardCard title="Alerts" action={action} sx={{ bgcolor: visible.length ? colors.red.main : 'background.paper', color: visible.length ? theme.palette.getContrastText(colors.red.main) : 'text.primary' }}>
-      {!visible.length && <Stack sx={{ minHeight: 128 }} alignItems="center" justifyContent="center" textAlign="center" gap={.75}><ThumbsUp size={48} color={colors.slate.light} /><Typography fontWeight={600}>No active alerts</Typography><Typography variant="caption" color="text.secondary">Everything looks good.</Typography></Stack>}
+      {!visible.length && <Stack sx={{ minHeight: 128 }} alignItems="center" justifyContent="center" textAlign="center" gap={.5}><Typography fontWeight={600}>No active alerts</Typography><Typography variant="caption" color="text.secondary">Everything looks good.</Typography></Stack>}
       {!active && visible.map((alert, index) => {
         const Icon = iconFor(Number(alert.code));
         const key = keyFor(alert, index);
