@@ -1,8 +1,8 @@
 import { Box, keyframes } from '@mui/material';
 
 const fillPulse = keyframes`
-  0%, 72%, 100% { filter: brightness(1); opacity: 0; }
-  36% { filter: brightness(1.55); opacity: .58; }
+  0%, 76%, 100% { clip-path: inset(88% 0 0); filter: brightness(1.05); opacity: .18; }
+  38% { clip-path: inset(0); filter: brightness(1.48); opacity: .88; }
 `;
 
 const parts = [
@@ -26,7 +26,7 @@ export function BeestatLoader({ size = 64, label = 'Loading' }: { size?: number;
 
   return <Box role="status" aria-label={label} data-beestat-loader sx={{ position: 'relative', width: size, height: size, flex: '0 0 auto' }}>
     <Box component="img" data-loader-part="base" src="/favicon.png" alt="" aria-hidden sx={image()} />
-    {parts.map((part, index) => <Box data-loader-part={`fill-${index + 1}`} key={part.x} sx={{ position: 'absolute', left: part.x * ratio, top: part.y * ratio, width: part.width * ratio, height: part.height * ratio, overflow: 'hidden', animation: `${fillPulse} 1.4s ease-in-out ${index * 120}ms infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
+    {parts.map((part, index) => <Box data-loader-part={`fill-${index + 1}`} key={part.x} sx={{ position: 'absolute', left: part.x * ratio, top: part.y * ratio, width: part.width * ratio, height: part.height * ratio, overflow: 'hidden', willChange: 'clip-path, opacity, filter', animation: `${fillPulse} 1.6s cubic-bezier(.45, 0, .2, 1) ${index * 140}ms infinite`, '@media (prefers-reduced-motion: reduce)': { animation: 'none', opacity: 0 } }}>
       <Box component="img" src="/favicon.png" alt="" aria-hidden sx={image(part.x, part.y)} />
     </Box>)}
   </Box>;

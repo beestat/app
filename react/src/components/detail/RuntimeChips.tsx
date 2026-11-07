@@ -1,11 +1,12 @@
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import { formatRuntime, type EquipmentCode, type RuntimeChartData } from './runtimeData';
 
 function RuntimeChip({ label, labelColor, segments }: { label: string; labelColor: string; segments: { text: string; color: string }[] }) {
+  const theme = useTheme();
   if (!segments.length) return null;
   return <Box component="span" sx={{ display: 'inline-flex', overflow: 'hidden', borderRadius: 1, mr: .5, mb: .5, fontSize: 13, lineHeight: 'normal' }}>
-    <Box component="span" sx={{ bgcolor: labelColor, px: 1, py: .25, fontWeight: 600 }}>{label}</Box>
-    {segments.map((segment) => <Box component="span" key={segment.text} sx={{ bgcolor: segment.color, px: 1, py: .25 }}>{segment.text}</Box>)}
+    <Box component="span" sx={{ bgcolor: labelColor, color: theme.palette.getContrastText(labelColor), px: 1, py: .25, fontWeight: 600 }}>{label}</Box>
+    {segments.map((segment) => <Box component="span" key={segment.text} sx={{ bgcolor: segment.color, color: theme.palette.getContrastText(segment.color), px: 1, py: .25 }}>{segment.text}</Box>)}
   </Box>;
 }
 

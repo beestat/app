@@ -199,7 +199,7 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '128px minmax(0, 1fr)', sm: '148px minmax(0, 1fr)' }, minHeight: 68, mb: .75, overflow: 'hidden', borderRadius: 1, bgcolor: 'surface.subtle' }}>
     <Box sx={{ borderLeft: `4px solid ${accent}`, bgcolor: alpha(accent, .1), display: 'grid', gridTemplateColumns: '34px minmax(0, 1fr)', alignItems: 'center', px: .75, py: .5 }}>
       <Icon size={19} color={accent} strokeWidth={2.25} style={{ justifySelf: 'center' }} />
-      <Box sx={{ minWidth: 0 }}><Typography fontWeight={600} noWrap>{label}</Typography><Typography variant="caption" display="block" color="text.secondary">{others.toLocaleString()} others</Typography><Typography variant="caption" display="block" sx={{ color: accent, fontWeight: 600 }}>{symbol} {percentile}% homes</Typography></Box>
+      <Box sx={{ minWidth: 0 }}><Typography fontWeight={600} noWrap>{label}</Typography><Typography variant="caption" display="block" color="text.secondary">{others.toLocaleString()} others</Typography><Typography variant="caption" display="block" sx={{ color: 'text.primary', fontWeight: 600 }}>{symbol} {percentile}% homes</Typography></Box>
     </Box>
     <Box sx={{ bgcolor: 'surface.chart', position: 'relative', display: 'flex', alignItems: 'flex-end', pt: '24px', overflow: 'hidden' }}>
       <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '22px 0 3px', width: '100%', height: 'calc(100% - 25px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /></Box>
@@ -227,9 +227,16 @@ function MetricColumns({ values, thermostat, unit }: { values: Record<string, Re
   if (!groups.length) {
     return <Typography>We couldn't generate any metrics for your system. Try broadening your comparison settings and ensuring your system type and thermostat address are properly set.</Typography>;
   }
-  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(360px, 100%), 1fr))', gap: 2, pt: .5, alignItems: 'start' }}>
-    {groups.map(([group, groupValues]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} unit={unit} />)}
-  </Box>;
+  const renderGroup = ([group, groupValues]: (typeof groups)[number]) => <MetricGroup key={group} group={group} values={groupValues} thermostat={thermostat} unit={unit} />;
+  const firstColumn = groups.filter(([group]) => ['setback', 'balance_point', 'setpoint'].includes(group));
+  const secondColumn = groups.filter(([group]) => !['setback', 'balance_point', 'setpoint'].includes(group));
+  return <>
+    <Box sx={{ display: { xs: 'grid', md: 'none' }, gap: 2, pt: .5 }}>{groups.map(renderGroup)}</Box>
+    <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2, pt: .5, alignItems: 'start' }}>
+      <Box sx={{ display: 'grid', gap: 2 }}>{firstColumn.map(renderGroup)}</Box>
+      <Box sx={{ display: 'grid', gap: 2 }}>{secondColumn.map(renderGroup)}</Box>
+    </Box>
+  </>;
 }
 
 export function ComparePage() {
@@ -268,17 +275,16 @@ export function ComparePage() {
   return <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />} contentSx={{ pb: 4, '&:last-child': { pb: 4 } }}>
+        <DashboardCard title="Comparison Settings" action={<CardHelpMenu label="Comparison Settings" href="https://doc.beestat.io/596040eadd014928830b4d1d54692761" />}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, '@media (min-width: 801px)': { gridTemplateColumns: 'calc((100% - 32px) / 3) 1fr' } }}>
             <Box><Typography variant="overline" display="block" mb={1}>Region</Typography><ToggleButtonGroup exclusive value={region} aria-label="Comparison region" onChange={(_event, value) => { if (!value) return; setRegion(value); saveComparison('comparison_region', value); }} sx={{ gap: .75, '& .MuiToggleButtonGroup-grouped': { border: `1px solid ${theme.palette.divider} !important`, borderRadius: '7px !important', px: 1.25, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: colors.green.main, color: theme.palette.getContrastText(colors.green.main) } } }}>{(['nearby', 'global'] as const).map((value) => <ToggleButton key={value} value={value}>{titleCase(value)}</ToggleButton>)}</ToggleButtonGroup></Box>
             <Box><Typography variant="overline" display="block" mb={1}>Property</Typography><ToggleButtonGroup exclusive value={propertyType} aria-label="Comparison property" onChange={(_event, value) => { if (!value) return; setPropertyType(value); saveComparison('comparison_property_type', value); }} sx={{ flexWrap: 'wrap', gap: .75, '& .MuiToggleButtonGroup-grouped': { border: `1px solid ${theme.palette.divider} !important`, borderRadius: '7px !important', px: 1.25, '&.Mui-selected, &.Mui-selected:hover': { bgcolor: colors.purple.main, color: theme.palette.getContrastText(colors.purple.main) } } }}>{(['similar', 'same_structure', 'all'] as const).map((value) => <ToggleButton key={value} value={value}>{value === 'similar' ? 'Very Similar' : value === 'same_structure' ? `Type: ${titleCase(thermostat?.property?.structure_type ?? '')}` : 'All'}</ToggleButton>)}</ToggleButtonGroup></Box>
           </Box>
           <Box mt={2}><Typography fontWeight={600} mb={1}>Comparing to homes like...</Typography><Typography>Matching system type and stages</Typography><Typography color={attributes.property_structure_type == null ? 'text.secondary' : 'inherit'}>{attributes.property_structure_type == null ? 'Any property type' : `Property Type: ${String(attributes.property_structure_type)}`}</Typography><Typography color={ageRange ? 'inherit' : 'text.secondary'}>{ageRange ? `Between ${ageRange[0]} and ${ageRange[1]} years old` : 'Any property age'}</Typography><Typography color={areaRange ? 'inherit' : 'text.secondary'}>{areaRange ? `Between ${areaRange[0]} and ${areaRange[1]} ft²` : 'Any square footage'}</Typography><Typography color={storiesFilter == null ? 'text.secondary' : 'inherit'}>{typeof storiesFilter === 'object' ? `${storiesFilter.operator === '>=' ? 'At least' : storiesFilter.operator} ${storiesFilter.value} stories` : storiesFilter == null ? 'Any number of stories' : `${storiesFilter} stories`}</Typography><Typography color={region === 'nearby' ? 'inherit' : 'text.secondary'}>{region === 'nearby' ? 'Within 250 miles of your location' : 'Any region'}</Typography></Box>
-          <Box aria-hidden height={8} />
         </DashboardCard>
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
-        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />} contentSx={{ pb: 4, '&:last-child': { pb: 4 } }}>
+        <DashboardCard title="My Home" action={<MyHomeMenu thermostat={thermostat} refresh={refresh} />}>
           <Typography variant="overline" display="block" mb={1}>System</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap">
             {(Object.keys(systemTypeOptions) as SystemMode[]).map((mode) => {
@@ -300,7 +306,6 @@ export function ComparePage() {
             {thermostat?.property?.square_feet && <Chip icon={<Ruler />} label={`${thermostat.property.square_feet.toLocaleString()} ft²`} sx={propertyChipSx} />}
             {thermostat?.property?.age && <Chip icon={<Clock3 />} label={`${thermostat.property.age} Years`} sx={propertyChipSx} />}
           </Stack>
-          <Box aria-hidden height={8} />
         </DashboardCard>
       </Grid>
     </Grid>

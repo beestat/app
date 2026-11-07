@@ -43,6 +43,18 @@ await page.getByRole('menuitem', { name: 'Past 3 Days' }).waitFor();
 await shot('test-results/ui-review/chart-range-menu.png');
 await page.getByRole('menu').press('Escape');
 
+await open('analyze', 'Thermostat Summary');
+await page.getByRole('button', { name: 'Thermostat summary menu' }).click();
+await page.getByRole('menuitem', { name: 'Past 3 Months' }).waitFor();
+await shot('test-results/ui-review/analyze-menu.png');
+await page.getByRole('menu').press('Escape');
+
+await open('air-quality', 'Air Quality Detail');
+await page.getByRole('button', { name: 'Air Quality summary options' }).click();
+await page.getByRole('menuitem', { name: 'Past 4 Weeks' }).waitFor();
+await shot('test-results/ui-review/air-quality-menu.png');
+await page.getByRole('menu').press('Escape');
+
 await open('compare', 'Comparison Settings');
 await page.getByRole('button', { name: 'My Home options' }).click();
 await shot('test-results/ui-review/compare-menu.png');
@@ -67,5 +79,5 @@ const mobile = await page.evaluate(() => ({ width: innerWidth, scrollWidth: docu
 if (mobile.width !== mobile.scrollWidth) throw new Error(`Mobile UI overflows horizontally: ${JSON.stringify(mobile)}`);
 if (errors.length) throw new Error(`UI review found browser errors: ${errors.join('\n')}`);
 
-console.log(JSON.stringify({ screenshots: 9, mobile, errors }, null, 2));
+console.log(JSON.stringify({ screenshots: 11, mobile, errors }, null, 2));
 await browser.close();

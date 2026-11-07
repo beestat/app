@@ -18,9 +18,9 @@ const motion = await loader.evaluate((node) => {
   const animation = fill.getAnimations()[0];
   animation.pause();
   animation.currentTime = 0;
-  const start = { opacity: getComputedStyle(fill).opacity, filter: getComputedStyle(fill).filter };
-  animation.currentTime = 500;
-  const peak = { opacity: getComputedStyle(fill).opacity, filter: getComputedStyle(fill).filter };
+  const start = { opacity: getComputedStyle(fill).opacity, filter: getComputedStyle(fill).filter, clipPath: getComputedStyle(fill).clipPath };
+  animation.currentTime = 610;
+  const peak = { opacity: getComputedStyle(fill).opacity, filter: getComputedStyle(fill).filter, clipPath: getComputedStyle(fill).clipPath };
   animation.play();
   return { start, peak };
 });

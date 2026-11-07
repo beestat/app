@@ -62,6 +62,31 @@ const profileTooltipFont = await profileCard.evaluate((card) => {
 });
 if (profileTooltipFont == null) throw new Error('Profile tooltip did not appear.');
 if (profileTooltipFont < 13) throw new Error(`Profile tooltip font is too small: ${profileTooltipFont}px`);
+const profileCrosshair = await profileCard.evaluate((card) => {
+  const crosshair = card.querySelector('.highcharts-crosshair');
+  const style = crosshair ? getComputedStyle(crosshair) : undefined;
+  return { found: Boolean(crosshair), visibility: style?.visibility, opacity: style?.opacity };
+});
+if (!profileCrosshair.found || profileCrosshair.visibility === 'hidden' || profileCrosshair.opacity === '0') throw new Error(`Profile hover crosshair is missing: ${JSON.stringify(profileCrosshair)}`);
 
-console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont }, null, 2));
+await page.goto('https://dev.app.beestat.io/react/index.php#/air-quality', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+const airCard = page.getByText('Air Quality Detail', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
+await airCard.scrollIntoViewIfNeeded();
+await airCard.locator('.highcharts-container').nth(1).waitFor({ state: 'visible', timeout: 90_000 });
+const airCrosshairs = [];
+for (const index of [1, 2, 3]) {
+  const chart = airCard.locator('.highcharts-container').nth(index);
+  const box = await chart.boundingBox();
+  if (!box) throw new Error(`Air Quality chart ${index} was not rendered.`);
+  await page.mouse.move(box.x + box.width * .55, box.y + box.height * .5);
+  await page.waitForTimeout(120);
+  airCrosshairs.push(await chart.evaluate((container) => {
+    const crosshair = container.querySelector('.highcharts-crosshair');
+    const style = crosshair ? getComputedStyle(crosshair) : undefined;
+    return { found: Boolean(crosshair), visibility: style?.visibility, opacity: style?.opacity };
+  }));
+}
+if (airCrosshairs.some((crosshair) => !crosshair.found || crosshair.visibility === 'hidden' || crosshair.opacity === '0')) throw new Error(`Air Quality hover crosshair is missing: ${JSON.stringify(airCrosshairs)}`);
+
+console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont, profileCrosshair, airCrosshairs }, null, 2));
 await browser.close();

@@ -17,7 +17,7 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(144px, 1fr))', gap: 2 }}>
         {sorted.map((sensor) => {
           const delta = sensor.temperature === null ? 0 : sensor.temperature - thermostat.temperature;
-          return <Box key={sensor.sensor_id} sx={{ gridColumn: sensor.type === 'thermostat' ? '1 / -1' : undefined, bgcolor: 'surface.subtle', p: 1.25, borderRadius: 0 }}>
+          return <Box key={sensor.sensor_id} sx={{ gridColumn: sensor.type === 'thermostat' ? '1 / -1' : undefined, bgcolor: 'surface.subtle', p: 1.25, borderRadius: 1 }}>
             <Typography noWrap fontWeight={500}>{sensor.name}{sensor.type === 'thermostat' ? ' (Thermostat)' : ''}</Typography>
             <Stack direction="row" alignItems="center" mt={.75}>
               <Typography sx={{ fontSize: 18 }}>{temperature(sensor.temperature)}</Typography>

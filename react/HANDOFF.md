@@ -7,6 +7,14 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-06: Codex, interaction consistency and second cleanup sweep
+
+Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.
+
+Standardized MUI menu density, icon columns, typography, selected surfaces, and direct-icon spacing. Analyze's range presets now have meaningful icons, and the UI review captures Analyze and Air Quality menus in addition to the existing header/chart/Compare states. Restored hover guides on Temperature Profiles and Air Quality; the three Air Quality plots now synchronize their vertical guide and tooltip position. `qa/tooltip-regressions.mjs` verifies visible guides on Summary, Profile, and all three Air Quality plots while retaining the unclipped Sensor occupancy tooltip check.
+
+The screenshot pass also removes Compare's deliberately padded dead space, balances Metrics into two dense desktop columns while preserving the legacy one-column mobile order, increases Air Quality series visibility, makes runtime-chip foregrounds derive from each segment's actual background, and rounds the nested sensor surfaces. Menu, chart, route, mobile-overflow, theme, typecheck, unit, and production-build checks pass; rerun the full suite after the final build/commit.
+
 ## 2026-11-06: Codex, post-parity usability and visual-cohesion pass
 
 Started the deliberate “keep Beestat, fix its old rough edges” pass. The app content now has a consistent 16px gutter below the header on desktop and mobile instead of the first card touching the app bar. MUI toggle buttons received clear theme-owned inactive, hover, focus, and selected surfaces. Compare’s Region/Property controls are real exclusive toggle groups with semantic green/purple selected states and outlined surfaced inactive states; Visualize settings use the same visual language rather than filling inactive buttons with a misleading slate color.
