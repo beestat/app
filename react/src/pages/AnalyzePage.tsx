@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography, useTheme } from '@mui/material';
 import Highcharts from 'highcharts';
 import 'highcharts/highcharts-more';
 import HighchartsReact from 'highcharts-react-official';
@@ -122,6 +122,7 @@ function SummaryMenu({ config, setConfig, onDownload, onReset }: { config: Summa
           </ListItemIcon>
           <ListItemText>Custom</ListItemText>
         </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
         <MenuItem
           onClick={() => {
             setAnchor(null);
@@ -144,6 +145,7 @@ function SummaryMenu({ config, setConfig, onDownload, onReset }: { config: Summa
           </ListItemIcon>
           <ListItemText>Reset Zoom</ListItemText>
         </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
         <MenuItem component="a" href="https://doc.beestat.io/3225b739ebbc42d68a18260565fda4f1" target="_blank">
           <ListItemIcon>
             <CircleHelp size={18} />
@@ -276,6 +278,7 @@ function ProfileMenu({ profile, names, unit, subtitle, onDownload }: { profile: 
             </MenuItem>
           </>
         )}
+        <Divider sx={{ my: 0.5 }} />
         <MenuItem component="a" href="https://doc.beestat.io/9c0fba6793dd4bc68f798c1516f0ea25" target="_blank">
           <ListItemIcon>
             <CircleHelp size={18} />

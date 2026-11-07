@@ -1,4 +1,4 @@
-import { Alert, Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme } from '@mui/material';
+import { Alert, Box, Button, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
@@ -50,6 +50,7 @@ function SummaryRangeMenu({ days, onChange }: { days: number; onChange: (days: n
           </ListItemIcon>
           <ListItemText>Past 4 Weeks</ListItemText>
         </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
         <MenuItem component="a" href="https://doc.beestat.io/25a1a894a7f4432ead5831bef48770bd" target="_blank" rel="noreferrer" onClick={() => setAnchor(null)}>
           <ListItemIcon>
             <CircleHelp size={18} />
