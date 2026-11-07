@@ -15,6 +15,8 @@ Rebuilt the Compare Metrics plot geometry so the user's vertical marker and dens
 
 Moved the System card's weather bubble 23px farther outward so it no longer crowds the indoor temperature. `qa/system-circle-color.mjs` now checks the geometry at 1440px, 390px, and 320px; the measured text-to-bubble gap is 12.28px at each width and the bubble remains inside the card.
 
+Separated the Sensors card's occupancy and in-use status icons with the theme spacing scale instead of rendering them edge-to-edge. `qa/sensor-status-spacing.mjs` verifies a 6px gap for every applicable sensor row at 1440px, 390px, and 320px, and the desktop/mobile screenshot review remains clean.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

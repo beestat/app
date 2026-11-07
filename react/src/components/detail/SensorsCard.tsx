@@ -23,8 +23,10 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
               <Typography sx={{ fontSize: 18 }}>{temperature(sensor.temperature)}</Typography>
               {delta !== 0 && <Box aria-label={delta > 0 ? 'Warmer than thermostat' : 'Cooler than thermostat'} sx={{ ml: 1, width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', ...(delta > 0 ? { borderBottom: `6px solid ${colors.red.main}` } : { borderTop: `6px solid ${colors.blue.main}` }) }} />}
               <Box sx={{ flex: 1 }} />
-              {!['monitor_sensor', 'control_sensor'].includes(sensor.type) && (sensor.occupancy === true ? <Tooltip title="Occupied"><Eye size={19} aria-label="Occupied" /></Tooltip> : <Tooltip title="Unoccupied"><EyeOff size={19} color={colors.slate.light} aria-label="Unoccupied" /></Tooltip>)}
-              <Tooltip title={sensor.in_use ? 'In use' : 'Not in use'}><Check size={19} color={sensor.in_use ? theme.palette.text.primary : colors.slate.light} aria-label={sensor.in_use ? 'In use' : 'Not in use'} /></Tooltip>
+              <Stack data-sensor-status direction="row" alignItems="center" gap={.75}>
+                {!['monitor_sensor', 'control_sensor'].includes(sensor.type) && (sensor.occupancy === true ? <Tooltip title="Occupied"><Eye size={19} aria-label="Occupied" /></Tooltip> : <Tooltip title="Unoccupied"><EyeOff size={19} color={colors.slate.light} aria-label="Unoccupied" /></Tooltip>)}
+                <Tooltip title={sensor.in_use ? 'In use' : 'Not in use'}><Check size={19} color={sensor.in_use ? theme.palette.text.primary : colors.slate.light} aria-label={sensor.in_use ? 'In use' : 'Not in use'} /></Tooltip>
+              </Stack>
             </Stack>
           </Box>;
         })}
