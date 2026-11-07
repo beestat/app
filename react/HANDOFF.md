@@ -23,6 +23,8 @@ Replaced the footer's tiny centered bullet list with a dedicated theme-driven `A
 
 Corrected the footer's Newsletter action to open the existing in-app subscription dialog instead of navigating to the external newsletter site. `qa/footer-newsletter.mjs` verifies the button semantics, finished dialog, and no overflow at 1440px, 390px, and 320px without submitting; the dialog's introductory copy also fixes the pre-existing “for an updates” typo.
 
+Replaced Visualize's cramped Static heat-map minimum/maximum number inputs with a theme-driven dual-thumb slider. The current endpoints remain continuously visible, temperature uses the selected °F/°C unit, occupancy remains 0–100%, and API persistence happens only when a drag/keyboard adjustment is committed rather than on every intermediate movement. `qa/visualize-static-range.mjs` intercepts all setting writes, verifies both occupancy and temperature ranges plus paired min/max persistence at 1440px, 390px, and 320px, captures the card at each width, and blocks/fails on any floor-plan mutation.
+
 ## 2026-11-06: Codex, interaction consistency and second cleanup sweep
 
 Made the branded loader's motion unmistakable without moving or redrawing the logo: the untouched canonical mark remains static while the four darker inset fills visibly rise from the bottom in a staggered wave. Reduced-motion still receives the static mark, and `qa/loading-indicator.mjs` now verifies the changing clip geometry in addition to stagger, brightness, and opacity.

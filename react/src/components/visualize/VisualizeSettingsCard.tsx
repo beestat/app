@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-  Menu, MenuItem, Stack, TextField, Typography, useTheme,
+  Menu, MenuItem, Slider, Stack, TextField, Typography, useTheme,
 } from '@mui/material';
 import {
   CalendarDays, Eye, HelpCircle, LockKeyhole, MoreVertical, MoveHorizontal,
@@ -107,6 +107,22 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
   };
   const staticMin = Number(nested(settings, `heat_map_static.${dataType}.min`, dataType === 'temperature' ? 70 : 0));
   const staticMax = Number(nested(settings, `heat_map_static.${dataType}.max`, dataType === 'temperature' ? 80 : 100));
+  const displayedStaticRange = [convertFromF(staticMin), convertFromF(staticMax)].sort((a, b) => a - b);
+  const sliderMin = Math.min(dataType === 'temperature' ? -40 : 0, Math.floor(displayedStaticRange[0]));
+  const sliderMax = Math.max(dataType === 'temperature' ? (unit === '°C' ? 60 : 140) : 100, Math.ceil(displayedStaticRange[1]));
+  const rangeSuffix = dataType === 'temperature' ? unit : '%';
+  const setStaticRange = ([min, max]: number[], persist: boolean) => {
+    const values = dataType === 'temperature' ? [convertToF(min), convertToF(max)] : [min, max];
+    setSettings((current) => {
+      const next = structuredClone(current);
+      next.heat_map_static[dataType] = { min: values[0], max: values[1] };
+      return next;
+    });
+    if (persist) {
+      onChange(`visualize.heat_map_static.${dataType}.min`, values[0]);
+      onChange(`visualize.heat_map_static.${dataType}.max`, values[1]);
+    }
+  };
 
   return <>
     <DashboardCard
@@ -132,13 +148,26 @@ export function VisualizeSettingsCard({ initial, temperatureUnit, onChange }: {
             <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
               <SettingTile active={settings.heat_map_values === 'dynamic'} color={colors.orange.main} icon={<MoveHorizontal size={19} />} label="Dynamic" onClick={() => update('visualize.heat_map_values', 'dynamic')} />
               <SettingTile active={settings.heat_map_values === 'static'} color={colors.orange.main} icon={<LockKeyhole size={19} />} label="Static" onClick={() => update('visualize.heat_map_values', 'static')} />
-              {settings.heat_map_values === 'static' && <Stack direction="row" gap={1} alignItems="center">
-                <TextField size="small" type="number" value={convertFromF(staticMin)} inputProps={{ step: dataType === 'temperature' ? .1 : 1 }} sx={{ width: 76 }} onChange={(event) => update(`visualize.heat_map_static.${dataType}.min`, dataType === 'temperature' ? convertToF(Number(event.target.value)) : Number(event.target.value))} />
-                <span>to</span>
-                <TextField size="small" type="number" value={convertFromF(staticMax)} inputProps={{ step: dataType === 'temperature' ? .1 : 1 }} sx={{ width: 76 }} onChange={(event) => update(`visualize.heat_map_static.${dataType}.max`, dataType === 'temperature' ? convertToF(Number(event.target.value)) : Number(event.target.value))} />
-                <span>{dataType === 'temperature' ? unit : '%'}</span>
-              </Stack>}
             </Stack>
+            {settings.heat_map_values === 'static' && <Box sx={{ width: '100%', maxWidth: 360, px: 1, mt: 1.25 }}>
+              <Stack direction="row" justifyContent="space-between" gap={2}>
+                <Typography variant="caption" color="text.secondary">Minimum <Box component="span" color="text.primary" fontWeight={600}>{displayedStaticRange[0]}{rangeSuffix}</Box></Typography>
+                <Typography variant="caption" color="text.secondary">Maximum <Box component="span" color="text.primary" fontWeight={600}>{displayedStaticRange[1]}{rangeSuffix}</Box></Typography>
+              </Stack>
+              <Slider
+                aria-label="Static heat map range"
+                value={displayedStaticRange}
+                min={sliderMin}
+                max={sliderMax}
+                step={dataType === 'temperature' ? .5 : 1}
+                disableSwap
+                valueLabelDisplay="off"
+                getAriaLabel={(index) => index === 0 ? 'Static heat map minimum' : 'Static heat map maximum'}
+                getAriaValueText={(value) => `${value}${rangeSuffix}`}
+                onChange={(_event, value) => setStaticRange(value as number[], false)}
+                onChangeCommitted={(_event, value) => setStaticRange(value as number[], true)}
+              />
+            </Box>}
           </Box>
         </Stack>
         <Box>
