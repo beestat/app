@@ -75,7 +75,7 @@ function profileTrend(profile: any, unit: string) {
   return { slope, intercept: meanY - slope * meanX };
 }
 
-function SummaryMenu({ config, setConfig, onDownload, onReset }: { config: SummaryConfig; setConfig: (value: SummaryConfig) => void; onDownload: () => void; onReset: () => void }) {
+function SummaryMenu({ config, setConfig, onDownload, onReset, canReset }: { config: SummaryConfig; setConfig: (value: SummaryConfig) => void; onDownload: () => void; onReset: () => void; canReset: () => boolean }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [draft, setDraft] = useState(config);
@@ -135,6 +135,7 @@ function SummaryMenu({ config, setConfig, onDownload, onReset }: { config: Summa
           <ListItemText>Download Chart</ListItemText>
         </MenuItem>
         <MenuItem
+          disabled={!canReset()}
           onClick={() => {
             setAnchor(null);
             onReset();
@@ -336,6 +337,7 @@ export function AnalyzePage() {
   const [summaryConfig, setSummaryConfig] = useState<SummaryConfig>();
   const [profileIndex, setProfileIndex] = useState<number>();
   const summaryRef = useRef<HighchartsReact.RefObject>(null);
+  const summaryZoomed = useRef(false);
   const summaryTooltip = useDockedTooltip();
   const profileTooltip = useDockedTooltip();
   const profileRef = useRef<HighchartsReact.RefObject>(null);
@@ -476,6 +478,10 @@ export function AnalyzePage() {
         zooming: { type: 'x' },
         animation: false,
         events: {
+          selection(event) {
+            summaryZoomed.current = !event.resetSelection && Boolean(event.xAxis?.length);
+            return true;
+          },
           load() {
             const chart = this;
             const axis = chart.xAxis[0];
@@ -869,7 +875,7 @@ export function AnalyzePage() {
   const summarySubtitle = `${summaryLabel}, grouped by ${config.group} (Gap Fill: ${gapFill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return (
     <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
-      <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} onReset={() => summaryRef.current?.chart.zoomOut()} />}>
+      <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} canReset={() => summaryZoomed.current} onReset={() => { summaryZoomed.current = false; summaryRef.current?.chart.zoomOut(); }} />}>
         <RuntimeChips data={chipData} summary />
         {summary.length ? (
           <>

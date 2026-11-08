@@ -8,6 +8,7 @@ interface Props {
   onCustom?: (begin: string, end: string) => void;
   onDownload?: () => void;
   onReset?: () => void;
+  resetDisabled?: boolean;
   helpUrl?: string;
   customTitle?: string;
   customDescription?: string;
@@ -25,7 +26,7 @@ function localDate(offsetDays: number) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd, minDate, maxDate }: Props) {
+export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, resetDisabled = false, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd, minDate, maxDate }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [rangeType, setRangeType] = useState<'dynamic' | 'static'>('dynamic');
@@ -53,7 +54,7 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, h
       <MenuItem onClick={openCustom}><ListItemIcon><CalendarDays size={18} /></ListItemIcon><ListItemText>Custom</ListItemText></MenuItem>
       <Divider sx={{ my: .5 }} />
       {onDownload && <MenuItem onClick={() => { close(); onDownload(); }}><ListItemIcon><Download size={18} /></ListItemIcon><ListItemText>Download Chart</ListItemText></MenuItem>}
-      {onReset && <MenuItem onClick={() => { close(); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem>}
+      {onReset && <MenuItem disabled={resetDisabled} onClick={() => { close(); onReset(); }}><ListItemIcon><RotateCcw size={18} /></ListItemIcon><ListItemText>Reset Zoom</ListItemText></MenuItem>}
       <Divider sx={{ my: .5 }} />
       <MenuItem component="a" href={helpUrl} target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem>
     </Menu>

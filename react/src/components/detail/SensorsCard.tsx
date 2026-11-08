@@ -10,7 +10,7 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
   const colors = theme.palette.colors;
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const sorted = [...sensors].sort((a, b) => a.type === 'thermostat' ? -1 : b.type === 'thermostat' ? 1 : a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
-  const temperature = (value: number | null) => value == null ? '???' : formatTemperature(value, temperatureUnit).replace(/°[FC]$/, '');
+  const temperature = (value: number) => formatTemperature(value, temperatureUnit).replace(/°[FC]$/, '');
   return (
     <DashboardCard title="Sensors" action={<><IconButton aria-label="Sensors menu" onClick={(event) => setAnchor(event.currentTarget)}><MoreVertical /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem component="a" href="https://doc.beestat.io/d279d6fb4afc4f199409be2eb323140b" target="_blank"><ListItemIcon><CircleHelp size={18} /></ListItemIcon><ListItemText>Help</ListItemText></MenuItem></Menu></>}>
       {/* Legacy: auto-fit columns of at least 160px including a 16px gutter. */}
@@ -20,7 +20,9 @@ export const SensorsCard = memo(function SensorsCard({ sensors, thermostat, temp
           return <Box key={sensor.sensor_id} sx={{ gridColumn: sensor.type === 'thermostat' ? '1 / -1' : undefined, bgcolor: 'surface.subtle', p: 1.25, borderRadius: 1 }}>
             <Typography noWrap fontWeight={500}>{sensor.name}{sensor.type === 'thermostat' ? ' (Thermostat)' : ''}</Typography>
             <Stack direction="row" alignItems="center" mt={.75}>
-              <Typography sx={{ fontSize: 18 }}>{temperature(sensor.temperature)}</Typography>
+              <Tooltip title={sensor.temperature == null ? 'No temperature reading available' : ''}>
+                <Typography aria-label={sensor.temperature == null ? 'No temperature reading available' : undefined} color={sensor.temperature == null ? 'text.secondary' : 'text.primary'} sx={{ fontSize: 18 }}>{sensor.temperature == null ? '—' : temperature(sensor.temperature)}</Typography>
+              </Tooltip>
               {delta !== 0 && <Box aria-label={delta > 0 ? 'Warmer than thermostat' : 'Cooler than thermostat'} sx={{ ml: 1, width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', ...(delta > 0 ? { borderBottom: `6px solid ${colors.red.main}` } : { borderTop: `6px solid ${colors.blue.main}` }) }} />}
               <Box sx={{ flex: 1 }} />
               <Stack data-sensor-status direction="row" alignItems="center" gap={.75}>
