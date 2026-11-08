@@ -17,6 +17,8 @@ Reset Zoom is disabled until a chart actually has zoom extremes on Thermostat De
 
 Air Quality hover now presents one synchronized readout containing Air Quality, TVOC, and CO2 values at the shared timestamp while retaining guides on all three charts. Its tooltip uses Highcharts' outside layer so the third row cannot be clipped by a 75px plot. `qa/tooltip-regressions.mjs` now captures the hovered state and requires all three labels in the visible readout; it also retains the Sensor occupancy clipping, Summary/Profile guide, and Profile font-size checks.
 
+The route screenshot sweep found the mobile Air Quality summary's 24 hour headers colliding into an unreadable string. Phones now label clean three-hour anchors (`12a`, `3a`, ...), while the full 24-column data grid and desktop hourly labels remain unchanged. Exact chart geometry/cadence QA and the rebuilt 14-state design review pass.
+
 Verified this round: production build, 13 unit files / 53 tests, reset-zoom state, tooltip regressions, loader motion, Create Floor Plan payload/phone geometry, four-way floor-plan theming, nine-dialog review, fourteen-route desktop/mobile design review, and exact Visualize editor/scene parity. Fresh screenshots were inspected for the Create dialog, editor disabled states, Air Quality hover, Settings, Detail, Compare, and representative dialogs.
 
 ## 2026-11-07: Codex, button sizing and Metrics geometry

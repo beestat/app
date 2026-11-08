@@ -542,12 +542,14 @@ export function AirQualityPage() {
           }}
         >
           <Box />
-          {Array.from({ length: 24 }, (_, hour) => (
-            <Typography key={hour} variant="caption" textAlign="center">
-              {hour % 12 || 12}
-              {compactSummary ? '' : hour >= 12 ? 'p' : 'a'}
-            </Typography>
-          ))}
+          {Array.from({ length: 24 }, (_, hour) => {
+            const visible = !compactSummary || hour % 3 === 0;
+            return (
+              <Typography key={hour} variant="caption" textAlign="center" aria-label={visible ? `${hour % 12 || 12}${hour >= 12 ? 'pm' : 'am'}` : undefined}>
+                {visible ? `${hour % 12 || 12}${hour >= 12 ? 'p' : 'a'}` : ''}
+              </Typography>
+            );
+          })}
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].flatMap((day, dayIndex) => [
             <Typography key={day}>{day}</Typography>,
             ...Array.from({ length: 24 }, (_, hour) => {
