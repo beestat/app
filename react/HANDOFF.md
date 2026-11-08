@@ -7,6 +7,18 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-07: Codex, editor/create flow and chart interaction polish
+
+Finished the latest cleanup requests without changing the API, floor-plan data, or exact legacy editor/3D engines. The Create Floor Plan dialog is now a complete theme-driven setup flow with structured plan/home sections, responsive fields, explicit basement behavior, validation, and a live floor/ceiling summary. Its intercepted QA still produces the exact legacy floor-plan payload. Disabled exact-editor tools now use flat, muted theme styling instead of appearing as active dark buttons; fresh four-theme screenshots and the full exact Visualize parity run pass at desktop, 390px, and 320px with `floor_plan.update` blocked.
+
+The branded loader still uses five exact crops of the canonical `favicon.png`, but now animates only the logo's existing dark inset regions. The roof and full mark remain fixed while those dark regions rise in a visible staggered wave. Motion QA verifies the clip, brightness, opacity, source images, and delays.
+
+Reset Zoom is disabled until a chart actually has zoom extremes on Thermostat Detail, Sensor Detail, Air Quality Detail, and Analyze Summary. The new `qa/reset-zoom-state.mjs` verifies Detail's complete disabled -> enabled -> disabled transition and Analyze's initial disabled state. Unknown Sensor temperatures now use a muted em dash with an accessible explanation instead of `???`.
+
+Air Quality hover now presents one synchronized readout containing Air Quality, TVOC, and CO2 values at the shared timestamp while retaining guides on all three charts. Its tooltip uses Highcharts' outside layer so the third row cannot be clipped by a 75px plot. `qa/tooltip-regressions.mjs` now captures the hovered state and requires all three labels in the visible readout; it also retains the Sensor occupancy clipping, Summary/Profile guide, and Profile font-size checks.
+
+Verified this round: production build, 13 unit files / 53 tests, reset-zoom state, tooltip regressions, loader motion, Create Floor Plan payload/phone geometry, four-way floor-plan theming, nine-dialog review, fourteen-route desktop/mobile design review, and exact Visualize editor/scene parity. Fresh screenshots were inspected for the Create dialog, editor disabled states, Air Quality hover, Settings, Detail, Compare, and representative dialogs.
+
 ## 2026-11-07: Codex, button sizing and Metrics geometry
 
 Normalized the MUI control scale: ordinary buttons, toggle buttons, Visualize setting tiles, header controls, and small icon buttons are exactly 32px high; small controls are 28px and intentional large CTAs are 40px. Lucide icons inside buttons are constrained to 18px so a default 24px icon can no longer silently make one button taller. The Change System Type choices are explicitly large option tiles and keep their deliberate 44/48px touch targets. `qa/button-consistency.mjs` checks all primary routes and currently verifies 71 medium controls plus 24 icon buttons at 32px.
