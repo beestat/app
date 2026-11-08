@@ -73,6 +73,25 @@ await page.goto('https://dev.app.beestat.io/react/index.php#/air-quality', { wai
 const airCard = page.getByText('Air Quality Detail', { exact: true }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")]');
 await airCard.scrollIntoViewIfNeeded();
 await airCard.locator('.highcharts-container').nth(1).waitFor({ state: 'visible', timeout: 90_000 });
+const synchronizedSource = airCard.locator('.highcharts-container').nth(2);
+const synchronizedBox = await synchronizedSource.boundingBox();
+if (!synchronizedBox) throw new Error('Air Quality synchronization source was not rendered.');
+await page.mouse.move(synchronizedBox.x + synchronizedBox.width * .55, synchronizedBox.y + synchronizedBox.height * .5);
+await page.waitForTimeout(200);
+await page.screenshot({ path: 'test-results/air-quality-hover.png', fullPage: false });
+const synchronizedTooltips = await airCard.locator('[data-docked-tooltip]').allTextContents();
+const synchronizedFloatingTooltips = await Promise.all([1, 2, 3].map((index) => airCard.locator('.highcharts-container').nth(index).evaluate((container) => {
+  const tooltip = container.querySelector('.highcharts-tooltip');
+  const style = tooltip ? getComputedStyle(tooltip) : undefined;
+  return { found: Boolean(tooltip), visibility: style?.visibility, opacity: style?.opacity, text: tooltip?.textContent?.trim() };
+})));
+const synchronizedReadouts = await page.evaluate(() => [...document.querySelectorAll('.highcharts-tooltip-container')]
+  .map((tooltip) => {
+    const style = getComputedStyle(tooltip);
+    return { visibility: style.visibility, opacity: style.opacity, text: tooltip.textContent?.replace(/\s+/g, ' ').trim() ?? '' };
+  }));
+const synchronizedReadout = synchronizedReadouts.find(({ visibility, opacity, text }) => visibility !== 'hidden' && opacity !== '0' && text.includes('Air Quality') && text.includes('TVOC') && text.includes('CO₂'))?.text;
+if (!synchronizedReadout) throw new Error(`Air Quality hover did not show all three synchronized values: ${JSON.stringify(synchronizedReadouts)}`);
 const airCrosshairs = [];
 for (const index of [1, 2, 3]) {
   const chart = airCard.locator('.highcharts-container').nth(index);
@@ -88,5 +107,5 @@ for (const index of [1, 2, 3]) {
 }
 if (airCrosshairs.some((crosshair) => !crosshair.found || crosshair.visibility === 'hidden' || crosshair.opacity === '0')) throw new Error(`Air Quality hover crosshair is missing: ${JSON.stringify(airCrosshairs)}`);
 
-console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont, profileCrosshair, airCrosshairs }, null, 2));
+console.log(JSON.stringify({ occupancyTooltip, summaryCrosshair, profileTooltipFont, profileCrosshair, synchronizedTooltips, synchronizedFloatingTooltips, synchronizedReadout, airCrosshairs }, null, 2));
 await browser.close();

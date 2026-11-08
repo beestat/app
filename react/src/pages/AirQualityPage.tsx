@@ -3,7 +3,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useQuery } from '@tanstack/react-query';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { BeestatLoader } from '../components/common/BeestatLoader';
@@ -161,6 +161,26 @@ export function AirQualityPage() {
       }),
     [summaryRows, end, requestedBegin],
   );
+  const airQualityRowsByTime = useMemo(() => new Map(rows.map((row) => [Date.parse(row.timestamp), row])), [rows]);
+  const showAirQualityPoint = useCallback((point: Highcharts.Point) => {
+    if (point.y == null) return false;
+    const row = airQualityRowsByTime.get(Number(point.x));
+    const values = supportsAirQuality
+      ? {
+          airQuality: Number(row?.air_quality),
+          voc: Number(row?.voc_concentration),
+          co2: Number(row?.co2_concentration),
+        }
+      : { airQuality: 0, voc: 0, co2: 0 };
+    const format = (value: number, suffix = '') => Number.isFinite(value) ? `${value.toLocaleString()}${suffix}` : '—';
+    const html = chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(point.x)), [[
+      { label: 'Air Quality', value: format(values.airQuality, '%'), color: colors.gray.main },
+      { label: 'TVOC', value: format(values.voc, ' ppb'), color: colors.yellow.dark },
+      { label: 'CO₂', value: format(values.co2, ' ppm'), color: colors.blue.main },
+    ]]);
+    const show = point.series.name === 'TVOC' ? vocTooltip.show : point.series.name === 'CO₂' ? co2Tooltip.show : airQualityTooltip.show;
+    return show(html);
+  }, [airQualityRowsByTime, airQualityTooltip.show, co2Tooltip.show, colors.blue.main, colors.gray.main, colors.yellow.dark, supportsAirQuality, vocTooltip.show]);
   const runtime = useMemo(
     () =>
       buildRuntimeData(
@@ -295,6 +315,7 @@ export function AirQualityPage() {
       tooltip: {
         shared: true,
         useHTML: true,
+        outside: true,
         followPointer: true,
         hideDelay: 1,
         shadow: false,
@@ -303,21 +324,7 @@ export function AirQualityPage() {
         positioner: stableTooltipPositioner(0),
         formatter() {
           const point = this.points?.[0];
-          if (!point || point.y == null) return false;
-          const suffix = point.series.name === 'TVOC' ? ' ppb' : point.series.name === 'CO₂' ? ' ppm' : '';
-          const title = point.series.name === 'Air Quality' ? Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(this.x)) : null;
-          const show = point.series.name === 'TVOC' ? vocTooltip.show : point.series.name === 'CO₂' ? co2Tooltip.show : airQualityTooltip.show;
-          return show(
-            chartTooltipHtml(title, [
-              [
-                {
-                  label: point.series.name,
-                  value: `${point.y}${suffix}`,
-                  color: String(point.color),
-                },
-              ],
-            ]),
-          );
+          return point ? showAirQualityPoint(point) : false;
         },
       },
       plotOptions: {
@@ -400,17 +407,17 @@ export function AirQualityPage() {
         true,
       ),
     };
-  }, [colors, extremes, rows, runtime.max, runtime.min, supportsAirQuality, theme.palette.divider]);
+  }, [colors, extremes, rows, runtime.max, runtime.min, showAirQualityPoint, supportsAirQuality, theme.palette.divider]);
   useEffect(() => {
     let dispose: (() => void) | undefined;
     const frame = requestAnimationFrame(() => {
-      dispose = synchronizeChartPointers([chartRef.current?.chart, vocChartRef.current?.chart, co2ChartRef.current?.chart]);
+      dispose = synchronizeChartPointers([chartRef.current?.chart, vocChartRef.current?.chart, co2ChartRef.current?.chart], (_chart, _index, points) => showAirQualityPoint(points[0]));
     });
     return () => {
       cancelAnimationFrame(frame);
       dispose?.();
     };
-  }, [detailOptions]);
+  }, [detailOptions, showAirQualityPoint]);
   const grid = useMemo(() => {
     const values = new Map<string, number[]>();
     summaryRows.forEach((row) => {
@@ -486,6 +493,7 @@ export function AirQualityPage() {
                   }
                 : undefined
             }
+            resetDisabled={!extremes}
             helpUrl="https://doc.beestat.io/2685b4aae86a4f5d80dd0a4e5dd88201"
             customTitle="Air Quality Detail - Custom Range"
             customDescription="Choose a custom range to display on the Air Quality Detail chart. Max range is 7 days at a time and 90 days in the past."

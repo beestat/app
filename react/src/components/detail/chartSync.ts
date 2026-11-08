@@ -18,14 +18,14 @@ function nearestPoint(series: Highcharts.Series, x: number) {
   return undefined;
 }
 
-export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefined>) {
+export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefined>, onSync?: (chart: Highcharts.Chart, index: number, points: Highcharts.Point[]) => void) {
   const activeCharts = charts.filter(Boolean) as Highcharts.Chart[];
   // Highcharts clears chart.container during its own React cleanup. Retain the
   // exact DOM nodes we registered so route transitions can always detach the
   // listeners regardless of effect-cleanup ordering.
   const registrations = activeCharts.map((chart) => ({ chart, container: chart.container }));
   const move = (event: MouseEvent | TouchEvent) => {
-    activeCharts.forEach((chart) => {
+    activeCharts.forEach((chart, index) => {
       const normalized = chart.pointer.normalize(event as any);
       const syncChart = chart as Highcharts.Chart & { beestatCrosshair?: Highcharts.SVGElement };
       const x = Math.max(chart.plotLeft, Math.min(chart.plotLeft + chart.plotWidth, normalized.chartX));
@@ -42,6 +42,7 @@ export function synchronizeChartPointers(charts: Array<Highcharts.Chart | undefi
         .filter(Boolean) as Highcharts.Point[];
       chart.xAxis[0]?.drawCrosshair(normalized, points[0]);
       if (points.length && chart.tooltip.options.enabled !== false) chart.tooltip.refresh(points, normalized);
+      if (points.length) onSync?.(chart, index, points);
     });
   };
   const leave = () => activeCharts.forEach((chart) => {
