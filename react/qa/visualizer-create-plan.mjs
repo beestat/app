@@ -1,5 +1,7 @@
 import { chromium } from 'playwright';
+import { mkdir } from 'node:fs/promises';
 
+await mkdir('test-results/visualizer-create-plan', { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, storageState: 'test-results/auth-state.json' });
 let createCall;
@@ -32,9 +34,10 @@ await page.getByRole('button', { name: /Get started now/ }).click();
 const dialog = page.getByRole('dialog', { name: 'Create Floor Plan' });
 await dialog.waitFor({ timeout: 30_000 });
 if ((await dialog.getByRole('combobox', { name: 'What is the address for this home?' }).textContent())?.trim() !== '123 QA Street') throw new Error('The only valid ecobee address was not selected by default.');
-await dialog.getByLabel('One of these floors is a basement').check();
+await dialog.getByLabel('Include a basement').check();
 const geometry = await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return { left: rect.left, right: rect.right, viewport: innerWidth }; });
 if (geometry.left < 0 || geometry.right > geometry.viewport) throw new Error(`Create dialog overflows mobile: ${JSON.stringify(geometry)}`);
+await page.screenshot({ path: 'test-results/visualizer-create-plan/mobile-dialog.png' });
 await dialog.getByRole('button', { name: 'Create Floor Plan' }).click();
 await page.waitForTimeout(100);
 if (!createCall) throw new Error('Create Floor Plan did not call floor_plan.create.');
