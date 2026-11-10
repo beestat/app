@@ -20,7 +20,7 @@
  */
 beestat.component.scene.prototype.add_skybox_ = function() {
   const loader = new THREE.CubeTextureLoader();
-  loader.setPath('img/visualize/skybox/');
+  loader.setPath('/img/visualize/skybox/');
   const texture = loader.load([
     'front.png',
     'back.png',

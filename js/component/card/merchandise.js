@@ -34,7 +34,7 @@ beestat.component.card.merchandise.prototype.decorate_contents_ = function(paren
     'color': beestat.style.color.gray.dark
   });
   const sticker_logo_text_img = document.createElement('img');
-  sticker_logo_text_img.setAttribute('src', 'img/merchandise/sticker_logo_text.png');
+  sticker_logo_text_img.setAttribute('src', '/img/merchandise/sticker_logo_text.png');
   sticker_logo_text_img.style.height = '48px';
   sticker_logo_text_img.style.marginTop = '8px';
   sticker_logo_text_img.style.marginBottom = '8px';
@@ -50,7 +50,7 @@ beestat.component.card.merchandise.prototype.decorate_contents_ = function(paren
     'color': beestat.style.color.gray.dark
   });
   const sticker_logo_img = document.createElement('img');
-  sticker_logo_img.setAttribute('src', 'img/merchandise/sticker_logo.png');
+  sticker_logo_img.setAttribute('src', '/img/merchandise/sticker_logo.png');
   sticker_logo_img.style.height = '64px';
   sticker_logo_container.appendChild(sticker_logo_img);
 

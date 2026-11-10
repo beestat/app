@@ -16,7 +16,7 @@ beestat.extend(beestat.component.logo, beestat.component);
  */
 beestat.component.logo.prototype.decorate_ = function(parent) {
   const logo = $.createElement('img')
-    .setAttribute('src', 'img/logo.png')
+    .setAttribute('src', '/img/logo.png')
     .style({
       'height': this.height_ + 'px'
     });

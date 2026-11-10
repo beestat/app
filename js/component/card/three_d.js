@@ -1834,7 +1834,7 @@ beestat.component.card.three_d.prototype.get_chart_gradient_ = function(thermost
  */
 beestat.component.card.three_d.prototype.decorate_watermark_ = function(parent) {
   const img = document.createElement('img');
-  img.setAttribute('src', 'img/logo.png');
+  img.setAttribute('src', '/img/logo.png');
   Object.assign(img.style, {
     'height': '100%',
     'opacity': '0.7'

@@ -58,7 +58,7 @@ beestat.component.scene.prototype.add_room_ = function(layer, group, room) {
   ) {
     const loader = new THREE.TextureLoader();
     loader.load(
-      'img/visualize/stripe.png',
+      '/img/visualize/stripe.png',
       function(texture) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;

@@ -316,7 +316,7 @@ beestat.component.card.contribute.prototype.decorate_contents_ = function(parent
           }
         };
         window.open(
-          'api/?resource=stripe_payment_link&method=open&arguments=' +
+          '/api/?resource=stripe_payment_link&method=open&arguments=' +
           JSON.stringify(stripe_payment_link_arguments) +
           '&api_key=' +
           window.beestat_api_key_local

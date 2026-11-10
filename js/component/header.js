@@ -457,13 +457,34 @@ beestat.component.header.prototype.decorate_menu_ = function(parent) {
       }));
   }
 
+  /*
+   * Switch to the new React app at this same URL. The choice is saved to the
+   * account (so other devices follow it) and to this device, which index.php
+   * reads before loading either app.
+   */
+  if (window.__BEESTAT_UI__ !== undefined && window.__BEESTAT_UI__.react_available === true) {
+    menu.add_menu_item(new beestat.component.menu_item()
+      .set_text('Try the New beestat')
+      .set_icon('creation')
+      .set_callback(function() {
+        try {
+          window.localStorage.setItem('beestat.ui', 'new');
+        } catch (e) {
+          // Storage is blocked; the account setting still applies on load.
+        }
+        beestat.setting('ui.version', 'new', function() {
+          window.location.reload();
+        });
+      }));
+  }
+
   menu.add_menu_item(new beestat.component.menu_item()
     .set_text('Log Out')
     .set_icon('exit_to_app')
     .set_callback(function() {
+      // Absolute so it works from any page URL (/analyze, ?layer=...).
       window.location.replace(
-        window.location.href +
-        'api/?resource=user&method=log_out&arguments={}&api_key=' +
+        '/api/?resource=user&method=log_out&arguments={}&api_key=' +
         window.beestat_api_key_local
       );
     }));
