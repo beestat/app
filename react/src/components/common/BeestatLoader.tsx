@@ -1,8 +1,8 @@
 import { Box, keyframes } from '@mui/material';
 
 const fillPulse = keyframes`
-  0%, 76%, 100% { clip-path: inset(100% 0 0); filter: brightness(.72) saturate(1.08); opacity: 0; }
-  38% { clip-path: inset(0); filter: brightness(.58) saturate(1.16); opacity: .82; }
+  0%, 76%, 100% { clip-path: inset(100% 0 0); filter: brightness(.94) saturate(1.04); opacity: 0; }
+  38% { clip-path: inset(0); filter: brightness(.84) saturate(1.08); opacity: .72; }
 `;
 
 const parts = [

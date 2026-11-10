@@ -9,7 +9,8 @@ const links = [
 ];
 
 const linkSx = {
-  px: 1.25,
+  // Tighter on phones so all five links fit one 390px row instead of orphaning Contact.
+  px: { xs: .75, sm: 1.25 },
   py: .75,
   border: 0,
   borderRadius: 1,
@@ -31,10 +32,7 @@ export function AppFooter({ onNewsletter }: { onNewsletter: () => void }) {
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={{ xs: 2, sm: 3 }}>
         <Stack direction="row" alignItems="center" gap={1.25}>
           <Box component="img" src="/favicon.png" alt="" aria-hidden sx={{ width: 28, height: 28 }} />
-          <Box>
-            <Typography sx={{ color: 'text.primary', fontSize: 14, fontWeight: 600, lineHeight: 1.2 }}>beestat</Typography>
-            <Typography variant="caption" color="text.secondary">Thermostat data, made useful.</Typography>
-          </Box>
+          <Typography sx={{ color: 'text.primary', fontSize: 14, fontWeight: 600, lineHeight: 1.2 }}>beestat</Typography>
         </Stack>
         <Stack component="nav" aria-label="Footer" direction="row" justifyContent="center" flexWrap="wrap" gap={.5}>
           {links.map(({ label, href, external = true }) => href ? (
