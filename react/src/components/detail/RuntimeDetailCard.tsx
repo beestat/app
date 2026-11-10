@@ -9,6 +9,7 @@ import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { BeestatLoader } from '../common/BeestatLoader';
 import { keepPreviousForThermostat, RefreshOverlay } from '../common/RefreshOverlay';
+import { downloadChartsPng, exportColors } from '../common/chartExport';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeChips } from './RuntimeChips';
@@ -128,7 +129,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     return () => { cancelAnimationFrame(frame); dispose?.(); };
   }, [query.data, extremes]);
 
-  const download = () => { const svg = chartRef.current?.container.current?.querySelector('svg'); if (!svg) return; const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' })); const link = document.createElement('a'); link.href = url; link.download = 'beestat-thermostat-detail.svg'; link.click(); URL.revokeObjectURL(url); };
+  const download = () => void downloadChartsPng({ title: 'Thermostat Detail', subtitle, sections: [{ chart: racewayRef.current?.chart }, { chart: chartRef.current?.chart }], colors: exportColors(theme) });
   const changeDays = (value: number) => { setCustom(undefined); setDays(value); setExtremes(undefined); void persistChartRange('runtime_thermostat_detail', { days: value }); };
   const changeCustom = (begin: string, end: string) => { setCustom({ begin, end }); setExtremes(undefined); void persistChartRange('runtime_thermostat_detail', { begin, end }); };
   const rangeBounds = chartRangeBounds(thermostat.sync_begin ?? thermostat.data_begin, thermostat.sync_end ?? thermostat.data_end, 12);

@@ -11,17 +11,12 @@ import { useDockedTooltip } from '../components/common/DockedTooltip';
 import { RuntimeChips } from '../components/detail/RuntimeChips';
 import { buildRuntimeData, equipmentFor, stageCount, unitLabel } from '../components/detail/runtimeData';
 import { useDashboard } from '../state/DashboardContext';
+import type { Theme } from '@mui/material/styles';
+import { downloadChartsPng, exportColors } from '../components/common/chartExport';
 import { aggregateSummary, legacyDurationParts, matchingPreset, presetConfig, smartScale, type SummaryConfig, type SummaryGroup, type SummaryPeriod, type SummarySourceRow } from './analyzeSummary';
 
-function saveSvg(ref: React.RefObject<HighchartsReact.RefObject | null>, name: string) {
-  const svg = ref.current?.container.current?.querySelector('svg');
-  if (!svg) return;
-  const url = URL.createObjectURL(new Blob([svg.outerHTML], { type: 'image/svg+xml' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = name;
-  link.click();
-  URL.revokeObjectURL(url);
+function savePng(ref: React.RefObject<HighchartsReact.RefObject | null>, title: string, subtitle: string | undefined, theme: Theme) {
+  void downloadChartsPng({ title, subtitle, sections: [{ chart: ref.current?.chart }], colors: exportColors(theme) });
 }
 
 function ordinal(day: number) {
@@ -875,7 +870,7 @@ export function AnalyzePage() {
   const summarySubtitle = `${summaryLabel}, grouped by ${config.group} (Gap Fill: ${gapFill ? 'On' : 'Off'}, Smart Scale: ${settings.runtime_thermostat_summary_smart_scale === false ? 'Off' : 'On'})`;
   return (
     <Box sx={{ display: 'grid', gap: 2, pb: 2 }}>
-      <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => saveSvg(summaryRef, 'beestat-thermostat-summary.svg')} canReset={() => summaryZoomed.current} onReset={() => { summaryZoomed.current = false; summaryRef.current?.chart.zoomOut(); }} />}>
+      <DashboardCard title="Thermostat Summary" subheader={summarySubtitle} action={<SummaryMenu config={config} setConfig={updateSummaryConfig} onDownload={() => savePng(summaryRef, 'Thermostat Summary', summarySubtitle, theme)} canReset={() => summaryZoomed.current} onReset={() => { summaryZoomed.current = false; summaryRef.current?.chart.zoomOut(); }} />}>
         <RuntimeChips data={chipData} summary />
         {summary.length ? (
           <>
@@ -886,7 +881,7 @@ export function AnalyzePage() {
           <Alert severity="info">No summary data is available yet.</Alert>
         )}
       </DashboardCard>
-      <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} names={names} unit={unit} subtitle={profileSubtitle} onDownload={() => saveSvg(profileRef, 'beestat-temperature-profiles.svg')} />} contentSx={{ pb: '10px', '&:last-child': { pb: '10px' } }}>
+      <DashboardCard title="Temperature Profiles" subheader={profileSubtitle} action={<ProfileMenu profile={selectedProfile} names={names} unit={unit} subtitle={profileSubtitle} onDownload={() => savePng(profileRef, 'Temperature Profiles', profileSubtitle, theme)} />} contentSx={{ pb: '10px', '&:last-child': { pb: '10px' } }}>
         {profileOptions.series?.length ? (
           <>
             <HighchartsReact ref={profileRef} highcharts={Highcharts} options={profileOptions} />
