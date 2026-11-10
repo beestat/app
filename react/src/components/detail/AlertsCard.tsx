@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Menu, MenuItem, Stack, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Button, IconButton, Menu, MenuItem, Stack, Typography, useTheme } from '@mui/material';
 import {
   ArrowLeft, BatteryLow, Bell, BellOff, CalendarClock, CircleDollarSign, Droplets,
   Eye, EyeOff, Fan, Flame, HelpCircle, KeyRound, MessageSquare, MoreVertical,
@@ -34,6 +34,25 @@ function alertDate(value: unknown) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(String(value)));
 }
 
+// One row layout for both the list and the opened alert, so selecting an alert
+// never resizes its icon or moves its text.
+function AlertRow({ alert, hoverColor, selected = false, onSelect }: { alert: AlertData; hoverColor: string; selected?: boolean; onSelect?: () => void }) {
+  const Icon = iconFor(Number(alert.code));
+  return <Stack
+    direction="row"
+    gap={1.5}
+    alignItems="center"
+    role={onSelect ? 'button' : undefined}
+    tabIndex={onSelect ? 0 : undefined}
+    onClick={onSelect}
+    onKeyDown={onSelect ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(); } } : undefined}
+    sx={{ mx: -2, px: 2, py: 1.25, bgcolor: selected ? hoverColor : undefined, cursor: onSelect ? 'pointer' : undefined, transition: 'background-color 150ms', '&:hover': onSelect ? { bgcolor: hoverColor } : undefined, '&:focus-visible': { outline: '2px solid currentColor', outlineOffset: -2 } }}
+  >
+    <Icon size={22} style={{ flexShrink: 0 }} />
+    <Typography sx={{ flex: 1, minWidth: 0 }}>{String(alert.text ?? alert.message ?? 'Thermostat alert')}</Typography>
+  </Stack>;
+}
+
 export const AlertsCard = memo(function AlertsCard({ alerts, thermostatId }: { alerts: AlertData[]; thermostatId: number }) {
   const theme = useTheme();
   const colors = theme.palette.colors;
@@ -58,15 +77,14 @@ export const AlertsCard = memo(function AlertsCard({ alerts, thermostatId }: { a
     <DashboardCard title="Alerts" action={action} sx={{ bgcolor: visible.length ? colors.red.main : 'background.paper', color: visible.length ? theme.palette.getContrastText(colors.red.main) : 'text.primary' }}>
       {!visible.length && <Stack sx={{ minHeight: 128 }} alignItems="center" justifyContent="center" textAlign="center" gap={.5}><Typography fontWeight={600}>No active alerts</Typography><Typography variant="caption" color="text.secondary">Everything looks good.</Typography></Stack>}
       {!active && visible.map((alert, index) => {
-        const Icon = iconFor(Number(alert.code));
         const key = keyFor(alert, index);
-        return <Stack key={key} direction="row" gap={1.5} alignItems="center" onClick={() => setSelected(key)} sx={{ mx: -2, px: 2, py: 1.25, cursor: 'pointer', transition: 'background-color 150ms', '&:hover': { bgcolor: colors.red.dark } }}><Icon size={22} /><Typography sx={{ flex: 1 }}>{String(alert.text ?? alert.message ?? 'Thermostat alert')}</Typography></Stack>;
+        return <AlertRow key={key} alert={alert} hoverColor={colors.red.dark} onSelect={() => setSelected(key)} />;
       })}
       {active && <Box>
-        <Stack direction="row" gap={1.5} alignItems="center" sx={{ mx: -2, px: 2, py: 1.25, bgcolor: colors.red.dark }}>{(() => { const Icon = iconFor(Number(active.code)); return <Icon size={22} />; })()}<Typography>{String(active.text ?? active.message ?? 'Thermostat alert')}</Typography></Stack>
+        <AlertRow alert={active} hoverColor={colors.red.dark} selected />
         <Stack direction="row" my={2}><Box width="50%"><Typography fontWeight={600}>Source</Typography><Typography>{String(active.source ?? 'Thermostat')}</Typography></Box><Box width="50%"><Typography fontWeight={600}>Date</Typography><Typography>{alertDate(active.timestamp ?? active.date)}</Typography></Box></Stack>
         <Typography fontWeight={600}>Details</Typography><Typography>{String(active.details ?? '')}</Typography>
-        <Box textAlign="center" mt={2}><Button variant="contained" color="error" startIcon={active.dismissed ? <Bell /> : <BellOff />} onClick={() => void toggle(active)}>{active.dismissed ? 'Restore' : 'Dismiss'}</Button></Box>
+        <Box textAlign="center" mt={2}><Button variant="contained" sx={{ bgcolor: colors.red.dark, color: theme.palette.getContrastText(colors.red.dark), '&:hover': { bgcolor: alpha(colors.red.dark, .82) } }} startIcon={active.dismissed ? <Bell /> : <BellOff />} onClick={() => void toggle(active)}>{active.dismissed ? 'Restore' : 'Dismiss'}</Button></Box>
       </Box>}
     </DashboardCard>
   );
