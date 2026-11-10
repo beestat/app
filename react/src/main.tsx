@@ -1,8 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { migrateLegacyUrl, routerBasename } from './utils/appUrl';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -16,12 +17,19 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById('root')!).render(
+// Old #/page and ?layer=page links move to the shared clean path before routing.
+const migrated = migrateLegacyUrl();
+if (migrated) window.history.replaceState(null, '', migrated);
+
+// The root index.php writes this app into the head, so the mount point is created here.
+const root = document.getElementById('root') ?? document.body.appendChild(Object.assign(document.createElement('div'), { id: 'root' }));
+
+createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <HashRouter>
+      <BrowserRouter basename={routerBasename() || undefined}>
         <App />
-      </HashRouter>
+      </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
 );

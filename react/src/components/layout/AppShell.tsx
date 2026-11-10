@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { alpha, Alert, AppBar, Badge, Box, Button, Container, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
+import { Activity, ArrowLeftRight, Building2, ChartNoAxesCombined, Download, EllipsisVertical, ExternalLink, Eye, FileChartColumn, Heart, History, LogOut, Megaphone, PanelsTopLeft, Settings, Wind } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { rememberUiVersion, uiVersionSetting } from '../../utils/appUrl';
 import { useDashboard } from '../../state/DashboardContext';
 import { apiCall, config } from '../../api/client';
 import { formatTemperature } from '../../utils/format';
@@ -105,6 +106,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try { await apiCall({ resource: 'user', method: 'log_out' }); } finally { window.location.assign('/'); }
   };
+  // Same URL, other app: index.php reads the device choice; the account copy seeds new devices.
+  const switchToClassic = async () => {
+    setAnchor(null);
+    rememberUiVersion('classic');
+    try { await apiCall({ resource: 'user', method: 'update_setting', arguments: { key: uiVersionSetting, value: 'classic' } }); } finally { window.location.reload(); }
+  };
 
   return (
     <Box sx={{ minHeight: '100dvh', pb: 3 }}>
@@ -140,8 +147,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {hasThermostats && <MenuItem onClick={() => { setAnchor(null); setDownloadOpen(true); }}><Download size={18} /> Download Data</MenuItem>}
               <MenuItem onClick={() => { setAnchor(null); navigate('/settings'); }}><Settings size={18} /> Settings</MenuItem>
               {(platform === 'ios' || platform === 'android') && <MenuItem component="a" href="ecobee://beestat"><ExternalLink size={18} /> Open Ecobee App</MenuItem>}
-              {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-enrollment'); }}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
+              {data?.user?.settings?.glenwood_enrolled !== undefined && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood'); }}><Building2 size={18} /> Glenwood Enrollment</MenuItem>}
               {[1, 39285, 50885, 51345].includes(Number(data?.user?.user_id)) && <MenuItem onClick={() => { setAnchor(null); navigate('/glenwood-report'); }}><FileChartColumn size={18} /> Glenwood Report</MenuItem>}
+              <MenuItem onClick={() => void switchToClassic()}><History size={18} /> Switch to Classic beestat</MenuItem>
               <MenuItem onClick={() => void logout()}><LogOut size={18} /> Log Out</MenuItem>
             </Menu>
             <Dialog open={announcementsOpen} onClose={() => setAnnouncementsOpen(false)} fullWidth maxWidth="md"><DialogTitle>Announcements</DialogTitle><DialogContent dividers><Suspense fallback="Loading…"><AnnouncementsContent /></Suspense></DialogContent></Dialog>

@@ -13,7 +13,8 @@ import { AppThemeProvider } from './components/layout/AppThemeProvider';
 let detailPagePromise: ReturnType<typeof importDetailPage> | undefined;
 function importDetailPage() { return import('./pages/DetailPage'); }
 function loadDetailPage() { return detailPagePromise ??= importDetailPage(); }
-if (['', '#/', '#/detail'].includes(window.location.hash)) void loadDetailPage();
+// main.tsx has already moved old #/ and ?layer= links onto the path.
+if (/^(\/index\.php)?\/?(detail\/?)?$/.test(window.location.pathname)) void loadDetailPage();
 const DetailPage = lazy(() => loadDetailPage().then((module) => ({ default: module.DetailPage })));
 const NoThermostatsPage = lazy(() => import('./pages/NoThermostatsPage').then((module) => ({ default: module.NoThermostatsPage })));
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage').then((module) => ({ default: module.AnalyzePage })));
@@ -46,7 +47,8 @@ function RoutedApp() {
         {!hasThermostats ? <>
           <Route path="settings" element={<SettingsPage />} />
           <Route path="contribute" element={<ContributePage />} />
-          <Route path="glenwood-enrollment" element={<GlenwoodEnrollmentPage />} />
+          <Route path="glenwood" element={<GlenwoodEnrollmentPage />} />
+          <Route path="glenwood-enrollment" element={<Navigate to="/glenwood" replace />} />
           <Route path="glenwood-report" element={<GlenwoodReportPage />} />
           <Route path="*" element={<NoThermostatsPage />} />
         </> : <>
@@ -59,9 +61,10 @@ function RoutedApp() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="download" element={<DownloadPage />} />
         <Route path="contribute" element={<ContributePage />} />
-        <Route path="glenwood-enrollment" element={<GlenwoodEnrollmentPage />} />
+        <Route path="glenwood" element={<GlenwoodEnrollmentPage />} />
+        <Route path="glenwood-enrollment" element={<Navigate to="/glenwood" replace />} />
         <Route path="glenwood-report" element={<GlenwoodReportPage />} />
-        <Route path="*" element={<Navigate to="detail" replace />} />
+        <Route path="*" element={<Navigate to="/detail" replace />} />
         </>}
       </Routes></Suspense></ErrorBoundary>
     </AppShell>

@@ -313,15 +313,36 @@ beestat.layer.load.prototype.decorate_ = function(parent) {
     beestat.enable_poll();
     beestat.enable_poll_watcher();
 
-    const requested_layer = new URLSearchParams(window.location.search).get('layer');
-    const allowed_layers = ['detail', 'analyze', 'visualize', 'compare', 'air_quality', 'settings', 'contribute', 'glenwood_enroll', 'glenwood_report'];
-    if (window.location.href.indexOf('glenwood') !== -1) {
-      (new beestat.layer.glenwood_enroll()).render();
-    } else if (allowed_layers.includes(requested_layer)) {
-      (new beestat.layer[requested_layer]()).render();
-    } else {
-      (new beestat.layer.detail()).render();
+    /*
+     * A device that has never picked a version follows the account's choice.
+     * If that is the new app, remember it here and reload into it (once per
+     * device). index.php reads the remembered choice before loading anything.
+     */
+    if (
+      window.__BEESTAT_UI__ !== undefined &&
+      window.__BEESTAT_UI__.stored === null &&
+      window.__BEESTAT_UI__.react_available === true &&
+      beestat.setting('ui.version') === 'new'
+    ) {
+      let remembered = false;
+      try {
+        window.localStorage.setItem('beestat.ui', 'new');
+        remembered = window.localStorage.getItem('beestat.ui') === 'new';
+      } catch (e) {
+        // Storage is blocked; stay on this version rather than reload forever.
+      }
+      if (remembered === true) {
+        window.location.reload();
+        return;
+      }
     }
+
+    // The page comes from the URL path (/analyze) or the older ?layer=analyze.
+    let requested_layer = beestat.layer.from_location();
+    if (requested_layer === undefined && window.location.href.indexOf('glenwood') !== -1) {
+      requested_layer = 'glenwood_enroll';
+    }
+    (new beestat.layer[requested_layer || 'detail']()).render();
 
     beestat.ecobee.notify_if_down();
 

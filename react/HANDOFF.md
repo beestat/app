@@ -7,6 +7,25 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-10 (latest): Claude, classic/new version switching at shared clean URLs
+
+Jon wanted users to switch between the classic and new apps freely, without choosing twice, and nicer URLs. He chose: classic stays the default; no cookie; the choice is saved to the account (`settings.ui.version` = `new`|`classic`) and to the device (`localStorage['beestat.ui']`), with a one-time reload on a new device.
+
+- **One entry point.** Root `index.php` serves both apps. Its inline head script reads `localStorage['beestat.ui']` (or `?ui=new|classic`, which sets it) and `document.write`s either the classic head (the unchanged `js/js.php` output, captured with output buffering) or the React head from `react/shell.php`. Classic devices get the same synchronous script tags as before; React devices download no classic JS. `window.__BEESTAT_UI__ = { active, stored, react_available }` tells both apps what happened. With no React build, everyone gets classic.
+- **Shared URLs.** `/detail /analyze /visualize /compare /air-quality /settings /contribute /glenwood /glenwood-report` (React also has `/download`). The maps live in `js/layer.js` (`beestat.layer.paths`) and `react/src/utils/appUrl.ts` and must stay in sync. React uses `BrowserRouter`; old `#/page` and classic `?layer=page` links are rewritten on load. Classic now updates the URL on every layer render (first render replaces the entry, later ones push) and handles back/forward. `/react/index.php#/page` is a redirect to the new path with `?ui=new`.
+- **Switching.** Classic header menu: "Try the New beestat" (only when the React build exists). React menu: "Switch to Classic beestat". Both save the account setting and localStorage, then reload the same URL.
+- **Precedence.** A device's own choice wins. A device with no choice that loads classic reads `ui.version`; if it is `new`, `js/layer/load.js` stores it and reloads once. Blocked storage never loops.
+- **Classic fixes needed for path URLs.** Log Out built its URL by appending to `location.href`. Contribute, Patreon, the logo, merchandise and Visualize textures used relative `api/` / `img/` paths. All are absolute now.
+- **Server rule needed (dev and prod).** Apache currently 404s `/analyze` (`react/.htaccess` is ignored; only `/glenwood` is routed). Until the rule exists, `/index.php/analyze` reaches the same page and both apps keep that prefix. Vhost snippet (inside the HTTPS vhost, next to the existing `/glenwood` rule):
+  ```apache
+  SetEnv BEESTAT_CLEAN_URLS 1
+  RewriteEngine On
+  RewriteRule ^/(detail|analyze|visualize|compare|air-quality|settings|contribute|download|glenwood-report)/?$ /index.php [L,QSA]
+  ```
+  `BEESTAT_CLEAN_URLS` makes the `/react/index.php` redirect use clean paths. After the rule is live, run `BEESTAT_PAGE_BASE= node qa/version-switching.mjs`.
+
+Verified: PHP lint, legacy JS syntax, typecheck, 60 unit tests (new `appUrl.test.ts`), build, `qa/version-switching.mjs` (classic default; classic URL updates + back/forward; switch both ways with account + device writes intercepted; choice survives reload; `?layer=` and `#/` rewrites; account-seeded new device reloads exactly once), e2e 14/14, plus tooltip-regressions, air-quality-menu and chart-downloads through the old `/react/index.php#/` URLs.
+
 ## 2026-11-10 (later): Claude, PNG chart downloads; motion out of the Air Quality readout
 
 - **Download Chart** (Thermostat Detail, Sensor Detail, Thermostat Summary, Temperature Profiles) now saves a PNG instead of one raw SVG. `components/common/chartExport.ts` stacks every visible chart in the card (e.g. raceway + temperature; raceway + occupancy + temperature) under the card title/subtitle with a `beestat.io` credit, on the theme's card colors, at 2x. Montserrat is embedded as data URLs, theme CSS variables are resolved, and hover guides/tooltips are stripped. Narrow (phone) charts are redrawn at legacy's 980px export width and restored in the same task. Filenames are `Title - Subtitle.png`, falling back to the date for long subtitles. `qa/chart-downloads.mjs` checks all four at 1440 and 390 (PNG signature, size, chart count, on-screen width restored).
