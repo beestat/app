@@ -18,10 +18,6 @@ import { useDashboard } from '../state/DashboardContext';
 import { CalendarDays, CircleHelp, EllipsisVertical, ExternalLink } from 'lucide-react';
 import { localDaysAgo } from '../utils/date';
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => `&#${character.charCodeAt(0)};`);
-}
-
 function heatColor(value: number | undefined, fallback: string) {
   if (value == null) return fallback;
   const t = Math.max(0, Math.min(1, value / 100));
@@ -175,16 +171,6 @@ export function AirQualityPage() {
       }),
     [query.data, thermostatSensors, end, requestedBegin],
   );
-  // Sensors with motion at each timestamp, in lane order, for the hover readout.
-  const occupancyByTime = useMemo(() => {
-    const byTime = new Map<number, { name: string; color: string }[]>();
-    occupancyLanes.forEach(({ sensor, color }) => (query.data?.[`sensor_${sensor.sensor_id}`] ?? []).forEach((row) => {
-      if (row.occupancy !== true) return;
-      const time = Date.parse(row.timestamp);
-      byTime.set(time, [...(byTime.get(time) ?? []), { name: sensor.name, color }]);
-    }));
-    return byTime;
-  }, [occupancyLanes, query.data]);
   const airQualityRowsByTime = useMemo(() => new Map(rows.map((row) => [Date.parse(row.timestamp), row])), [rows]);
   const showAirQualityPoint = useCallback((point: Highcharts.Point) => {
     if (point.y == null) return false;
@@ -197,15 +183,14 @@ export function AirQualityPage() {
         }
       : { airQuality: 0, voc: 0, co2: 0 };
     const format = (value: number, suffix = '') => Number.isFinite(value) ? `${value.toLocaleString()}${suffix}` : '—';
-    const motion = (occupancyByTime.get(Number(point.x)) ?? []).map(({ name, color }) => ({ label: escapeHtml(name), value: 'Motion', color }));
     const html = chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(point.x)), [[
       { label: 'Air Quality', value: format(values.airQuality, '%'), color: colors.gray.main },
       { label: 'TVOC', value: format(values.voc, ' ppb'), color: colors.yellow.dark },
       { label: 'CO₂', value: format(values.co2, ' ppm'), color: colors.blue.main },
-    ], motion]);
+    ]]);
     const show = point.series.name === 'TVOC' ? vocTooltip.show : point.series.name === 'CO₂' ? co2Tooltip.show : airQualityTooltip.show;
     return show(html);
-  }, [airQualityRowsByTime, airQualityTooltip.show, co2Tooltip.show, colors.blue.main, colors.gray.main, colors.yellow.dark, occupancyByTime, supportsAirQuality, vocTooltip.show]);
+  }, [airQualityRowsByTime, airQualityTooltip.show, co2Tooltip.show, colors.blue.main, colors.gray.main, colors.yellow.dark, supportsAirQuality, vocTooltip.show]);
   const runtime = useMemo(
     () =>
       buildRuntimeData(

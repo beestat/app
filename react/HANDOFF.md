@@ -7,6 +7,12 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-10 (later): Claude, PNG chart downloads; motion out of the Air Quality readout
+
+- **Download Chart** (Thermostat Detail, Sensor Detail, Thermostat Summary, Temperature Profiles) now saves a PNG instead of one raw SVG. `components/common/chartExport.ts` stacks every visible chart in the card (e.g. raceway + temperature; raceway + occupancy + temperature) under the card title/subtitle with a `beestat.io` credit, on the theme's card colors, at 2x. Montserrat is embedded as data URLs, theme CSS variables are resolved, and hover guides/tooltips are stripped. Narrow (phone) charts are redrawn at legacy's 980px export width and restored in the same task. Filenames are `Title - Subtitle.png`, falling back to the date for long subtitles. `qa/chart-downloads.mjs` checks all four at 1440 and 390 (PNG signature, size, chart count, on-screen width restored).
+- Air Quality still has no Download Chart (legacy parity; `qa/air-quality-menu.mjs` asserts it). Adding it is one `onDownload` with sections for occupancy + three labelled charts.
+- Per Jon, the Air Quality readout no longer lists sensors with motion. The lanes keep the hover guide and still open the readout.
+
 ## 2026-11-10: Claude, Jon's cleanup list (loader, alerts, slider, metrics, Air Quality, range overlay)
 
 Jon's requests, all done:

@@ -144,12 +144,12 @@ const card = (page, title) => page.getByText(title, { exact: true }).first().loc
     for (const nudge of [0, 2]) await page.mouse.move(box.x + box.width * fraction + nudge, box.y + box.height / 2);
     await page.waitForTimeout(150);
     readout = await page.evaluate(() => [...document.querySelectorAll('.highcharts-tooltip-container')].map((item) => item.innerText).find((text) => text.includes('Air Quality')) ?? '');
-    if (readout.includes('Motion')) break;
+    if (readout) break;
   }
   const guides = await target.evaluate((element) => [...element.querySelectorAll('.beestat-synchronized-crosshair')].filter((path) => path.getAttribute('visibility') !== 'hidden').length);
   check(guides === 4, 'Hover guide not on all four Air Quality charts', guides);
   check(readout.includes('Air Quality') && readout.includes('TVOC'), 'Hovering motion lanes did not show the readout', readout);
-  if (!readout.includes('Motion')) console.log('No motion found at the sampled positions; readout:', readout);
+  check(!readout.includes('Motion'), 'Air Quality readout lists motion (removed at Jon\'s request)', readout);
   await page.screenshot({ path: `${out}/air-quality-hover.png`, clip: { x: 0, y: Math.max(0, box.y - 80), width: 1440, height: 520 } });
   await context.close();
 }
