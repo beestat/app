@@ -32,3 +32,9 @@ export function persistChartRange(prefix: string, range: { days: number } | { be
     : [[`${prefix}_range_static_begin`, legacyDate(range.begin)], [`${prefix}_range_static_end`, legacyDate(range.end)], [`${prefix}_range_type`, 'static']];
   return apiBatch(entries.map(([key, value], index) => ({ resource: 'user', method: 'update_setting', alias: `range_${index}`, arguments: { key, value } })));
 }
+
+// Legacy reads any saved day count; the React cards used to fall back to 3 for anything but 1/3/7.
+export function savedRangeDays(value: unknown, maxDays: number, fallback = 3) {
+  const days = Number(value);
+  return Number.isInteger(days) && days >= 1 && days <= maxDays ? days : fallback;
+}

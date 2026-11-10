@@ -1,4 +1,4 @@
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Slider, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { CalendarDays, CalendarRange, CircleHelp, Download, EllipsisVertical, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,6 +24,38 @@ function localDate(offsetDays: number) {
   const date = new Date();
   date.setDate(date.getDate() + offsetDays);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// Short ranges label every day; longer ones label each week plus the maximum.
+function dayMarks(maxDays: number) {
+  const labeled = maxDays <= 7
+    ? Array.from({ length: maxDays }, (_, index) => index + 1)
+    : [1, ...Array.from({ length: Math.floor((maxDays - 1) / 7) }, (_, index) => (index + 1) * 7).filter((value) => maxDays - value >= 3), maxDays];
+  return labeled.map((value) => ({ value, label: String(value) }));
+}
+
+function DaysSlider({ value, maxDays, onChange }: { value: number; maxDays: number; onChange: (days: number) => void }) {
+  const days = Math.min(Math.max(1, Math.round(value) || 1), maxDays);
+  return <Box>
+    <Stack direction="row" alignItems="baseline" justifyContent="space-between" mb={.5}>
+      <Typography id="chart-range-days-label" fontWeight={600}>Days</Typography>
+      <Typography data-chart-range-days><Box component="span" fontWeight={600}>Past {days}</Box> day{days === 1 ? '' : 's'}</Typography>
+    </Stack>
+    <Box sx={{ px: 1 }}>
+      <Slider
+        aria-labelledby="chart-range-days-label"
+        getAriaValueText={(current) => `${current} day${current === 1 ? '' : 's'}`}
+        value={days}
+        min={1}
+        max={maxDays}
+        step={1}
+        marks={dayMarks(maxDays)}
+        valueLabelDisplay="auto"
+        onChange={(_event, next) => onChange(next as number)}
+        sx={{ '& .MuiSlider-markLabel': { fontSize: 12, color: 'text.secondary' } }}
+      />
+    </Box>
+  </Box>;
 }
 
 export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, resetDisabled = false, helpUrl = 'https://doc.beestat.io', customTitle = 'Custom date range', customDescription = 'Choose a custom range to display on this chart.', maxDays = 30, initialBegin, initialEnd, minDate, maxDate }: Props) {
@@ -67,7 +99,7 @@ export function ChartRangeMenu({ days, setDays, onCustom, onDownload, onReset, r
           <ToggleButton value="dynamic">Dynamic</ToggleButton><ToggleButton value="static">Static</ToggleButton>
         </ToggleButtonGroup>
         {rangeType === 'dynamic'
-          ? <TextField type="number" label="Days" value={dynamicDays} onChange={(event) => setDynamicDays(Number(event.target.value))} onBlur={() => setDynamicDays((value) => (!Number.isFinite(value) || value < 1 ? 1 : Math.min(Math.floor(value), maxDays)))} slotProps={{ htmlInput: { min: 1, max: maxDays, step: 1 } }} />
+          ? <DaysSlider value={dynamicDays} maxDays={maxDays} onChange={setDynamicDays} />
           : <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}><TextField fullWidth type="date" label="Start" value={begin} onChange={(event) => setBegin(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /><TextField fullWidth type="date" label="End" value={end} onChange={(event) => setEnd(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} /></Stack>}
         {(rangeType === 'dynamic' && rangeInvalid || exceedsMaximum) && <Alert severity="error">Max range is {maxDays} days.</Alert>}
         {outsideAvailableRange && <Alert severity="error">Detail not available for this range.</Alert>}

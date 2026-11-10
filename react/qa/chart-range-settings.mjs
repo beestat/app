@@ -46,7 +46,10 @@ expectWrite('runtime_thermostat_detail_range_type', 'dynamic');
 const thermostatCard = page.locator('.MuiCard-root').filter({ has: page.getByText('Thermostat Detail', { exact: true }) });
 await thermostatCard.getByRole('button', { name: 'Chart menu' }).click();
 await page.getByRole('menuitem', { name: 'Custom', exact: true }).click();
-await page.getByRole('dialog', { name: 'Thermostat Detail - Custom Range' }).getByLabel('Days').fill('12');
+// The days field is a slider: step from 1 to 12 with the keyboard.
+await page.getByRole('dialog', { name: 'Thermostat Detail - Custom Range' }).getByRole('slider').focus();
+await page.keyboard.press('Home');
+for (let step = 1; step < 12; step++) await page.keyboard.press('ArrowRight');
 await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
 expectWrite('runtime_thermostat_detail_range_dynamic', 12);
 await chooseRange('Sensor Detail', 'Past 7 Days');
