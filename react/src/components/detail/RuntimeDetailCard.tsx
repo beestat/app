@@ -8,6 +8,7 @@ import type { ThemeColors } from '../../theme';
 import type { Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { BeestatLoader } from '../common/BeestatLoader';
+import { keepPreviousForThermostat, RefreshOverlay } from '../common/RefreshOverlay';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeChips } from './RuntimeChips';
@@ -16,7 +17,7 @@ import { ChartRangeMenu } from './ChartRangeMenu';
 import { buildRuntimeData, formatRuntime, runtimeAxisLabel, runtimeTickPositions, unitLabel, type EquipmentCode, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
-import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
+import { chartRangeBounds, persistChartRange, savedRangeDays, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
 import { localDaysAgoIso } from '../../utils/date';
 
@@ -37,10 +38,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const temperatureSeries = useMemo(() => makeTemperatureSeries(colors), [colors]);
   const { data: dashboardData } = useDashboard();
   const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
-  const [days, setDays] = useState(() => {
-    const configured = Number(dashboardData?.user?.settings?.runtime_thermostat_detail_range_dynamic);
-    return [1, 3, 7].includes(configured) ? configured : 3;
-  });
+  const [days, setDays] = useState(() => savedRangeDays(dashboardData?.user?.settings?.runtime_thermostat_detail_range_dynamic, 30));
   const [custom, setCustom] = useState<{ begin: string; end: string } | undefined>(() => {
     const settings = dashboardData?.user?.settings;
     const begin = settingDateToIso(settings?.runtime_thermostat_detail_range_static_begin);
@@ -56,6 +54,7 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
     queryKey: ['runtime-thermostat', thermostat.thermostat_id, custom ?? days],
     queryFn: ({ signal }) => apiCall<RuntimeRow[]>({ resource: 'runtime_thermostat', method: 'read', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } }, signal),
     staleTime: 5 * 60_000,
+    placeholderData: keepPreviousForThermostat(thermostat.thermostat_id),
   });
   const data = useMemo(() => buildRuntimeData(query.data ?? [], thermostat, colors), [colors, query.data, thermostat]);
   // Legend toggles are kept in state so data refreshes keep the user's choice and both charts can follow it.
@@ -135,11 +134,11 @@ export const RuntimeDetailCard = memo(function RuntimeDetailCard({ thermostat }:
   const rangeBounds = chartRangeBounds(thermostat.sync_begin ?? thermostat.data_begin, thermostat.sync_end ?? thermostat.data_end, 12);
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
   return <DashboardCard title="Thermostat Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} resetDisabled={!extremes} helpUrl="https://doc.beestat.io/e499fb13fd4441f4b3f096baca1cb138" customTitle="Thermostat Detail - Custom Range" customDescription="Choose a custom range to display on the Thermostat Detail chart." maxDays={30} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>
-    {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading thermostat detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : !query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
+    {query.isLoading ? <Box sx={{ height: 365, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading thermostat detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <RefreshOverlay active={query.isPlaceholderData} label="Loading thermostat detail">{!query.data?.length ? <Alert severity="info">No data to display for this range.</Alert> : <>
       <RuntimeChips data={data} />
       <RuntimeRaceway data={data} extremes={extremes} chartRef={racewayRef} marginRight={marginRight} />
       <HighchartsReact ref={chartRef} highcharts={Highcharts} options={options} containerProps={{ style: { marginTop: 8 } }} />
       {dockedTooltip}
-    </>}
+    </>}</RefreshOverlay>}
   </DashboardCard>;
 });

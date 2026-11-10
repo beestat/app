@@ -7,6 +7,7 @@ import { apiBatch } from '../../api/client';
 import type { Sensor, Thermostat } from '../../types';
 import { DashboardCard } from '../common/DashboardCard';
 import { BeestatLoader } from '../common/BeestatLoader';
+import { keepPreviousForThermostat, RefreshOverlay } from '../common/RefreshOverlay';
 import { chartTooltipHtml, stableTooltipPositioner } from '../common/chartTooltip';
 import { useDockedTooltip } from '../common/DockedTooltip';
 import { RuntimeRaceway } from './RuntimeRaceway';
@@ -14,7 +15,7 @@ import { ChartRangeMenu } from './ChartRangeMenu';
 import { buildRuntimeData, runtimeAxisLabel, runtimeTickPositions, unitLabel, type Point, type RuntimeRow } from './runtimeData';
 import { synchronizeChartPointers } from './chartSync';
 import { useDashboard } from '../../state/DashboardContext';
-import { chartRangeBounds, persistChartRange, settingDateToIso } from './persistChartRange';
+import { chartRangeBounds, persistChartRange, savedRangeDays, settingDateToIso } from './persistChartRange';
 import { convertTemperature } from '../../utils/format';
 import { localDaysAgoIso } from '../../utils/date';
 
@@ -34,10 +35,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const palette = useMemo(() => [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light], [colors]);
   const { data: dashboardData } = useDashboard();
   const displayUnit = String(dashboardData?.user?.settings?.units?.temperature ?? thermostat.temperature_unit);
-  const [days, setDays] = useState(() => {
-    const configured = Number(dashboardData?.user?.settings?.runtime_sensor_detail_range_dynamic);
-    return [1, 3, 7].includes(configured) ? configured : 3;
-  });
+  const [days, setDays] = useState(() => savedRangeDays(dashboardData?.user?.settings?.runtime_sensor_detail_range_dynamic, 7));
   const [custom, setCustom] = useState<{ begin: string; end: string } | undefined>(() => {
     const settings = dashboardData?.user?.settings;
     const begin = settingDateToIso(settings?.runtime_sensor_detail_range_static_begin);
@@ -60,7 +58,7 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
     queryFn: ({ signal }) => apiBatch<Record<string, RuntimeRow[]>>([
       ...ordered.map((sensor) => ({ resource: 'runtime_sensor', method: 'read', alias: `sensor_${sensor.sensor_id}`, arguments: { attributes: { sensor_id: sensor.sensor_id, timestamp: range } } })),
       { resource: 'runtime_thermostat', method: 'read', alias: 'runtime_thermostat', arguments: { attributes: { thermostat_id: thermostat.thermostat_id, timestamp: range } } },
-    ], signal), staleTime: 5 * 60_000,
+    ], signal), staleTime: 5 * 60_000, placeholderData: keepPreviousForThermostat(thermostat.thermostat_id),
   });
   const runtime = useMemo(() => buildRuntimeData(query.data?.runtime_thermostat ?? [], thermostat, colors), [colors, query.data, thermostat]);
   const sensorSeries = useMemo(() => ordered.map((sensor, index) => {
@@ -111,6 +109,6 @@ export const SensorDetailCard = memo(function SensorDetailCard({ thermostat, sen
   const rangeBounds = chartRangeBounds(thermostat.sync_begin ?? thermostat.data_begin, thermostat.sync_end ?? thermostat.data_end, 3);
   const subtitle = custom ? `${new Date(`${custom.begin}T00:00:00`).toLocaleDateString()} to ${new Date(`${custom.end}T00:00:00`).toLocaleDateString()}` : `Past ${days} day${days > 1 ? 's' : ''}`;
   return <DashboardCard title="Sensor Detail" subheader={subtitle} action={<ChartRangeMenu days={custom ? undefined : days} setDays={changeDays} onCustom={changeCustom} onDownload={download} onReset={() => { setExtremes(undefined); chartRef.current?.chart.zoomOut(); }} resetDisabled={!extremes} helpUrl="https://doc.beestat.io/891f94a6bdb34895a453b7b91591ec29" customTitle="Sensor Detail - Custom Range" customDescription="Choose a custom range to display on the Sensor Detail chart. Max range is 7 days at a time and 3 months in the past." maxDays={7} initialBegin={custom?.begin} initialEnd={custom?.end} minDate={rangeBounds.min} maxDate={rangeBounds.max} />}>
-    {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading sensor detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} />{dockedTooltip}</>}
+    {query.isLoading ? <Box sx={{ height: 435, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading sensor detail" /></Box> : query.error ? <Alert severity="error">{query.error.message}</Alert> : <RefreshOverlay active={query.isPlaceholderData} label="Loading sensor detail"><RuntimeRaceway data={runtime} extremes={extremes} chartRef={racewayRef} /><HighchartsReact ref={occupancyRef} highcharts={Highcharts} options={occupancyOptions} containerProps={{ style: { marginTop: 8 } }} /><HighchartsReact ref={chartRef} highcharts={Highcharts} options={temperatureOptions} containerProps={{ style: { marginTop: 8 } }} />{dockedTooltip}</RefreshOverlay>}
   </DashboardCard>;
 });

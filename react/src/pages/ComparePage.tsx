@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { apiCall } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { BeestatLoader } from '../components/common/BeestatLoader';
+import { keepPreviousForThermostat, RefreshOverlay } from '../components/common/RefreshOverlay';
 import { CardHelpMenu } from '../components/common/CardHelpMenu';
 import { useDashboard } from '../state/DashboardContext';
 import type { ThemeColors } from '../theme';
@@ -186,7 +187,8 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
   const below = histogram.slice(0, ownIndex).reduce((sum, [, count]) => sum + count, 0);
   const above = histogram.slice(ownIndex + 1).reduce((sum, [, count]) => sum + count, 0);
   // Legacy divides first, then scales and uses toFixed; 100 * 113 / 200 would round 56.5 up where legacy shows 56.
-  const percentile = (Math.max(below, above) / Math.max(others, 1) * 100).toFixed(0);
+  // Capped at 99 because "> 100% homes" can't be true; legacy rounds e.g. 316/317 up to 100.
+  const percentile = Math.min(99, Number((Math.max(below, above) / Math.max(others, 1) * 100).toFixed(0)));
   const symbol = below >= above ? '>' : '<';
   const pointX = (ownIndex + .5) * 100 / histogram.length;
   const colorIndex = Math.max(0, groupNames[group]?.indexOf(name) ?? 0);
@@ -204,6 +206,8 @@ function MetricRow({ group, name, metric, value, unit }: { group: string; name: 
     <Box sx={{ bgcolor: 'surface.chart', minWidth: 0, display: 'grid', gridTemplateRows: 'minmax(51px, 1fr) 17px', overflow: 'hidden' }}>
       <Box sx={{ position: 'relative', minWidth: 0, overflow: 'hidden' }}>
         <Box component="svg" aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ position: 'absolute', inset: '18px 0 0', width: '100%', height: 'calc(100% - 18px)', overflow: 'visible', pointerEvents: 'none' }}><Box component="path" d={curveArea} fill={alpha(accent, .22)} /><Box component="path" data-metric-curve d={curve} fill="none" stroke={accent} strokeWidth="2.4" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.45))' }} /><Box component="line" data-metric-marker x1={pointX} x2={pointX} y1={pointY} y2={100} stroke={accent} strokeWidth="1.5" vectorEffect="non-scaling-stroke" /></Box>
+        {/* An HTML dot keeps its circle shape; the stretched SVG would turn it into an ellipse. */}
+        <Box data-metric-point aria-hidden sx={{ position: 'absolute', left: `${pointX}%`, top: `calc(18px + (100% - 18px) * ${pointY / 100})`, width: 10, height: 10, borderRadius: '50%', bgcolor: accent, border: '2px solid', borderColor: 'surface.chart', boxShadow: `0 0 0 1px ${alpha(accent, .55)}`, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} />
         <Typography sx={{ position: 'absolute', left: `clamp(29px, ${pointX}%, calc(100% - 29px))`, top: 2, minWidth: 58, transform: 'translateX(-50%)', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,.8)' }}>{metricLabel(group, name, roundedValue, unit)}</Typography>
       </Box>
       <Box data-metric-bounds sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, px: .75, borderTop: '1px solid', borderColor: 'divider' }}><Typography variant="caption" color="text.secondary" noWrap>{metricLabel(group, name, min, unit)}</Typography><Typography variant="caption" color="text.secondary" noWrap>{metricLabel(group, name, max, unit)}</Typography></Box>
@@ -261,7 +265,7 @@ export function ComparePage() {
     if (region === 'nearby') result.radius = { operator: '<', value: 250 };
     return result;
   }, [propertyType, region, thermostat?.property]);
-  const metrics = useQuery({ queryKey: ['metrics', thermostatId, attributes], enabled: Boolean(thermostatId), queryFn: ({ signal }) => apiCall<Record<string, Record<string, any>>>({ resource: 'thermostat', method: 'get_metrics', arguments: { thermostat_id: thermostatId!, attributes } }, signal) });
+  const metrics = useQuery({ queryKey: ['metrics', thermostatId, attributes], enabled: Boolean(thermostatId), placeholderData: keepPreviousForThermostat(thermostatId),queryFn: ({ signal }) => apiCall<Record<string, Record<string, any>>>({ resource: 'thermostat', method: 'get_metrics', arguments: { thermostat_id: thermostatId!, attributes } }, signal) });
   const address = thermostat?.address_id ? data?.address[String(thermostat.address_id)] : undefined;
   const addressParts = address?.normalized?.components ?? {};
   const regionLabel = [addressParts.state_abbreviation, addressParts.country_iso_3].filter(Boolean).join(', ') || 'No data';
@@ -309,6 +313,6 @@ export function ComparePage() {
         </DashboardCard>
       </Grid>
     </Grid>
-    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading comparison metrics" /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <MetricColumns values={metrics.data} thermostat={thermostat} unit={temperatureUnit} />}</DashboardCard>
+    <DashboardCard title="Metrics" subheader={generatedLabel} action={<CardHelpMenu label="Metrics" href="https://doc.beestat.io/ebfdf00f7f34436c980cd6344a767a12" />}>{metrics.isLoading ? <Box sx={{ height: 180, display: 'grid', placeItems: 'center' }}><BeestatLoader label="Loading comparison metrics" /></Box> : metrics.error ? <Alert severity="error">{metrics.error.message}</Alert> : <RefreshOverlay active={metrics.isPlaceholderData} label="Loading comparison metrics"><MetricColumns values={metrics.data} thermostat={thermostat} unit={temperatureUnit} /></RefreshOverlay>}</DashboardCard>
   </Box>;
 }

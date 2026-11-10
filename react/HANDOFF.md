@@ -7,6 +7,24 @@ Ground rules:
 - Commit locally in small pieces. `feature/react-modernization` is pushed; do not push `feature/react-theme-cleanup` until requested.
 - QA reuses `react/test-results/auth-state.json`; if it expires, a new force-login URL is needed from Jon.
 
+## 2026-11-10: Claude, Jon's cleanup list (loader, alerts, slider, metrics, Air Quality, range overlay)
+
+Jon's requests, all done:
+- **Loader:** the rising inset fills were too dark (brightness .58). They now peak at .84 brightness / .72 opacity so the bars read as a lighter shimmer.
+- **Footer:** removed the "Thermostat data, made useful." tagline. Phone link padding is tighter so all five links fit one row at 390px (Contact used to wrap alone).
+- **Alerts:** list and opened rows share one `AlertRow`; the icon has `flexShrink: 0`, so opening an alert no longer shrinks the icon or moves the text. Rows are keyboard-focusable. The Dismiss button was red-on-red (invisible as a button); it now uses `red.dark`.
+- **Range dialogs:** `ChartRangeMenu`'s dynamic Days number field is now a slider (1–max, every day labeled up to 7, weekly marks for 30) with a "Past N days" readout. Also fixed: the three cards fell back to 3 days for any saved count other than 1/3/7, so a custom 5 or 12 reset on reload. `savedRangeDays()` accepts any integer up to the card's max, like legacy.
+- **Compare Metrics:** a dot marks where the user's line meets the curve (HTML so it stays round over the stretched SVG). Percentile display is capped at 99 because legacy's rounding produced "> 100% homes".
+- **Air Quality hover:** the motion lanes are part of the synchronized hover (guide line on all four charts) and the readout lists sensors with motion at that time. Hovering the lanes themselves opens the readout via an invisible series, because Highcharts closes every tooltip except the hovered chart's. The lanes' left margin went from 45 to 60 to match the charts below; legacy had the same 15px offset, so motion did not line up in time.
+- **Air Quality data bug:** the detail lines were read from the *summary* query (1 or 4 weeks), so a custom range older than that showed empty lines. They now come from the detail query, as in legacy.
+- **Range changes:** Thermostat Detail, Sensor Detail, Air Quality Detail and Compare Metrics keep the previous chart under a dimmed, blurred `RefreshOverlay` with the loader while the new range loads (`placeholderData: keepPreviousForThermostat`). Switching thermostats still shows the full loader. Visualize's 3D view is unchanged; it still hides the scene while rebuilding.
+
+Verified: typecheck, 53 unit tests, build, new `qa/cleanup-round-3.mjs` (alert geometry, both sliders + saved 5-day write, overlay during a delayed fetch, 28 metric dots on their markers, aligned Air Quality plots + four guides + Motion row), plus loading-indicator, compare-metric-geometry, tooltip-regressions, air-quality-menu/docked, footer-newsletter, detail-card-interactions, reset-zoom-state, custom-range-bounds, button-consistency, chart-range-settings (updated for the slider) and design-review.
+
+Known: `qa/air-quality-geometry.mjs` heights and gaps pass, but its label comparison fails because the account's Air Quality range is now 7 days and legacy renders blank x labels there; the script assumes 3 days. Unrelated to this round.
+
+Open question for Jon: on desktop the Alerts card stretches to the System/Sensors row height, leaving a large solid red block under a single alert.
+
 ## 2026-11-07: Codex, editor/create flow and chart interaction polish
 
 Finished the latest cleanup requests without changing the API, floor-plan data, or exact legacy editor/3D engines. The Create Floor Plan dialog is now a complete theme-driven setup flow with structured plan/home sections, responsive fields, explicit basement behavior, validation, and a live floor/ceiling summary. Its intercepted QA still produces the exact legacy floor-plan payload. Disabled exact-editor tools now use flat, muted theme styling instead of appearing as active dark buttons; fresh four-theme screenshots and the full exact Visualize parity run pass at desktop, 390px, and 320px with `floor_plan.update` blocked.

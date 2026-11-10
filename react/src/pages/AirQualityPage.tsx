@@ -7,15 +7,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiBatch } from '../api/client';
 import { DashboardCard } from '../components/common/DashboardCard';
 import { BeestatLoader } from '../components/common/BeestatLoader';
+import { keepPreviousForThermostat, RefreshOverlay } from '../components/common/RefreshOverlay';
 import { chartTooltipHtml, stableTooltipPositioner } from '../components/common/chartTooltip';
 import { useDockedTooltip } from '../components/common/DockedTooltip';
 import { ChartRangeMenu } from '../components/detail/ChartRangeMenu';
 import { synchronizeChartPointers } from '../components/detail/chartSync';
 import { buildRuntimeData, runtimeAxisLabel, type RuntimeRow } from '../components/detail/runtimeData';
-import { chartRangeBounds, persistChartRange, settingDateToIso } from '../components/detail/persistChartRange';
+import { chartRangeBounds, persistChartRange, savedRangeDays, settingDateToIso } from '../components/detail/persistChartRange';
 import { useDashboard } from '../state/DashboardContext';
 import { CalendarDays, CircleHelp, EllipsisVertical, ExternalLink } from 'lucide-react';
 import { localDaysAgo } from '../utils/date';
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => `&#${character.charCodeAt(0)};`);
+}
 
 function heatColor(value: number | undefined, fallback: string) {
   if (value == null) return fallback;
@@ -66,10 +71,7 @@ export function AirQualityPage() {
   const theme = useTheme();
   const colors = theme.palette.colors;
   const { data, thermostat, thermostatId } = useDashboard();
-  const [days, setDays] = useState(() => {
-    const configured = Number(data?.user?.settings?.air_quality_detail_range_dynamic);
-    return [1, 3, 7].includes(configured) ? configured : 3;
-  });
+  const [days, setDays] = useState(() => savedRangeDays(data?.user?.settings?.air_quality_detail_range_dynamic, 7));
   const [summaryDays, setSummaryDays] = useState(() => (Number(data?.user?.settings?.air_quality_summary_range_dynamic) === 7 ? 7 : 28));
   const [custom, setCustom] = useState<{ begin: string; end: string } | undefined>(() => {
     const settings = data?.user?.settings;
@@ -78,6 +80,7 @@ export function AirQualityPage() {
     return settings?.air_quality_detail_range_type === 'static' && begin && end ? { begin, end } : undefined;
   });
   const [extremes, setExtremes] = useState<[number, number]>();
+  const occupancyChartRef = useRef<HighchartsReact.RefObject>(null);
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const vocChartRef = useRef<HighchartsReact.RefObject>(null);
   const co2ChartRef = useRef<HighchartsReact.RefObject>(null);
@@ -88,6 +91,14 @@ export function AirQualityPage() {
   const compactSummary = useMediaQuery('(max-width:700px)');
   const sensors = useMemo(() => Object.values(data?.sensor ?? {}).filter((sensor) => sensor.thermostat_id === thermostatId), [data?.sensor, thermostatId]);
   const thermostatSensors = useMemo(() => sensors.filter((sensor) => sensor.type === 'thermostat'), [sensors]);
+  // Colors follow API order; lanes are drawn thermostat first, then by name (legacy behavior).
+  const occupancyLanes = useMemo(() => {
+    const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light, colors.orange.light, colors.teal.light, colors.purple.light, colors.lightBlue.light, colors.blue.dark, colors.red.dark, colors.yellow.dark, colors.green.dark, colors.orange.dark, colors.teal.dark, colors.purple.dark, colors.lightBlue.dark];
+    const sensorColors = new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]]));
+    return [...sensors]
+      .sort((a, b) => (a.type === 'thermostat' ? -1 : b.type === 'thermostat' ? 1 : a.name.localeCompare(b.name)))
+      .map((sensor) => ({ sensor, color: sensorColors.get(sensor.sensor_id) ?? colors.gray.main }));
+  }, [colors, sensors]);
   const ecobee = thermostat ? (data?.ecobee_thermostat?.[String(thermostat.ecobee_thermostat_id)] as any) : undefined;
   const supportsAirQuality = ecobee?.model_number === 'aresSmart';
   const now = Date.now();
@@ -126,6 +137,7 @@ export function AirQualityPage() {
         signal,
       ),
     staleTime: 5 * 60_000,
+    placeholderData: keepPreviousForThermostat(thermostatId),
   });
   const summaryQuery = useQuery({
     queryKey: ['air-quality-summary', thermostatId, thermostatSensors.map((sensor) => sensor.sensor_id), new Date(summaryBegin).toISOString().slice(0, 10)],
@@ -153,14 +165,26 @@ export function AirQualityPage() {
   const summaryRows = useMemo(() => Object.values(summaryQuery.data ?? {}).flat(), [summaryQuery.data]);
   const thermostatRows = useMemo(() => query.data?.thermostat ?? [], [query.data]);
   const end = custom ? new Date(`${custom.end}T23:59:59`).getTime() : Date.now() - 3_600_000;
+  // Like legacy, the detail lines come from the detail range's own sensor rows. Reading them
+  // from the summary query left custom ranges older than the summary window empty.
   const rows = useMemo(
     () =>
-      summaryRows.filter((row) => {
+      thermostatSensors.flatMap((sensor) => query.data?.[`sensor_${sensor.sensor_id}`] ?? []).filter((row) => {
         const time = Date.parse(row.timestamp);
         return time >= requestedBegin && time <= end;
       }),
-    [summaryRows, end, requestedBegin],
+    [query.data, thermostatSensors, end, requestedBegin],
   );
+  // Sensors with motion at each timestamp, in lane order, for the hover readout.
+  const occupancyByTime = useMemo(() => {
+    const byTime = new Map<number, { name: string; color: string }[]>();
+    occupancyLanes.forEach(({ sensor, color }) => (query.data?.[`sensor_${sensor.sensor_id}`] ?? []).forEach((row) => {
+      if (row.occupancy !== true) return;
+      const time = Date.parse(row.timestamp);
+      byTime.set(time, [...(byTime.get(time) ?? []), { name: sensor.name, color }]);
+    }));
+    return byTime;
+  }, [occupancyLanes, query.data]);
   const airQualityRowsByTime = useMemo(() => new Map(rows.map((row) => [Date.parse(row.timestamp), row])), [rows]);
   const showAirQualityPoint = useCallback((point: Highcharts.Point) => {
     if (point.y == null) return false;
@@ -173,14 +197,15 @@ export function AirQualityPage() {
         }
       : { airQuality: 0, voc: 0, co2: 0 };
     const format = (value: number, suffix = '') => Number.isFinite(value) ? `${value.toLocaleString()}${suffix}` : '—';
+    const motion = (occupancyByTime.get(Number(point.x)) ?? []).map(({ name, color }) => ({ label: escapeHtml(name), value: 'Motion', color }));
     const html = chartTooltipHtml(Highcharts.dateFormat('%a, %b %e @ %l:%M%P', Number(point.x)), [[
       { label: 'Air Quality', value: format(values.airQuality, '%'), color: colors.gray.main },
       { label: 'TVOC', value: format(values.voc, ' ppb'), color: colors.yellow.dark },
       { label: 'CO₂', value: format(values.co2, ' ppm'), color: colors.blue.main },
-    ]]);
+    ], motion]);
     const show = point.series.name === 'TVOC' ? vocTooltip.show : point.series.name === 'CO₂' ? co2Tooltip.show : airQualityTooltip.show;
     return show(html);
-  }, [airQualityRowsByTime, airQualityTooltip.show, co2Tooltip.show, colors.blue.main, colors.gray.main, colors.yellow.dark, supportsAirQuality, vocTooltip.show]);
+  }, [airQualityRowsByTime, airQualityTooltip.show, co2Tooltip.show, colors.blue.main, colors.gray.main, colors.yellow.dark, occupancyByTime, supportsAirQuality, vocTooltip.show]);
   const runtime = useMemo(
     () =>
       buildRuntimeData(
@@ -194,19 +219,16 @@ export function AirQualityPage() {
     [colors, end, requestedBegin, thermostat, thermostatRows],
   );
   const occupancyOptions = useMemo<Highcharts.Options>(() => {
-    const palette = [colors.blue.main, colors.red.main, colors.yellow.main, colors.green.main, colors.orange.main, colors.teal.main, colors.purple.main, colors.lightBlue.main, colors.blue.light, colors.red.light, colors.yellow.light, colors.green.light, colors.orange.light, colors.teal.light, colors.purple.light, colors.lightBlue.light, colors.blue.dark, colors.red.dark, colors.yellow.dark, colors.green.dark, colors.orange.dark, colors.teal.dark, colors.purple.dark, colors.lightBlue.dark];
-    const sensorColors = new Map(sensors.map((sensor, index) => [sensor.sensor_id, palette[index % palette.length]]));
-    const ordered = [...sensors].sort((a, b) => (a.type === 'thermostat' ? -1 : b.type === 'thermostat' ? 1 : a.name.localeCompare(b.name)));
-    const series = ordered
-      .map((sensor, index) => {
-        const spacing = Math.min(Math.floor(15 / Math.max(ordered.length, 1)), 4);
-        const baseWidth = Math.min(Math.floor(50 / Math.max(ordered.length, 1)), 16);
+    const series = occupancyLanes
+      .map(({ sensor, color }, index) => {
+        const spacing = Math.min(Math.floor(15 / Math.max(occupancyLanes.length, 1)), 4);
+        const baseWidth = Math.min(Math.floor(50 / Math.max(occupancyLanes.length, 1)), 16);
         const width = baseWidth - spacing;
         const y = baseWidth * (index + 1) + Math.round(baseWidth / 2);
         return {
           type: 'line' as const,
           name: sensor.name,
-          color: sensorColors.get(sensor.sensor_id),
+          color,
           lineWidth: width,
           linecap: 'square' as const,
           step: 'left' as const,
@@ -219,7 +241,9 @@ export function AirQualityPage() {
       chart: {
         backgroundColor: theme.palette.surface.subtle,
         height: 58,
-        marginLeft: 45,
+        // Legacy used 45 here but 60 on the charts below, which shifted motion against the
+        // air-quality timeline by 15px. Sharing the plot edge keeps the hover guide on both.
+        marginLeft: 60,
         marginRight: 0,
         marginTop: 8,
         marginBottom: 0,
@@ -244,18 +268,46 @@ export function AirQualityPage() {
         title: { text: undefined },
         labels: { enabled: false },
       },
-      tooltip: { enabled: false },
+      // Highcharts closes every tooltip but the hovered chart's, so the lanes carry the
+      // same readout via an invisible series on the air-quality timestamps.
+      tooltip: {
+        shared: true,
+        useHTML: true,
+        outside: true,
+        followPointer: true,
+        hideDelay: 1,
+        shadow: false,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        positioner: stableTooltipPositioner(0),
+        formatter() {
+          const point = this.points?.[0];
+          return point ? showAirQualityPoint(point) : false;
+        },
+      },
       plotOptions: {
         series: {
           animation: false,
-          marker: { enabled: false },
+          marker: { enabled: false, states: { hover: { enabled: false } } },
+          states: { hover: { enabled: false }, inactive: { opacity: 1 } },
           enableMouseTracking: false,
           connectNulls: false,
         },
       },
-      series,
+      series: [
+        ...series,
+        {
+          type: 'line' as const,
+          name: 'Air Quality',
+          data: rows.map((row) => [Date.parse(row.timestamp), 0]),
+          color: 'transparent',
+          lineWidth: 0,
+          enableMouseTracking: true,
+          turboThreshold: 0,
+        },
+      ],
     };
-  }, [colors, extremes, query.data, runtime.max, runtime.min, sensors, theme.palette.surface.subtle]);
+  }, [extremes, occupancyLanes, query.data, rows, runtime.max, runtime.min, showAirQualityPoint, theme.palette.surface.subtle]);
   const detailOptions = useMemo(() => {
     const xAxis = (labels: boolean): Highcharts.XAxisOptions => ({
       type: 'datetime',
@@ -411,7 +463,8 @@ export function AirQualityPage() {
   useEffect(() => {
     let dispose: (() => void) | undefined;
     const frame = requestAnimationFrame(() => {
-      dispose = synchronizeChartPointers([chartRef.current?.chart, vocChartRef.current?.chart, co2ChartRef.current?.chart], (_chart, _index, points) => showAirQualityPoint(points[0]));
+      // The motion lanes have no tooltip of their own, but share the guide line and can start a hover.
+      dispose = synchronizeChartPointers([occupancyChartRef.current?.chart, chartRef.current?.chart, vocChartRef.current?.chart, co2ChartRef.current?.chart], (_chart, _index, points) => showAirQualityPoint(points[0]));
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -505,15 +558,15 @@ export function AirQualityPage() {
           />
         }
       >
-        {query.isLoading || summaryQuery.isLoading ? (
+        {query.isLoading ? (
           <Box sx={{ height: 400, display: 'grid', placeItems: 'center' }}>
             <BeestatLoader label="Loading air quality detail" />
           </Box>
-        ) : query.error || summaryQuery.error ? (
-          <Alert severity="error">{query.error?.message ?? summaryQuery.error?.message}</Alert>
+        ) : query.error ? (
+          <Alert severity="error">{query.error.message}</Alert>
         ) : (
-          <>
-            <HighchartsReact highcharts={Highcharts} options={occupancyOptions} />
+          <RefreshOverlay active={query.isPlaceholderData} label="Loading air quality detail">
+            <HighchartsReact ref={occupancyChartRef} highcharts={Highcharts} options={occupancyOptions} />
             <Typography component="p" sx={{ my: '17px' }}>
               Air Quality (%)
             </Typography>
@@ -529,7 +582,7 @@ export function AirQualityPage() {
             </Typography>
             <HighchartsReact ref={co2ChartRef} highcharts={Highcharts} options={detailOptions.co2} />
             {co2Tooltip.panel}
-          </>
+          </RefreshOverlay>
         )}
       </DashboardCard>
       <DashboardCard title="Air Quality Summary" subheader={`Past ${summaryDays / 7} week${summaryDays === 7 ? '' : 's'}`} action={<SummaryRangeMenu days={summaryDays} onChange={updateSummaryRange} />}>
