@@ -1096,7 +1096,7 @@ class runtime extends cora\api {
           $headers[] = $sensor['name'] . ' - Occupancy';
         }
 
-        $bytes += fputcsv($output, $headers);
+        $bytes += fputcsv($output, $headers, ',', '"', '');
         $needs_header = false;
       }
 
@@ -1175,7 +1175,7 @@ class runtime extends cora\api {
         // Don't write any output unless the first row of data exists. This
         // allows blank rows but not before data actually exists. See #301.
         if($first_row_out === true) {
-          $bytes += fputcsv($output, $csv_row);
+          $bytes += fputcsv($output, $csv_row, ',', '"', '');
         }
 
         $current_timestamp += 300;
@@ -1285,7 +1285,7 @@ class runtime extends cora\api {
       'Minutes Reported',
       'Minutes Unreported'
     ];
-    fputcsv($output, $headers);
+    fputcsv($output, $headers, ',', '"', '');
 
     $bytes = 0;
     while ($row = $result->fetch_assoc()) {
@@ -1306,7 +1306,7 @@ class runtime extends cora\api {
         $row['minutes_reported'],
         $row['minutes_unreported']
       ];
-      $bytes += fputcsv($output, $csv_row);
+      $bytes += fputcsv($output, $csv_row, ',', '"', '');
     }
     fclose($output);
 

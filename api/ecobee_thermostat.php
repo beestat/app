@@ -501,11 +501,12 @@ class ecobee_thermostat extends cora\crud {
    * @param array $identifiers
    * @param array $include
    *
-   * @return array The thermostatList from ecobee.
+   * @return array The thermostatList from ecobee. Empty if there are no
+   * identifiers to get (ex: no thermostats registered to the ecobee account).
    */
   private function get_api_thermostats($identifiers, $include) {
     if(count($identifiers) === 0) {
-      throw new cora\exception('No thermostats found.', 10511, false, null, false);
+      return [];
     }
 
     try {

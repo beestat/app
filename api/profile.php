@@ -814,9 +814,9 @@ class profile extends cora\crud {
         if($debug === true && isset($previous_runtime) === true) {
           $debug_row = array_merge($previous_runtime, $debug_data);
           if($bytes === 0) {
-            $bytes += fputcsv($output, array_keys($debug_row));
+            $bytes += fputcsv($output, array_keys($debug_row), ',', '"', '');
           }
-          $bytes += fputcsv($output, array_values($debug_row));
+          $bytes += fputcsv($output, array_values($debug_row), ',', '"', '');
         }
 
         $previous_runtime = $current_runtime;

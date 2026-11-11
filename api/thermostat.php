@@ -171,11 +171,10 @@ class thermostat extends cora\crud {
 
       return true;
     } catch(cora\exception $e) {
-      if($e->getCode() === 10511) {
-        throw new cora\exception($e->getMessage(), $e->getCode(), $e->getReportable(), $e->getExtraInfo(), $e->getRollback());
-      } else {
-        return false;
-      }
+      // Don't rethrow "No thermostats found" (10511). The app shows the
+      // Manage Thermostats page when there are no active thermostats, so
+      // failing the whole load would hide the option to add one manually.
+      return false;
     }
   }
 
