@@ -14,7 +14,7 @@ const thermostatModels: Record<string, string> = {
 };
 
 function InfoGrid({ fields }: { fields: { name: string; value: React.ReactNode }[] }) {
-  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 2 }}>{fields.map((field) => <Box key={field.name}><Typography fontWeight={600} mb={.5}>{field.name}</Typography><Typography component="div">{field.value}</Typography></Box>)}</Box>;
+  return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 2 }}>{fields.map((field) => <Box key={field.name}><Typography fontWeight={600} mb={.5}>{field.name}</Typography><Typography component="div">{field.value}</Typography></Box>)}</Box>;
 }
 
 function fullDate(value?: string) {
