@@ -106,29 +106,37 @@ class ecobee_thermostat extends cora\crud {
        */
     ];
 
-    // Get a list of all registered thermostats.
-    $response = $this->api(
-      'ecobee',
-      'ecobee_api',
-      [
-        'method' => 'GET',
-        'endpoint' => 'thermostat',
-        'arguments' => [
-          'body' => json_encode([
-            'selection' => array_merge(
-              [
-                'selectionType' => 'registered',
-                'selectionMatch' => ''
-              ],
-              $include
-            )
-          ])
-        ]
-      ]
-    );
+    // Get a list of all registered thermostats. If ecobee says there are none
+    // (10511), carry on with an empty list so the inactivation step below
+    // still runs for thermostats that were removed from the account.
     $registered_identifiers = [];
-    foreach($response['thermostatList'] as $api_thermostat) {
-      $registered_identifiers[] = $api_thermostat['identifier'];
+    try {
+      $response = $this->api(
+        'ecobee',
+        'ecobee_api',
+        [
+          'method' => 'GET',
+          'endpoint' => 'thermostat',
+          'arguments' => [
+            'body' => json_encode([
+              'selection' => array_merge(
+                [
+                  'selectionType' => 'registered',
+                  'selectionMatch' => ''
+                ],
+                $include
+              )
+            ])
+          ]
+        ]
+      );
+      foreach($response['thermostatList'] as $api_thermostat) {
+        $registered_identifiers[] = $api_thermostat['identifier'];
+      }
+    } catch(cora\exception $e) {
+      if($e->getCode() !== 10511) {
+        throw $e;
+      }
     }
 
     // Get a list of manually added thermostats.
@@ -214,8 +222,17 @@ class ecobee_thermostat extends cora\crud {
     // Get a unique list of identifiers.
     $identifiers = array_unique(array_merge($registered_identifiers, $manual_identifiers));
 
-    // Get all of the thermostats from ecobee.
-    $api_thermostats = $this->get_api_thermostats($identifiers, $include);
+    // Get all of the thermostats from ecobee. If none of them can be returned
+    // (10511), treat it as an empty list so they all get inactivated below
+    // instead of staying active and failing on every sync.
+    try {
+      $api_thermostats = $this->get_api_thermostats($identifiers, $include);
+    } catch(cora\exception $e) {
+      if($e->getCode() !== 10511) {
+        throw $e;
+      }
+      $api_thermostats = [];
+    }
 
     // Loop over the returned thermostats and create/update them as necessary.
     $thermostat_ids_to_keep = [];
