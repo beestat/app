@@ -83,6 +83,27 @@ class runtime extends cora\api {
             strtotime($thermostat['sync_begin']) <= strtotime($thermostat['first_connected'])
           )
         ) {
+          // Skip thermostats that ecobee reports as disconnected and that
+          // haven't returned data in a while. sync_forwards() starts from
+          // data_end, so syncing these re-requests the entire (ever-growing)
+          // gap from ecobee every time and gets nothing back. Once ecobee
+          // reports the thermostat as connected again, the next sync picks up
+          // from data_end.
+          $ecobee_thermostat = $this->api(
+            'ecobee_thermostat',
+            'get',
+            $thermostat['ecobee_thermostat_id']
+          );
+          if(
+            isset($ecobee_thermostat['runtime']['connected']) === true &&
+            $ecobee_thermostat['runtime']['connected'] === false &&
+            $thermostat['data_end'] !== null &&
+            strtotime($thermostat['data_end']) < strtotime('-30 day')
+          ) {
+            $this->database->release_lock($lock_name);
+            continue;
+          }
+
           $this->sync_forwards($thermostat_id);
 
           // Update data_begin one last time. This is updated as sync_backwards
@@ -265,6 +286,10 @@ class runtime extends cora\api {
     // everything.
     $sync_begin = strtotime($thermostat['data_end'] . ' -3 hour');
     $sync_end = time();
+
+    // Only sync up to the past year of data. Outside of this there won't even
+    // be a partition for the data to go into.
+    $sync_begin = max(strtotime('-1 year'), $sync_begin);
 
     $chunk_begin = $sync_begin;
     $chunk_end = $sync_begin;
