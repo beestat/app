@@ -1046,7 +1046,7 @@ class runtime extends cora\api {
 
       // Get all of the sensor data and store it in an array indexed by timestamp.
       $runtime_sensors_by_timestamp = [];
-      foreach($sensors as $sensor_id => $sensor) {
+      if (count($sensor_ids) > 0) {
         $runtime_sensors = $this->database->read(
           'runtime_sensor',
           [
@@ -1175,22 +1175,31 @@ class runtime extends cora\api {
             $runtime_thermostats_by_timestamp[$current_timestamp]
           );
 
+          // Always write every sensor column, blank when there is no data, so
+          // later sensors' values stay under their own headers.
           foreach($sensors as $sensor) {
+            $runtime_sensor = null;
             if(
               isset($runtime_sensors_by_timestamp[$current_timestamp]) === true &&
               isset($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]) === true
-            )
-            {
-              foreach($sensor['capability'] as $capability) {
-                if($capability['type'] === 'airQuality') {
-                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['air_quality'];
-                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['voc_concentration'];
-                  $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['co2_concentration'];
-                }
-              }
+            ) {
+              $runtime_sensor = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']];
+            }
 
-              $csv_row[] = $runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['temperature'];
-              $csv_row[] = ($runtime_sensors_by_timestamp[$current_timestamp][$sensor['sensor_id']]['occupancy'] === true ? '1' : '0');
+            foreach($sensor['capability'] as $capability) {
+              if($capability['type'] === 'airQuality') {
+                $csv_row[] = $runtime_sensor === null ? null : $runtime_sensor['air_quality'];
+                $csv_row[] = $runtime_sensor === null ? null : $runtime_sensor['voc_concentration'];
+                $csv_row[] = $runtime_sensor === null ? null : $runtime_sensor['co2_concentration'];
+              }
+            }
+
+            if($runtime_sensor === null) {
+              $csv_row[] = null;
+              $csv_row[] = null;
+            } else {
+              $csv_row[] = $runtime_sensor['temperature'];
+              $csv_row[] = ($runtime_sensor['occupancy'] === true ? '1' : '0');
             }
           }
         } else {
