@@ -183,13 +183,23 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
   var profiles = this.get_profiles_();
   var is_current = (this.profile_index_ === undefined || this.profile_index_ === profiles.length - 1);
 
-  if (
+  /**
+   * Staleness is judged on the thermostat's own profile, not the selected
+   * historical one. The historical list (cache.profile) can lag behind, and
+   * checking it caused an endless generate_profile loop that tripped the API
+   * rate limit. Only try once per card instance as a backstop.
+   */
+  var current_profile = thermostat.profile;
+  var needs_generate = (
     is_current &&
+    this.generate_attempted_ !== true &&
     (
-      selected_profile === null ||
-      moment().diff(moment(selected_profile.metadata.generated_at), 'days') >= 7
+      current_profile === null ||
+      moment().diff(moment(current_profile.metadata.generated_at), 'days') >= 7
     )
-  ) {
+  );
+
+  if (needs_generate === true) {
     this.show_loading_('Fetching');
 
     if (this.get_data_in_flight_ === false) {
@@ -213,8 +223,20 @@ beestat.component.card.temperature_profiles.prototype.get_data_ = function() {
           },
           'thermostat'
         )
+        .add_call(
+          'profile',
+          'read_id',
+          {},
+          'profile'
+        )
         .set_callback(function(response) {
           this.get_data_in_flight_ = false;
+          this.generate_attempted_ = true;
+
+          // Snap the history slider back to the newest profile.
+          this.profile_index_ = undefined;
+
+          beestat.cache.set('profile', response.profile);
           beestat.cache.set('thermostat', response.thermostat);
         }.bind(this))
         .send();
