@@ -460,6 +460,7 @@ class runtime extends cora\api {
   private function sync_runtime_thermostat($thermostat, $response) {
     $data_begin = null;
     $data_end = null;
+    $new_rows = [];
 
     /**
      * Read any existing rows from the database so we know if this is an
@@ -687,18 +688,24 @@ class runtime extends cora\api {
       }
       $data_end = $timestamp;
 
-      // Create or update the database
+      // Update rows that already exist (usually just the few hours of overlap
+      // with the last sync). New rows are collected and inserted in batches.
       if(isset($existing_timestamps[$timestamp]) === true) {
         $data['runtime_thermostat_id'] = $existing_timestamps[$timestamp];
         $this->database->update('runtime_thermostat', $data, 'id');
       }
+      else if(isset($new_rows[$timestamp]) === true) {
+        // Same timestamp twice in one response; later values win.
+        $new_rows[$timestamp] = array_merge($new_rows[$timestamp], $data);
+      }
       else {
         $data['thermostat_id'] = $thermostat['thermostat_id'];
         $data['timestamp'] = $timestamp;
-
-        $existing_timestamps[$timestamp] = $this->database->create('runtime_thermostat', $data, 'id');
+        $new_rows[$timestamp] = $data;
       }
     }
+
+    $this->insert_rows('runtime_thermostat', $new_rows);
 
     return [
       'data_begin' => (($data_begin === null) ? null : strtotime($data_begin)),
@@ -793,6 +800,8 @@ class runtime extends cora\api {
         }
         $existing_timestamps[$existing_row['sensor_id']][$existing_row['timestamp']] = $existing_row['runtime_sensor_id'];
       }
+
+      $new_rows = [];
 
       // Loop over the ecobee data. Ecobee if you're reading this please don't
       // format your identifiers like this in the future.
@@ -908,18 +917,69 @@ class runtime extends cora\api {
           }
         }
 
-        // Create or update the database
+        // Update rows that already exist; collect new rows to insert in
+        // batches.
         foreach ($datas as $data) {
           if(isset($data['temperature']) === true || isset($data['occupancy']) === true) {
+            // Zero-padded so the rows sort in index order (sensor, timestamp).
+            $key = sprintf('%010d', $data['sensor_id']) . '|' . $data['timestamp'];
             if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
               $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
               $this->database->update('runtime_sensor', $data, 'id');
             }
+            else if(isset($new_rows[$key]) === true) {
+              // Same timestamp twice in one response; later values win.
+              $new_rows[$key] = array_merge($new_rows[$key], $data);
+            }
             else {
-              $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+              $new_rows[$key] = $data;
             }
           }
         }
+      }
+
+      ksort($new_rows);
+      $this->insert_rows('runtime_sensor', $new_rows);
+    }
+  }
+
+  /**
+   * Insert new rows in batches. Inserting one row per query was the bulk of
+   * the cost of a runtime sync; a week of data for one thermostat with a few
+   * sensors was ~10k single-row queries.
+   *
+   * This is a plain insert on purpose. Existing rows are updated individually
+   * by the caller; a batched INSERT ... ON DUPLICATE KEY UPDATE was tried and
+   * deadlocked heavily between concurrent syncs.
+   *
+   * Rows with different sets of columns go in separate statements since a
+   * multi-row insert needs the same columns for every row.
+   *
+   * @param string $table The table.
+   * @param array $rows The rows to insert.
+   */
+  private function insert_rows($table, $rows) {
+    $groups = [];
+    foreach($rows as $row) {
+      $groups[implode(',', array_keys($row))][] = $row;
+    }
+
+    foreach($groups as $group) {
+      $columns = implode(
+        ',',
+        array_map([$this->database, 'escape_identifier'], array_keys($group[0]))
+      );
+
+      foreach(array_chunk($group, 500) as $chunk) {
+        $values = [];
+        foreach($chunk as $row) {
+          $values[] = '(' . implode(',', array_map([$this->database, 'escape'], $row)) . ')';
+        }
+
+        $this->database->query(
+          'insert into ' . $this->database->escape_identifier($table) .
+          ' (' . $columns . ') values ' . implode(',', $values)
+        );
       }
     }
   }
