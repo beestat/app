@@ -460,9 +460,58 @@ class runtime extends cora\api {
   private function sync_runtime_thermostat($thermostat, $response) {
     $data_begin = null;
     $data_end = null;
-    $rows = [];
 
+    /**
+     * Read any existing rows from the database so we know if this is an
+     * insert or an update. Note that even though I have $begin and $end
+     * already defined, I always look in the database according to what ecobee
+     * actually returned just in case the returned data goes outside of what I
+     * requested for some reason.
+     */
     $ecobee_columns = array_merge(['date', 'time'], explode(',', $response['columns']));
+    $columns_begin = $this->get_columns(
+      $response['reportList'][0]['rowList'][0],
+      $ecobee_columns
+    );
+    $columns_end = $this->get_columns(
+      $response['reportList'][0]['rowList'][count($response['reportList'][0]['rowList']) - 1],
+      $ecobee_columns
+    );
+
+    $existing_rows = $this->database->read(
+      'runtime_thermostat',
+      [
+        'thermostat_id' => $thermostat['thermostat_id'],
+        'timestamp' => [
+          'value' => [
+            get_utc_datetime(
+              date(
+                'Y-m-d H:i:s',
+                strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
+              ),
+              $thermostat['time_zone']
+            ),
+            get_utc_datetime(
+              date(
+                'Y-m-d H:i:s',
+                strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
+              ),
+              $thermostat['time_zone']
+            )
+          ],
+          'operator' => 'between'
+        ]
+      ],
+      [
+        'runtime_thermostat_id',
+        'timestamp'
+      ]
+    );
+
+    $existing_timestamps = [];
+    foreach($existing_rows as $existing_row) {
+      $existing_timestamps[$existing_row['timestamp']] = $existing_row['runtime_thermostat_id'];
+    }
 
     // Loop over the ecobee data
     foreach ($response['reportList'][0]['rowList'] as $row) {
@@ -638,12 +687,18 @@ class runtime extends cora\api {
       }
       $data_end = $timestamp;
 
-      $data['thermostat_id'] = $thermostat['thermostat_id'];
-      $data['timestamp'] = $timestamp;
-      $rows[] = $data;
-    }
+      // Create or update the database
+      if(isset($existing_timestamps[$timestamp]) === true) {
+        $data['runtime_thermostat_id'] = $existing_timestamps[$timestamp];
+        $this->database->update('runtime_thermostat', $data, 'id');
+      }
+      else {
+        $data['thermostat_id'] = $thermostat['thermostat_id'];
+        $data['timestamp'] = $timestamp;
 
-    $this->upsert_rows('runtime_thermostat', ['thermostat_id', 'timestamp'], $rows);
+        $existing_timestamps[$timestamp] = $this->database->create('runtime_thermostat', $data, 'id');
+      }
+    }
 
     return [
       'data_begin' => (($data_begin === null) ? null : strtotime($data_begin)),
@@ -658,12 +713,26 @@ class runtime extends cora\api {
    * @param array $response The ecobee API response.
    */
   private function sync_runtime_sensor($thermostat, $response) {
+    /**
+     * Read any existing rows from the database so we know if this is an
+     * insert or an update. Note that even though I have $begin and $end
+     * already defined, I always look in the database according to what ecobee
+     * actually returned just in case the returned data goes outside of what I
+     * requested for some reason.
+     */
     if (
       count($response['sensorList']) > 0 &&
       count($response['sensorList'][0]['data']) > 0
     ) {
       $ecobee_columns = $response['sensorList'][0]['columns'];
-      $rows = [];
+      $columns_begin = $this->get_columns(
+        $response['sensorList'][0]['data'][0],
+        $response['sensorList'][0]['columns']
+      );
+      $columns_end = $this->get_columns(
+        $response['sensorList'][0]['data'][count($response['sensorList'][0]['data']) - 1],
+        $ecobee_columns
+      );
 
       // Get a list of sensors
       $sensors = $this->api(
@@ -684,6 +753,45 @@ class runtime extends cora\api {
         if($sensor['identifier'] !== null) {
           $sensors_by_identifier[$sensor['identifier']] = $sensor;
         }
+      }
+
+      $existing_rows = $this->database->read(
+        'runtime_sensor',
+        [
+          'sensor_id' => array_column($sensors, 'sensor_id'),
+          'timestamp' => [
+            'value' => [
+              get_utc_datetime(
+                date(
+                  'Y-m-d H:i:s',
+                  strtotime($columns_begin['date'] . ' ' . $columns_begin['time'] . ' -1 hour')
+                ),
+                $thermostat['time_zone']
+              ),
+              get_utc_datetime(
+                date(
+                  'Y-m-d H:i:s',
+                  strtotime($columns_end['date'] . ' ' . $columns_end['time'] . ' +1 hour')
+                ),
+                $thermostat['time_zone']
+              )
+            ],
+            'operator' => 'between'
+          ]
+        ],
+        [
+          'runtime_sensor_id',
+          'sensor_id',
+          'timestamp'
+        ]
+      );
+
+      $existing_timestamps = [];
+      foreach($existing_rows as $existing_row) {
+        if (isset($existing_timestamps[$existing_row['sensor_id']]) === false) {
+          $existing_timestamps[$existing_row['sensor_id']] = [];
+        }
+        $existing_timestamps[$existing_row['sensor_id']][$existing_row['timestamp']] = $existing_row['runtime_sensor_id'];
       }
 
       // Loop over the ecobee data. Ecobee if you're reading this please don't
@@ -800,66 +908,18 @@ class runtime extends cora\api {
           }
         }
 
+        // Create or update the database
         foreach ($datas as $data) {
           if(isset($data['temperature']) === true || isset($data['occupancy']) === true) {
-            $rows[] = $data;
+            if(isset($existing_timestamps[$data['sensor_id']][$data['timestamp']]) === true) {
+              $data['runtime_sensor_id'] = $existing_timestamps[$data['sensor_id']][$data['timestamp']];
+              $this->database->update('runtime_sensor', $data, 'id');
+            }
+            else {
+              $existing_timestamps[$data['sensor_id']][$data['timestamp']] = $this->database->create('runtime_sensor', $data, 'id');
+            }
           }
         }
-      }
-
-      $this->upsert_rows('runtime_sensor', ['sensor_id', 'timestamp'], $rows);
-    }
-  }
-
-  /**
-   * Insert rows in batches, updating any that already exist (matched on the
-   * table's unique key). Writing one row per query was the bulk of the cost of
-   * a runtime sync; a week of data for one thermostat with a few sensors was
-   * ~10k single-row queries.
-   *
-   * Rows are grouped by their set of columns so that a column a row doesn't
-   * set is left alone on an existing row, same as a single-row update would.
-   *
-   * @param string $table The table.
-   * @param array $key_columns The unique key columns; not updated on conflict.
-   * @param array $rows The rows to write.
-   */
-  private function upsert_rows($table, $key_columns, $rows) {
-    $groups = [];
-    foreach($rows as $row) {
-      $groups[implode(',', array_keys($row))][] = $row;
-    }
-
-    foreach($groups as $group) {
-      $columns = array_keys($group[0]);
-      $escaped_columns = array_map([$this->database, 'escape_identifier'], $columns);
-
-      $updates = [];
-      foreach($columns as $column) {
-        if(in_array($column, $key_columns, true) === false) {
-          $escaped_column = $this->database->escape_identifier($column);
-          $updates[] = $escaped_column . ' = `new`.' . $escaped_column;
-        }
-      }
-
-      foreach(array_chunk($group, 500) as $chunk) {
-        $values = [];
-        foreach($chunk as $row) {
-          $values[] = '(' . implode(',', array_map([$this->database, 'escape'], $row)) . ')';
-        }
-
-        $query =
-          'insert into ' . $this->database->escape_identifier($table) .
-          ' (' . implode(',', $escaped_columns) . ') values ' .
-          implode(',', $values) .
-          ' as `new`' .
-          (
-            count($updates) > 0 ?
-            ' on duplicate key update ' . implode(',', $updates) :
-            ' on duplicate key update ' . $escaped_columns[0] . ' = `new`.' . $escaped_columns[0]
-          );
-
-        $this->database->query($query);
       }
     }
   }
